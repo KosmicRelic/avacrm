@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import './App.css'
+import styles from './App.module.css'
+import LeadsTemplate from './Leads Template/LeadsTemplate'
 
 function App() {
 
   return (
-      "hi"
-      
+    <div>
+      <LeadsTemplate />
+    </div>
   )
 }
 

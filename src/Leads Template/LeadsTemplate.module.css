@@ -1,0 +1,56 @@
+.tableContainer {
+    width: 100%;
+  }
+  
+  .header {
+    overflow-x: auto;
+    background-color: rgb(235, 235, 235);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .headerRow {
+    display: flex;
+    min-width: 600px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow below */
+  }
+  
+  .headerCell {
+    padding: 8px;
+    width: 1000px;
+    text-align: center;
+    font-weight: 650;
+    font-size: 1em;
+  }
+  
+  .bodyContainer {
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+  
+  .bodyContent {
+    min-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  
+  .bodyRow {
+    margin-left: 16px;
+    margin-right: 16px;
+    display: flex;
+    background-color: white;
+    border-radius: 10px;
+  }
+  
+  .bodyCell {
+    padding: 14px;
+    width: 160px;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 400;
+    color: rgb(70, 70, 70);
+  }
