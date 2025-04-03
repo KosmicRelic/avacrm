@@ -55,7 +55,7 @@
     cursor: pointer;
   }
   
-  .profile {
+  .profileButton {
     width: 24px;
     height: 24px;
     margin-right: 16px;
@@ -63,6 +63,8 @@
     color: rgb(0, 140, 255);
     stroke-width: 0;
     cursor: pointer;
+    background-color: transparent;
+    border: none;
   }
   
   .buttonWrapper {

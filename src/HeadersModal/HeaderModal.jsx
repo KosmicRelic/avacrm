@@ -24,7 +24,7 @@ const HeadersModal = ({ onClose }) => {
             const updatedHeaders = [...currentHeaders];
             updatedHeaders[editIndex] = newHeader;
             setCurrentHeaders(updatedHeaders);
-            setEditIndex(null);
+            setEditIndex(null); // Reset edit mode after update
         } else {
             setCurrentHeaders([...currentHeaders, newHeader]);
         }
@@ -49,6 +49,13 @@ const HeadersModal = ({ onClose }) => {
         setCurrentHeaders(currentHeaders.filter((_, i) => i !== index));
     };
 
+    const clearForm = () => {
+        setNewHeaderKey("");
+        setNewHeaderName("");
+        setNewHeaderType("text");
+        setEditIndex(null); // Exit edit mode
+    };
+
     const handleSave = () => {
         setHeaders(currentHeaders);
         onClose();
@@ -67,6 +74,9 @@ const HeadersModal = ({ onClose }) => {
     return (
         <div className={styles.modalOverlay}>
             <div className={styles.modalContent} ref={modalRef}>
+                <button className={styles.closeButton} onClick={onClose}>
+                    ✕
+                </button>
                 <h2>Manage Headers</h2>
                 <div className={styles.headerList}>
                     {currentHeaders.map((header, index) => {
@@ -74,43 +84,53 @@ const HeadersModal = ({ onClose }) => {
                         return (
                             <div key={key} className={styles.headerItem}>
                                 <span>{key}: {header[key]} ({header.type})</span>
-                                <button onClick={() => editHeader(index)}>Edit</button>
-                                <button onClick={() => deleteHeader(index)}>Delete</button>
+                                <div className={styles.headerActions}>
+                                    <button onClick={() => editHeader(index)}>Edit</button>
+                                    <button onClick={() => deleteHeader(index)}>Delete</button>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
                 <div className={styles.addHeaderSection}>
-                    <input
-                        type="text"
-                        value={newHeaderKey}
-                        onChange={(e) => setNewHeaderKey(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Header Key (e.g., leadId)"
-                    />
-                    <input
-                        type="text"
-                        value={newHeaderName}
-                        onChange={(e) => setNewHeaderName(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Header Name (e.g., ID)"
-                    />
-                    <select
-                        value={newHeaderType}
-                        onChange={(e) => setNewHeaderType(e.target.value)}
-                    >
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="date">Date</option>
-                        <option value="dropdown">Dropdown</option>
-                    </select>
-                    <button onClick={addOrUpdateHeader}>
-                        {editIndex !== null ? "Update" : "Add"}
-                    </button>
+                    <div className={styles.addHeaderRow}>
+                        <input
+                            type="text"
+                            value={newHeaderKey}
+                            onChange={(e) => setNewHeaderKey(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Header Key (e.g., leadId)"
+                        />
+                        <input
+                            type="text"
+                            value={newHeaderName}
+                            onChange={(e) => setNewHeaderName(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Header Name (e.g., ID)"
+                        />
+                    </div>
+                    <div className={styles.addHeaderRow}>
+                        <select
+                            value={newHeaderType}
+                            onChange={(e) => setNewHeaderType(e.target.value)}
+                        >
+                            <option value="text">Text</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <option value="dropdown">Dropdown</option>
+                        </select>
+                        <div className={styles.addHeaderButtons}>
+                            <button onClick={addOrUpdateHeader}>
+                                {editIndex !== null ? "Update" : "Add"}
+                            </button>
+                            {(newHeaderKey || newHeaderName || editIndex !== null) && (
+                                <button onClick={clearForm}>Clear</button>
+                            )}
+                        </div>
+                    </div>
                 </div>
                 <div className={styles.modalActions}>
                     <button onClick={handleSave}>Save</button>
-                    <button onClick={onClose}>Cancel</button>
                 </div>
             </div>
         </div>

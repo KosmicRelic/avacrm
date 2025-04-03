@@ -4,6 +4,7 @@ import AppHeader from "./App Header/AppHeader";
 import SheetModal from "./SheetModal/SheetModal";
 import FilterModal from "./FilterModal/FilterModal";
 import { MainContext } from "./Contexts/MainContext";
+import ProfileModal from "./App Header/ProfileModal/ProfileModal";
 import HeadersModal from "./HeadersModal/HeaderModal";
 
 function App() {
@@ -12,17 +13,29 @@ function App() {
     const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isHeadersModalOpen, setIsHeadersModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [filters, setFilters] = useState({});
 
     const activeSheetName = Object.keys(sheets).find((name) => sheets[name].isActive);
     const activeSheet = sheets[activeSheetName];
 
-    // Map header keys to full header objects with default visibility
-    const resolvedHeaders = activeSheet.headers.map((key) => {
-        const header = headers.find((h) => Object.keys(h)[0] === key);
+    const resolvedHeaders = activeSheet.headers.map((sheetHeader) => {
+        const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
         return header
-            ? { key, name: header[key], type: header.type, hidden: false, visible: true }
-            : { key, name: key, type: "text", hidden: false, visible: true }; // Fallback
+            ? {
+                  key: sheetHeader.key,
+                  name: header[sheetHeader.key],
+                  type: header.type,
+                  visible: sheetHeader.visible,
+                  hidden: sheetHeader.hidden,
+              }
+            : {
+                  key: sheetHeader.key,
+                  name: sheetHeader.key,
+                  type: "text",
+                  visible: sheetHeader.visible,
+                  hidden: sheetHeader.hidden,
+              };
     });
 
     const resolvedRows = activeSheet.rows.map((leadId) =>
@@ -44,13 +57,13 @@ function App() {
         }
     };
 
-    const handleSaveSheet = (sheetNameOrObj, headerKeys, pinnedHeaders) => {
+    const handleSaveSheet = (sheetNameOrObj, headerObjects, pinnedHeaders) => {
         if (isSheetModalEditMode) {
             const newSheetName = sheetNameOrObj.sheetName;
             setSheets((prevSheets) => {
                 const updatedSheet = {
                     ...prevSheets[activeSheetName],
-                    headers: headerKeys,
+                    headers: headerObjects,
                     pinnedHeaders: pinnedHeaders || prevSheets[activeSheetName].pinnedHeaders,
                     rows: prevSheets[activeSheetName].rows,
                     isActive: true,
@@ -76,7 +89,7 @@ function App() {
                         newSheets[name].isActive = false;
                     });
                     newSheets[newSheetName] = {
-                        headers: headerKeys,
+                        headers: headerObjects,
                         pinnedHeaders: pinnedHeaders || [],
                         rows: [],
                         isActive: true,
@@ -118,8 +131,8 @@ function App() {
                 activeSheet={activeSheetName}
                 onSheetChange={handleSheetChange}
                 onFilter={() => setIsFilterModalOpen(true)}
+                setIsProfileModalOpen={setIsProfileModalOpen}
             />
-            <button onClick={() => setIsHeadersModalOpen(true)}>Manage Headers</button>
             <SheetTemplate
                 headers={resolvedHeaders}
                 rows={resolvedRows}
@@ -151,6 +164,15 @@ function App() {
             {isHeadersModalOpen && (
                 <HeadersModal
                     onClose={() => setIsHeadersModalOpen(false)}
+                />
+            )}
+            {isProfileModalOpen && (
+                <ProfileModal
+                    onClose={() => setIsProfileModalOpen(false)}
+                    onManageHeaders={() => {
+                        setIsHeadersModalOpen(true);
+                        setIsProfileModalOpen(false);
+                    }}
                 />
             )}
         </div>

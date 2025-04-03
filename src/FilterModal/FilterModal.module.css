@@ -4,7 +4,8 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.4); /* Lighter, softer overlay */
+  backdrop-filter: blur(4px); /* macOS-style blur, if supported */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -12,92 +13,118 @@
 }
 
 .modalContent {
-  background: white;
-  padding: 20px;
-  border-radius: 32px;
-  width: 350px;
+  background: rgba(255, 255, 255, 0.95); /* Slight translucency */
+  padding: 24px; /* More breathing room */
+  border-radius: 16px; /* Softer, Apple-like corners */
+  width: 400px; /* Slightly wider for elegance */
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; /* Apple’s font stack */
+  position: relative; /* For absolute positioning of the X button */
+}
+
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  background: #e8e8ed; /* Light gray, Apple-like */
+  border: none;
+  border-radius: 50%; /* Circular, like macOS traffic lights */
+  color: #515154; /* Dark gray for contrast */
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.closeButton:hover {
+  background: #d2d2d7; /* Slightly darker on hover */
 }
 
 .filterTitle {
-  text-align: center;
-  font-size: 2em;
-  font-weight: 800;
-  color: rgb(0, 0, 0);
+  text-align: left; /* Left-align for a modern feel */
+  font-size: 20px; /* Slightly smaller, more refined */
+  font-weight: 600; /* Semibold, not too heavy */
+  color: #1d1d1f; /* Apple’s near-black */
   margin-bottom: 20px;
 }
 
 .filterList {
-  margin: 20px 0;
+  margin: 16px 0; /* Adjusted spacing */
 }
 
 .filterItem {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
+  padding: 12px 0; /* More vertical space */
+  border-bottom: 1px solid #e8e8ed; /* Lighter divider */
 }
 
 .filterItem label {
-  color: rgb(0, 140, 255, 0.8);
-  font-weight: 650;
-  font-size: 0.8em;
+  color: #515154; /* Apple’s gray for labels */
+  font-weight: 500; /* Medium weight */
+  font-size: 13px; /* Smaller, crisp */
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .filterItem input,
 .filterItem select {
   width: 100%;
-  padding: 8px;
-  border: 1.5px solid #929292;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 450;
-  color: black;
+  padding: 10px 12px; /* Slightly larger tap area */
+  border: 1px solid #d2d2d7; /* Light gray border */
+  border-radius: 10px; /* Softer corners */
+  font-size: 16px; /* Legible */
+  font-weight: 400; /* Regular weight */
+  color: #1d1d1f;
+  background: #f5f5f7; /* Light gray fill */
   box-sizing: border-box;
+  appearance: none; /* Remove default browser styling */
+}
+
+.filterItem select {
+  padding-right: 24px; /* Space for dropdown arrow */
+  background: #f5f5f7 url("data:image/svg+xml,...") no-repeat right 8px center; /* Custom arrow placeholder */
 }
 
 .modalActions {
   display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 10px;
+  justify-content: flex-end; /* Right-aligned, Apple-style */
+  gap: 12px; /* Consistent spacing */
+  margin-top: 20px;
 }
 
 .modalActions button {
-  padding: 12px 24px;
+  padding: 8px 16px; /* Smaller, tactile */
   border: none;
-  border-radius: 16px;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 16px; /* Readable */
+  font-weight: 500; /* Medium weight */
+  background: none; /* Default flat */
+  color: #007aff; /* Apple’s signature blue */
 }
 
 .modalActions button:first-child {
-  background: #007bff;
+  background: #007aff; /* Apply button in Apple blue */
   color: white;
-  font-size: 1.3em;
-  font-weight: 350;
+}
+
+.modalActions button:first-child:hover {
+  background: #0066cc; /* Darker blue for hover */
 }
 
 .modalActions button:hover {
-  background: #0056b3;
-  color: white;
-}
-
-.modalActions button:last-child {
-  background: #f0f0f0;
-  font-size: 1.3em;
-  font-weight: 350;
-  color: rgb(0, 140, 255);
+  opacity: 0.85; /* Subtle hover effect for non-Apply buttons */
 }
 
 .resetButton {
-  background: #ff4d4d;
-  color: white;
-  font-size: 1.3em;
-  font-weight: 350;
+  color: #ff2d55; /* Red for destructive action */
 }
 
 .resetButton:hover {
-  background: #cc0000;
+  opacity: 0.85;
 }

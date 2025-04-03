@@ -1,284 +1,230 @@
 .modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modalContent {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  }
-  
-  .editTitle {
-    text-align: center;
-    font-size: 2em;
-    font-weight: 800;
-    color: rgb(0, 0, 0);
-    margin-bottom: 20px;
-  }
-  
-  .headerList {
-    margin: 20px 0;
-    color: rgb(0, 140, 255, 0.8);
-    font-weight: 650;
-    font-size: 0.8em;
-  }
-  
-  .headerItem {
-    padding: 20px 10px;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  .headerRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .headerNameType {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-  }
-  
-  .headerNameType span {
-    font-size: 1.2em;
-  }
-  
-  .typeSelect {
-    padding: 5px;
-    border: 1px solid #929292;
-    border-radius: 4px;
-    font-size: 1em;
-    width: 100px;
-  }
-  
-  .primaryButtons {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  
-  .moreButton {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 2em;
-    font-weight: 400;
-    padding: 5px;
-    color: #979797;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .moreButton:hover {
-    background: #f0f0f0;
-  }
-  
-  .menu {
-    position: absolute;
-    top: 35px;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    width: 160px;
-  }
-  
-  .menu button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* Text on left, icon on right */
-    width: 100%;
-    padding: 10px;
-    border: none;
-    background: none;
-    text-align: left;
-    font-size: 1.2em;
-    color: #333;
-    cursor: pointer;
-  }
-  
-  .menu button svg {
-    color: rgb(125, 125, 125); /* Match more button color */
-    font-size: 1.2em;
-  }
-  
-  .menu button:hover {
-    background: #f5f5f5;
-  }
-  
-  .menu button:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-  }
-  
-  .disabledMenuButton {
-    color: #ccc !important;
-    cursor: not-allowed;
-  }
-  
-  .deleteButton {
-    color: #ff3b30;
-  }
-  
-  .deleteButton:hover {
-    background: #ffe6e6;
-  }
-  
-  .addHeaderSection {
-    margin: 20px 0;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  
-  .addHeaderSection input[type="text"] {
-    flex: 1;
-    padding: 8px;
-    border: 1.5px solid #929292;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 450;
-    color: black;
-  }
-  
-  .addHeaderSection button {
-    padding: 8px 16px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .modalActions {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    gap: 10px;
-  }
-  
-  .modalActions button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 16px;
-    cursor: pointer;
-  }
-  
-  .modalActions button:first-child {
-    background: #007bff;
-    color: white;
-    font-size: 1.3em;
-    font-weight: 350;
-  }
-  
-  .modalActions button:hover {
-    background: #0056b3;
-    color: white;
-  }
-  
-  .modalActions button:last-child {
-    background: #f0f0f0;
-    font-size: 1.3em;
-    font-weight: 350;
-    color: rgb(0, 140, 255);
-  }
-  
-  .typeModal {
-    position: absolute;
-    top: 35px;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 20; /* Higher than menu to overlap */
-    padding: 10px;
-    width: 200px;
-    text-align: center;
-  }
-  
-  .typeModal h3 {
-    margin: 0 0 10px;
-    font-size: 1.2em;
-    color: #333;
-  }
-  
-  .typeModal select {
-    width: 100%;
-    padding: 5px;
-    margin-bottom: 10px;
-    border: 1px solid #929292;
-    border-radius: 4px;
-    font-size: 1em;
-  }
-  
-  .typeModal button {
-    padding: 8px 16px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .typeModal button:hover {
-    background: #0056b3;
-  }
-  
-  /* Replace the existing .moreButton styles with these */
-  .moreButton {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    font-weight: 400;
-    padding: 5px 10px;
-    color: #979797;
-    width: auto;
-    height: 30px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px; /* Space between type text and icons */
-  }
-  
-  .moreButton:hover {
-    background: #f0f0f0;
-  }
-  
-  /* Ensure icons are sized appropriately */
-  .moreButton svg {
-    font-size: 1em; /* Slightly smaller than the text */
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 
-  .sheetNameInput {
-    padding: 8px;
-    border: 1.5px solid #929292;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: 450;
-    color: black;
-    width: 100%;
-  }
+.modalContent {
+  background: #ffffff; /* Solid white */
+  padding: 24px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px; /* Cap at 500px, shrink if needed */
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  background: #e8e8ed;
+  border: none;
+  border-radius: 50%;
+  color: #515154;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.closeButton:hover {
+  background: #d2d2d7;
+}
+
+.editTitle {
+  text-align: left;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 20px;
+}
+
+.headerList {
+  margin: 16px 0;
+}
+
+.headerItem {
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerNameType {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.headerNameType span {
+  color: #1d1d1f;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  padding: 4px;
+}
+
+.iconButton:hover {
+  color: #007aff;
+}
+
+.primaryButtons {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.moreButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  padding: 4px 8px;
+  color: #979797;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.moreButton:hover {
+  background: #f5f5f7;
+}
+
+.menu {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  width: 160px;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  cursor: pointer;
+}
+
+.menu button svg {
+  color: #979797;
+  font-size: 14px;
+}
+
+.menu button:hover {
+  background: #f5f5f7;
+}
+
+.menu button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.disabledMenuButton {
+  color: #ccc !important;
+  cursor: not-allowed;
+}
+
+.deleteButton {
+  color: #ff2d55;
+}
+
+.deleteButton:hover {
+  background: #ffe6e6;
+}
+
+.addHeaderSection {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.headerLabel {
+  color: #515154;
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.sheetNameInput,
+.addHeaderSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  box-sizing: border-box;
+  appearance: none;
+}
+
+.addHeaderSelect {
+  padding-right: 24px;
+  background: #f5f5f7 url("data:image/svg+xml,...") no-repeat right 8px center; /* Placeholder for arrow */
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modalActions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  background: #007aff;
+  color: white;
+}
+
+.modalActions button:hover {
+  background: #0066cc;
+}

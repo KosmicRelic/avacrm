@@ -4,48 +4,179 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-}
-
-.modalContent {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 500px;
+  }
+  
+  .modalContent {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    width: 100%; /* Full width up to a max */
+    max-width: 500px; /* Cap at 500px, but shrink if needed */
     max-height: 80vh;
     overflow-y: auto;
-}
-
-.headerList {
-    margin: 20px 0;
-}
-
-.headerItem {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    position: relative;
+    box-sizing: border-box; /* Include padding in width */
+  }
+  
+  .closeButton {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    background: #e8e8ed;
+    border: none;
+    border-radius: 50%;
+    color: #515154;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  .closeButton:hover {
+    background: #d2d2d7;
+  }
+  
+  .modalContent h2 {
+    text-align: left;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 20px;
+  }
+  
+  .headerList {
+    margin: 16px 0;
+  }
+  
+  .headerItem {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-.addHeaderSection {
+    padding: 12px 0;
+    border-bottom: 1px solid #e8e8ed;
+  }
+  
+  .headerItem span {
+    color: #1d1d1f;
+    font-size: 16px;
+    font-weight: 400;
+  }
+  
+  .headerActions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+  }
+  
+  .headerItem button {
+    background: none;
+    border: none;
+    color: #007aff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  
+  .headerItem button:hover {
+    opacity: 0.85;
+  }
+  
+  .headerItem button:last-child {
+    color: #ff2d55;
+  }
+  
+  .addHeaderSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     margin-bottom: 20px;
-}
-
-.addHeaderSection input,
-.addHeaderSection select {
+  }
+  
+  .addHeaderRow {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap; /* Allow wrapping if needed */
+  }
+  
+  .addHeaderRow input,
+  .addHeaderRow select {
     flex: 1;
-    padding: 5px;
-}
-
-.modalActions {
+    min-width: 0; /* Prevent overflow */
+    padding: 10px 12px;
+    border: 1px solid #d2d2d7;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 400;
+    color: #1d1d1f;
+    background: #f5f5f7;
+    box-sizing: border-box;
+    appearance: none;
+  }
+  
+  .addHeaderRow select {
+    padding-right: 24px;
+    background: #f5f5f7 url("data:image/svg+xml,...") no-repeat right 8px center;
+  }
+  
+  .addHeaderButtons {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .addHeaderRow button {
+    background: #007aff;
+    border: none;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .addHeaderRow button:hover {
+    background: #0066cc;
+  }
+  
+  .addHeaderRow button:last-child {
+    background: none;
+    color: #007aff; /* Clear button in blue, no fill */
+  }
+  
+  .addHeaderRow button:last-child:hover {
+    opacity: 0.85;
+  }
+  
+  .modalActions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-}
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .modalActions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    background: #007aff;
+    color: white;
+  }
+  
+  .modalActions button:hover {
+    background: #0066cc;
+  }

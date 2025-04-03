@@ -25,56 +25,58 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
 
     return (
         <div className={styles.modalOverlay}>
-            <div className={styles.modalContent}>
-                <h2 className={styles.filterTitle}>Filter Rows</h2>
-                <div className={styles.filterList}>
-                    {visibleHeaders.map((header) => (
-                        <div key={header.key} className={styles.filterItem}>
-                            <label>{header.name}</label>
-                            {header.type === "number" ? (
-                                <input
-                                    type="number"
-                                    value={filterValues[header.key] || ""}
-                                    onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                    placeholder={`Filter ${header.name}`}
-                                />
-                            ) : header.type === "date" ? (
-                                <input
-                                    type="date"
-                                    value={filterValues[header.key] || ""}
-                                    onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                />
-                            ) : header.type === "dropdown" ? (
-                                <select
-                                    value={filterValues[header.key] || ""}
-                                    onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                >
-                                    <option value="">All</option>
-                                    {uniqueDropdownOptions(header.key).map((option) => (
-                                        <option key={option} value={option}>
-                                            {option}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={filterValues[header.key] || ""}
-                                    onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                    placeholder={`Filter ${header.name}`}
-                                />
-                            )}
-                        </div>
-                    ))}
+          <div className={styles.modalContent}>
+            <button className={styles.closeButton} onClick={onClose}>
+              &#x2715; {/* Unicode "X" symbol */}
+            </button>
+            <h2 className={styles.filterTitle}>Filter Rows</h2>
+            <div className={styles.filterList}>
+              {visibleHeaders.map((header) => (
+                <div key={header.key} className={styles.filterItem}>
+                  <label>{header.name}</label>
+                  {header.type === "number" ? (
+                    <input
+                      type="number"
+                      value={filterValues[header.key] || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value)}
+                      placeholder={`Filter ${header.name}`}
+                    />
+                  ) : header.type === "date" ? (
+                    <input
+                      type="date"
+                      value={filterValues[header.key] || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value)}
+                    />
+                  ) : header.type === "dropdown" ? (
+                    <select
+                      value={filterValues[header.key] || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value)}
+                    >
+                      <option value="">All</option>
+                      {uniqueDropdownOptions(header.key).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={filterValues[header.key] || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value)}
+                      placeholder={`Filter ${header.name}`}
+                    />
+                  )}
                 </div>
-                <div className={styles.modalActions}>
-                    <button onClick={handleApply}>Apply</button>
-                    <button onClick={handleReset} className={styles.resetButton}>Reset</button>
-                    <button onClick={onClose}>Cancel</button>
-                </div>
+              ))}
             </div>
+            <div className={styles.modalActions}>
+              <button onClick={handleApply}>Apply</button>
+              <button onClick={handleReset} className={styles.resetButton}>Reset</button>
+            </div>
+          </div>
         </div>
-    );
+      );
 };
 
 export default FilterModal;

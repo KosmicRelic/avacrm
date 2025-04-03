@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import styles from "./SheetModal.module.css";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 import { MainContext } from "../Contexts/MainContext";
 
 const SheetModal = ({
     isEditMode = false,
     sheetName: initialSheetName = "",
-    headers: initialHeaders = [], // Expecting resolved headers from App.jsx
+    headers: initialHeaders = [],
     pinnedHeaders: initialPinnedHeaders = [],
     onSave,
     onPinToggle,
@@ -13,31 +15,36 @@ const SheetModal = ({
 }) => {
     const { headers: allHeaders } = useContext(MainContext);
     const [sheetName, setSheetName] = useState(initialSheetName);
-    const [currentHeaderKeys, setCurrentHeaderKeys] = useState(initialHeaders.map((h) => h.key));
+    const [currentHeaders, setCurrentHeaders] = useState(
+        initialHeaders.map((h) => ({
+            key: h.key,
+            visible: h.visible ?? true,
+            hidden: h.hidden ?? false,
+        }))
+    );
     const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
     const [menuOpen, setMenuOpen] = useState(null);
     const menuRef = useRef(null);
 
-    // Resolve current headers from keys
-    const currentHeaders = currentHeaderKeys.map((key) => {
-        const header = allHeaders.find((h) => Object.keys(h)[0] === key);
-        return header
-            ? { key, name: header[key], type: header.type }
-            : { key, name: key, type: "text" }; // Fallback if header not found
+    const resolvedHeaders = currentHeaders.map((header) => {
+        const globalHeader = allHeaders.find((h) => Object.keys(h)[0] === header.key);
+        return globalHeader
+            ? { ...header, name: globalHeader[header.key], type: globalHeader.type }
+            : { ...header, name: header.key, type: "text" };
     });
 
     const moveUp = (index) => {
         if (index === 0) return;
-        const newHeaderKeys = [...currentHeaderKeys];
-        [newHeaderKeys[index - 1], newHeaderKeys[index]] = [newHeaderKeys[index], newHeaderKeys[index - 1]];
-        setCurrentHeaderKeys(newHeaderKeys);
+        const newHeaders = [...currentHeaders];
+        [newHeaders[index - 1], newHeaders[index]] = [newHeaders[index], newHeaders[index - 1]];
+        setCurrentHeaders(newHeaders);
     };
 
     const moveDown = (index) => {
-        if (index === currentHeaderKeys.length - 1) return;
-        const newHeaderKeys = [...currentHeaderKeys];
-        [newHeaderKeys[index], newHeaderKeys[index + 1]] = [newHeaderKeys[index + 1], newHeaderKeys[index]];
-        setCurrentHeaderKeys(newHeaderKeys);
+        if (index === currentHeaders.length - 1) return;
+        const newHeaders = [...currentHeaders];
+        [newHeaders[index], newHeaders[index + 1]] = [newHeaders[index + 1], newHeaders[index]];
+        setCurrentHeaders(newHeaders);
     };
 
     const togglePin = (headerKey) => {
@@ -50,12 +57,24 @@ const SheetModal = ({
         }
     };
 
+    const toggleVisible = (index) => {
+        const newHeaders = [...currentHeaders];
+        newHeaders[index].visible = !newHeaders[index].visible;
+        setCurrentHeaders(newHeaders);
+    };
+
+    const toggleHidden = (index) => {
+        const newHeaders = [...currentHeaders];
+        newHeaders[index].hidden = !newHeaders[index].hidden;
+        setCurrentHeaders(newHeaders);
+    };
+
     const handleSave = () => {
         if (isEditMode) {
-            onSave({ sheetName: sheetName.trim() }, currentHeaderKeys, pinnedHeaders);
+            onSave({ sheetName: sheetName.trim() }, currentHeaders, pinnedHeaders);
         } else {
-            if (sheetName.trim() && currentHeaderKeys.length > 0) {
-                onSave(sheetName.trim(), currentHeaderKeys, pinnedHeaders);
+            if (sheetName.trim() && currentHeaders.length > 0) {
+                onSave(sheetName.trim(), currentHeaders, pinnedHeaders);
             } else {
                 alert("Please provide a sheet name and select at least one header.");
                 return;
@@ -74,15 +93,15 @@ const SheetModal = ({
     };
 
     const addHeader = (headerKey) => {
-        if (!currentHeaderKeys.includes(headerKey)) {
-            setCurrentHeaderKeys([...currentHeaderKeys, headerKey]);
+        if (!currentHeaders.some((h) => h.key === headerKey)) {
+            setCurrentHeaders([...currentHeaders, { key: headerKey, visible: true, hidden: false }]);
         }
     };
 
     const removeHeader = (index) => {
-        const key = currentHeaderKeys[index];
+        const key = currentHeaders[index].key;
         if (!pinnedHeaders.includes(key)) {
-            setCurrentHeaderKeys(currentHeaderKeys.filter((_, i) => i !== index));
+            setCurrentHeaders(currentHeaders.filter((_, i) => i !== index));
         }
     };
 
@@ -99,6 +118,9 @@ const SheetModal = ({
     return (
         <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
+                <button className={styles.closeButton} onClick={onClose}>
+                    ✕
+                </button>
                 <h2 className={styles.editTitle}>
                     {isEditMode ? "Edit Sheet" : "Add New Sheet"}
                 </h2>
@@ -113,15 +135,27 @@ const SheetModal = ({
                     />
                 </div>
                 <div className={styles.headerList}>
-                    {currentHeaders.map((header, index) => (
+                    {resolvedHeaders.map((header, index) => (
                         <div key={header.key} className={styles.headerItem}>
                             <div className={styles.headerRow}>
                                 <div className={styles.headerNameType}>
                                     <span>{header.name} ({header.type})</span>
+                                    <button
+                                        onClick={() => toggleVisible(index)}
+                                        className={styles.iconButton}
+                                    >
+                                        {header.visible ? <FaEye /> : <FaEyeSlash />}
+                                    </button>
+                                    <button
+                                        onClick={() => toggleHidden(index)}
+                                        className={styles.iconButton}
+                                    >
+                                        {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
+                                    </button>
                                 </div>
                                 <div className={styles.primaryButtons}>
                                     <button onClick={() => toggleMenu(index)} className={styles.moreButton}>
-                                        {" ⋯"}
+                                        {"⋯"}
                                     </button>
                                     {menuOpen === index && (
                                         <div className={styles.menu} ref={menuRef}>
@@ -136,9 +170,19 @@ const SheetModal = ({
                                             </button>
                                             <button
                                                 onClick={(e) => handleMenuAction(moveDown, index, e)}
-                                                disabled={index === currentHeaderKeys.length - 1}
+                                                disabled={index === currentHeaders.length - 1}
                                             >
                                                 Move Down
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleMenuAction(toggleVisible, index, e)}
+                                            >
+                                                {header.visible ? "Hide" : "Show"} <span>{header.visible ? <FaEyeSlash /> : <FaEye />}</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleMenuAction(toggleHidden, index, e)}
+                                            >
+                                                {header.hidden ? "Enable Filter" : "Disable Filter"} <span>{header.hidden ? <MdFilterAlt /> : <MdFilterAltOff />}</span>
                                             </button>
                                             <button
                                                 onClick={(e) => handleMenuAction(removeHeader, index, e)}
@@ -159,12 +203,13 @@ const SheetModal = ({
                         onChange={(e) => {
                             const selectedKey = e.target.value;
                             if (selectedKey) addHeader(selectedKey);
-                            e.target.value = ""; // Reset dropdown
+                            e.target.value = "";
                         }}
+                        className={styles.addHeaderSelect}
                     >
                         <option value="">Add Header</option>
                         {allHeaders
-                            .filter((h) => !currentHeaderKeys.includes(Object.keys(h)[0]))
+                            .filter((h) => !currentHeaders.some((ch) => ch.key === Object.keys(h)[0]))
                             .map((header) => {
                                 const key = Object.keys(header)[0];
                                 return (
@@ -177,7 +222,6 @@ const SheetModal = ({
                 </div>
                 <div className={styles.modalActions}>
                     <button onClick={handleSave}>Save</button>
-                    <button onClick={onClose}>Cancel</button>
                 </div>
             </div>
         </div>

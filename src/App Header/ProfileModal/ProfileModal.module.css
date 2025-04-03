@@ -1,0 +1,113 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4); /* Softer overlay, Apple-style */
+    backdrop-filter: blur(4px); /* macOS blur effect, if supported */
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end; /* Align content to the right */
+  }
+  
+  .modalContent {
+    width: 300px; /* Slightly wider for elegance */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95); /* Subtle translucency */
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1); /* Softer left shadow */
+    padding: 24px; /* More breathing room */
+    border-radius: 16px 0 0 16px; /* Rounded on left side only */
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; /* Apple font stack */
+    animation: slideIn 0.3s ease-out forwards; /* Slide in from right */
+    position: relative; /* For potential close button, if added */
+  }
+  
+  .buttonContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Tighter, Apple-like spacing */
+  }
+  
+  .modalButton {
+    background: none;
+    border: none; /* Flat, borderless buttons */
+    color: #007aff; /* Apple’s signature blue */
+    padding: 10px 20px;
+    border-radius: 10px; /* Softer corners */
+    font-size: 16px;
+    font-weight: 500; /* Medium weight */
+    cursor: pointer;
+    text-align: left; /* Left-aligned text, Apple-style */
+    transition: background 0.2s ease, opacity 0.2s ease;
+  }
+  
+  .modalButton:hover {
+    background: #f5f5f7; /* Light gray hover background */
+    opacity: 0.85; /* Subtle hover effect */
+  }
+  
+  .modalButton:active {
+    background: #e8e8ed; /* Slightly darker for active state */
+  }
+
+  .closeButton{
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    background: #e8e8ed;
+    border: none;
+    border-radius: 50%;
+    color: #515154;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+  
+  /* Slide-in animation (from right to left) */
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Slide-out animation (back to right) */
+  .modalOverlay.closing .modalContent {
+    animation: slideOut 0.3s ease-in forwards;
+  }
+  
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+  
+  /* Optional: Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .modalContent {
+      background: rgba(255, 255, 255, 0.95); /* Apple’s dark mode gray */
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    .modalButton {
+      color: #0a84ff; /* Slightly lighter blue for dark mode */
+    }
+    .modalButton:hover {
+      background: #515154; /* Dark gray hover */
+    }
+    .modalButton:active {
+      background: #3c3c3e; /* Darker active state */
+    }
+  }

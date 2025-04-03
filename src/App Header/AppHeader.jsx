@@ -4,7 +4,7 @@ import { FaChevronDown } from "react-icons/fa";
 import { IoFilterCircle } from "react-icons/io5";
 import { SiGoogleads } from "react-icons/si";
 
-export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter }) {
+export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter, setIsProfileModalOpen }) {
     return (
         <div className={styles.headerContainer}>
             <h2 className={styles.avaTitle}>AVA</h2>
@@ -30,7 +30,12 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter
             <button className={styles.filterIcon} onClick={onFilter}>
                 <IoFilterCircle />
             </button>
-            <CgProfile className={styles.profile} />
+            <button
+                className={styles.profileButton}
+                onClick={() => setIsProfileModalOpen(true)}
+            >
+                <CgProfile size={24} />
+            </button>
         </div>
     );
 }

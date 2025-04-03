@@ -1,11 +1,18 @@
 import { createContext, useState } from "react";
-
 export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
     const [sheets, setSheets] = useState({
         Leads: {
-            headers: ["leadId", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
+            headers: [
+                { key: "leadId", visible: true, hidden: false },
+                { key: "name", visible: true, hidden: false },
+                { key: "phone", visible: true, hidden: false },
+                { key: "email", visible: true, hidden: false },
+                { key: "leadScore", visible: true, hidden: false },
+                { key: "nextActions", visible: true, hidden: false },
+                { key: "followUpDate", visible: true, hidden: false },
+            ],
             pinnedHeaders: ["leadId", "name"],
             rows: [
                 "100001", "100002", "100003", "100004", "100005", "100006", "100007", "100008", "100009", "100010",
@@ -15,13 +22,23 @@ export const MainContextProvider = ({ children }) => {
             isActive: true,
         },
         Business_Partners: {
-            headers: ["businessId", "fullName", "address", "status"],
+            headers: [
+                { key: "businessId", visible: true, hidden: false },
+                { key: "fullName", visible: true, hidden: false },
+                { key: "address", visible: true, hidden: false },
+                { key: "status", visible: true, hidden: false },
+            ],
             pinnedHeaders: ["businessId"],
             rows: [],
             isActive: false,
         },
         Tasks: {
-            headers: ["taskId", "description", "dueDate", "priority"],
+            headers: [
+                { key: "taskId", visible: true, hidden: false },
+                { key: "description", visible: true, hidden: false },
+                { key: "dueDate", visible: true, hidden: false },
+                { key: "priority", visible: true, hidden: false },
+            ],
             pinnedHeaders: ["taskId"],
             rows: [],
             isActive: false,
