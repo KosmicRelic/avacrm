@@ -1,0 +1,51 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.headerList {
+    margin: 20px 0;
+}
+
+.headerItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.addHeaderSection {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.addHeaderSection input,
+.addHeaderSection select {
+    flex: 1;
+    padding: 5px;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

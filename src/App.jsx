@@ -4,20 +4,29 @@ import AppHeader from "./App Header/AppHeader";
 import SheetModal from "./SheetModal/SheetModal";
 import FilterModal from "./FilterModal/FilterModal";
 import { MainContext } from "./Contexts/MainContext";
+import HeadersModal from "./HeadersModal/HeaderModal";
 
 function App() {
-    const { sheets, setSheets, cards } = useContext(MainContext);
+    const { sheets, setSheets, cards, headers } = useContext(MainContext);
     const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
     const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [isHeadersModalOpen, setIsHeadersModalOpen] = useState(false);
     const [filters, setFilters] = useState({});
 
     const activeSheetName = Object.keys(sheets).find((name) => sheets[name].isActive);
     const activeSheet = sheets[activeSheetName];
 
-    // Resolve rows by finding cards with matching IDs
-    const resolvedRows = activeSheet.rows.map((id) =>
-        cards.find((card) => card.id === id) || {}
+    // Map header keys to full header objects with default visibility
+    const resolvedHeaders = activeSheet.headers.map((key) => {
+        const header = headers.find((h) => Object.keys(h)[0] === key);
+        return header
+            ? { key, name: header[key], type: header.type, hidden: false, visible: true }
+            : { key, name: key, type: "text", hidden: false, visible: true }; // Fallback
+    });
+
+    const resolvedRows = activeSheet.rows.map((leadId) =>
+        cards.find((card) => card.leadId === leadId) || {}
     );
 
     const handleSheetChange = (sheetName) => {
@@ -35,15 +44,15 @@ function App() {
         }
     };
 
-    const handleSaveSheet = (sheetNameOrHeaders, headers, pinnedHeaders) => {
+    const handleSaveSheet = (sheetNameOrObj, headerKeys, pinnedHeaders) => {
         if (isSheetModalEditMode) {
-            const newSheetName = sheetNameOrHeaders.sheetName;
+            const newSheetName = sheetNameOrObj.sheetName;
             setSheets((prevSheets) => {
                 const updatedSheet = {
                     ...prevSheets[activeSheetName],
-                    headers: sheetNameOrHeaders.headers,
+                    headers: headerKeys,
                     pinnedHeaders: pinnedHeaders || prevSheets[activeSheetName].pinnedHeaders,
-                    rows: prevSheets[activeSheetName].rows, // Keep rows as IDs
+                    rows: prevSheets[activeSheetName].rows,
                     isActive: true,
                 };
 
@@ -59,34 +68,35 @@ function App() {
                 };
             });
         } else {
-            if (sheetNameOrHeaders && headers.length > 0) {
+            const newSheetName = sheetNameOrObj;
+            if (newSheetName) {
                 setSheets((prevSheets) => {
                     const newSheets = { ...prevSheets };
                     Object.keys(newSheets).forEach((name) => {
                         newSheets[name].isActive = false;
                     });
-                    newSheets[sheetNameOrHeaders] = {
-                        headers,
+                    newSheets[newSheetName] = {
+                        headers: headerKeys,
                         pinnedHeaders: pinnedHeaders || [],
-                        rows: [], // New sheets start with empty ID list
+                        rows: [],
                         isActive: true,
                     };
                     return newSheets;
                 });
             } else {
-                alert("Please provide a sheet name and at least one header.");
+                alert("Please provide a sheet name.");
                 return;
             }
         }
         setIsSheetModalOpen(false);
     };
 
-    const handlePinToggle = (headerName) => {
+    const handlePinToggle = (headerKey) => {
         setSheets((prevSheets) => {
             const currentPinned = prevSheets[activeSheetName].pinnedHeaders || [];
-            const newPinned = currentPinned.includes(headerName)
-                ? currentPinned.filter((h) => h !== headerName)
-                : [...currentPinned, headerName];
+            const newPinned = currentPinned.includes(headerKey)
+                ? currentPinned.filter((h) => h !== headerKey)
+                : [...currentPinned, headerKey];
             return {
                 ...prevSheets,
                 [activeSheetName]: {
@@ -109,8 +119,9 @@ function App() {
                 onSheetChange={handleSheetChange}
                 onFilter={() => setIsFilterModalOpen(true)}
             />
+            <button onClick={() => setIsHeadersModalOpen(true)}>Manage Headers</button>
             <SheetTemplate
-                headers={activeSheet.headers}
+                headers={resolvedHeaders}
                 rows={resolvedRows}
                 filters={filters}
                 onEditSheet={() => {
@@ -122,7 +133,7 @@ function App() {
                 <SheetModal
                     isEditMode={isSheetModalEditMode}
                     sheetName={isSheetModalEditMode ? activeSheetName : ""}
-                    headers={isSheetModalEditMode ? activeSheet.headers : []}
+                    headers={resolvedHeaders}
                     pinnedHeaders={isSheetModalEditMode ? activeSheet.pinnedHeaders || [] : []}
                     onSave={handleSaveSheet}
                     onPinToggle={handlePinToggle}
@@ -131,10 +142,15 @@ function App() {
             )}
             {isFilterModalOpen && (
                 <FilterModal
-                    headers={activeSheet.headers}
+                    headers={resolvedHeaders}
                     rows={resolvedRows}
                     onApply={handleApplyFilters}
                     onClose={() => setIsFilterModalOpen(false)}
+                />
+            )}
+            {isHeadersModalOpen && (
+                <HeadersModal
+                    onClose={() => setIsHeadersModalOpen(false)}
                 />
             )}
         </div>

@@ -11,15 +11,15 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet }) => {
     const filteredRows = rows.filter((row) => {
         const matchesSearch = searchQuery
             ? headers.some((header) =>
-                  String(row[header.name] || "").toLowerCase().includes(searchQuery.toLowerCase())
+                  String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
               )
             : true;
 
-        const matchesFilters = Object.entries(filters).every(([headerName, value]) => {
+        const matchesFilters = Object.entries(filters).every(([headerKey, value]) => {
             if (!value) return true;
-            const rowValue = String(row[headerName] || "").toLowerCase();
+            const rowValue = String(row[headerKey] || "").toLowerCase();
             const filterValue = String(value).toLowerCase();
-            const header = headers.find((h) => h.name === headerName);
+            const header = headers.find((h) => h.key === headerKey);
             const type = header ? header.type : "text";
 
             switch (type) {
@@ -54,7 +54,7 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet }) => {
             <div className={styles.tableWrapper} ref={scrollContainerRef}>
                 <div className={styles.header}>
                     {visibleHeaders.map((header) => (
-                        <div key={header.name} className={styles.headerCell}>
+                        <div key={header.key} className={styles.headerCell}>
                             {header.name}
                         </div>
                     ))}
@@ -64,7 +64,7 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet }) => {
                         <RowComponent
                             key={rowIndex}
                             rowData={rowData}
-                            headerNames={visibleHeaders.map((h) => h.name)}
+                            headerNames={visibleHeaders.map((h) => h.key)}
                         />
                     ))}
                 </div>

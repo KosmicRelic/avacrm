@@ -5,16 +5,8 @@ export const MainContext = createContext();
 export const MainContextProvider = ({ children }) => {
     const [sheets, setSheets] = useState({
         Leads: {
-            headers: [
-                { name: "LEAD ID", type: "number", hidden: false, visible: true },
-                { name: "NAME", type: "text", hidden: false, visible: true },
-                { name: "PHONE", type: "text", hidden: false, visible: true },
-                { name: "EMAIL", type: "text", hidden: false, visible: true },
-                { name: "LEAD SCORE", type: "number", hidden: false, visible: true },
-                { name: "NEXT ACTIONS", type: "dropdown", hidden: false, visible: true },
-                { name: "FOLLOW UP DATE", type: "date", hidden: false, visible: true },
-            ],
-            pinnedHeaders: ["LEAD ID", "NAME"],
+            headers: ["leadId", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
+            pinnedHeaders: ["leadId", "name"],
             rows: [
                 "100001", "100002", "100003", "100004", "100005", "100006", "100007", "100008", "100009", "100010",
                 "100011", "100012", "100013", "100014", "100015", "100016", "100017", "100018", "100019", "100020",
@@ -23,24 +15,14 @@ export const MainContextProvider = ({ children }) => {
             isActive: true,
         },
         Business_Partners: {
-            headers: [
-                { name: "CONTACT ID", type: "number", hidden: false, visible: true },
-                { name: "FULL NAME", type: "text", hidden: false, visible: true },
-                { name: "ADDRESS", type: "text", hidden: false, visible: true },
-                { name: "STATUS", type: "dropdown", hidden: false, visible: true },
-            ],
-            pinnedHeaders: ["CONTACT ID"],
+            headers: ["businessId", "fullName", "address", "status"],
+            pinnedHeaders: ["businessId"],
             rows: [],
             isActive: false,
         },
         Tasks: {
-            headers: [
-                { name: "TASK ID", type: "number", hidden: false, visible: true },
-                { name: "DESCRIPTION", type: "text", hidden: false, visible: true },
-                { name: "DUE DATE", type: "date", hidden: false, visible: true },
-                { name: "PRIORITY", type: "dropdown", hidden: false, visible: true },
-            ],
-            pinnedHeaders: ["TASK ID"],
+            headers: ["taskId", "description", "dueDate", "priority"],
+            pinnedHeaders: ["taskId"],
             rows: [],
             isActive: false,
         },
@@ -48,32 +30,50 @@ export const MainContextProvider = ({ children }) => {
 
     const [cards, setCards] = useState([
         // Leads
-        { id: "100001", "LEAD ID": "100001", "NAME": "Periklis Papadopoulos", "PHONE": "6986600023", "EMAIL": "periklis@example.com", "LEAD SCORE": "80", "NEXT ACTIONS": "Call back", "FOLLOW UP DATE": "2025-04-05" },
-        { id: "100002", "LEAD ID": "100002", "NAME": "Maria Ioannou", "PHONE": "6977554321", "EMAIL": "maria@example.com", "LEAD SCORE": "90", "NEXT ACTIONS": "Send offer", "FOLLOW UP DATE": "2025-04-06" },
-        { id: "100003", "LEAD ID": "100003", "NAME": "Dimitris Georgiou", "PHONE": "6999887766", "EMAIL": "dimitris@example.com", "LEAD SCORE": "75", "NEXT ACTIONS": "Follow-up email", "FOLLOW UP DATE": "2025-04-07" },
-        { id: "100004", "LEAD ID": "100004", "NAME": "Eleni Christodoulou", "PHONE": "6933445566", "EMAIL": "eleni@example.com", "LEAD SCORE": "85", "NEXT ACTIONS": "Schedule meeting", "FOLLOW UP DATE": "2025-04-08" },
-        { id: "100005", "LEAD ID": "100005", "NAME": "Nikos Pappas", "PHONE": "6955332211", "EMAIL": "nikos@example.com", "LEAD SCORE": "60", "NEXT ACTIONS": "Send reminder", "FOLLOW UP DATE": "2025-04-09" },
-        { id: "100006", "LEAD ID": "100006", "NAME": "Georgia Alexiou", "PHONE": "6900112233", "EMAIL": "georgia@example.com", "LEAD SCORE": "95", "NEXT ACTIONS": "Close deal", "FOLLOW UP DATE": "2025-04-10" },
-        { id: "100007", "LEAD ID": "100007", "NAME": "Kostas Leventis", "PHONE": "6999001122", "EMAIL": "kostas@example.com", "LEAD SCORE": "70", "NEXT ACTIONS": "Cold call", "FOLLOW UP DATE": "2025-04-11" },
-        { id: "100008", "LEAD ID": "100008", "NAME": "Sofia Karamanou", "PHONE": "6977889900", "EMAIL": "sofia@example.com", "LEAD SCORE": "88", "NEXT ACTIONS": "Send brochure", "FOLLOW UP DATE": "2025-04-12" },
-        { id: "100009", "LEAD ID": "100009", "NAME": "Michalis Xanthopoulos", "PHONE": "6933556677", "EMAIL": "michalis@example.com", "LEAD SCORE": "78", "NEXT ACTIONS": "Call and pitch", "FOLLOW UP DATE": "2025-04-13" },
-        { id: "100010", "LEAD ID": "100010", "NAME": "Vasiliki Antoniou", "PHONE": "6911223344", "EMAIL": "vasiliki@example.com", "LEAD SCORE": "92", "NEXT ACTIONS": "Confirm interest", "FOLLOW UP DATE": "2025-04-14" },
-        { id: "100011", "LEAD ID": "100011", "NAME": "Panagiotis Kotsis", "PHONE": "6977112233", "EMAIL": "panagiotis@example.com", "LEAD SCORE": "82", "NEXT ACTIONS": "Send demo", "FOLLOW UP DATE": "2025-04-15" },
-        { id: "100012", "LEAD ID": "100012", "NAME": "Eftychia Douka", "PHONE": "6988223344", "EMAIL": "eftychia@example.com", "LEAD SCORE": "67", "NEXT ACTIONS": "Follow up call", "FOLLOW UP DATE": "2025-04-16" },
-        { id: "100013", "LEAD ID": "100013", "NAME": "Spyros Mavridis", "PHONE": "6999334455", "EMAIL": "spyros@example.com", "LEAD SCORE": "79", "NEXT ACTIONS": "Send case study", "FOLLOW UP DATE": "2025-04-17" },
-        { id: "100014", "LEAD ID": "100014", "NAME": "Ioanna Fragou", "PHONE": "6900445566", "EMAIL": "ioanna@example.com", "LEAD SCORE": "91", "NEXT ACTIONS": "Book consultation", "FOLLOW UP DATE": "2025-04-18" },
-        { id: "100015", "LEAD ID": "100015", "NAME": "Theodoros Karas", "PHONE": "6911556677", "EMAIL": "theodoros@example.com", "LEAD SCORE": "73", "NEXT ACTIONS": "Negotiate pricing", "FOLLOW UP DATE": "2025-04-19" },
-        { id: "100016", "LEAD ID": "100016", "NAME": "Aris Liakos", "PHONE": "6922667788", "EMAIL": "aris@example.com", "LEAD SCORE": "86", "NEXT ACTIONS": "Arrange free trial", "FOLLOW UP DATE": "2025-04-20" },
-        { id: "100017", "LEAD ID": "100017", "NAME": "Eirini Konstantinou", "PHONE": "6933778899", "EMAIL": "eirini@example.com", "LEAD SCORE": "94", "NEXT ACTIONS": "Finalize contract", "FOLLOW UP DATE": "2025-04-21" },
-        { id: "100018", "LEAD ID": "100018", "NAME": "Leonidas Stavrou", "PHONE": "6944889900", "EMAIL": "leonidas@example.com", "LEAD SCORE": "68", "NEXT ACTIONS": "Send more info", "FOLLOW UP DATE": "2025-04-22" },
-        { id: "100019", "LEAD ID": "100019", "NAME": "Zoi Manou", "PHONE": "6955990011", "EMAIL": "zoi@example.com", "LEAD SCORE": "83", "NEXT ACTIONS": "Check availability", "FOLLOW UP DATE": "2025-04-23" },
-        { id: "100020", "LEAD ID": "100020", "NAME": "Alexandros Kouris", "PHONE": "6966001122", "EMAIL": "alexandros@example.com", "LEAD SCORE": "87", "NEXT ACTIONS": "Confirm details", "FOLLOW UP DATE": "2025-04-24" },
-        { id: "100021", "LEAD ID": "100021", "NAME": "Christina Makri", "PHONE": "6977112233", "EMAIL": "christina@example.com", "LEAD SCORE": "65", "NEXT ACTIONS": "Send product list", "FOLLOW UP DATE": "2025-04-25" },
-        { id: "100022", "LEAD ID": "100022", "NAME": "Giannis Fotiadis", "PHONE": "6988223344", "EMAIL": "giannis@example.com", "LEAD SCORE": "89", "NEXT ACTIONS": "Request review", "FOLLOW UP DATE": "2025-04-26" },
+        { leadId: "100001", name: "Periklis Papadopoulos", phone: "6986600023", email: "periklis@example.com", leadScore: "80", nextActions: "Call back", followUpDate: "2025-04-05" },
+        { leadId: "100002", name: "Maria Ioannou", phone: "6977554321", email: "maria@example.com", leadScore: "90", nextActions: "Send offer", followUpDate: "2025-04-06" },
+        { leadId: "100003", name: "Dimitris Georgiou", phone: "6999887766", email: "dimitris@example.com", leadScore: "75", nextActions: "Follow-up email", followUpDate: "2025-04-07" },
+        { leadId: "100004", name: "Eleni Christodoulou", phone: "6933445566", email: "eleni@example.com", leadScore: "85", nextActions: "Schedule meeting", followUpDate: "2025-04-08" },
+        { leadId: "100005", name: "Nikos Pappas", phone: "6955332211", email: "nikos@example.com", leadScore: "60", nextActions: "Send reminder", followUpDate: "2025-04-09" },
+        { leadId: "100006", name: "Georgia Alexiou", phone: "6900112233", email: "georgia@example.com", leadScore: "95", nextActions: "Close deal", followUpDate: "2025-04-10" },
+        { leadId: "100007", name: "Kostas Leventis", phone: "6999001122", email: "kostas@example.com", leadScore: "70", nextActions: "Cold call", followUpDate: "2025-04-11" },
+        { leadId: "100008", name: "Sofia Karamanou", phone: "6977889900", email: "sofia@example.com", leadScore: "88", nextActions: "Send brochure", followUpDate: "2025-04-12" },
+        { leadId: "100009", name: "Michalis Xanthopoulos", phone: "6933556677", email: "michalis@example.com", leadScore: "78", nextActions: "Call and pitch", followUpDate: "2025-04-13" },
+        { leadId: "100010", name: "Vasiliki Antoniou", phone: "6911223344", email: "vasiliki@example.com", leadScore: "92", nextActions: "Confirm interest", followUpDate: "2025-04-14" },
+        { leadId: "100011", name: "Panagiotis Kotsis", phone: "6977112233", email: "panagiotis@example.com", leadScore: "82", nextActions: "Send demo", followUpDate: "2025-04-15" },
+        { leadId: "100012", name: "Eftychia Douka", phone: "6988223344", email: "eftychia@example.com", leadScore: "67", nextActions: "Follow up call", followUpDate: "2025-04-16" },
+        { leadId: "100013", name: "Spyros Mavridis", phone: "6999334455", email: "spyros@example.com", leadScore: "79", nextActions: "Send case study", followUpDate: "2025-04-17" },
+        { leadId: "100014", name: "Ioanna Fragou", phone: "6900445566", email: "ioanna@example.com", leadScore: "91", nextActions: "Book consultation", followUpDate: "2025-04-18" },
+        { leadId: "100015", name: "Theodoros Karas", phone: "6911556677", email: "theodoros@example.com", leadScore: "73", nextActions: "Negotiate pricing", followUpDate: "2025-04-19" },
+        { leadId: "100016", name: "Aris Liakos", phone: "6922667788", email: "aris@example.com", leadScore: "86", nextActions: "Arrange free trial", followUpDate: "2025-04-20" },
+        { leadId: "100017", name: "Eirini Konstantinou", phone: "6933778899", email: "eirini@example.com", leadScore: "94", nextActions: "Finalize contract", followUpDate: "2025-04-21" },
+        { leadId: "100018", name: "Leonidas Stavrou", phone: "6944889900", email: "leonidas@example.com", leadScore: "68", nextActions: "Send more info", followUpDate: "2025-04-22" },
+        { leadId: "100019", name: "Zoi Manou", phone: "6955990011", email: "zoi@example.com", leadScore: "83", nextActions: "Check availability", followUpDate: "2025-04-23" },
+        { leadId: "100020", name: "Alexandros Kouris", phone: "6966001122", email: "alexandros@example.com", leadScore: "87", nextActions: "Confirm details", followUpDate: "2025-04-24" },
+        { leadId: "100021", name: "Christina Makri", phone: "6977112233", email: "christina@example.com", leadScore: "65", nextActions: "Send product list", followUpDate: "2025-04-25" },
+        { leadId: "100022", name: "Giannis Fotiadis", phone: "6988223344", email: "giannis@example.com", leadScore: "89", nextActions: "Request review", followUpDate: "2025-04-26" },
+    ]);
+
+    const [headers, setHeaders] = useState([
+        { leadId: "LEAD ID", type: "number" },
+        { name: "NAME", type: "text" },
+        { phone: "PHONE", type: "text" },
+        { email: "EMAIL", type: "text" },
+        { leadScore: "LEAD SCORE", type: "number" },
+        { nextActions: "NEXT ACTIONS", type: "dropdown" },
+        { followUpDate: "FOLLOW UP DATE", type: "date" },
+        { businessId: "BUSINESS ID", type: "number" },
+        { fullName: "FULL NAME", type: "text" },
+        { address: "ADDRESS", type: "text" },
+        { status: "STATUS", type: "dropdown" },
+        { taskId: "TASK ID", type: "number" },
+        { description: "DESCRIPTION", type: "text" },
+        { dueDate: "DUE DATE", type: "date" },
+        { priority: "PRIORITY", type: "dropdown" },
     ]);
 
     return (
-        <MainContext.Provider value={{ sheets, setSheets, cards, setCards }}>
+        <MainContext.Provider value={{ sheets, setSheets, cards, setCards, headers, setHeaders }}>
             {children}
         </MainContext.Provider>
     );
