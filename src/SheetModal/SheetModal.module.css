@@ -261,7 +261,7 @@
     border-radius: 16px;
     display: flex;
     align-items: center;
-    gap: 4px; /* Space between type text and icons */
+    gap: 16px; /* Space between type text and icons */
   }
   
   .moreButton:hover {
