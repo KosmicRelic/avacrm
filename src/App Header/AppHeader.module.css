@@ -1,0 +1,73 @@
+.headerContainer {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    background-color: white;
+  }
+  
+  .avaTitle {
+    padding: 0;
+    margin: 0;
+    margin-left: 16px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: rgba(0, 140, 255, 0.8);
+    cursor: pointer;
+  }
+  
+  .avaSubTitle,
+  .addHeader {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 10px;
+    margin: 0;
+    margin-left: 24px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgb(0, 140, 255);
+    border: 1.5px solid rgba(0, 140, 255, 0.8);
+    border-radius: 16px;
+    background-color: rgba(0, 140, 255, 0.096);
+    cursor: pointer;
+  }
+  
+  .addHeader {
+    border: none;
+    background-color: transparent;
+    font-weight: 450;
+    margin-left: 5px;
+  }
+  
+  .profile {
+    width: 24px;
+    height: 24px;
+    margin-right: 16px;
+    margin-left: auto;
+    color: rgb(0, 140, 255);
+    stroke-width: 0;
+    cursor: pointer;
+  }
+  
+  .buttonWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .sheetDropdown {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0; /* Hide the select visually */
+    appearance: none; /* Remove default arrow */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1; /* Ensure it’s clickable over the button */
+  }

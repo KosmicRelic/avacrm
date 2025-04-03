@@ -1,0 +1,25 @@
+.bodyRow {
+  display: flex;
+  background-color: white;
+  /* border-radius: 10px; */ /* Uncomment this if you want rounded corners */
+  transition: background-color 0.2s ease-in-out;
+  overflow: inherit;
+  min-width: 100%; /* Makes sure the row is always at least as wide as its parent */
+  width: max-content; /* Allows it to expand beyond the screen */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Adds an even shadow on all sides */
+}
+
+.bodyRow:hover {
+  background-color: #f3f4f6; 
+}
+
+.bodyCell {
+  padding: 14px 8px;
+  gap: 8px;
+  width: 160px; /* Ensures each cell has a minimum width */
+  text-align: center;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgb(70, 70, 70);
+}

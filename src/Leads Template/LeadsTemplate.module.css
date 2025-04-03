@@ -1,56 +1,75 @@
+/* Container for the entire table (both header and rows) */
 .tableContainer {
     width: 100%;
+    overflow: hidden; /* Ensure content stays inside the container */
+    position: relative;
+    height: calc(100vh - 60px); /* Optional: Set a height, e.g., full viewport height */
   }
   
+  /* Wrapper for both header and rows to scroll together */
+  .tableWrapper {
+    width: 100%;
+    height: 100%; /* Inherits the full height of tableContainer */
+    overflow: auto;
+    position: relative;
+  }
+  
+  /* Fixed header style */
   .header {
-    overflow-x: auto;
-    background-color: rgb(235, 235, 235);
     position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  
-  .headerRow {
+    top: 0; /* Sticky at the top of the container */
+    background-color: white;
+    z-index: 10; /* Keeps it above the rows */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
-    min-width: 600px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow below */
+    flex-shrink: 0; /* Prevents shrinking */
+    width: max-content; /* Matches row width for alignment */
+    min-width: 100%; /* Ensures it spans at least the container width */
   }
   
+  /* Header cells with a fixed width to match rows */
   .headerCell {
-    padding: 8px;
-    width: 1000px;
+    flex: 0 0 auto;
+    width: 160px; /* Fixed width to align with row cells */
     text-align: center;
     font-weight: 650;
-    font-size: 1em;
+    font-size: 0.8em;
+    padding: 14px 8px;
+    color: rgb(0, 140, 255);
+    white-space: nowrap; /* Prevents text wrapping */
   }
   
+  /* Body container for rows */
   .bodyContainer {
-    overflow-x: auto;
-    overflow-y: auto;
-  }
-  
-  .bodyContent {
-    min-width: 600px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin: 16px 0;
+    gap: 8px;
+    flex-shrink: 0; /* Prevents shrinking */
+    margin-top: 8px;
+    /* Removed overflow-x: auto and overflow-y: auto */
   }
-  
+
   .bodyRow {
-    margin-left: 16px;
-    margin-right: 16px;
     display: flex;
     background-color: white;
     border-radius: 10px;
+    transition: background-color 0.2s ease-in-out;
+    min-width: 100%; /* Makes sure the row is at least as wide as its parent */
+    width: max-content; /* Allows it to expand beyond the screen */
+    flex-shrink: 0; /* Prevents shrinking */
+  }
+  
+  .bodyRow:hover {
+    background-color: #f3f4f6;
   }
   
   .bodyCell {
-    padding: 14px;
-    width: 160px;
+    padding: 14px 8px; /* Matches headerCell padding */
+    width: 160px; /* Ensures each cell has the same width as header */
     text-align: center;
-    white-space: nowrap;
+    white-space: nowrap; /* Prevents text wrapping */
     font-size: 14px;
     font-weight: 400;
     color: rgb(70, 70, 70);
+    border-bottom: 1px solid #ddd; /* Optional: Adds a subtle row separator */
   }
