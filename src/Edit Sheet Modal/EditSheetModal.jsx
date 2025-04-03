@@ -1,14 +1,11 @@
 import { useState } from "react";
-import styles from "./EditSheetModal.module.css"; // Adjust the path as necessary
+import styles from "./EditSheetModal.module.css";
+import { BsFillPinAngleFill } from "react-icons/bs";
 
-const EditSheetModal = ({ headerNames, onSave, onClose }) => {
+const EditSheetModal = ({ headerNames, pinnedHeaders, onSave, onPinToggle, onClose }) => {
   const [headers, setHeaders] = useState(headerNames);
   const [newHeader, setNewHeader] = useState("");
 
-  // Define undeletable headers
-  const undeletableHeaders = ["LEAD ID", "NAME"];
-
-  // Move header up
   const moveUp = (index) => {
     if (index === 0) return;
     const newHeaders = [...headers];
@@ -16,7 +13,6 @@ const EditSheetModal = ({ headerNames, onSave, onClose }) => {
     setHeaders(newHeaders);
   };
 
-  // Move header down
   const moveDown = (index) => {
     if (index === headers.length - 1) return;
     const newHeaders = [...headers];
@@ -24,7 +20,6 @@ const EditSheetModal = ({ headerNames, onSave, onClose }) => {
     setHeaders(newHeaders);
   };
 
-  // Add new header
   const addHeader = () => {
     if (newHeader.trim() && !headers.includes(newHeader.trim().toUpperCase())) {
       setHeaders([...headers, newHeader.trim().toUpperCase()]);
@@ -32,14 +27,12 @@ const EditSheetModal = ({ headerNames, onSave, onClose }) => {
     }
   };
 
-  // Delete header
   const deleteHeader = (index) => {
-    if (!undeletableHeaders.includes(headers[index])) {
+    if (!pinnedHeaders.includes(headers[index])) {
       setHeaders(headers.filter((_, i) => i !== index));
     }
   };
 
-  // Save changes and close modal
   const handleSave = () => {
     onSave(headers);
     onClose();
@@ -54,6 +47,12 @@ const EditSheetModal = ({ headerNames, onSave, onClose }) => {
             <div key={header} className={styles.headerItem}>
               <span>{header}</span>
               <div className={styles.buttons}>
+              <button
+                onClick={() => onPinToggle(header)}
+                className={pinnedHeaders.includes(header) ? styles.pinned : styles.unpinned}
+              >
+                <BsFillPinAngleFill />
+              </button>
                 <button onClick={() => moveUp(index)} disabled={index === 0}>
                   ↑
                 </button>
@@ -62,8 +61,8 @@ const EditSheetModal = ({ headerNames, onSave, onClose }) => {
                 </button>
                 <button
                   onClick={() => deleteHeader(index)}
-                  disabled={undeletableHeaders.includes(header)}
-                  className={undeletableHeaders.includes(header) ? styles.disabledDeleteButton : styles.enabledDeleteButton}
+                  disabled={pinnedHeaders.includes(header)}
+                  className={pinnedHeaders.includes(header) ? styles.disabledDeleteButton : styles.enabledDeleteButton}
                 >
                   Delete
                 </button>

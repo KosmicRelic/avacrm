@@ -2,13 +2,14 @@ import { useState } from "react";
 import styles from "./App.module.css";
 import LeadsTemplate from "./Leads Template/LeadsTemplate";
 import AppHeader from "./App Header/AppHeader";
-import EditSheetModal from "./Edit Sheet Modal/EditSheetModal"; // Adjust path
-import AddSheetModal from "./AddSheetModal/AddSheetModal"; // New modal, adjust path
+import EditSheetModal from "./Edit Sheet Modal/EditSheetModal";
+import AddSheetModal from "./AddSheetModal/AddSheetModal";
 
 function App() {
   const [sheets, setSheets] = useState({
     Leads: {
       headerNames: ["LEAD ID", "NAME", "PHONE", "EMAIL", "LEAD SCORE", "NEXT ACTIONS", "FOLLOW UP DATE"],
+      pinnedHeaders: ["LEAD ID", "NAME"], // Add pinnedHeaders per sheet
       rows: [...Array(40)].map(() => ({
         "LEAD ID": "1234567899876",
         "NAME": "Periklis Papadopoulos",
@@ -49,15 +50,32 @@ function App() {
     }));
   };
 
-  const handleAddSheet = (sheetName, headerNames) => {
+  const handlePinToggle = (header) => {
+    setSheets((prevSheets) => {
+      const currentPinned = prevSheets[selectedSheet].pinnedHeaders || [];
+      const newPinned = currentPinned.includes(header)
+        ? currentPinned.filter((h) => h !== header)
+        : [...currentPinned, header];
+      return {
+        ...prevSheets,
+        [selectedSheet]: {
+          ...prevSheets[selectedSheet],
+          pinnedHeaders: newPinned,
+        },
+      };
+    });
+  };
+
+  const handleAddSheet = (sheetName, headerNames, pinnedHeaders = []) => {
     setSheets((prevSheets) => ({
       ...prevSheets,
       [sheetName]: {
         headerNames,
-        rows: [], // Start with no rows; you can add logic to populate initial rows if needed
+        pinnedHeaders, // Store pinned headers for the new sheet
+        rows: [],
       },
     }));
-    setSelectedSheet(sheetName); // Switch to the new sheet
+    setSelectedSheet(sheetName);
   };
 
   return (
@@ -75,7 +93,9 @@ function App() {
       {isEditModalOpen && (
         <EditSheetModal
           headerNames={sheets[selectedSheet].headerNames}
+          pinnedHeaders={sheets[selectedSheet].pinnedHeaders || []}
           onSave={handleSaveHeaders}
+          onPinToggle={handlePinToggle}
           onClose={() => setIsEditModalOpen(false)}
         />
       )}

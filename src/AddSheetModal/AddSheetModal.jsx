@@ -1,9 +1,11 @@
 import { useState } from "react";
-import styles from "./AddSheetModal.module.css"; // Adjust path as necessary
+import styles from "./AddSheetModal.module.css";
+import { BsFillPinAngleFill } from "react-icons/bs";
 
 const AddSheetModal = ({ onSave, onClose }) => {
   const [sheetName, setSheetName] = useState("");
   const [headers, setHeaders] = useState([]);
+  const [pinnedHeaders, setPinnedHeaders] = useState([]);
   const [newHeader, setNewHeader] = useState("");
 
   const addHeader = () => {
@@ -14,10 +16,11 @@ const AddSheetModal = ({ onSave, onClose }) => {
   };
 
   const removeHeader = (index) => {
-    setHeaders(headers.filter((_, i) => i !== index));
+    if (!pinnedHeaders.includes(headers[index])) {
+      setHeaders(headers.filter((_, i) => i !== index));
+    }
   };
 
-  // Move header up
   const moveUp = (index) => {
     if (index === 0) return;
     const newHeaders = [...headers];
@@ -25,7 +28,6 @@ const AddSheetModal = ({ onSave, onClose }) => {
     setHeaders(newHeaders);
   };
 
-  // Move header down
   const moveDown = (index) => {
     if (index === headers.length - 1) return;
     const newHeaders = [...headers];
@@ -33,9 +35,15 @@ const AddSheetModal = ({ onSave, onClose }) => {
     setHeaders(newHeaders);
   };
 
+  const togglePin = (header) => {
+    setPinnedHeaders((prev) =>
+      prev.includes(header) ? prev.filter((h) => h !== header) : [...prev, header]
+    );
+  };
+
   const handleSave = () => {
     if (sheetName.trim() && headers.length > 0) {
-      onSave(sheetName.trim(), headers);
+      onSave(sheetName.trim(), headers, pinnedHeaders); // Pass pinnedHeaders to parent
       onClose();
     } else {
       alert("Please provide a sheet name and at least one header.");
@@ -63,13 +71,23 @@ const AddSheetModal = ({ onSave, onClose }) => {
               <div key={header} className={styles.headerItem}>
                 <span>{header}</span>
                 <div className={styles.buttons}>
+                <button
+                  onClick={() => togglePin(header)}
+                  className={pinnedHeaders.includes(header) ? styles.pinned : styles.unpinned}
+                >
+                  <BsFillPinAngleFill />
+                </button>
                   <button onClick={() => moveUp(index)} disabled={index === 0}>
                     ↑
                   </button>
                   <button onClick={() => moveDown(index)} disabled={index === headers.length - 1}>
                     ↓
                   </button>
-                  <button onClick={() => removeHeader(index)} className={styles.enabledDeleteButton}>
+                  <button
+                    onClick={() => removeHeader(index)}
+                    disabled={pinnedHeaders.includes(header)}
+                    className={pinnedHeaders.includes(header) ? styles.disabledDeleteButton : styles.enabledDeleteButton}
+                  >
                     Delete
                   </button>
                 </div>
