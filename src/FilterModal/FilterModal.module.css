@@ -21,7 +21,7 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
-.editTitle {
+.filterTitle {
   text-align: center;
   font-size: 2em;
   font-weight: 800;
@@ -29,90 +29,33 @@
   margin-bottom: 20px;
 }
 
-.headerList {
+.filterList {
   margin: 20px 0;
-  color: rgb(0, 140, 255, 0.8);
-  font-weight: 650;
-  font-size: 0.8em;
 }
 
-.headerItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.filterItem {
   padding: 10px;
   border-bottom: 1px solid #ddd;
 }
 
-.pinned,
-.unpinned {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1em;
-  padding: 0;
+.filterItem label {
+  color: rgb(0, 140, 255, 0.8);
+  font-weight: 650;
+  font-size: 0.8em;
+  display: block;
+  margin-bottom: 5px;
 }
 
-.pinned {
-  color: #007bff; /* Blue when pinned */
-}
-
-.unpinned {
-  color: #ccc; /* Gray when unpinned */
-}
-
-.buttons button {
-  margin-left: 5px;
-  padding: 5px 10px;
-  background: #f0f0f0;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: 450;
-}
-
-.buttons button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.disabledDeleteButton {
-  background: #f0f0f0;
-  color: #ccc;
-  cursor: not-allowed;
-  font-size: 1em;
-}
-
-.enabledDeleteButton {
-  color: red;
-  cursor: pointer;
-  font-size: 1em;
-}
-
-.addHeaderSection {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.addHeaderSection input {
-  flex: 1;
+.filterItem input,
+.filterItem select {
+  width: 100%;
   padding: 8px;
   border: 1.5px solid #929292;
   border-radius: 8px;
   font-size: 1em;
   font-weight: 450;
   color: black;
-}
-
-.addHeaderSection button {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  box-sizing: border-box;
 }
 
 .modalActions {
@@ -146,4 +89,15 @@
   font-size: 1.3em;
   font-weight: 350;
   color: rgb(0, 140, 255);
+}
+
+.resetButton {
+  background: #ff4d4d;
+  color: white;
+  font-size: 1.3em;
+  font-weight: 350;
+}
+
+.resetButton:hover {
+  background: #cc0000;
 }
