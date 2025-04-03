@@ -1,9 +1,10 @@
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
 import { FaChevronDown } from "react-icons/fa";
+import { IoFilterCircle } from "react-icons/io5";
 import { SiGoogleads } from "react-icons/si";
 
-export default function AppHeader({ sheets, selectedSheet, onSheetChange, onEditSheet }) {
+export default function AppHeader({ sheets, selectedSheet, onSheetChange }) {
   return (
     <div className={styles.headerContainer}>
       <h2 className={styles.avaTitle}>AVA</h2>
@@ -13,6 +14,7 @@ export default function AppHeader({ sheets, selectedSheet, onSheetChange, onEdit
           {selectedSheet}
           <FaChevronDown />
         </button>
+        <button className={styles.filterIcon}><IoFilterCircle /></button>
         <select
           value={selectedSheet}
           onChange={(e) => onSheetChange(e.target.value)}
@@ -26,9 +28,6 @@ export default function AppHeader({ sheets, selectedSheet, onSheetChange, onEdit
           <option value="add-new-sheet">Add New Sheet</option>
         </select>
       </div>
-      <button className={styles.addHeader} onClick={onEditSheet}>
-        Edit Sheet
-      </button>
       <CgProfile className={styles.profile} />
     </div>
   );

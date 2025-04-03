@@ -41,6 +41,19 @@
     font-weight: 450;
     margin-left: 5px;
   }
+
+  .filterIcon{
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+    margin-left: 8px;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: rgb(0, 140, 255);
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+  }
   
   .profile {
     width: 24px;
