@@ -23,84 +23,26 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, setIsPro
     };
 
     const isMobile = windowWidth <= 768;
-    const isDesktop = windowWidth > 1024;
 
     return (
-        <div className={styles.headerContainer}>
-            <h2 className={styles.avaTitle}>AVA</h2>
+        <header className={styles.headerContainer}>
+            <h1 className={styles.avaTitle}>AVA</h1>
             {isMobile ? (
-                <div className={styles.mobileActiveOption}>
-                    {activeOption === "dashboard" && (
-                        <button
-                            className={`${styles.dashboardSubTitle} ${styles.active}`}
-                            onClick={() => handleOptionClick("dashboard")}
-                        >
-                            <TfiDashboard size={20} />
-                            <span>Dashboard</span>
-                        </button>
-                    )}
-                    {activeOption === "sheets" && (
-                        <div className={styles.sheetButtonWrapper}>
-                            <button
-                                className={`${styles.avaSubTitle} ${styles.active}`}
-                                onClick={() => handleOptionClick("sheets")}
-                            >
-                                <SiGoogleads />
-                                <span>{activeSheet || "Select Sheet"}</span>
-                            </button>
-                            <select
-                                value={activeSheet || ""}
-                                onChange={(e) => {
-                                    onSheetChange(e.target.value);
-                                    setActiveOption("sheets");
-                                }}
-                                className={styles.sheetDropdown}
-                            >
-                                <option value="" disabled>Select Sheet</option>
-                                {sheets.map((sheet) => (
-                                    <option key={sheet} value={sheet}>
-                                        {sheet}
-                                    </option>
-                                ))}
-                                <option value="add-new-sheet">Add New Sheet</option>
-                            </select>
-                        </div>
-                    )}
-                    {activeOption === "cards" && (
-                        <button
-                            className={`${styles.cardsSubTitle} ${styles.active}`}
-                            onClick={() => handleOptionClick("cards")}
-                        >
-                            <ImProfile size={20} />
-                            <span>Cards</span>
-                        </button>
-                    )}
-                    {activeOption === "invoices" && (
-                        <button
-                            className={`${styles.invoicesSubTitle} ${styles.active}`}
-                            onClick={() => handleOptionClick("invoices")}
-                        >
-                            <FaFileInvoice size={20} />
-                            <span>Invoices</span>
-                        </button>
-                    )}
-                </div>
-            ) : (
-                <div className={styles.buttonWrapper}>
+                <nav className={styles.mobileNav}>
                     <button
-                        className={`${styles.dashboardSubTitle} ${activeOption === "dashboard" ? styles.active : ""}`}
+                        className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
                         onClick={() => handleOptionClick("dashboard")}
                     >
-                        <TfiDashboard size={20} />
+                        <TfiDashboard size={20} className={styles.navIcon} />
                         <span>Dashboard</span>
                     </button>
                     <div className={styles.sheetButtonWrapper}>
                         <button
-                            className={`${styles.avaSubTitle} ${activeOption === "sheets" ? styles.active : ""}`}
+                            className={`${styles.navButton} ${activeOption === "sheets" ? styles.activeSheets : ""}`}
                             onClick={() => handleOptionClick("sheets")}
                         >
-                            <SiGoogleads />
-                            <span>{activeSheet || "Select Sheet"}</span>
+                            <SiGoogleads size={20} className={styles.navIcon} />
+                            <span>{activeSheet || "Sheets"}</span>
                         </button>
                         <select
                             value={activeSheet || ""}
@@ -120,27 +62,77 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, setIsPro
                         </select>
                     </div>
                     <button
-                        className={`${styles.cardsSubTitle} ${activeOption === "cards" ? styles.active : ""}`}
+                        className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
                         onClick={() => handleOptionClick("cards")}
                     >
-                        <ImProfile size={20} />
+                        <ImProfile size={20} className={styles.navIcon} />
                         <span>Cards</span>
                     </button>
                     <button
-                        className={`${styles.invoicesSubTitle} ${activeOption === "invoices" ? styles.active : ""}`}
+                        className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
                         onClick={() => handleOptionClick("invoices")}
                     >
-                        <FaFileInvoice size={20} />
+                        <FaFileInvoice size={20} className={styles.navIcon} />
                         <span>Invoices</span>
                     </button>
-                </div>
+                </nav>
+            ) : (
+                <nav className={styles.desktopNav}>
+                    <button
+                        className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
+                        onClick={() => handleOptionClick("dashboard")}
+                    >
+                        <TfiDashboard size={20} className={styles.navIcon} />
+                        <span>Dashboard</span>
+                    </button>
+                    <div className={styles.sheetButtonWrapper}>
+                        <button
+                            className={`${styles.navButton} ${activeOption === "sheets" ? styles.activeSheets : ""}`}
+                            onClick={() => handleOptionClick("sheets")}
+                        >
+                            <SiGoogleads size={20} className={styles.navIcon} />
+                            <span>{activeSheet || "Sheets"}</span>
+                        </button>
+                        <select
+                            value={activeSheet || ""}
+                            onChange={(e) => {
+                                onSheetChange(e.target.value);
+                                setActiveOption("sheets");
+                            }}
+                            className={styles.sheetDropdown}
+                        >
+                            <option value="" disabled>Select Sheet</option>
+                            {sheets.map((sheet) => (
+                                <option key={sheet} value={sheet}>
+                                    {sheet}
+                                </option>
+                            ))}
+                            <option value="add-new-sheet">Add New Sheet</option>
+                        </select>
+                    </div>
+                    <button
+                        className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
+                        onClick={() => handleOptionClick("cards")}
+                    >
+                        <ImProfile size={20} className={styles.navIcon} />
+                        <span>Cards</span>
+                    </button>
+                    <button
+                        className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
+                        onClick={() => handleOptionClick("invoices")}
+                    >
+                        <FaFileInvoice size={20} className={styles.navIcon} />
+                        <span>Invoices</span>
+                    </button>
+                </nav>
             )}
             <button
                 className={styles.profileButton}
                 onClick={() => setIsProfileModalOpen(true)}
+                aria-label="Profile"
             >
-                <CgProfile size={24} />
+                <CgProfile size={24} className={styles.profileIcon} />
             </button>
-        </div>
+        </header>
     );
 }

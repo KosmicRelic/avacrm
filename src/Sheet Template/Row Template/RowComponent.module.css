@@ -1,26 +1,38 @@
 .bodyRow {
   display: flex;
-  background-color: white;
-  /* border-radius: 10px; */ /* Uncomment this if you want rounded corners */
-  transition: background-color 0.2s ease-in-out;
-  overflow: inherit;
-  min-width: 100%; /* Makes sure the row is always at least as wide as its parent */
-  width: max-content; /* Allows it to expand beyond the screen */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Adds an even shadow on all sides */
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  min-width: 100%;
+  width: max-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin: 8px 16px;
 }
 
 .bodyRow:hover {
-  background-color: #f3f4f6; 
+  background: rgba(245, 245, 247, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .bodyCell {
-  padding: 14px 8px;
-  gap: 8px;
-  width: 160px; /* Ensures each cell has a minimum width */
-  text-align: center;
-  white-space: nowrap;
-  font-size: 14px;
+  padding: 14px 12px;
+  width: 180px;
+  text-align: center; /* Changed from left to center */
+  font-size: 17px;
   font-weight: 400;
-  color: rgb(70, 70, 70);
+  color: #1d1d1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .bodyCell {
+    width: 140px;
+    font-size: 15px;
+  }
+  .bodyRow {
+    margin: 8px 16px;
+  }
 }

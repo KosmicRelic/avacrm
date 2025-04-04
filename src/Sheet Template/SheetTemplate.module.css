@@ -1,159 +1,120 @@
-/* Container for the entire table */
 .tableContainer {
   width: 65%;
   margin: 16px;
-  overflow: hidden;
-  position: relative;
-  background: rgb(246, 247, 248);
-  border-radius: 18px;
-  height: calc(100vh - 60px);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  flex: 1;
-  overflow-y: auto;
+  border-radius: 18px;
+  height: calc(100vh - 64px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Wrapper for header and rows */
 .tableWrapper {
   width: 100%;
-  height: calc(100% - 60px);
+  height: calc(100% - 64px);
   overflow: auto;
-  position: relative;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Controls container */
+.tableContent {
+  width: max-content;
+  min-width: 100%;
+}
+
 .controls {
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  height: 60px;
+  height: 64px;
   box-sizing: border-box;
+  gap: 12px;
 }
 
-/* Buttons */
-.filterButton, .editHeaderButton {
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 12px;
+.filterButton,
+.editHeaderButton {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
   border: none;
-  padding: 8px;
+  padding: 10px;
   cursor: pointer;
-  margin-left: 12px;
   transition: background 0.2s ease, transform 0.1s ease;
+  color: #007aff;
 }
 
-.filterButton:hover, .editHeaderButton:hover {
-  background: rgba(0, 0, 0, 0.08);
+.filterButton:hover,
+.editHeaderButton:hover {
+  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.05);
 }
 
-.editHeaderButton {
-  background: linear-gradient(135deg, #007aff 0%, #0066cc 100%);
-}
-
-.editHeaderButton:hover {
-  background: linear-gradient(135deg, #0066cc 0%, #005bb5 100%);
-}
-
-.filterIcon, .editHeaderIcon {
-  width: 20px;
-  height: 20px;
-  color: #1d1d1f;
-  padding: 2px;
-}
-
-.editHeaderIcon {
-  color: #ffffff;
-}
-
-/* Search bar */
 .searchBar {
   flex-grow: 1;
   padding: 12px 16px;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 17px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
 }
 
 .searchBar:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Header */
 .header {
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  z-index: 10;
   display: flex;
   width: max-content;
   min-width: 100%;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px;
+  padding: 0 16px; /* Matches tableContainer padding */
   box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .headerCell {
   flex: 0 0 auto;
-  width: 160px;
-  text-align: center;
+  width: 180px;
+  text-align: center; /* Changed from left */
   font-weight: 600;
   font-size: 13px;
-  padding: 16px 8px;
-  color: #1d1d1f;
+  padding: 14px 12px;
+  color: #6e6e73;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
-/* Body */
-.bodyContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 16px;
-}
-
-.bodyRow {
-  display: flex;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  min-width: 100%;
-  width: max-content;
-}
-
-.bodyRow:hover {
-  background: rgba(245, 245, 247, 0.9);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-}
-
-.bodyCell {
-  padding: 14px 8px;
-  width: 160px;
+.noResults {
   text-align: center;
-  font-size: 15px;
+  padding: 20px;
+  color: #6e6e73;
+  font-size: 17px;
   font-weight: 400;
-  color: #1d1d1f;
-  border-bottom: none;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .tableContainer {
     width: 100%;
     margin: 0;
-    box-shadow: none;
     border-radius: 0;
+    height: calc(100vh - 56px);
+  }
+  .headerCell {
+    width: 140px;
+  }
+  .header {
+    padding: 0 16px; /* Consistent on mobile */
   }
 }

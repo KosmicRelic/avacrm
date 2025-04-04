@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./ProfileModal.module.css";
 
-const ProfileModal = ({ onClose, onManageHeaders, onOptionChange, activeOption, isMobile, setIsSettingsModalOpen }) => {
+const ProfileModal = ({ onClose, onManageHeaders, activeOption, setIsSettingsModalOpen }) => {
     const [isClosing, setIsClosing] = useState(false);
     const modalRef = useRef(null);
 
@@ -20,20 +20,18 @@ const ProfileModal = ({ onClose, onManageHeaders, onOptionChange, activeOption, 
         setTimeout(() => {
             setIsClosing(false);
             onClose();
-        }, 300);
-    };
-
-    const handleOptionClick = (option) => {
-        onOptionChange(option);
-        handleClose();
+        }, 200);
     };
 
     return (
         <div className={`${styles.modalOverlay} ${isClosing ? styles.closing : ""}`}>
             <div className={styles.modalContent} ref={modalRef}>
-                <button className={styles.closeButton} onClick={handleClose}>
-                    ✕
-                </button>
+                <div className={styles.modalHeader}>
+                    <h2 className={styles.modalTitle}>Profile</h2>
+                    <button className={styles.closeButton} onClick={handleClose}>
+                        ✕
+                    </button>
+                </div>
                 <div className={styles.buttonContainer}>
                     <button
                         className={styles.modalButton}
@@ -44,34 +42,15 @@ const ProfileModal = ({ onClose, onManageHeaders, onOptionChange, activeOption, 
                     >
                         Settings
                     </button>
-                    {isMobile && (
-                        <>
-                            <button
-                                className={`${styles.modalButton} ${activeOption === "dashboard" ? styles.active : ""} ${styles.dashboard}`}
-                                onClick={() => handleOptionClick("dashboard")}
-                            >
-                                Dashboard
-                            </button>
-                            <button
-                                className={`${styles.modalButton} ${activeOption === "sheets" ? styles.active : ""} ${styles.sheets}`}
-                                onClick={() => handleOptionClick("sheets")}
-                            >
-                                Sheets
-                            </button>
-                            <button
-                                className={`${styles.modalButton} ${activeOption === "cards" ? styles.active : ""} ${styles.cards}`}
-                                onClick={() => handleOptionClick("cards")}
-                            >
-                                Cards
-                            </button>
-                            <button
-                                className={`${styles.modalButton} ${activeOption === "invoices" ? styles.active : ""} ${styles.invoices}`}
-                                onClick={() => handleOptionClick("invoices")}
-                            >
-                                Invoices
-                            </button>
-                        </>
-                    )}
+                    <button
+                        className={styles.modalButton}
+                        onClick={() => {
+                            onManageHeaders();
+                            handleClose();
+                        }}
+                    >
+                        Manage Headers
+                    </button>
                 </div>
             </div>
         </div>

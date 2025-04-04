@@ -67,10 +67,10 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) =
                     className={styles.searchBar}
                 />
                 <button className={styles.filterButton} onClick={onFilter}>
-                    <CiFilter size={20} className={styles.filterIcon} />
+                    <CiFilter size={20} />
                 </button>
                 <button className={styles.editHeaderButton} onClick={onEditSheet}>
-                    <FaEdit size={20} className={styles.editHeaderIcon} />
+                    <FaEdit size={20} />
                 </button>
             </div>
             <div className={styles.tableWrapper} ref={scrollContainerRef}>
@@ -82,13 +82,17 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) =
                     ))}
                 </div>
                 <div className={styles.bodyContainer}>
-                    {filteredRows.map((rowData, rowIndex) => (
-                        <RowComponent
-                            key={rowIndex}
-                            rowData={rowData}
-                            headerNames={visibleHeaders.map((h) => h.key)}
-                        />
-                    ))}
+                    {filteredRows.length > 0 ? (
+                        filteredRows.map((rowData, rowIndex) => (
+                            <RowComponent
+                                key={rowIndex}
+                                rowData={rowData}
+                                headerNames={visibleHeaders.map((h) => h.key)}
+                            />
+                        ))
+                    ) : (
+                        <div className={styles.noResults}>No results found</div>
+                    )}
                 </div>
             </div>
         </div>

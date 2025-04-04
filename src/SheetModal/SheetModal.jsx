@@ -38,6 +38,7 @@ const SheetModal = ({
         const newHeaders = [...currentHeaders];
         [newHeaders[index - 1], newHeaders[index]] = [newHeaders[index], newHeaders[index - 1]];
         setCurrentHeaders(newHeaders);
+        setEditIndex(index - 1); // Update editIndex to follow the moved header
     };
 
     const moveDown = (index) => {
@@ -45,6 +46,7 @@ const SheetModal = ({
         const newHeaders = [...currentHeaders];
         [newHeaders[index], newHeaders[index + 1]] = [newHeaders[index + 1], newHeaders[index]];
         setCurrentHeaders(newHeaders);
+        setEditIndex(index + 1); // Update editIndex to follow the moved header
     };
 
     const togglePin = (headerKey) => {

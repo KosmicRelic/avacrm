@@ -2,122 +2,101 @@
   position: sticky;
   top: 0;
   width: 100%;
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
-  background-color: #fff;
-  overflow-x: scroll;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  z-index: 1000; /* Ensure header stays above content */
+  z-index: 1000;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .avaTitle {
-  margin: 0 0 0 16px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #007aff;
+  margin: 0 20px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
 }
 
-.buttonWrapper {
+.desktopNav,
+.mobileNav {
   display: flex;
   align-items: center;
-  gap: 2em;
+  gap: 12px;
   flex-grow: 1;
   justify-content: center;
 }
 
-.mobileActiveOption {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 16px;
+.mobileNav {
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  mask-image: linear-gradient(to right, black 80%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 95%);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  min-width: 150px;
+}
+
+.mobileNav::-webkit-scrollbar {
+  display: none;
 }
 
 .sheetButtonWrapper {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px; /* Space between filter icon and sheet button */
 }
 
-.dashboardSubTitle,
-.avaSubTitle,
-.cardsSubTitle,
-.invoicesSubTitle {
+.navButton {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 12px;
-  font-size: 0.9rem;
+  font-size: 17px;
   font-weight: 500;
-  border-radius: 12px;
+  color: #6e6e73;
+  background: none;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: 120px;
+  transition: all 0.2s ease;
+  min-width: 0; /* Removed fixed min-width to allow natural sizing */
   box-sizing: border-box;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.avaSubTitle {
-  color: #8e8e93;
-  border: 1.5px solid transparent;
-  background-color: transparent;
-  min-width: 120px;
-  width: auto;
-  max-width: 200px;
+.navButton:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.avaSubTitle.active {
-  color: #007aff;
-  border: 1.5px solid rgba(0, 122, 255, 0.8);
-  background-color: rgba(0, 122, 255, 0.1);
+.navIcon {
+  flex-shrink: 0;
 }
 
-.dashboardSubTitle {
-  color: #8e8e93;
-  border: 1.5px solid transparent;
-  background-color: transparent;
-}
-
-.dashboardSubTitle.active {
+.activeDashboard {
   color: #5856d6;
-  border: 1.5px solid rgba(88, 86, 214, 0.8);
-  background-color: rgba(88, 86, 214, 0.1);
+  background: rgba(88, 86, 214, 0.1);
 }
 
-.cardsSubTitle {
-  color: #8e8e93;
-  border: 1.5px solid transparent;
-  background-color: transparent;
+.activeSheets {
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
 }
 
-.cardsSubTitle.active {
+.activeCards {
   color: #34c759;
-  border: 1.5px solid rgba(52, 199, 89, 0.8);
-  background-color: rgba(52, 199, 89, 0.1);
+  background: rgba(52, 199, 89, 0.1);
 }
 
-.invoicesSubTitle {
-  color: #8e8e93;
-  border: 1.5px solid transparent;
-  background-color: transparent;
-}
-
-.invoicesSubTitle.active {
-  color: #007aff;
-  border: 1.5px solid rgba(0, 122, 255, 0.8);
-  background-color: rgba(0, 122, 255, 0.1);
-}
-
-.profileButton {
-  margin: 0 16px 0 0;
-  color: #007aff;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
+.activeInvoices {
+  color: #ff9500;
+  background: rgba(255, 149, 0, 0.1);
 }
 
 .sheetDropdown {
@@ -134,20 +113,52 @@
   z-index: 1;
 }
 
+.profileButton {
+  color: #007aff;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  margin-left: 20px;
+}
+
+.profileButton:hover {
+  opacity: 0.8;
+}
+
+.profileIcon {
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
-  .buttonWrapper {
-      display: none;
+  .desktopNav {
+    display: none;
   }
-  .mobileActiveOption {
-      flex-grow: 1;
+  .mobileNav {
+    display: flex;
+  }
+  .headerContainer {
+    height: 56px;
+  }
+  .avaTitle {
+    font-size: 20px;
+    margin-right: 16px;
+  }
+  .navButton {
+    font-size: 15px;
+    padding: 8px 10px; /* Slightly reduced padding for compactness */
+  }
+  .profileButton {
+    margin-left: 16px;
   }
 }
 
-@media (min-width: 1025px) {
-  .headerContainer {
-      justify-content: space-between;
+@media (min-width: 769px) {
+  .mobileNav {
+    display: none;
   }
-  .buttonWrapper {
-      margin-left: 0;
+  .desktopNav {
+    display: flex;
   }
 }

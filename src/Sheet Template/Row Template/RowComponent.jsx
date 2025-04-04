@@ -4,7 +4,9 @@ const RowComponent = ({ rowData, headerNames }) => {
   return (
     <div className={styles.bodyRow}>
       {headerNames.map((header, i) => (
-        <div key={i} className={styles.bodyCell}>{rowData[header]}</div>
+        <div key={i} className={styles.bodyCell}>
+          {rowData[header] !== undefined ? String(rowData[header]) : ""}
+        </div>
       ))}
     </div>
   );
