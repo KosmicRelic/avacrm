@@ -85,6 +85,11 @@
   flex-grow: 1;
 }
 
+.headerItem :first-child {
+  font-weight: 700;
+
+}
+
 .headerType {
   color: #6e6e73;
   font-size: 14px;

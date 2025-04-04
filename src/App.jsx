@@ -131,20 +131,18 @@ function App() {
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
             />
-            <div className={styles.sheetTemplateContainer}>
-                {activeOption === "sheets" && activeSheetName && (
-                    <SheetTemplate
-                        headers={resolvedHeaders}
-                        rows={resolvedRows}
-                        filters={filters}
-                        onEditSheet={() => {
-                            setIsSheetModalEditMode(true);
-                            setIsSheetModalOpen(true);
-                        }}
-                        onFilter={() => setIsFilterModalOpen(true)}
-                    />
-                )}
-            </div>
+            {activeOption === "sheets" && activeSheetName && (
+                <SheetTemplate
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    filters={filters}
+                    onEditSheet={() => {
+                        setIsSheetModalEditMode(true);
+                        setIsSheetModalOpen(true);
+                    }}
+                    onFilter={() => setIsFilterModalOpen(true)}
+                />
+            )}
             {isSheetModalOpen && (
                 <SheetModal
                     isEditMode={isSheetModalEditMode}

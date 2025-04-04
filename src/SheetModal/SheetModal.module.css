@@ -95,6 +95,10 @@
   font-weight: 400;
 }
 
+.headerNameType :first-child{
+  font-weight: 700;
+}
+
 .headerType {
   color: #6e6e73;
   font-size: 14px;

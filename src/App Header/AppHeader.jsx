@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
-import { FaChevronDown } from "react-icons/fa";
 import { ImProfile } from "react-icons/im";
 import { SiGoogleads } from "react-icons/si";
 import { TfiDashboard } from "react-icons/tfi";
@@ -48,7 +47,6 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, setIsPro
                             >
                                 <SiGoogleads />
                                 <span>{activeSheet || "Select Sheet"}</span>
-                                <FaChevronDown />
                             </button>
                             <select
                                 value={activeSheet || ""}
@@ -103,7 +101,6 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, setIsPro
                         >
                             <SiGoogleads />
                             <span>{activeSheet || "Select Sheet"}</span>
-                            {activeOption === "sheets" && <FaChevronDown />}
                         </button>
                         <select
                             value={activeSheet || ""}
