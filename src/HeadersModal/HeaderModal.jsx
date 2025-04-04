@@ -24,7 +24,7 @@ const HeadersModal = ({ onClose }) => {
             const updatedHeaders = [...currentHeaders];
             updatedHeaders[editIndex] = newHeader;
             setCurrentHeaders(updatedHeaders);
-            setEditIndex(null); // Reset edit mode after update
+            setEditIndex(null);
         } else {
             setCurrentHeaders([...currentHeaders, newHeader]);
         }
@@ -53,7 +53,7 @@ const HeadersModal = ({ onClose }) => {
         setNewHeaderKey("");
         setNewHeaderName("");
         setNewHeaderType("text");
-        setEditIndex(null); // Exit edit mode
+        setEditIndex(null);
     };
 
     const handleSave = () => {
@@ -77,16 +77,21 @@ const HeadersModal = ({ onClose }) => {
                 <button className={styles.closeButton} onClick={onClose}>
                     ✕
                 </button>
-                <h2>Manage Headers</h2>
+                <h2 className={styles.modalTitle}>Manage Headers</h2>
                 <div className={styles.headerList}>
                     {currentHeaders.map((header, index) => {
                         const key = Object.keys(header)[0];
                         return (
                             <div key={key} className={styles.headerItem}>
-                                <span>{key}: {header[key]} ({header.type})</span>
+                                <span>{header[key]}</span>
+                                <span className={styles.headerType}>({header.type})</span>
                                 <div className={styles.headerActions}>
-                                    <button onClick={() => editHeader(index)}>Edit</button>
-                                    <button onClick={() => deleteHeader(index)}>Delete</button>
+                                    <button onClick={() => editHeader(index)} className={styles.editButton}>
+                                        Edit
+                                    </button>
+                                    <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
                         );
@@ -99,20 +104,23 @@ const HeadersModal = ({ onClose }) => {
                             value={newHeaderKey}
                             onChange={(e) => setNewHeaderKey(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder="Header Key (e.g., leadId)"
+                            placeholder="Key"
+                            className={styles.inputField}
                         />
                         <input
                             type="text"
                             value={newHeaderName}
                             onChange={(e) => setNewHeaderName(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder="Header Name (e.g., ID)"
+                            placeholder="Name"
+                            className={styles.inputField}
                         />
                     </div>
                     <div className={styles.addHeaderRow}>
                         <select
                             value={newHeaderType}
                             onChange={(e) => setNewHeaderType(e.target.value)}
+                            className={styles.selectField}
                         >
                             <option value="text">Text</option>
                             <option value="number">Number</option>
@@ -120,17 +128,21 @@ const HeadersModal = ({ onClose }) => {
                             <option value="dropdown">Dropdown</option>
                         </select>
                         <div className={styles.addHeaderButtons}>
-                            <button onClick={addOrUpdateHeader}>
+                            <button onClick={addOrUpdateHeader} className={styles.actionButton}>
                                 {editIndex !== null ? "Update" : "Add"}
                             </button>
                             {(newHeaderKey || newHeaderName || editIndex !== null) && (
-                                <button onClick={clearForm}>Clear</button>
+                                <button onClick={clearForm} className={styles.clearButton}>
+                                    Clear
+                                </button>
                             )}
                         </div>
                     </div>
                 </div>
                 <div className={styles.modalActions}>
-                    <button onClick={handleSave}>Save</button>
+                    <button onClick={handleSave} className={styles.saveButton}>
+                        Save
+                    </button>
                 </div>
             </div>
         </div>

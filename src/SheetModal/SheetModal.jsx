@@ -122,15 +122,14 @@ const SheetModal = ({
                     ✕
                 </button>
                 <h2 className={styles.editTitle}>
-                    {isEditMode ? "Edit Sheet" : "Add New Sheet"}
+                    {isEditMode ? "Edit Sheet" : "New Sheet"}
                 </h2>
                 <div className={styles.addHeaderSection}>
-                    <label className={styles.headerLabel}>Sheet Name:</label>
                     <input
                         type="text"
                         value={sheetName}
                         onChange={(e) => setSheetName(e.target.value)}
-                        placeholder={isEditMode ? "Rename sheet" : "e.g., Contacts"}
+                        placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
                         className={styles.sheetNameInput}
                     />
                 </div>
@@ -139,7 +138,10 @@ const SheetModal = ({
                         <div key={header.key} className={styles.headerItem}>
                             <div className={styles.headerRow}>
                                 <div className={styles.headerNameType}>
-                                    <span>{header.name} ({header.type})</span>
+                                    <span>{header.name}</span>
+                                    <span className={styles.headerType}>({header.type})</span>
+                                </div>
+                                <div className={styles.primaryButtons}>
                                     <button
                                         onClick={() => toggleVisible(index)}
                                         className={styles.iconButton}
@@ -152,10 +154,8 @@ const SheetModal = ({
                                     >
                                         {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                                     </button>
-                                </div>
-                                <div className={styles.primaryButtons}>
                                     <button onClick={() => toggleMenu(index)} className={styles.moreButton}>
-                                        {"⋯"}
+                                        ⋯
                                     </button>
                                     {menuOpen === index && (
                                         <div className={styles.menu} ref={menuRef}>
@@ -173,16 +173,6 @@ const SheetModal = ({
                                                 disabled={index === currentHeaders.length - 1}
                                             >
                                                 Move Down
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleMenuAction(toggleVisible, index, e)}
-                                            >
-                                                {header.visible ? "Hide" : "Show"} <span>{header.visible ? <FaEyeSlash /> : <FaEye />}</span>
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleMenuAction(toggleHidden, index, e)}
-                                            >
-                                                {header.hidden ? "Enable Filter" : "Disable Filter"} <span>{header.hidden ? <MdFilterAlt /> : <MdFilterAltOff />}</span>
                                             </button>
                                             <button
                                                 onClick={(e) => handleMenuAction(removeHeader, index, e)}
@@ -221,7 +211,9 @@ const SheetModal = ({
                     </select>
                 </div>
                 <div className={styles.modalActions}>
-                    <button onClick={handleSave}>Save</button>
+                    <button onClick={handleSave} className={styles.saveButton}>
+                        Save
+                    </button>
                 </div>
             </div>
         </div>

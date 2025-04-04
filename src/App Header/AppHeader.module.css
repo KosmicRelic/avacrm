@@ -112,15 +112,6 @@
   background-color: rgba(0, 122, 255, 0.1);
 }
 
-.filterIcon {
-  font-size: 1.6rem;
-  color: #007aff;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-}
-
 .profileButton {
   margin: 0 16px 0 0;
   color: #007aff;

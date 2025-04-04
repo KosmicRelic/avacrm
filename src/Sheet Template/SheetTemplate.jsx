@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import styles from "./SheetTemplate.module.css";
 import RowComponent from "./Row Template/RowComponent";
+import { CiFilter } from "react-icons/ci";
+import { FaEdit } from "react-icons/fa";
 
-const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet }) => {
+const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) => {
     const scrollContainerRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -44,11 +46,14 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet }) => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Find a row..."
+                    placeholder="Search"
                     className={styles.searchBar}
                 />
-                <button className={styles.addHeader} onClick={onEditSheet}>
-                    Edit
+                <button className={styles.filterButton} onClick={onFilter}>
+                    <CiFilter size={20} className={styles.filterIcon} />
+                </button>
+                <button className={styles.editHeaderButton} onClick={onEditSheet}>
+                    <FaEdit size={20} className={styles.editHeaderIcon} />
                 </button>
             </div>
             <div className={styles.tableWrapper} ref={scrollContainerRef}>

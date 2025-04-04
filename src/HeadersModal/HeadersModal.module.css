@@ -1,182 +1,224 @@
 .modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modalContent {
-    background: #ffffff;
-    padding: 24px;
-    border-radius: 16px;
-    width: 100%; /* Full width up to a max */
-    max-width: 500px; /* Cap at 500px, but shrink if needed */
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    position: relative;
-    box-sizing: border-box; /* Include padding in width */
-  }
-  
-  .closeButton {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 24px;
-    height: 24px;
-    background: #e8e8ed;
-    border: none;
-    border-radius: 50%;
-    color: #515154;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 24px;
-    text-align: center;
-    cursor: pointer;
-    padding: 0;
-  }
-  
-  .closeButton:hover {
-    background: #d2d2d7;
-  }
-  
-  .modalContent h2 {
-    text-align: left;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1d1d1f;
-    margin-bottom: 20px;
-  }
-  
-  .headerList {
-    margin: 16px 0;
-  }
-  
-  .headerItem {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #e8e8ed;
-  }
-  
-  .headerItem span {
-    color: #1d1d1f;
-    font-size: 16px;
-    font-weight: 400;
-  }
-  
-  .headerActions {
-    display: flex;
-    gap: 8px;
-  }
-  
-  .headerItem button {
-    background: none;
-    border: none;
-    color: #007aff;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 4px 8px;
-  }
-  
-  .headerItem button:hover {
-    opacity: 0.85;
-  }
-  
-  .headerItem button:last-child {
-    color: #ff2d55;
-  }
-  
-  .addHeaderSection {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  
-  .addHeaderRow {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap; /* Allow wrapping if needed */
-  }
-  
-  .addHeaderRow input,
-  .addHeaderRow select {
-    flex: 1;
-    min-width: 0; /* Prevent overflow */
-    padding: 10px 12px;
-    border: 1px solid #d2d2d7;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 400;
-    color: #1d1d1f;
-    background: #f5f5f7;
-    box-sizing: border-box;
-    appearance: none;
-  }
-  
-  .addHeaderRow select {
-    padding-right: 24px;
-    background: #f5f5f7 url("data:image/svg+xml,...") no-repeat right 8px center;
-  }
-  
-  .addHeaderButtons {
-    display: flex;
-    gap: 8px;
-  }
-  
-  .addHeaderRow button {
-    background: #007aff;
-    border: none;
-    color: white;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  .addHeaderRow button:hover {
-    background: #0066cc;
-  }
-  
-  .addHeaderRow button:last-child {
-    background: none;
-    color: #007aff; /* Clear button in blue, no fill */
-  }
-  
-  .addHeaderRow button:last-child:hover {
-    opacity: 0.85;
-  }
-  
-  .modalActions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 20px;
-  }
-  
-  .modalActions button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    background: #007aff;
-    color: white;
-  }
-  
-  .modalActions button:hover {
-    background: #0066cc;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 24px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: relative;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 50%;
+  color: #6e6e73;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modalTitle {
+  text-align: left;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 20px;
+  letter-spacing: 0.01em;
+}
+
+.headerList {
+  margin: 16px 0;
+}
+
+.headerItem {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease;
+}
+
+.headerItem:hover {
+  background: rgba(245, 245, 247, 0.5);
+}
+
+.headerItem span {
+  color: #1d1d1f;
+  font-size: 16px;
+  font-weight: 400;
+  flex-grow: 1;
+}
+
+.headerType {
+  color: #6e6e73;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.editButton, .deleteButton {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+}
+
+.editButton {
+  color: #007aff;
+}
+
+.editButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.deleteButton {
+  color: #ff453a;
+}
+
+.deleteButton:hover {
+  background: rgba(255, 69, 58, 0.1);
+}
+
+.addHeaderSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.addHeaderRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inputField, .selectField {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.inputField:focus, .selectField:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selectField {
+  padding-right: 32px;
+  background: rgba(0, 0, 0, 0.04) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+}
+
+.addHeaderButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.actionButton {
+  background: linear-gradient(135deg, #007aff 0%, #0066cc 100%);
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: linear-gradient(135deg, #0066cc 0%, #005bb5 100%);
+  transform: scale(1.02);
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.saveButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #007aff 0%, #0066cc 100%);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.saveButton:hover {
+  background: linear-gradient(135deg, #0066cc 0%, #005bb5 100%);
+  transform: scale(1.02);
+}

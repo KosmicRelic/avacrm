@@ -3,12 +3,11 @@ import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
 import { FaChevronDown } from "react-icons/fa";
 import { ImProfile } from "react-icons/im";
-import { IoFilterCircle } from "react-icons/io5";
 import { SiGoogleads } from "react-icons/si";
 import { TfiDashboard } from "react-icons/tfi";
 import { FaFileInvoice } from "react-icons/fa";
 
-export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter, setIsProfileModalOpen, activeOption, setActiveOption }) {
+export default function AppHeader({ sheets, activeSheet, onSheetChange, setIsProfileModalOpen, activeOption, setActiveOption }) {
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     useEffect(() => {
@@ -43,9 +42,6 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter
                     )}
                     {activeOption === "sheets" && (
                         <div className={styles.sheetButtonWrapper}>
-                            <button className={styles.filterIcon} onClick={onFilter}>
-                                <IoFilterCircle />
-                            </button>
                             <button
                                 className={`${styles.avaSubTitle} ${styles.active}`}
                                 onClick={() => handleOptionClick("sheets")}
@@ -101,11 +97,6 @@ export default function AppHeader({ sheets, activeSheet, onSheetChange, onFilter
                         <span>Dashboard</span>
                     </button>
                     <div className={styles.sheetButtonWrapper}>
-                        {activeOption === "sheets" && (
-                            <button className={styles.filterIcon} onClick={onFilter}>
-                                <IoFilterCircle />
-                            </button>
-                        )}
                         <button
                             className={`${styles.avaSubTitle} ${activeOption === "sheets" ? styles.active : ""}`}
                             onClick={() => handleOptionClick("sheets")}

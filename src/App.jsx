@@ -18,7 +18,7 @@ function App() {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [filters, setFilters] = useState({});
-    const [activeOption, setActiveOption] = useState("dashboard");
+    const [activeOption, setActiveOption] = useState("sheets");
 
     const activeSheetName = Object.keys(sheets).find((name) => sheets[name].isActive);
     const activeSheet = sheets[activeSheetName];
@@ -72,17 +72,13 @@ function App() {
                     rows: prevSheets[activeSheetName].rows,
                     isActive: true,
                 };
-
                 if (newSheetName && newSheetName !== activeSheetName) {
                     const newSheets = { ...prevSheets };
                     delete newSheets[activeSheetName];
                     newSheets[newSheetName] = updatedSheet;
                     return newSheets;
                 }
-                return {
-                    ...prevSheets,
-                    [activeSheetName]: updatedSheet,
-                };
+                return { ...prevSheets, [activeSheetName]: updatedSheet };
             });
         } else {
             const newSheetName = sheetNameOrObj;
@@ -116,10 +112,7 @@ function App() {
                 : [...currentPinned, headerKey];
             return {
                 ...prevSheets,
-                [activeSheetName]: {
-                    ...prevSheets[activeSheetName],
-                    pinnedHeaders: newPinned,
-                },
+                [activeSheetName]: { ...prevSheets[activeSheetName], pinnedHeaders: newPinned },
             };
         });
     };
@@ -128,97 +121,17 @@ function App() {
         setFilters(newFilters);
     };
 
-    const uniqueDropdownOptions = (headerKey) => {
-        return [...new Set(resolvedRows.map((row) => row[headerKey] || ""))].filter(Boolean);
-    };
-
-    const handleFilterChange = (headerKey, value) => {
-        setFilters((prev) => ({ ...prev, [headerKey]: value }));
-    };
-
-    const handleResetFilters = () => {
-        setFilters({});
-    };
-
-    const isDesktop = window.innerWidth > 768;
-
     return (
         <div className={styles.appContainer}>
             <AppHeader
                 sheets={Object.keys(sheets)}
                 activeSheet={activeSheetName}
                 onSheetChange={handleSheetChange}
-                onFilter={() => setIsFilterModalOpen(true)}
                 setIsProfileModalOpen={setIsProfileModalOpen}
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
             />
-            {isDesktop && activeOption === "sheets" && (
-                <div className={styles.sidebar}>
-                    <div className={styles.sheetList}>
-                        <h3>Sheets</h3>
-                        {Object.keys(sheets).map((sheet) => (
-                            <button
-                                key={sheet}
-                                className={`${styles.sheetButton} ${sheet === activeSheetName ? styles.activeSheet : ""}`}
-                                onClick={() => handleSheetChange(sheet)}
-                            >
-                                {sheet}
-                            </button>
-                        ))}
-                    </div>
-                    {activeSheetName && (
-                        <div className={styles.filterSection}>
-                            <h3>Filters</h3>
-                            <div className={styles.filterList}>
-                                {resolvedHeaders.filter((h) => !h.hidden).map((header) => (
-                                    <div key={header.key} className={styles.filterItem}>
-                                        <label>{header.name}</label>
-                                        {header.type === "number" ? (
-                                            <input
-                                                type="number"
-                                                value={filters[header.key] || ""}
-                                                onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                                placeholder={`Filter ${header.name}`}
-                                            />
-                                        ) : header.type === "date" ? (
-                                            <input
-                                                type="date"
-                                                value={filters[header.key] || ""}
-                                                onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                            />
-                                        ) : header.type === "dropdown" ? (
-                                            <select
-                                                value={filters[header.key] || ""}
-                                                onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                            >
-                                                <option value="">All</option>
-                                                {uniqueDropdownOptions(header.key).map((option) => (
-                                                    <option key={option} value={option}>
-                                                        {option}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <input
-                                                type="text"
-                                                value={filters[header.key] || ""}
-                                                onChange={(e) => handleFilterChange(header.key, e.target.value)}
-                                                placeholder={`Filter ${header.name}`}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className={styles.filterActions}>
-                                <button onClick={() => handleApplyFilters(filters)}>Apply</button>
-                                <button onClick={handleResetFilters} className={styles.resetButton}>Reset</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-            <div className={isDesktop && activeOption === "sheets" ? styles.mainContent : ""}>
+            <div className={styles.sheetTemplateContainer}>
                 {activeOption === "sheets" && activeSheetName && (
                     <SheetTemplate
                         headers={resolvedHeaders}
@@ -228,6 +141,7 @@ function App() {
                             setIsSheetModalEditMode(true);
                             setIsSheetModalOpen(true);
                         }}
+                        onFilter={() => setIsFilterModalOpen(true)}
                     />
                 )}
             </div>
@@ -242,7 +156,7 @@ function App() {
                     onClose={() => setIsSheetModalOpen(false)}
                 />
             )}
-            {isFilterModalOpen && window.innerWidth <= 768 && (
+            {isFilterModalOpen && (
                 <FilterModal
                     headers={resolvedHeaders}
                     rows={resolvedRows}
@@ -250,11 +164,7 @@ function App() {
                     onClose={() => setIsFilterModalOpen(false)}
                 />
             )}
-            {isHeadersModalOpen && (
-                <HeadersModal
-                    onClose={() => setIsHeadersModalOpen(false)}
-                />
-            )}
+            {isHeadersModalOpen && <HeadersModal onClose={() => setIsHeadersModalOpen(false)} />}
             {isProfileModalOpen && (
                 <ProfileModal
                     onClose={() => setIsProfileModalOpen(false)}

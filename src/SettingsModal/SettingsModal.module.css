@@ -4,72 +4,81 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
     z-index: 1000;
     display: flex;
     justify-content: flex-end;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modalContent {
     width: 300px;
     height: 100%;
-    background: #fff;
-    color: #000;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.1);
     padding: 24px;
-    padding-top: 48px; /* Space for close button */
-    border-radius: 16px 0 0 16px;
+    padding-top: 48px;
+    border-radius: 18px 0 0 18px;
     display: flex;
     flex-direction: column;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
     animation: slideIn 0.3s ease-out forwards;
+    -webkit-overflow-scrolling: touch;
 }
 
 .buttonContainer {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .modalButton {
     background: none;
     border: none;
     color: #007aff;
-    padding: 10px 20px;
-    border-radius: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
     text-align: left;
-    transition: background 0.2s ease, opacity 0.2s ease;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .modalButton:hover {
-    background: #f5f5f7;
-    opacity: 0.85;
+    background: rgba(0, 122, 255, 0.1);
+    transform: scale(1.02);
 }
 
 .modalButton:active {
-    background: #e8e8ed;
+    background: rgba(0, 122, 255, 0.2);
+    transform: scale(1);
 }
 
 .closeButton {
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 24px;
-    height: 24px;
-    background: #e8e8ed;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.05);
     border: none;
     border-radius: 50%;
-    color: #515154;
+    color: #6e6e73;
     font-size: 16px;
     font-weight: 600;
-    line-height: 24px;
-    text-align: center;
     cursor: pointer;
-    padding: 0;
+    transition: background 0.2s ease;
+}
+
+.closeButton:hover {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 @keyframes slideIn {
@@ -94,22 +103,23 @@
     }
 }
 
+/* Dark mode adjustments (optional, keeping light theme consistent for now) */
 @media (prefers-color-scheme: dark) {
     .modalContent {
-        background: #fff;
-        color: #000;
+        background: rgba(255, 255, 255, 0.95);
+        color: #1d1d1f;
     }
     .modalButton {
         color: #007aff;
     }
     .modalButton:hover {
-        background: #f5f5f7;
+        background: rgba(0, 122, 255, 0.1);
     }
     .modalButton:active {
-        background: #e8e8ed;
+        background: rgba(0, 122, 255, 0.2);
     }
     .closeButton {
-        background: #e8e8ed;
-        color: #515154;
+        background: rgba(0, 0, 0, 0.05);
+        color: #6e6e73;
     }
 }
