@@ -13,11 +13,11 @@
 }
 
 .modalContent {
-  background: #ffffff; /* Solid white */
+  background: #ffffff;
   padding: 24px;
   border-radius: 16px;
   width: 100%;
-  max-width: 500px; /* Cap at 500px, shrink if needed */
+  max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);

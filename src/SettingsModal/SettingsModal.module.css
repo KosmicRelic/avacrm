@@ -1,0 +1,115 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modalContent {
+    width: 300px;
+    height: 100%;
+    background: #fff;
+    color: #000;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    padding-top: 48px; /* Space for close button */
+    border-radius: 16px 0 0 16px;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.buttonContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modalButton {
+    background: none;
+    border: none;
+    color: #007aff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.modalButton:hover {
+    background: #f5f5f7;
+    opacity: 0.85;
+}
+
+.modalButton:active {
+    background: #e8e8ed;
+}
+
+.closeButton {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    background: #e8e8ed;
+    border: none;
+    border-radius: 50%;
+    color: #515154;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.modalOverlay.closing .modalContent {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .modalContent {
+        background: #fff;
+        color: #000;
+    }
+    .modalButton {
+        color: #007aff;
+    }
+    .modalButton:hover {
+        background: #f5f5f7;
+    }
+    .modalButton:active {
+        background: #e8e8ed;
+    }
+    .closeButton {
+        background: #e8e8ed;
+        color: #515154;
+    }
+}
