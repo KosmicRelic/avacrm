@@ -4,19 +4,34 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 18px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 112px); /* Matches AppHeader height on mobile */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent overflow on container */
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  /* border-bottom: 1px solid rgba(0, 0, 0, 0.05); */
+  height: 64px; /* Fixed height for controls */
+  box-sizing: border-box;
+  gap: 12px;
+  position: sticky;
+  top: 64px; /* Matches AppHeader desktop height */
+  z-index: 20; /* Above table header and rows */
 }
 
 .tableWrapper {
+  flex: 1; /* Take remaining space */
   width: 100%;
-  height: calc(100% - 64px); /* Adjusted for controls height */
-  overflow: auto;
+  overflow: auto; /* Scrollable area */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -30,8 +45,8 @@
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   position: sticky;
-  top: 0;
-  z-index: 10; /* Ensures header stays above rows */
+  top: 128px; /* AppHeader (64px) + Controls (64px) on desktop */
+  z-index: 10; /* Above rows, below controls */
 }
 
 .headerCell {
@@ -49,18 +64,6 @@
 .bodyContainer {
   width: max-content;
   min-width: 100%;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  height: 64px;
-  box-sizing: border-box;
-  gap: 12px;
 }
 
 .filterButton,
@@ -112,7 +115,14 @@
     width: 100%;
     margin: 0;
     border-radius: 0;
-    height: calc(100vh - 56px);
+    height: calc(100vh - 112px); /* Matches AppHeader mobile height */
+  }
+  .controls {
+    height: 64px;
+    top: 1px; /* Matches AppHeader mobile height */
+  }
+  .header {
+    top: 1px; /* AppHeader (112px) + Controls (64px) on mobile */
   }
   .headerCell {
     width: 140px;

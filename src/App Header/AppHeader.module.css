@@ -1,11 +1,7 @@
-/* AppHeader.module.css */
 .headerContainer {
   position: sticky;
   top: 0;
   width: 100%;
-  height: 64px;
-  display: flex;
-  align-items: center;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -13,15 +9,23 @@
   z-index: 1000;
   padding: 0 16px;
   box-sizing: border-box;
-  overflow: visible; /* Ensure no clipping */
+  overflow: visible;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 56px;
 }
 
 .avaTitle {
-  margin: 0 20px 0 0;
+  margin: 0;
   font-size: 22px;
   font-weight: 700;
   color: #1d1d1f;
   letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
 .desktopNav,
@@ -29,23 +33,24 @@
   display: flex;
   align-items: center;
   gap: 64px;
+  overflow: visible;
+}
+
+.desktopNav {
   flex-grow: 1;
   justify-content: center;
-  overflow: visible; /* Prevent clipping of dropdown */
+  margin: 0 20px;
 }
 
 .mobileNav {
+  gap: 16px;
   overflow-x: auto;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
-  position: relative;
   mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
   scrollbar-width: none;
   -ms-overflow-style: none;
-  min-width: 0;
-  padding: 0 4px;
-  gap: 16px;
 }
 
 .mobileNav::-webkit-scrollbar {
@@ -57,16 +62,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1001; /* Above nav */
+  z-index: 1001;
 }
 
 .navButton {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px 8px 12px;
+  padding: 8px 12px;
   font-size: 14px;
-  font-weight: 450;
+  font-weight: 400;
   color: #6e6e73;
   background: none;
   border: none;
@@ -77,6 +82,8 @@
   box-sizing: border-box;
   white-space: nowrap;
   position: relative;
+  height: 36px;
+  line-height: 1;
 }
 
 .iconWrapper {
@@ -84,7 +91,22 @@
   align-items: center;
 }
 
-.navButton:hover {
+.sheetName {
+  flex-grow: 1;
+}
+
+.chevronWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #6e6e73;
+  transition: transform 0.2s ease;
+  z-index: 1002;
+}
+
+.navButton:hover .chevronWrapper {
   color: #1d1d1f;
 }
 
@@ -112,14 +134,14 @@
   position: absolute;
   top: 100%;
   left: auto;
-  right: 0; /* Align to right edge */
-  width: 180px; /* Match mobile width */
+  right: 0;
+  width: 180px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  z-index: 1003; /* Above everything */
+  z-index: 1003;
   margin-top: 6px;
   padding: 6px 0;
   animation: slideDown 0.2s ease-out;
@@ -134,6 +156,17 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.filterInput {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
 }
 
 .dropdownItem {
@@ -159,8 +192,8 @@
   border: none;
   padding: 8px;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.1s ease;
-  margin-left: 20px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .profileButton:hover {
@@ -169,27 +202,35 @@
 }
 
 @media (max-width: 768px) {
+  .headerContainer {
+    flex-direction: column;
+    align-items: stretch;
+    padding-bottom: 8px;
+    min-height: 112px;
+  }
+  .headerTop {
+    justify-content: space-between;
+  }
   .desktopNav {
     display: none;
   }
   .mobileNav {
     display: flex;
-  }
-  .headerContainer {
-    height: 56px;
+    justify-content: flex-start;
+    padding: 0 8px;
   }
   .avaTitle {
     font-size: 20px;
-    margin-right: 16px;
   }
   .navButton {
     font-size: 15px;
     font-weight: 500;
-    min-width: fit-content;
-    padding: 8px 8px 8px 10px;
+    padding: 8px 10px;
+    height: 36px;
   }
-  .profileButton {
-    margin-left: 16px;
+  .navButton.activeSheets:hover {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
   }
 }
 
@@ -197,16 +238,27 @@
   .mobileNav {
     display: none;
   }
-  .desktopNav {
+  .headerContainer {
+    height: 64px;
     display: flex;
+    flex-direction: column;
+  }
+  .headerTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+  }
+  .avaTitle {
+    margin-right: 20px;
   }
   .sheetDropdown {
     width: 200px;
     left: 0;
     right: auto;
   }
-
   .navButton:hover {
     background: rgba(0, 0, 0, 0.06);
+    color: #1d1d1f;
   }
 }

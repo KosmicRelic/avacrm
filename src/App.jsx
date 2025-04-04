@@ -133,63 +133,65 @@ function App() {
                 activeOption={activeOption}
                 setActiveOption={setActiveOption}
             />
-            {activeOption === "sheets" && activeSheetName && (
-                <SheetTemplate
-                    headers={resolvedHeaders}
-                    rows={resolvedRows}
-                    filters={filters}
-                    onEditSheet={() => {
-                        setIsSheetModalEditMode(true);
-                        setIsSheetModalOpen(true);
-                    }}
-                    onFilter={() => setIsFilterModalOpen(true)}
-                />
-            )}
-            {isSheetModalOpen && (
-                <SheetModal
-                    isEditMode={isSheetModalEditMode}
-                    sheetName={isSheetModalEditMode ? activeSheetName : ""}
-                    headers={resolvedHeaders}
-                    pinnedHeaders={isSheetModalEditMode ? activeSheet?.pinnedHeaders || [] : []}
-                    onSave={handleSaveSheet}
-                    onPinToggle={handlePinToggle}
-                    onClose={() => setIsSheetModalOpen(false)}
-                />
-            )}
-            {isFilterModalOpen && (
-                <FilterModal
-                    headers={resolvedHeaders}
-                    rows={resolvedRows}
-                    onApply={handleApplyFilters}
-                    onClose={() => setIsFilterModalOpen(false)}
-                />
-            )}
-            {isHeadersModalOpen && <HeadersModal onClose={() => setIsHeadersModalOpen(false)} />}
-            {isProfileModalOpen && (
-                <ProfileModal
-                    onClose={() => setIsProfileModalOpen(false)}
-                    onManageHeaders={() => {
-                        setIsHeadersModalOpen(true);
-                        setIsProfileModalOpen(false);
-                    }}
-                    onOptionChange={(option) => {
-                        setActiveOption(option);
-                        if (option === "sheets" && activeSheetName) handleSheetChange(activeSheetName);
-                    }}
-                    activeOption={activeOption}
-                    isMobile={window.innerWidth <= 768}
-                    setIsSettingsModalOpen={setIsSettingsModalOpen}
-                />
-            )}
-            {isSettingsModalOpen && (
-                <SettingsModal
-                    onClose={() => setIsSettingsModalOpen(false)}
-                    onManageHeaders={() => {
-                        setIsHeadersModalOpen(true);
-                        setIsSettingsModalOpen(false);
-                    }}
-                />
-            )}
+            <div className={styles.contentWrapper}>
+                {activeOption === "sheets" && activeSheetName && (
+                    <SheetTemplate
+                        headers={resolvedHeaders}
+                        rows={resolvedRows}
+                        filters={filters}
+                        onEditSheet={() => {
+                            setIsSheetModalEditMode(true);
+                            setIsSheetModalOpen(true);
+                        }}
+                        onFilter={() => setIsFilterModalOpen(true)}
+                    />
+                )}
+                {isSheetModalOpen && (
+                    <SheetModal
+                        isEditMode={isSheetModalEditMode}
+                        sheetName={isSheetModalEditMode ? activeSheetName : ""}
+                        headers={resolvedHeaders}
+                        pinnedHeaders={isSheetModalEditMode ? activeSheet?.pinnedHeaders || [] : []}
+                        onSave={handleSaveSheet}
+                        onPinToggle={handlePinToggle}
+                        onClose={() => setIsSheetModalOpen(false)}
+                    />
+                )}
+                {isFilterModalOpen && (
+                    <FilterModal
+                        headers={resolvedHeaders}
+                        rows={resolvedRows}
+                        onApply={handleApplyFilters}
+                        onClose={() => setIsFilterModalOpen(false)}
+                    />
+                )}
+                {isHeadersModalOpen && <HeadersModal onClose={() => setIsHeadersModalOpen(false)} />}
+                {isProfileModalOpen && (
+                    <ProfileModal
+                        onClose={() => setIsProfileModalOpen(false)}
+                        onManageHeaders={() => {
+                            setIsHeadersModalOpen(true);
+                            setIsProfileModalOpen(false);
+                        }}
+                        onOptionChange={(option) => {
+                            setActiveOption(option);
+                            if (option === "sheets" && activeSheetName) handleSheetChange(activeSheetName);
+                        }}
+                        activeOption={activeOption}
+                        isMobile={window.innerWidth <= 768}
+                        setIsSettingsModalOpen={setIsSettingsModalOpen}
+                    />
+                )}
+                {isSettingsModalOpen && (
+                    <SettingsModal
+                        onClose={() => setIsSettingsModalOpen(false)}
+                        onManageHeaders={() => {
+                            setIsHeadersModalOpen(true);
+                            setIsSettingsModalOpen(false);
+                        }}
+                    />
+                )}
+            </div>
         </div>
     );
 }
