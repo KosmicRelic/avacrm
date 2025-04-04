@@ -23,8 +23,8 @@ const SheetModal = ({
         }))
     );
     const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
-    const [menuOpen, setMenuOpen] = useState(null);
-    const menuRef = useRef(null);
+    const [editIndex, setEditIndex] = useState(null);
+    const modalRef = useRef(null);
 
     const resolvedHeaders = currentHeaders.map((header) => {
         const globalHeader = allHeaders.find((h) => Object.keys(h)[0] === header.key);
@@ -83,13 +83,18 @@ const SheetModal = ({
         onClose();
     };
 
-    const toggleMenu = (index) => {
-        setMenuOpen(menuOpen === index ? null : index);
+    const editHeader = (index) => {
+        setEditIndex(index);
     };
 
-    const handleMenuAction = (action, index, e) => {
-        e.stopPropagation();
-        action(index);
+    const removeHeader = () => {
+        if (editIndex !== null) {
+            const key = currentHeaders[editIndex].key;
+            if (!pinnedHeaders.includes(key)) {
+                setCurrentHeaders(currentHeaders.filter((_, i) => i !== editIndex));
+                setEditIndex(null);
+            }
+        }
     };
 
     const addHeader = (headerKey) => {
@@ -98,44 +103,42 @@ const SheetModal = ({
         }
     };
 
-    const removeHeader = (index) => {
-        const key = currentHeaders[index].key;
-        if (!pinnedHeaders.includes(key)) {
-            setCurrentHeaders(currentHeaders.filter((_, i) => i !== index));
-        }
+    const cancelEdit = () => {
+        setEditIndex(null);
     };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(null);
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                onClose();
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    }, [onClose]);
 
     return (
         <div className={styles.modalOverlay}>
-            <div className={styles.modalContent}>
-                <button className={styles.closeButton} onClick={onClose}>
-                    ✕
-                </button>
-                <h2 className={styles.editTitle}>
-                    {isEditMode ? "Edit Sheet" : "New Sheet"}
-                </h2>
-                <div className={styles.addHeaderSection}>
-                    <input
-                        type="text"
-                        value={sheetName}
-                        onChange={(e) => setSheetName(e.target.value)}
-                        placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
-                        className={styles.sheetNameInput}
-                    />
+            <div className={styles.modalContent} ref={modalRef}>
+                <div className={styles.modalHeader}>
+                    <h2 className={styles.modalTitle}>
+                        {isEditMode ? "Edit Sheet" : "New Sheet"}
+                    </h2>
+                    <button className={styles.closeButton} onClick={onClose}>Done</button>
                 </div>
+                <input
+                    type="text"
+                    value={sheetName}
+                    onChange={(e) => setSheetName(e.target.value)}
+                    placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
+                    className={styles.sheetNameInput}
+                />
                 <div className={styles.headerList}>
                     {resolvedHeaders.map((header, index) => (
-                        <div key={header.key} className={styles.headerItem}>
+                        <div
+                            key={header.key}
+                            className={`${styles.headerItem} ${editIndex === index ? styles.activeItem : ''}`}
+                        >
                             <div className={styles.headerRow}>
                                 <div className={styles.headerNameType}>
                                     <span>{header.name}</span>
@@ -145,76 +148,71 @@ const SheetModal = ({
                                     <button
                                         onClick={() => toggleVisible(index)}
                                         className={styles.iconButton}
+                                        disabled={editIndex !== null && editIndex !== index}
                                     >
                                         {header.visible ? <FaEye /> : <FaEyeSlash />}
                                     </button>
                                     <button
                                         onClick={() => toggleHidden(index)}
                                         className={styles.iconButton}
+                                        disabled={editIndex !== null && editIndex !== index}
                                     >
                                         {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                                     </button>
-                                    <button onClick={() => toggleMenu(index)} className={styles.moreButton}>
-                                        ⋯
+                                    <button
+                                        onClick={() => editHeader(index)}
+                                        className={styles.editButton}
+                                        disabled={editIndex !== null && editIndex !== index}
+                                    >
+                                        Edit
                                     </button>
-                                    {menuOpen === index && (
-                                        <div className={styles.menu} ref={menuRef}>
-                                            <button onClick={(e) => handleMenuAction(() => togglePin(header.key), index, e)}>
-                                                {pinnedHeaders.includes(header.key) ? "Unpin" : "Pin"}
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleMenuAction(moveUp, index, e)}
-                                                disabled={index === 0}
-                                            >
-                                                Move Up
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleMenuAction(moveDown, index, e)}
-                                                disabled={index === currentHeaders.length - 1}
-                                            >
-                                                Move Down
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleMenuAction(removeHeader, index, e)}
-                                                disabled={pinnedHeaders.includes(header.key)}
-                                                className={pinnedHeaders.includes(header.key) ? styles.disabledMenuButton : styles.deleteButton}
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
+                            {editIndex === index && (
+                                <div className={styles.editActions}>
+                                    <button onClick={() => togglePin(header.key)} className={styles.actionButton}>
+                                        {pinnedHeaders.includes(header.key) ? "Unpin" : "Pin"}
+                                    </button>
+                                    <button onClick={() => moveUp(index)} disabled={index === 0} className={styles.actionButton}>
+                                        Move Up
+                                    </button>
+                                    <button onClick={() => moveDown(index)} disabled={index === currentHeaders.length - 1} className={styles.actionButton}>
+                                        Move Down
+                                    </button>
+                                    <button onClick={removeHeader} disabled={pinnedHeaders.includes(header.key)} className={styles.deleteButton}>
+                                        Remove Header
+                                    </button>
+                                    <button onClick={cancelEdit} className={styles.cancelButton}>
+                                        Done
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
-                <div className={styles.addHeaderSection}>
-                    <select
-                        onChange={(e) => {
-                            const selectedKey = e.target.value;
-                            if (selectedKey) addHeader(selectedKey);
-                            e.target.value = "";
-                        }}
-                        className={styles.addHeaderSelect}
-                    >
-                        <option value="">Add Header</option>
-                        {allHeaders
-                            .filter((h) => !currentHeaders.some((ch) => ch.key === Object.keys(h)[0]))
-                            .map((header) => {
-                                const key = Object.keys(header)[0];
-                                return (
-                                    <option key={key} value={key}>
-                                        {header[key]} ({header.type})
-                                    </option>
-                                );
-                            })}
-                    </select>
-                </div>
-                <div className={styles.modalActions}>
-                    <button onClick={handleSave} className={styles.saveButton}>
-                        Save
-                    </button>
-                </div>
+                <select
+                    onChange={(e) => {
+                        const selectedKey = e.target.value;
+                        if (selectedKey) addHeader(selectedKey);
+                        e.target.value = "";
+                    }}
+                    className={styles.addHeaderSelect}
+                >
+                    <option value="">Add Header</option>
+                    {allHeaders
+                        .filter((h) => !currentHeaders.some((ch) => ch.key === Object.keys(h)[0]))
+                        .map((header) => {
+                            const key = Object.keys(header)[0];
+                            return (
+                                <option key={key} value={key}>
+                                    {header[key]} ({header.type})
+                                </option>
+                            );
+                        })}
+                </select>
+                <button onClick={handleSave} className={styles.saveButton}>
+                    Save
+                </button>
             </div>
         </div>
     );

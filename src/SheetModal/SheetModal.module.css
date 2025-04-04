@@ -2,10 +2,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -21,59 +21,100 @@
 .modalContent {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  padding: 24px;
-  border-radius: 18px;
+  padding: 20px;
+  border-radius: 20px;
   width: 100%;
   max-width: 480px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   position: relative;
   box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", sans-serif;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+  margin: 0;
 }
 
 .closeButton {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 28px;
-  height: 28px;
-  background: rgba(0, 0, 0, 0.05);
+  background: none;
   border: none;
-  border-radius: 50%;
-  color: #6e6e73;
-  font-size: 16px;
+  color: #007aff;
+  font-size: 17px;
   font-weight: 600;
+  padding: 0;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .closeButton:hover {
-  background: rgba(0, 0, 0, 0.1);
+  opacity: 0.8;
 }
 
-.editTitle {
-  text-align: left;
-  font-size: 22px;
-  font-weight: 600;
+.sheetNameInput,
+.addHeaderSelect {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: 400;
   color: #1d1d1f;
+  background: rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  -webkit-appearance: none;
+  appearance: none;
   margin-bottom: 20px;
-  letter-spacing: 0.01em;
+}
+
+.sheetNameInput:focus,
+.addHeaderSelect:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.addHeaderSelect {
+  padding-right: 32px;
+  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
 }
 
 .headerList {
-  margin: 16px 0;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .headerItem {
-  padding: 10px 0;
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
 }
 
-.headerItem:hover {
-  background: rgba(245, 245, 247, 0.5);
+.headerItem:last-child {
+  border-bottom: none;
+}
+
+.headerItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.activeItem {
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .headerRow {
@@ -91,17 +132,19 @@
 
 .headerNameType span {
   color: #1d1d1f;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 400;
-}
-
-.headerNameType :first-child{
-  font-weight: 700;
 }
 
 .headerType {
   color: #6e6e73;
-  font-size: 14px;
+  font-size: 15px;
+}
+
+.primaryButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .iconButton {
@@ -110,142 +153,115 @@
   cursor: pointer;
   font-size: 18px;
   color: #6e6e73;
-  padding: 4px;
-  transition: color 0.2s ease, transform 0.1s ease;
+  padding: 0;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 .iconButton:hover {
   color: #007aff;
-  transform: scale(1.1);
 }
 
-.primaryButtons {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.iconButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-.moreButton {
+.editButton {
   background: none;
   border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 20px;
-  font-weight: 400;
-  padding: 4px 8px;
-  color: #6e6e73;
-  border-radius: 12px;
-  transition: background 0.2s ease, transform 0.1s ease;
+  padding: 0;
+  transition: opacity 0.2s ease;
 }
 
-.moreButton:hover {
-  background: rgba(0, 0, 0, 0.05);
-  transform: scale(1.05);
+.editButton:hover {
+  opacity: 0.8;
 }
 
-.menu {
-  position: absolute;
-  top: 32px;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  width: 180px;
-  padding: 8px 0;
+.editButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-.menu button {
+.editActions {
+  margin-top: 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 16px;
-  border: none;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.actionButton {
   background: none;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 400;
-  color: #1d1d1f;
+  border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.menu button:hover {
-  background: rgba(245, 245, 247, 0.9);
+.actionButton:hover {
+  background: rgba(0, 122, 255, 0.1);
 }
 
-.menu button:disabled {
+.actionButton:disabled {
   color: #d2d2d7;
   cursor: not-allowed;
 }
 
-.disabledMenuButton {
-  color: #d2d2d7 !important;
-  cursor: not-allowed;
-}
-
 .deleteButton {
+  background: none;
+  border: none;
   color: #ff453a;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .deleteButton:hover {
   background: rgba(255, 69, 58, 0.1);
 }
 
-.addHeaderSection {
-  margin: 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.deleteButton:disabled {
+  color: #d2d2d7;
+  cursor: not-allowed;
 }
 
-.sheetNameInput,
-.addHeaderSelect {
-  width: 100%;
-  padding: 12px 16px;
+.cancelButton {
+  background: #007aff;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 400;
-  color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.04);
-  box-sizing: border-box;
-  transition: all 0.3s ease;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.sheetNameInput:focus,
-.addHeaderSelect:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.addHeaderSelect {
-  appearance: none;
-  background: rgba(0, 0, 0, 0.04) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
+.cancelButton:hover {
+  background: #0066cc;
 }
 
 .saveButton {
-  padding: 10px 20px;
+  width: 100%;
+  padding: 12px;
   border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  background: linear-gradient(135deg, #007aff 0%, #0066cc 100%);
+  border-radius: 10px;
+  background: #007aff;
   color: white;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .saveButton:hover {
-  background: linear-gradient(135deg, #0066cc 0%, #005bb5 100%);
-  transform: scale(1.02);
+  background: #0066cc;
 }

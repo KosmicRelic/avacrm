@@ -35,11 +35,7 @@ const HeadersModal = ({ onClose }) => {
         } else {
             setCurrentHeaders([...currentHeaders, newHeader]);
         }
-        setNewHeaderKey("");
-        setNewHeaderName("");
-        setNewHeaderType("text");
-        setNewHeaderOptions([]);
-        setNewOption("");
+        clearForm();
     };
 
     const handleKeyPress = (e) => {
@@ -55,8 +51,11 @@ const HeadersModal = ({ onClose }) => {
         setNewHeaderOptions(header.options || []);
     };
 
-    const deleteHeader = (index) => {
-        setCurrentHeaders(currentHeaders.filter((_, i) => i !== index));
+    const deleteHeader = () => {
+        if (editIndex !== null) {
+            setCurrentHeaders(currentHeaders.filter((_, i) => i !== editIndex));
+            clearForm();
+        }
     };
 
     const clearForm = () => {
@@ -97,70 +96,55 @@ const HeadersModal = ({ onClose }) => {
     return (
         <div className={styles.modalOverlay}>
             <div className={styles.modalContent} ref={modalRef}>
-                <button className={styles.closeButton} onClick={onClose}>
-                    ✕
-                </button>
-                <h2 className={styles.modalTitle}>Manage Headers</h2>
+                <div className={styles.modalHeader}>
+                    <h2 className={styles.modalTitle}>Edit Headers</h2>
+                    <button className={styles.closeButton} onClick={onClose}>Done</button>
+                </div>
                 <div className={styles.headerList}>
                     {currentHeaders.map((header, index) => {
                         const key = Object.keys(header)[0];
                         return (
-                            <div key={key} className={styles.headerItem}>
+                            <div key={key} className={`${styles.headerItem} ${editIndex === index ? styles.activeItem : ''}`}>
                                 <span>{header[key]}</span>
                                 <span className={styles.headerType}>({header.type})</span>
-                                <div className={styles.headerActions}>
-                                    <button onClick={() => editHeader(index)} className={styles.editButton}>
-                                        Edit
-                                    </button>
-                                    <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
-                                        Delete
-                                    </button>
-                                </div>
+                                <button 
+                                    onClick={() => editHeader(index)} 
+                                    className={styles.editButton}
+                                    disabled={editIndex !== null && editIndex !== index}
+                                >
+                                    Edit
+                                </button>
                             </div>
                         );
                     })}
                 </div>
                 <div className={styles.addHeaderSection}>
-                    <div className={styles.addHeaderRow}>
-                        <input
-                            type="text"
-                            value={newHeaderKey}
-                            onChange={(e) => setNewHeaderKey(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Key"
-                            className={styles.inputField}
-                        />
-                        <input
-                            type="text"
-                            value={newHeaderName}
-                            onChange={(e) => setNewHeaderName(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Name"
-                            className={styles.inputField}
-                        />
-                    </div>
-                    <div className={styles.addHeaderRow}>
-                        <select
-                            value={newHeaderType}
-                            onChange={(e) => setNewHeaderType(e.target.value)}
-                            className={styles.selectField}
-                        >
-                            <option value="text">Text</option>
-                            <option value="number">Number</option>
-                            <option value="date">Date</option>
-                            <option value="dropdown">Dropdown</option>
-                        </select>
-                        <div className={styles.addHeaderButtons}>
-                            <button onClick={addOrUpdateHeader} className={styles.actionButton}>
-                                {editIndex !== null ? "Update" : "Add"}
-                            </button>
-                            {(newHeaderKey || newHeaderName || editIndex !== null) && (
-                                <button onClick={clearForm} className={styles.clearButton}>
-                                    Clear
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <input
+                        type="text"
+                        value={newHeaderKey}
+                        onChange={(e) => setNewHeaderKey(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Key"
+                        className={styles.inputField}
+                    />
+                    <input
+                        type="text"
+                        value={newHeaderName}
+                        onChange={(e) => setNewHeaderName(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Name"
+                        className={styles.inputField}
+                    />
+                    <select
+                        value={newHeaderType}
+                        onChange={(e) => setNewHeaderType(e.target.value)}
+                        className={styles.selectField}
+                    >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="dropdown">Dropdown</option>
+                    </select>
                     {newHeaderType === "dropdown" && (
                         <div className={styles.optionsSection}>
                             <div className={styles.optionInputRow}>
@@ -172,9 +156,7 @@ const HeadersModal = ({ onClose }) => {
                                     placeholder="Add option"
                                     className={styles.inputField}
                                 />
-                                <button onClick={addOption} className={styles.addOptionButton}>
-                                    +
-                                </button>
+                                <button onClick={addOption} className={styles.addOptionButton}>+</button>
                             </div>
                             <div className={styles.optionsList}>
                                 {newHeaderOptions.map((option) => (
@@ -191,12 +173,20 @@ const HeadersModal = ({ onClose }) => {
                             </div>
                         </div>
                     )}
+                    <div className={styles.editActions}>
+                        {editIndex !== null && (
+                            <button onClick={deleteHeader} className={styles.deleteButton}>
+                                Delete Header
+                            </button>
+                        )}
+                        <button onClick={addOrUpdateHeader} className={styles.actionButton}>
+                            {editIndex !== null ? "Update" : "Add"}
+                        </button>
+                    </div>
                 </div>
-                <div className={styles.modalActions}>
-                    <button onClick={handleSave} className={styles.saveButton}>
-                        Save
-                    </button>
-                </div>
+                <button onClick={handleSave} className={styles.saveButton}>
+                    Save
+                </button>
             </div>
         </div>
     );
