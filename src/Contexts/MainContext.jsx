@@ -2,8 +2,10 @@ import { createContext, useState } from "react";
 export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
-    const [sheets, setSheets] = useState({
-        Leads: {
+
+    const [sheets, setSheets] = useState([
+        {
+            sheetName: "Leads",
             headers: [
                 { key: "leadId", visible: true, hidden: false },
                 { key: "name", visible: true, hidden: false },
@@ -21,7 +23,8 @@ export const MainContextProvider = ({ children }) => {
             ],
             isActive: true,
         },
-        Business_Partners: {
+        {
+            sheetName: "Business_Partners",
             headers: [
                 { key: "businessId", visible: true, hidden: false },
                 { key: "fullName", visible: true, hidden: false },
@@ -32,7 +35,8 @@ export const MainContextProvider = ({ children }) => {
             rows: [],
             isActive: false,
         },
-        Tasks: {
+        {
+            sheetName: "Tasks",
             headers: [
                 { key: "taskId", visible: true, hidden: false },
                 { key: "description", visible: true, hidden: false },
@@ -43,7 +47,7 @@ export const MainContextProvider = ({ children }) => {
             rows: [],
             isActive: false,
         },
-    });
+    ]);
 
     const [cards, setCards] = useState([
         // Leads

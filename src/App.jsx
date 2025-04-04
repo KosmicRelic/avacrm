@@ -1,3 +1,4 @@
+// App.jsx
 import { useContext, useState } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
@@ -20,8 +21,8 @@ function App() {
     const [filters, setFilters] = useState({});
     const [activeOption, setActiveOption] = useState("sheets");
 
-    const activeSheetName = Object.keys(sheets).find((name) => sheets[name].isActive);
-    const activeSheet = sheets[activeSheetName];
+    const activeSheet = sheets.find((sheet) => sheet.isActive);
+    const activeSheetName = activeSheet?.sheetName;
 
     const resolvedHeaders = activeSheet?.headers.map((sheetHeader) => {
         const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
@@ -51,51 +52,50 @@ function App() {
             setIsSheetModalEditMode(false);
             setIsSheetModalOpen(true);
         } else if (sheetName) {
-            setSheets((prevSheets) => {
-                const newSheets = { ...prevSheets };
-                Object.keys(newSheets).forEach((name) => {
-                    newSheets[name].isActive = name === sheetName;
-                });
-                return newSheets;
-            });
+            setSheets((prevSheets) =>
+                prevSheets.map((sheet) => ({
+                    ...sheet,
+                    isActive: sheet.sheetName === sheetName,
+                }))
+            );
         }
     };
 
     const handleSaveSheet = (sheetNameOrObj, headerObjects, pinnedHeaders) => {
         if (isSheetModalEditMode) {
-            const newSheetName = sheetNameOrObj.sheetName;
+            const newSheetName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
             setSheets((prevSheets) => {
                 const updatedSheet = {
-                    ...prevSheets[activeSheetName],
+                    ...activeSheet,
                     headers: headerObjects,
-                    pinnedHeaders: pinnedHeaders || prevSheets[activeSheetName].pinnedHeaders,
-                    rows: prevSheets[activeSheetName].rows,
+                    pinnedHeaders: pinnedHeaders || activeSheet.pinnedHeaders,
+                    rows: activeSheet.rows,
                     isActive: true,
                 };
                 if (newSheetName && newSheetName !== activeSheetName) {
-                    const newSheets = { ...prevSheets };
-                    delete newSheets[activeSheetName];
-                    newSheets[newSheetName] = updatedSheet;
-                    return newSheets;
+                    return prevSheets.map((sheet) =>
+                        sheet.sheetName === activeSheetName
+                            ? { ...updatedSheet, sheetName: newSheetName }
+                            : { ...sheet, isActive: false }
+                    );
                 }
-                return { ...prevSheets, [activeSheetName]: updatedSheet };
+                return prevSheets.map((sheet) =>
+                    sheet.sheetName === activeSheetName ? updatedSheet : { ...sheet, isActive: false }
+                );
             });
         } else {
             const newSheetName = sheetNameOrObj;
             if (newSheetName) {
-                setSheets((prevSheets) => {
-                    const newSheets = { ...prevSheets };
-                    Object.keys(newSheets).forEach((name) => {
-                        newSheets[name].isActive = false;
-                    });
-                    newSheets[newSheetName] = {
+                setSheets((prevSheets) => [
+                    ...prevSheets.map((sheet) => ({ ...sheet, isActive: false })),
+                    {
+                        sheetName: newSheetName,
                         headers: headerObjects,
                         pinnedHeaders: pinnedHeaders || [],
                         rows: [],
                         isActive: true,
-                    };
-                    return newSheets;
-                });
+                    },
+                ]);
             } else {
                 alert("Please provide a sheet name.");
                 return;
@@ -105,16 +105,18 @@ function App() {
     };
 
     const handlePinToggle = (headerKey) => {
-        setSheets((prevSheets) => {
-            const currentPinned = prevSheets[activeSheetName].pinnedHeaders || [];
-            const newPinned = currentPinned.includes(headerKey)
-                ? currentPinned.filter((h) => h !== headerKey)
-                : [...currentPinned, headerKey];
-            return {
-                ...prevSheets,
-                [activeSheetName]: { ...prevSheets[activeSheetName], pinnedHeaders: newPinned },
-            };
-        });
+        setSheets((prevSheets) =>
+            prevSheets.map((sheet) =>
+                sheet.sheetName === activeSheetName
+                    ? {
+                          ...sheet,
+                          pinnedHeaders: sheet.pinnedHeaders.includes(headerKey)
+                              ? sheet.pinnedHeaders.filter((h) => h !== headerKey)
+                              : [...sheet.pinnedHeaders, headerKey],
+                      }
+                    : sheet
+            )
+        );
     };
 
     const handleApplyFilters = (newFilters) => {
@@ -124,7 +126,7 @@ function App() {
     return (
         <div className={styles.appContainer}>
             <AppHeader
-                sheets={Object.keys(sheets)}
+                sheets={sheets.map((sheet) => sheet.sheetName)}
                 activeSheet={activeSheetName}
                 onSheetChange={handleSheetChange}
                 setIsProfileModalOpen={setIsProfileModalOpen}

@@ -1,3 +1,4 @@
+/* AppHeader.module.css */
 .headerContainer {
   position: sticky;
   top: 0;
@@ -12,6 +13,7 @@
   z-index: 1000;
   padding: 0 16px;
   box-sizing: border-box;
+  overflow: visible; /* Ensure no clipping */
 }
 
 .avaTitle {
@@ -26,9 +28,10 @@
 .mobileNav {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 64px;
   flex-grow: 1;
   justify-content: center;
+  overflow: visible; /* Prevent clipping of dropdown */
 }
 
 .mobileNav {
@@ -36,11 +39,13 @@
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   position: relative;
-  mask-image: linear-gradient(to right, black 80%, transparent 95%);
-  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 95%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
   scrollbar-width: none;
   -ms-overflow-style: none;
-  min-width: 150px;
+  min-width: 0;
+  padding: 0 4px;
+  gap: 16px;
 }
 
 .mobileNav::-webkit-scrollbar {
@@ -51,66 +56,101 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
+  z-index: 1001; /* Above nav */
 }
 
 .navButton {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  font-size: 17px;
-  font-weight: 500;
+  padding: 8px 8px 8px 12px;
+  font-size: 14px;
+  font-weight: 450;
   color: #6e6e73;
   background: none;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 0; /* Removed fixed min-width to allow natural sizing */
+  min-width: fit-content;
   box-sizing: border-box;
   white-space: nowrap;
+  position: relative;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
 }
 
 .navButton:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.navIcon {
-  flex-shrink: 0;
+  color: #1d1d1f;
 }
 
 .activeDashboard {
   color: #5856d6;
-  background: rgba(88, 86, 214, 0.1);
+  background: rgba(88, 86, 214, 0.12);
 }
 
 .activeSheets {
   color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.12);
 }
 
 .activeCards {
   color: #34c759;
-  background: rgba(52, 199, 89, 0.1);
+  background: rgba(52, 199, 89, 0.12);
 }
 
 .activeInvoices {
   color: #ff9500;
-  background: rgba(255, 149, 0, 0.1);
+  background: rgba(255, 149, 0, 0.12);
 }
 
 .sheetDropdown {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  appearance: none;
-  background: transparent;
-  border: none;
+  top: 100%;
+  left: auto;
+  right: 0; /* Align to right edge */
+  width: 180px; /* Match mobile width */
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1003; /* Above everything */
+  margin-top: 6px;
+  padding: 6px 0;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownItem {
+  padding: 8px 16px;
   cursor: pointer;
-  z-index: 1;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1d1d1f;
+  transition: background 0.1s ease;
+}
+
+.dropdownItem:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.dropdownItem:active {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .profileButton {
@@ -119,16 +159,13 @@
   border: none;
   padding: 8px;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.1s ease;
   margin-left: 20px;
 }
 
 .profileButton:hover {
   opacity: 0.8;
-}
-
-.profileIcon {
-  flex-shrink: 0;
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {
@@ -147,7 +184,9 @@
   }
   .navButton {
     font-size: 15px;
-    padding: 8px 10px; /* Slightly reduced padding for compactness */
+    font-weight: 500;
+    min-width: fit-content;
+    padding: 8px 8px 8px 10px;
   }
   .profileButton {
     margin-left: 16px;
@@ -160,5 +199,14 @@
   }
   .desktopNav {
     display: flex;
+  }
+  .sheetDropdown {
+    width: 200px;
+    left: 0;
+    right: auto;
+  }
+
+  .navButton:hover {
+    background: rgba(0, 0, 0, 0.06);
   }
 }
