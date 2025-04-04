@@ -22,15 +22,15 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   padding: 24px;
-  border-radius: 18px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   position: relative;
   box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", sans-serif;
 }
 
 .closeButton {
@@ -55,11 +55,11 @@
 
 .filterTitle {
   text-align: left;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
   margin-bottom: 20px;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.02em;
 }
 
 .filterList {
@@ -71,39 +71,132 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.filterItem label {
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.filterLabel {
   color: #6e6e73;
   font-weight: 500;
-  font-size: 14px;
-  display: block;
-  margin-bottom: 8px;
-  letter-spacing: 0.01em;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.toggleButton:hover {
+  opacity: 0.8;
 }
 
 .filterInput,
-.filterSelect {
+.filterSelect,
+.filterMultiSelect {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
   transition: all 0.3s ease;
+  -webkit-appearance: none;
   appearance: none;
 }
 
 .filterInput:focus,
-.filterSelect:focus {
+.filterSelect:focus,
+.filterMultiSelect:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.filterSelect {
-  background: rgba(0, 0, 0, 0.04) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+/* Remove number input arrows */
+.filterInput[type="number"]::-webkit-inner-spin-button,
+.filterInput[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.filterInput[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Ensure date inputs maintain size when empty */
+.filterInput[type="date"] {
+  min-width: 150px; /* Adjust as needed */
+}
+
+.filterInput[type="date"]::-webkit-datetime-edit {
+  color: #1d1d1f;
+}
+
+.filterInput[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.filterInput[type="date"]:placeholder-shown {
+  color: #999;
+}
+
+.numberFilter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.numberFilter .filterInput {
+  flex: 1;
+}
+
+.numberFilter .filterSelect {
+  flex: 1;
+}
+
+.dateFilter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dateFilter .filterInput {
+  flex: 1;
+}
+
+.dateSeparator {
+  color: #6e6e73;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.filterMultiSelect {
+  height: 120px;
+  padding: 8px 14px;
+}
+
+.filterMultiSelect::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filterMultiSelect::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
 .modalActions {
@@ -114,34 +207,34 @@
 }
 
 .resetButton {
-  padding: 10px 20px;
+  padding: 8px 18px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   background: none;
-  color: #ff453a;
+  color: #ff2d55;
   transition: all 0.2s ease;
 }
 
 .resetButton:hover {
-  background: rgba(255, 69, 58, 0.1);
+  background: rgba(255, 45, 85, 0.1);
 }
 
 .applyButton {
-  padding: 10px 20px;
+  padding: 8px 18px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  background: linear-gradient(135deg, #007aff 0%, #0066cc 100%);
+  background: #007aff;
   color: white;
   transition: all 0.2s ease;
 }
 
 .applyButton:hover {
-  background: linear-gradient(135deg, #0066cc 0%, #005bb5 100%);
-  transform: scale(1.02);
+  background: #0066cc;
+  transform: translateY(-1px);
 }

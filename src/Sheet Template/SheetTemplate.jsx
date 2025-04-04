@@ -16,26 +16,43 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) =
                   String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
               )
             : true;
-
-        const matchesFilters = Object.entries(filters).every(([headerKey, value]) => {
-            if (!value) return true;
-            const rowValue = String(row[headerKey] || "").toLowerCase();
-            const filterValue = String(value).toLowerCase();
+    
+        const matchesFilters = Object.entries(filters).every(([headerKey, filter]) => {
+            if (!filter || Object.keys(filter).length === 0) return true;
+            const rowValue = row[headerKey];
             const header = headers.find((h) => h.key === headerKey);
             const type = header ? header.type : "text";
-
+    
             switch (type) {
                 case "number":
-                    return Number(rowValue) === Number(filterValue);
+                    if (!filter.value) return true;
+                    const numValue = Number(rowValue);
+                    const filterNum = Number(filter.value);
+                    switch (filter.order) {
+                        case "greater": return numValue > filterNum;
+                        case "less": return numValue < filterNum;
+                        default: return numValue === filterNum;
+                    }
                 case "date":
-                    return rowValue === filterValue;
+                    if (!filter.start && !filter.end) return true;
+                    const rowDate = new Date(rowValue);
+                    const startDate = filter.start ? new Date(filter.start) : null;
+                    const endDate = filter.end ? new Date(filter.end) : null;
+                    if (startDate && endDate) {
+                        return rowDate >= startDate && rowDate <= endDate;
+                    }
+                    if (startDate) return rowDate >= startDate;
+                    if (endDate) return rowDate <= endDate;
+                    return true;
                 case "dropdown":
-                    return rowValue === filterValue;
+                    if (!filter.values || filter.values.length === 0) return true;
+                    return filter.values.includes(String(rowValue));
                 default:
-                    return rowValue.includes(filterValue);
+                    if (!filter.value) return true;
+                    return String(rowValue || "").toLowerCase().includes(filter.value.toLowerCase());
             }
         });
-
+    
         return matchesSearch && matchesFilters;
     });
 

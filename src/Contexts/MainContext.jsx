@@ -77,16 +77,16 @@ export const MainContextProvider = ({ children }) => {
         { phone: "PHONE", type: "text" },
         { email: "EMAIL", type: "text" },
         { leadScore: "LEAD SCORE", type: "number" },
-        { nextActions: "NEXT ACTIONS", type: "dropdown" },
+        { nextActions: "NEXT ACTION", type: "dropdown", options: ["Call back", "Send offer", "Follow-up email", "Schedule meeting", "Close deal"] },
         { followUpDate: "FOLLOW UP DATE", type: "date" },
         { businessId: "BUSINESS ID", type: "number" },
         { fullName: "FULL NAME", type: "text" },
         { address: "ADDRESS", type: "text" },
-        { status: "STATUS", type: "dropdown" },
+        { status: "STATUS", type: "dropdown", options: ["Active", "Inactive", "Pending"] },
         { taskId: "TASK ID", type: "number" },
         { description: "DESCRIPTION", type: "text" },
         { dueDate: "DUE DATE", type: "date" },
-        { priority: "PRIORITY", type: "dropdown" },
+        { priority: "PRIORITY", type: "dropdown", options: ["High", "Medium", "Low"] },
     ]);
 
     return (

@@ -87,7 +87,6 @@
 
 .headerItem :first-child {
   font-weight: 700;
-
 }
 
 .headerType {
@@ -202,6 +201,68 @@
 
 .clearButton:hover {
   background: rgba(0, 122, 255, 0.1);
+}
+
+.optionsSection {
+  margin-top: 12px;
+}
+
+.optionInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.addOptionButton {
+  background: #007aff;
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addOptionButton:hover {
+  background: #0066cc;
+}
+
+.optionsList {
+  margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.optionItem span {
+  color: #1d1d1f;
+  font-size: 14px;
+}
+
+.removeOptionButton {
+  background: none;
+  border: none;
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeOptionButton:hover {
+  background: rgba(255, 69, 58, 0.1);
 }
 
 .modalActions {

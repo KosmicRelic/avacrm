@@ -4,10 +4,12 @@ import { MainContext } from "../Contexts/MainContext";
 
 const HeadersModal = ({ onClose }) => {
     const { headers, setHeaders } = useContext(MainContext);
-    const [currentHeaders, setCurrentHeaders] = useState(headers);
+    const [currentHeaders, setCurrentHeaders] = useState(headers.map(h => ({ ...h })));
     const [newHeaderKey, setNewHeaderKey] = useState("");
     const [newHeaderName, setNewHeaderName] = useState("");
     const [newHeaderType, setNewHeaderType] = useState("text");
+    const [newHeaderOptions, setNewHeaderOptions] = useState([]);
+    const [newOption, setNewOption] = useState("");
     const [editIndex, setEditIndex] = useState(null);
     const modalRef = useRef(null);
 
@@ -19,7 +21,12 @@ const HeadersModal = ({ onClose }) => {
             return;
         }
 
-        const newHeader = { [trimmedKey]: trimmedName, type: newHeaderType };
+        const newHeader = { 
+            [trimmedKey]: trimmedName, 
+            type: newHeaderType,
+            ...(newHeaderType === "dropdown" && { options: newHeaderOptions })
+        };
+        
         if (editIndex !== null) {
             const updatedHeaders = [...currentHeaders];
             updatedHeaders[editIndex] = newHeader;
@@ -31,6 +38,8 @@ const HeadersModal = ({ onClose }) => {
         setNewHeaderKey("");
         setNewHeaderName("");
         setNewHeaderType("text");
+        setNewHeaderOptions([]);
+        setNewOption("");
     };
 
     const handleKeyPress = (e) => {
@@ -43,6 +52,7 @@ const HeadersModal = ({ onClose }) => {
         setNewHeaderKey(Object.keys(header)[0]);
         setNewHeaderName(header[Object.keys(header)[0]]);
         setNewHeaderType(header.type);
+        setNewHeaderOptions(header.options || []);
     };
 
     const deleteHeader = (index) => {
@@ -53,7 +63,20 @@ const HeadersModal = ({ onClose }) => {
         setNewHeaderKey("");
         setNewHeaderName("");
         setNewHeaderType("text");
+        setNewHeaderOptions([]);
+        setNewOption("");
         setEditIndex(null);
+    };
+
+    const addOption = () => {
+        if (newOption.trim() && !newHeaderOptions.includes(newOption.trim())) {
+            setNewHeaderOptions([...newHeaderOptions, newOption.trim()]);
+            setNewOption("");
+        }
+    };
+
+    const removeOption = (option) => {
+        setNewHeaderOptions(newHeaderOptions.filter(opt => opt !== option));
     };
 
     const handleSave = () => {
@@ -138,6 +161,36 @@ const HeadersModal = ({ onClose }) => {
                             )}
                         </div>
                     </div>
+                    {newHeaderType === "dropdown" && (
+                        <div className={styles.optionsSection}>
+                            <div className={styles.optionInputRow}>
+                                <input
+                                    type="text"
+                                    value={newOption}
+                                    onChange={(e) => setNewOption(e.target.value)}
+                                    onKeyPress={(e) => e.key === "Enter" && addOption()}
+                                    placeholder="Add option"
+                                    className={styles.inputField}
+                                />
+                                <button onClick={addOption} className={styles.addOptionButton}>
+                                    +
+                                </button>
+                            </div>
+                            <div className={styles.optionsList}>
+                                {newHeaderOptions.map((option) => (
+                                    <div key={option} className={styles.optionItem}>
+                                        <span>{option}</span>
+                                        <button
+                                            onClick={() => removeOption(option)}
+                                            className={styles.removeOptionButton}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className={styles.modalActions}>
                     <button onClick={handleSave} className={styles.saveButton}>
