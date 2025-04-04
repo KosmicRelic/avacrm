@@ -1,8 +1,7 @@
 .appContainer {
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Ensure it fills viewport and allows growth */
-    height: auto; /* Allow natural height for sticky to work */
+
   }
   
   .contentWrapper {
@@ -13,16 +12,7 @@
   /* Ensure no interference with sticky */
   @media (max-width: 768px) {
     .appContainer {
-      min-height: 100vh;
-    }
-    .contentWrapper {
-      /* No extra adjustments needed */
-    }
-  }
-  
-  @media (min-width: 769px) {
-    .appContainer {
-      min-height: 100vh;
+
     }
     .contentWrapper {
       /* No extra adjustments needed */
