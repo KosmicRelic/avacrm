@@ -84,7 +84,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
                         onClick={() => handleOptionClick("dashboard")}
                     >
-                        <RiDashboard2Fill size={22} />
+                        <RiDashboard2Fill size={20} />
                         <span>Dashboard</span>
                     </button>
                     <button

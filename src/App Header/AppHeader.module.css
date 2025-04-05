@@ -71,7 +71,7 @@
   color: #6e6e73;
   background: none;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: fit-content;
@@ -202,7 +202,7 @@
     flex-direction: column;
     align-items: stretch;
     padding-bottom: 8px;
-    min-height: 112px;
+    min-height: 78px;
     background-color: transparent;
   }
   .headerTop {
@@ -213,21 +213,19 @@
   }
   .mobileNav {
     display: flex;
-    justify-content: flex-start;
-    padding: 0 8px;
-    height: 70px;
-    border-radius: 16px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    background-color: rgba(255, 255, 255);
+    justify-content: space-evenly;
+    height: 30px;
+    border-radius: 12px;
+    background-color: transparent;
   }
   .avaTitle {
     font-size: 20px;
   }
   .navButton {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
     padding: 8px 10px;
-    height: 36px;
+    height: 30px;
   }
   .navButton.activeSheets:hover {
     background: rgba(0, 122, 255, 0.12);

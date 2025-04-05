@@ -12,7 +12,6 @@
   /* Ensure no interference with sticky */
   @media (max-width: 1024px) {
     .appContainer {
-
     }
     .contentWrapper {
       /* No extra adjustments needed */

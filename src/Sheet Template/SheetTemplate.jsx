@@ -3,7 +3,6 @@ import styles from "./SheetTemplate.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
 import { CiFilter } from "react-icons/ci";
-import { FaEdit } from "react-icons/fa";
 import { IoCloseCircle } from "react-icons/io5";
 
 const SheetTemplate = ({
@@ -105,18 +104,18 @@ const SheetTemplate = ({
 
   const handleRowClick = (rowData) => {
     setSelectedRow(rowData);
-    setIsCardOpen(true); // For mobile
+    setIsCardOpen(true);
     onRowClick(rowData);
   };
 
   const handleCardClose = () => {
     setIsCardOpen(false);
-    setTimeout(() => setSelectedRow(null), 300); // Match animation duration for mobile
+    setTimeout(() => setSelectedRow(null), 300);
   };
 
   const handleCardSave = (updatedRow) => {
     onCardSave(updatedRow);
-    setSelectedRow(updatedRow); // Update local state to reflect changes
+    setSelectedRow(updatedRow);
   };
 
   const handleCardDelete = (rowData) => {
@@ -125,7 +124,7 @@ const SheetTemplate = ({
   };
 
   const handleAddNewCard = () => {
-    const newId = `${Date.now()}`; // Simple unique ID, adjust as needed
+    const newId = `${Date.now()}`;
     let newCard;
     switch (activeSheetName) {
       case "Leads":
@@ -156,43 +155,24 @@ const SheetTemplate = ({
         };
         break;
       default:
-        newCard = { [visibleHeaders[0].key]: newId }; // Fallback for custom sheets
+        newCard = { [visibleHeaders[0].key]: newId };
     }
-    onCardSave(newCard); // Add to cards
-    setSelectedRow(newCard); // Open it for editing
-    setIsCardOpen(true); // Mobile
+    onCardSave(newCard);
+    setSelectedRow(newCard);
+    setIsCardOpen(true);
   };
 
   useEffect(() => {
-    setTimeout(() => setIsInitialLoad(false), 0); // Trigger initial animation
+    setTimeout(() => setIsInitialLoad(false), 0);
   }, []);
 
   const addNewCardRow = {
-    [visibleHeaders[0].key]: "Add New Card", // Display in first column
-    isAddNew: true, // Flag for styling
+    [visibleHeaders[0].key]: "Add New Card",
+    isAddNew: true,
   };
 
   const TableContent = (
     <div className={`${styles.tableContent} ${isInitialLoad ? styles.tableInitial : ""}`}>
-      <div className={styles.sheetTabs}>
-        {sheets.map((sheet) => (
-          <button
-            key={sheet.sheetName}
-            className={`${styles.tabButton} ${
-              sheet.sheetName === activeSheetName ? styles.activeTab : ""
-            }`}
-            onClick={() => handleSheetClick(sheet.sheetName)}
-          >
-            {sheet.sheetName}
-          </button>
-        ))}
-        <button
-          className={styles.addTabButton}
-          onClick={() => handleSheetClick("add-new-sheet")}
-        >
-          +
-        </button>
-      </div>
       <div className={styles.controls}>
         <div className={styles.searchContainer}>
           <input
@@ -212,7 +192,7 @@ const SheetTemplate = ({
           <CiFilter size={20} />
         </button>
         <button className={styles.editHeaderButton} onClick={onEditSheet}>
-          <FaEdit size={20} />
+          Edit
         </button>
       </div>
       <div className={styles.tableWrapper} ref={scrollContainerRef}>
@@ -242,6 +222,25 @@ const SheetTemplate = ({
             <div className={styles.noResults}>No results found</div>
           )}
         </div>
+      </div>
+      <div className={styles.sheetTabs}>
+        {sheets.map((sheet) => (
+          <button
+            key={sheet.sheetName}
+            className={`${styles.tabButton} ${
+              sheet.sheetName === activeSheetName ? styles.activeTab : ""
+            }`}
+            onClick={() => handleSheetClick(sheet.sheetName)}
+          >
+            {sheet.sheetName}
+          </button>
+        ))}
+        <button
+          className={styles.addTabButton}
+          onClick={() => handleSheetClick("add-new-sheet")}
+        >
+          +
+        </button>
       </div>
     </div>
   );

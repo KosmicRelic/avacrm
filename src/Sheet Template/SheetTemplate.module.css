@@ -1,6 +1,6 @@
 .sheetWrapper {
   width: 100%;
-  height: calc(100vh - 95px);
+  height: calc(100vh - 94px);
   display: flex;
   padding: 16px 0;
 }
@@ -9,7 +9,7 @@
   width: 65%;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
-  border-radius: 18px;
+  border-radius: 12px;
   height: 100%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
@@ -38,7 +38,7 @@
   height: 100%;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
-  border-radius: 18px;
+  border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   overflow-y: auto;
   box-sizing: border-box;
@@ -114,9 +114,10 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 16px;
+  background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -129,55 +130,46 @@
 }
 
 .tabButton {
-  padding: 8px 16px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
+  padding: 8px 10px;
+  height: 30px;
   color: #6e6e73;
   background: rgba(0, 0, 0, 0.03);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
-.tabButton:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #1d1d1f;
-}
-
 .activeTab {
   background: rgba(0, 122, 255, 0.12);
   color: #007aff;
-  font-weight: 600;
 }
 
 .addTabButton {
-  padding: 8px 12px;
-  font-size: 18px;
+  padding: 5px 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #007aff;
   background: rgba(0, 122, 255, 0.1);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.addTabButton:hover {
-  background: rgba(0, 122, 255, 0.2);
 }
 
 .controls {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255);
   backdrop-filter: blur(20px);
   box-sizing: border-box;
   gap: 12px;
   position: sticky;
-  top: 48px;
+  top: 0px;
   z-index: 20;
 }
 
@@ -190,8 +182,8 @@
   width: 100%;
   padding: 12px 32px 12px 16px;
   border: none;
-  border-radius: 10px;
-  font-size: 17px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(0, 0, 0, 0.03);
@@ -236,7 +228,8 @@
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.08);
+  color: #000000;
   position: sticky;
   top: 0px;
   z-index: 10;
@@ -244,12 +237,12 @@
 
 .headerCell {
   flex: 0 0 auto;
-  width: 180px;
+  width: 150px;
   text-align: center;
   font-weight: 600;
   font-size: 13px;
-  padding: 14px 12px;
-  color: #6e6e73;
+  padding: 0px 12px;
+  padding-bottom: 8px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -259,20 +252,38 @@
   min-width: 100%;
 }
 
-.filterButton,
-.editHeaderButton {
+.filterButton {
   background: rgba(0, 0, 0, 0.03);
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
-  padding: 10px;
+  padding: 10px 12px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
   color: #007aff;
 }
 
-.filterButton:hover,
-.editHeaderButton:hover {
+.filterButton:hover {
   background: rgba(0, 122, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.editHeaderButton {
+  border-radius: none;
+  border: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  color: #007aff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.editHeaderButton:hover {
   transform: scale(1.05);
 }
 
@@ -288,21 +299,33 @@
 @media (max-width: 1024px) {
   .sheetWrapper {
     width: 100%;
-    height: calc(100vh - 243px);
+    height: calc(100vh - 179px);
     display: block;
     padding: 0;
+    margin: 0;
   }
 
   .tableContainer {
-    width: calc(100% - 32px);
-    margin-right: 16px;
+    width: calc(100%);
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
   }
 
   .cardDetailsContainer {
-    display: none; /* Hide the permanent card container on mobile */
+    display: none;
   }
 
   .headerCell {
     width: 120px;
+  }
+
+  /* Modified active tab colors for mobile */
+  .activeTab {
+    background: rgba(0, 122, 255, 0.2); /* Slightly more pronounced blue */
+    color: #005ecb; /* Darker blue for better contrast */
+    font-weight: 600; /* Slightly bolder */
   }
 }

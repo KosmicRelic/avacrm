@@ -1,13 +1,13 @@
 .bodyRow {
   display: flex;
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 10px;
+  border-radius: 12px;
   transition: all 0.2s ease;
   min-width: 100%;
   width: max-content;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin: 8px 16px;
-  cursor: pointer; /* Indicate clickable */
+  cursor: pointer;
 }
 
 .bodyRow:hover {
@@ -29,9 +29,9 @@
 
 .bodyCell {
   padding: 14px 12px;
-  width: 180px;
+  width: 150px;
   text-align: center;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
   white-space: nowrap;
@@ -42,7 +42,7 @@
 @media (max-width: 1024px) {
   .bodyCell {
     width: 120px;
-    font-size: 15px;
+    font-size: 14px;
   }
   .bodyRow {
     margin: 8px 16px;
