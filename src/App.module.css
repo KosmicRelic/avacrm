@@ -10,7 +10,7 @@
   }
   
   /* Ensure no interference with sticky */
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .appContainer {
 
     }

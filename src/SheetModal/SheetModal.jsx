@@ -9,6 +9,7 @@ const SheetModal = ({
     sheetName: initialSheetName = "",
     headers: initialHeaders = [],
     pinnedHeaders: initialPinnedHeaders = [],
+    sheets = [], // List of existing sheets
     onSave,
     onPinToggle,
     onClose,
@@ -38,7 +39,7 @@ const SheetModal = ({
         const newHeaders = [...currentHeaders];
         [newHeaders[index - 1], newHeaders[index]] = [newHeaders[index], newHeaders[index - 1]];
         setCurrentHeaders(newHeaders);
-        setEditIndex(index - 1); // Update editIndex to follow the moved header
+        setEditIndex(index - 1);
     };
 
     const moveDown = (index) => {
@@ -46,7 +47,7 @@ const SheetModal = ({
         const newHeaders = [...currentHeaders];
         [newHeaders[index], newHeaders[index + 1]] = [newHeaders[index + 1], newHeaders[index]];
         setCurrentHeaders(newHeaders);
-        setEditIndex(index + 1); // Update editIndex to follow the moved header
+        setEditIndex(index + 1);
     };
 
     const togglePin = (headerKey) => {
@@ -72,15 +73,40 @@ const SheetModal = ({
     };
 
     const handleSave = () => {
+        const trimmedName = sheetName.trim();
+        const existingSheetNames = sheets.map((sheet) => sheet.sheetName);
+
+        // Log for debugging
+        console.log("Current sheet name:", trimmedName);
+        console.log("Existing sheet names:", existingSheetNames);
+        console.log("isEditMode:", isEditMode);
+        console.log("Initial sheet name:", initialSheetName);
+
+        // Check for duplicates
+        const isDuplicate = isEditMode
+            ? trimmedName !== initialSheetName && existingSheetNames.includes(trimmedName)
+            : existingSheetNames.includes(trimmedName);
+
+        if (isDuplicate) {
+            alert("A sheet with this name already exists. Please choose a different name.");
+            return; // Prevent saving
+        }
+
+        // Validate name and headers
+        if (!trimmedName) {
+            alert("Please provide a sheet name.");
+            return;
+        }
+        if (currentHeaders.length === 0) {
+            alert("Please select at least one header.");
+            return;
+        }
+
+        // Proceed with saving
         if (isEditMode) {
-            onSave({ sheetName: sheetName.trim() }, currentHeaders, pinnedHeaders);
+            onSave({ sheetName: trimmedName }, currentHeaders, pinnedHeaders);
         } else {
-            if (sheetName.trim() && currentHeaders.length > 0) {
-                onSave(sheetName.trim(), currentHeaders, pinnedHeaders);
-            } else {
-                alert("Please provide a sheet name and select at least one header.");
-                return;
-            }
+            onSave(trimmedName, currentHeaders, pinnedHeaders);
         }
         onClose();
     };

@@ -3,8 +3,18 @@ import styles from "./SheetTemplate.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import { CiFilter } from "react-icons/ci";
 import { FaEdit } from "react-icons/fa";
+import { IoCloseCircle } from "react-icons/io5"; // Added for the clear button
 
-const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) => {
+const SheetTemplate = ({
+    headers,
+    rows,
+    filters = {},
+    sheets,
+    activeSheetName,
+    onSheetChange,
+    onEditSheet,
+    onFilter,
+}) => {
     const scrollContainerRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -16,34 +26,52 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) =
                   String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
               )
             : true;
-    
+
         const matchesFilters = Object.entries(filters).every(([headerKey, filter]) => {
             if (!filter || Object.keys(filter).length === 0) return true;
             const rowValue = row[headerKey];
             const header = headers.find((h) => h.key === headerKey);
             const type = header ? header.type : "text";
-    
+
             switch (type) {
                 case "number":
                     if (!filter.value) return true;
                     const numValue = Number(rowValue);
                     const filterNum = Number(filter.value);
                     switch (filter.order) {
-                        case "greater": return numValue > filterNum;
-                        case "less": return numValue < filterNum;
-                        default: return numValue === filterNum;
+                        case "greater":
+                            return numValue > filterNum;
+                        case "less":
+                            return numValue < filterNum;
+                        case "greaterOrEqual":
+                            return numValue >= filterNum;
+                        case "lessOrEqual":
+                            return numValue <= filterNum;
+                        default:
+                            return numValue === filterNum; // "equals"
                     }
                 case "date":
-                    if (!filter.start && !filter.end) return true;
+                    if (!filter.start && !filter.end && !filter.value) return true;
                     const rowDate = new Date(rowValue);
-                    const startDate = filter.start ? new Date(filter.start) : null;
-                    const endDate = filter.end ? new Date(filter.end) : null;
-                    if (startDate && endDate) {
-                        return rowDate >= startDate && rowDate <= endDate;
+                    if (filter.start || filter.end) {
+                        const startDate = filter.start ? new Date(filter.start) : null;
+                        const endDate = filter.end ? new Date(filter.end) : null;
+                        if (startDate && endDate) {
+                            return rowDate >= startDate && rowDate <= endDate;
+                        }
+                        if (startDate) return rowDate >= startDate;
+                        if (endDate) return rowDate <= endDate;
+                        return true;
                     }
-                    if (startDate) return rowDate >= startDate;
-                    if (endDate) return rowDate <= endDate;
-                    return true;
+                    const filterDate = new Date(filter.value);
+                    switch (filter.order) {
+                        case "before":
+                            return rowDate < filterDate;
+                        case "after":
+                            return rowDate > filterDate;
+                        default:
+                            return rowDate.toDateString() === filterDate.toDateString(); // "on"
+                    }
                 case "dropdown":
                     if (!filter.values || filter.values.length === 0) return true;
                     return filter.values.includes(String(rowValue));
@@ -52,20 +80,58 @@ const SheetTemplate = ({ headers, rows, filters = {}, onEditSheet, onFilter }) =
                     return String(rowValue || "").toLowerCase().includes(filter.value.toLowerCase());
             }
         });
-    
+
         return matchesSearch && matchesFilters;
     });
 
+    const handleSheetClick = (sheetName) => {
+        if (sheetName === "add-new-sheet") {
+            onSheetChange("add-new-sheet");
+        } else {
+            onSheetChange(sheetName);
+        }
+    };
+
+    const clearSearch = () => {
+        setSearchQuery("");
+    };
+
     return (
         <div className={styles.tableContainer}>
+            <div className={styles.sheetTabs}>
+                {sheets.map((sheet) => (
+                    <button
+                        key={sheet.sheetName}
+                        className={`${styles.tabButton} ${
+                            sheet.sheetName === activeSheetName ? styles.activeTab : ""
+                        }`}
+                        onClick={() => handleSheetClick(sheet.sheetName)}
+                    >
+                        {sheet.sheetName}
+                    </button>
+                ))}
+                <button
+                    className={styles.addTabButton}
+                    onClick={() => handleSheetClick("add-new-sheet")}
+                >
+                    +
+                </button>
+            </div>
             <div className={styles.controls}>
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search"
-                    className={styles.searchBar}
-                />
+                <div className={styles.searchContainer}>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search"
+                        className={styles.searchBar}
+                    />
+                    {searchQuery && (
+                        <button className={styles.clearButton} onClick={clearSearch}>
+                            <IoCloseCircle size={18} />
+                        </button>
+                    )}
+                </div>
                 <button className={styles.filterButton} onClick={onFilter}>
                     <CiFilter size={20} />
                 </button>

@@ -37,14 +37,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .modalTitle {
   font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
-  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -64,10 +63,10 @@
 }
 
 .filterList {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .filterItem {
@@ -81,29 +80,40 @@
 }
 
 .filterItem:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .activeItem {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.08);
 }
 
 .filterRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
 }
 
-.filterItem span {
-  color: #1d1d1f;
-  font-size: 17px;
-  font-weight: 400;
+.filterSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex-grow: 1;
 }
 
-.headerType {
+.headerName {
+  color: #1d1d1f;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.filterValue {
   color: #6e6e73;
   font-size: 15px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .editButton {
@@ -131,13 +141,14 @@
   flex-direction: column;
   gap: 12px;
   margin-top: 12px;
+  width: 100%;
 }
 
 .filterInput,
 .filterSelect,
 .filterMultiSelect {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: none;
   border-radius: 10px;
   font-size: 17px;
@@ -185,20 +196,7 @@
   color: #999;
 }
 
-.numberFilter {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.numberFilter .filterInput {
-  flex: 1;
-}
-
-.numberFilter .filterSelect {
-  flex: 1;
-}
-
+.numberFilter,
 .dateFilter {
   display: flex;
   gap: 8px;
@@ -206,6 +204,12 @@
   flex-wrap: wrap;
 }
 
+.numberFilter .filterSelect,
+.dateFilter .filterSelect {
+  width: 80px; /* Fixed width for consistency */
+}
+
+.numberFilter .filterInput,
 .dateFilter .filterInput {
   flex: 1;
 }
@@ -233,8 +237,8 @@
 
 .filterMultiSelect {
   height: 120px;
-  padding: 12px 16px; /* Adjusted padding to match other inputs */
-  width: 100%; /* Explicitly set to full width */
+  padding: 10px 14px;
+  width: 100%;
 }
 
 .filterMultiSelect::-webkit-scrollbar {
@@ -248,31 +252,30 @@
 
 .filterActions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   justify-content: flex-end;
+  margin-top: 12px;
 }
 
-.cancelButton {
-  background: none;
+.doneButton {
+  background: #007aff;
   border: none;
-  color: #007aff;
+  color: white;
   font-size: 15px;
   font-weight: 500;
   padding: 8px 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.cancelButton:hover {
-  background: rgba(0, 122, 255, 0.1);
+.doneButton:hover {
+  background: #0066cc;
 }
 
 .modalActions {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
 }
 
 .resetButton {

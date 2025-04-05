@@ -1,4 +1,3 @@
-// App.jsx
 import { useContext, useState } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
@@ -139,6 +138,9 @@ function App() {
                         headers={resolvedHeaders}
                         rows={resolvedRows}
                         filters={filters}
+                        sheets={sheets}
+                        activeSheetName={activeSheetName}
+                        onSheetChange={handleSheetChange}
                         onEditSheet={() => {
                             setIsSheetModalEditMode(true);
                             setIsSheetModalOpen(true);
@@ -152,6 +154,7 @@ function App() {
                         sheetName={isSheetModalEditMode ? activeSheetName : ""}
                         headers={resolvedHeaders}
                         pinnedHeaders={isSheetModalEditMode ? activeSheet?.pinnedHeaders || [] : []}
+                        sheets={sheets} // Added here
                         onSave={handleSaveSheet}
                         onPinToggle={handlePinToggle}
                         onClose={() => setIsSheetModalOpen(false)}

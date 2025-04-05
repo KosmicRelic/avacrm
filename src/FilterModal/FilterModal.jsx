@@ -44,7 +44,12 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
         if (dateRangeMode[headerKey]) {
             setFilterValues((prev) => ({
                 ...prev,
-                [headerKey]: { value: prev[headerKey]?.value || "" },
+                [headerKey]: { value: prev[headerKey]?.value || "", order: "on" },
+            }));
+        } else {
+            setFilterValues((prev) => ({
+                ...prev,
+                [headerKey]: { start: "", end: "" },
             }));
         }
     };
@@ -64,6 +69,38 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
         setActiveFilter(null);
     };
 
+    const getFilterSummary = (header) => {
+        const filter = filterValues[header.key];
+        if (!filter) return "No filter";
+
+        switch (header.type) {
+            case "number":
+                const order = filter.order || "equals";
+                const value = filter.value || "";
+                if (!value) return "No filter";
+                const orderText =
+                    order === "greaterOrEqual" ? "≥" : order === "lessOrEqual" ? "≤" : order.replace(/([A-Z])/g, " $1").toLowerCase();
+                return `${orderText} ${value}`;
+            case "date":
+                if (dateRangeMode[header.key]) {
+                    const start = filter.start || "";
+                    const end = filter.end || "";
+                    if (!start && !end) return "No filter";
+                    return `${start ? `${start}` : ""}${start && end ? " - " : ""}${end ? `${end}` : ""}`.trim();
+                } else {
+                    const order = filter.order || "on";
+                    const value = filter.value || "";
+                    if (!value) return "No filter";
+                    return `${order} ${value}`;
+                }
+            case "dropdown":
+                const values = filter.values || [];
+                return values.length > 0 ? values.join(", ") : "No filter";
+            default:
+                return filter.value ? `"${filter.value}"` : "No filter";
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -78,7 +115,7 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
         <div className={styles.modalOverlay}>
             <div className={styles.modalContent} ref={modalRef}>
                 <div className={styles.modalHeader}>
-                    <h2 className={styles.modalTitle}>Filter</h2>
+                    <h2 className={styles.modalTitle}>Filters</h2>
                     <button className={styles.closeButton} onClick={onClose}>Done</button>
                 </div>
                 <div className={styles.filterList}>
@@ -87,13 +124,17 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
                         return (
                             <div
                                 key={header.key}
-                                className={`${styles.filterItem} ${isActive ? styles.activeItem : ''}`}
+                                className={`${styles.filterItem} ${isActive ? styles.activeItem : ""}`}
                             >
                                 <div className={styles.filterRow}>
                                     {!isActive ? (
                                         <>
-                                            <span>{header.name}</span>
-                                            <span className={styles.headerType}>({header.type})</span>
+                                            <div className={styles.filterSummary}>
+                                                <span className={styles.headerName}>{header.name}</span>
+                                                <span className={styles.filterValue}>
+                                                    {getFilterSummary(header)}
+                                                </span>
+                                            </div>
                                             <button
                                                 onClick={() => toggleFilter(header.key)}
                                                 className={styles.editButton}
@@ -106,22 +147,24 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
                                         <div className={styles.filterFields}>
                                             {header.type === "number" ? (
                                                 <div className={styles.numberFilter}>
-                                                    <input
-                                                        type="number"
-                                                        value={filterValues[header.key]?.value || ""}
-                                                        onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                                                        placeholder={`Enter ${header.name}`}
-                                                        className={styles.filterInput}
-                                                    />
                                                     <select
                                                         value={filterValues[header.key]?.order || "equals"}
                                                         onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
                                                         className={styles.filterSelect}
                                                     >
-                                                        <option value="equals">Equals</option>
-                                                        <option value="greater">Greater Than</option>
-                                                        <option value="less">Less Than</option>
+                                                        <option value="equals">=</option>
+                                                        <option value="greater">{'>'}</option>
+                                                        <option value="less">{'<'}</option>
+                                                        <option value="greaterOrEqual">{'≥'}</option>
+                                                        <option value="lessOrEqual">{'≤'}</option>
                                                     </select>
+                                                    <input
+                                                        type="number"
+                                                        value={filterValues[header.key]?.value || ""}
+                                                        onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
+                                                        placeholder="Value"
+                                                        className={styles.filterInput}
+                                                    />
                                                 </div>
                                             ) : header.type === "date" ? (
                                                 dateRangeMode[header.key] ? (
@@ -131,37 +174,43 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
                                                             value={filterValues[header.key]?.start || ""}
                                                             onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
                                                             className={styles.filterInput}
-                                                            placeholder="Start Date"
                                                         />
-                                                        <span className={styles.dateSeparator}>to</span>
+                                                        <span className={styles.dateSeparator}>–</span>
                                                         <input
                                                             type="date"
                                                             value={filterValues[header.key]?.end || ""}
                                                             onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
                                                             className={styles.filterInput}
-                                                            placeholder="End Date"
                                                         />
                                                         <button
                                                             onClick={() => toggleDateRangeMode(header.key)}
                                                             className={styles.toggleButton}
                                                         >
-                                                            Single Date
+                                                            Single
                                                         </button>
                                                     </div>
                                                 ) : (
                                                     <div className={styles.dateFilter}>
+                                                        <select
+                                                            value={filterValues[header.key]?.order || "on"}
+                                                            onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
+                                                            className={styles.filterSelect}
+                                                        >
+                                                            <option value="on">On</option>
+                                                            <option value="before">Before</option>
+                                                            <option value="after">After</option>
+                                                        </select>
                                                         <input
                                                             type="date"
                                                             value={filterValues[header.key]?.value || ""}
                                                             onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
                                                             className={styles.filterInput}
-                                                            placeholder="Select Date"
                                                         />
                                                         <button
                                                             onClick={() => toggleDateRangeMode(header.key)}
                                                             className={styles.toggleButton}
                                                         >
-                                                            Date Range
+                                                            Range
                                                         </button>
                                                     </div>
                                                 )
@@ -184,12 +233,12 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
                                                     type="text"
                                                     value={filterValues[header.key]?.value || ""}
                                                     onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                                                    placeholder={`Filter by ${header.name}`}
+                                                    placeholder={`Filter ${header.name}`}
                                                     className={styles.filterInput}
                                                 />
                                             )}
                                             <div className={styles.filterActions}>
-                                                <button onClick={() => toggleFilter(header.key)} className={styles.cancelButton}>
+                                                <button onClick={() => toggleFilter(header.key)} className={styles.doneButton}>
                                                     Done
                                                 </button>
                                             </div>
