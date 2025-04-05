@@ -21,74 +21,98 @@ const SheetTemplate = ({
   const scrollContainerRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRow, setSelectedRow] = useState(null);
-  const [isCardOpen, setIsCardOpen] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const visibleHeaders = headers.filter((header) => header.visible);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowWidth <= 1024;
+
+  // Filter rows based on filters prop
   const filteredRows = rows.filter((row) => {
-    const matchesSearch = searchQuery
-      ? headers.some((header) =>
-          String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : true;
-
-    const matchesFilters = Object.entries(filters).every(([headerKey, filter]) => {
-      if (!filter || Object.keys(filter).length === 0) return true;
-      const rowValue = row[headerKey];
+    return Object.entries(filters).every(([headerKey, filter]) => {
       const header = headers.find((h) => h.key === headerKey);
-      const type = header ? header.type : "text";
+      const rowValue = row[headerKey];
+      if (!filter || !header) return true;
 
-      switch (type) {
+      switch (header.type) {
         case "number":
-          if (!filter.value) return true;
+          if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
           const numValue = Number(rowValue);
+          if (filter.start || filter.end) {
+            const startNum = filter.start ? Number(filter.start) : -Infinity;
+            const endNum = filter.end ? Number(filter.end) : Infinity;
+            return numValue >= startNum && numValue <= endNum;
+          }
+          if (!filter.value) return true;
           const filterNum = Number(filter.value);
           switch (filter.order) {
-            case "greater":
-              return numValue > filterNum;
-            case "less":
-              return numValue < filterNum;
-            case "greaterOrEqual":
-              return numValue >= filterNum;
-            case "lessOrEqual":
-              return numValue <= filterNum;
-            default:
-              return numValue === filterNum;
+            case "greater": return numValue > filterNum;
+            case "less": return numValue < filterNum;
+            case "greaterOrEqual": return numValue >= filterNum;
+            case "lessOrEqual": return numValue <= filterNum;
+            default: return numValue === filterNum;
           }
         case "date":
           if (!filter.start && !filter.end && !filter.value) return true;
-          const rowDate = new Date(rowValue);
+          const dateValue = new Date(rowValue);
           if (filter.start || filter.end) {
-            const startDate = filter.start ? new Date(filter.start) : null;
-            const endDate = filter.end ? new Date(filter.end) : null;
-            if (startDate && endDate) {
-              return rowDate >= startDate && rowDate <= endDate;
-            }
-            if (startDate) return rowDate >= startDate;
-            if (endDate) return rowDate <= endDate;
-            return true;
+            const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
+            const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
+            return dateValue >= startDate && dateValue <= endDate;
           }
+          if (!filter.value) return true;
           const filterDate = new Date(filter.value);
           switch (filter.order) {
-            case "before":
-              return rowDate < filterDate;
-            case "after":
-              return rowDate > filterDate;
-            default:
-              return rowDate.toDateString() === filterDate.toDateString();
+            case "before": return dateValue < filterDate;
+            case "after": return dateValue > filterDate;
+            default: return dateValue.toDateString() === filterDate.toDateString();
           }
         case "dropdown":
           if (!filter.values || filter.values.length === 0) return true;
-          return filter.values.includes(String(rowValue));
-        default:
+          return filter.values.includes(rowValue);
+        case "text":
           if (!filter.value) return true;
-          return String(rowValue || "").toLowerCase().includes(filter.value.toLowerCase());
+          const strValue = String(rowValue).toLowerCase();
+          const filterStr = filter.value.toLowerCase();
+          switch (filter.condition) {
+            case "contains": return strValue.includes(filterStr);
+            case "startsWith": return strValue.startsWith(filterStr);
+            case "endsWith": return strValue.endsWith(filterStr);
+            default: return strValue === filterStr;
+          }
+        default:
+          return true;
       }
     });
-
-    return matchesSearch && matchesFilters;
   });
+
+  // Sort rows based on filters prop
+  const sortedRows = [...filteredRows].sort((a, b) => {
+    for (const [headerKey, filter] of Object.entries(filters)) {
+      const header = headers.find((h) => h.key === headerKey);
+      if (header.type === "number" && filter.sortOrder) {
+        const aValue = Number(a[headerKey]);
+        const bValue = Number(b[headerKey]);
+        return filter.sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+      }
+    }
+    return 0;
+  });
+
+  // Apply search query filtering
+  const finalRows = sortedRows.filter((row) =>
+    visibleHeaders.some((header) =>
+      String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   const handleSheetClick = (sheetName) => {
     if (sheetName === "add-new-sheet") {
@@ -104,13 +128,11 @@ const SheetTemplate = ({
 
   const handleRowClick = (rowData) => {
     setSelectedRow(rowData);
-    setIsCardOpen(true);
     onRowClick(rowData);
   };
 
   const handleCardClose = () => {
-    setIsCardOpen(false);
-    setTimeout(() => setSelectedRow(null), 300);
+    setSelectedRow(null);
   };
 
   const handleCardSave = (updatedRow) => {
@@ -120,7 +142,7 @@ const SheetTemplate = ({
 
   const handleCardDelete = (rowData) => {
     onCardDelete(rowData);
-    handleCardClose();
+    setSelectedRow(null);
   };
 
   const handleAddNewCard = () => {
@@ -159,20 +181,10 @@ const SheetTemplate = ({
     }
     onCardSave(newCard);
     setSelectedRow(newCard);
-    setIsCardOpen(true);
-  };
-
-  useEffect(() => {
-    setTimeout(() => setIsInitialLoad(false), 0);
-  }, []);
-
-  const addNewCardRow = {
-    [visibleHeaders[0].key]: "Add New Card",
-    isAddNew: true,
   };
 
   const TableContent = (
-    <div className={`${styles.tableContent} ${isInitialLoad ? styles.tableInitial : ""}`}>
+    <div className={styles.tableContent}>
       <div className={styles.controls}>
         <div className={styles.searchContainer}>
           <input
@@ -205,12 +217,12 @@ const SheetTemplate = ({
         </div>
         <div className={styles.bodyContainer}>
           <RowComponent
-            rowData={addNewCardRow}
+            rowData={{ [visibleHeaders[0].key]: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={handleAddNewCard}
           />
-          {filteredRows.length > 0 ? (
-            filteredRows.map((rowData, rowIndex) => (
+          {finalRows.length > 0 ? (
+            finalRows.map((rowData, rowIndex) => (
               <RowComponent
                 key={rowIndex}
                 rowData={rowData}
@@ -248,32 +260,41 @@ const SheetTemplate = ({
   return (
     <div className={styles.sheetWrapper}>
       <div className={styles.tableContainer}>
-        {window.innerWidth <= 1024 && selectedRow ? (
-          <div className={`${styles.cardDetailsMobile} ${isCardOpen ? styles.cardOpen : styles.cardClosed}`}>
-            <CardDetails
-              rowData={selectedRow}
-              headers={visibleHeaders}
-              onClose={handleCardClose}
-              onSave={handleCardSave}
-              onDelete={handleCardDelete}
-            />
+        {TableContent}
+        {isMobile && (
+          <div
+            className={`${styles.cardDetailsMobile} ${
+              selectedRow ? styles.cardOpen : styles.cardClosed
+            }`}
+          >
+            {selectedRow && (
+              <CardDetails
+                key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+                rowData={selectedRow}
+                headers={visibleHeaders}
+                onClose={handleCardClose}
+                onSave={handleCardSave}
+                onDelete={handleCardDelete}
+              />
+            )}
           </div>
-        ) : (
-          TableContent
         )}
-      </div>
-      <div className={styles.cardDetailsContainer}>
-        {selectedRow ? (
-          <CardDetails
-            rowData={selectedRow}
-            headers={visibleHeaders}
-            onClose={() => setSelectedRow(null)}
-            onSave={handleCardSave}
-            onDelete={handleCardDelete}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <p>Select a row to show its data</p>
+        {!isMobile && (
+          <div className={styles.cardDetailsContainer}>
+            {selectedRow ? (
+              <CardDetails
+                key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+                rowData={selectedRow}
+                headers={visibleHeaders}
+                onClose={handleCardClose}
+                onSave={handleCardSave}
+                onDelete={handleCardDelete}
+              />
+            ) : (
+              <div className={styles.placeholder}>
+                <p>Select a row to show its data</p>
+              </div>
+            )}
           </div>
         )}
       </div>

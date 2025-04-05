@@ -118,16 +118,14 @@ function App() {
     );
   };
 
-  const handleApplyFilters = (newFilters) => {
-    setFilters(newFilters);
-  };
+  const handleApplyFilters = (newFilters) => setFilters(newFilters);
 
   const handleRowClick = (rowData) => {
     // Placeholder, handled in SheetTemplate
   };
 
   const handleCardSave = (updatedRow) => {
-    console.log("Saving:", updatedRow); // Debug
+    console.log("Saving:", updatedRow);
     setCards((prevCards) =>
       prevCards.map((card) => (card.leadId === updatedRow.leadId ? updatedRow : card))
     );
@@ -146,7 +144,7 @@ function App() {
   };
 
   const handleDelete = (rowData) => {
-    console.log("Deleting:", rowData); // Debug
+    console.log("Deleting:", rowData);
     setCards((prevCards) => prevCards.filter((card) => card.leadId !== rowData.leadId));
     setSheets((prevSheets) =>
       prevSheets.map((sheet) =>
@@ -156,7 +154,6 @@ function App() {
       )
     );
   };
-  
 
   return (
     <div className={styles.appContainer}>
@@ -183,8 +180,8 @@ function App() {
             }}
             onFilter={() => setIsFilterModalOpen(true)}
             onRowClick={handleRowClick}
-            onCardSave={handleCardSave} // Added
-            onCardDelete={handleDelete} // Ensure this is passed
+            onCardSave={handleCardSave}
+            onCardDelete={handleDelete}
           />
         )}
         {isSheetModalOpen && (

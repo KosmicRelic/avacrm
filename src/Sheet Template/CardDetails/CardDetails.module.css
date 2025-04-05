@@ -1,10 +1,14 @@
 .cardContent {
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 16px;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   overflow-y: auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
 }
@@ -13,42 +17,68 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 10;
 }
 
 .cardTitle {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
   margin: 0;
 }
 
-.closeButton {
+.headerButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.closeButton,
+.editButton,
+.cancelButton,
+.saveButton {
   background: none;
   border: none;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: #007aff;
   cursor: pointer;
-  padding: 0;
+  padding: 8px 12px;
   transition: opacity 0.2s ease;
 }
 
-.closeButton:hover {
+.closeButton:hover,
+.editButton:hover,
+.cancelButton:hover,
+.saveButton:hover {
   opacity: 0.8;
+}
+
+.saveButton {
+  background: #007aff;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
 }
 
 .fieldList {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  padding: 16px 0;
 }
 
 .fieldItem {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .fieldLabel {
@@ -56,25 +86,31 @@
   font-weight: 500;
   color: #6e6e73;
   text-transform: uppercase;
+  flex: 0 0 40%;
+}
+
+.fieldValue {
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  flex: 0 0 60%;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fieldInput {
-  width: 100%;
-  padding: 12px;
+  width: 60%;
+  padding: 8px 12px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
   background: #f5f5f7;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.fieldInput:focus {
-  outline: none;
-  border-color: #007aff;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  transition: border-color 0.2s ease;
 }
 
 .fieldInput[type="number"]::-webkit-inner-spin-button,
@@ -87,28 +123,23 @@
   -moz-appearance: textfield;
 }
 
-.fieldInput[type="date"] {
-  min-width: 150px;
+.fieldInput:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
 .cardActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 20px;
+  padding-top: 12px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.actionButtons {
-  display: flex;
-  gap: 12px;
+  text-align: center;
 }
 
 .deleteButton {
   background: none;
   border: none;
   color: #ff453a;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 16px;
   cursor: pointer;
@@ -118,22 +149,6 @@
 .deleteButton:hover {
   background: rgba(255, 69, 58, 0.1);
   border-radius: 8px;
-}
-
-.saveButton {
-  background: #007aff;
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.saveButton:hover {
-  background: #0066cc;
 }
 
 .confirmOverlay {
@@ -154,57 +169,73 @@
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 320px;
+  max-width: 300px;
   width: 100%;
   text-align: center;
 }
 
 .confirmTitle {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 
 .confirmMessage {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: #6e6e73;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
 }
 
 .confirmActions {
   display: flex;
   justify-content: space-around;
-  gap: 10px;
+  gap: 8px;
 }
 
-.confirmCancel {
+.confirmCancel,
+.confirmDelete {
   background: none;
   border: none;
-  color: #007aff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 16px;
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
 
-.confirmCancel:hover {
-  opacity: 0.8;
+.confirmCancel {
+  color: #007aff;
 }
 
 .confirmDelete {
-  background: none;
-  border: none;
   color: #ff453a;
-  font-size: 16px;
   font-weight: 600;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
+.confirmCancel:hover,
 .confirmDelete:hover {
   opacity: 0.8;
+}
+
+.fieldSelect {
+  width: 60%;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #f5f5f7 url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fieldSelect:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
