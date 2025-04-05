@@ -121,7 +121,7 @@ function App() {
   const handleApplyFilters = (newFilters) => setFilters(newFilters);
 
   const handleRowClick = (rowData) => {
-    // Placeholder, handled in SheetTemplate
+    console.log("App: Row clicked:", rowData); // Debug
   };
 
   const handleCardSave = (updatedRow) => {
@@ -200,6 +200,7 @@ function App() {
           <FilterModal
             headers={resolvedHeaders}
             rows={resolvedRows}
+            filters={filters}
             onApply={handleApplyFilters}
             onClose={() => setIsFilterModalOpen(false)}
           />

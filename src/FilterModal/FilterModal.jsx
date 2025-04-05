@@ -2,11 +2,34 @@ import { useEffect, useState, useContext, useRef } from "react";
 import styles from "./FilterModal.module.css";
 import { MainContext } from "../Contexts/MainContext";
 
-const FilterModal = ({ headers, rows, onApply, onClose }) => {
+const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters = {} }) => {
   const { headers: allHeaders } = useContext(MainContext);
-  const [filterValues, setFilterValues] = useState({});
-  const [dateRangeMode, setDateRangeMode] = useState({});
-  const [numberRangeMode, setNumberRangeMode] = useState({});
+  
+  // Initialize filterValues with the passed filters prop
+  const [filterValues, setFilterValues] = useState(initialFilters);
+
+  // Initialize dateRangeMode based on whether start/end exists in filters
+  const [dateRangeMode, setDateRangeMode] = useState(() => {
+    const initial = {};
+    Object.entries(initialFilters).forEach(([key, filter]) => {
+      if (filter.start || filter.end) {
+        initial[key] = true;
+      }
+    });
+    return initial;
+  });
+
+  // Initialize numberRangeMode based on whether start/end exists in filters
+  const [numberRangeMode, setNumberRangeMode] = useState(() => {
+    const initial = {};
+    Object.entries(initialFilters).forEach(([key, filter]) => {
+      if (filter.start || filter.end) {
+        initial[key] = true;
+      }
+    });
+    return initial;
+  });
+
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const dropdownRefs = useRef({});
   const modalRef = useRef(null);
@@ -43,7 +66,7 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
     } else {
       setFilterValues((prev) => ({
         ...prev,
-        [headerKey]: { start: "", end: "" },
+        [headerKey]: { start: prev[headerKey]?.start || "", end: prev[headerKey]?.end || "" },
       }));
     }
   };
@@ -61,7 +84,7 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
     } else {
       setFilterValues((prev) => ({
         ...prev,
-        [headerKey]: { start: "", end: "" },
+        [headerKey]: { start: prev[headerKey]?.start || "", end: prev[headerKey]?.end || "" },
       }));
     }
   };
@@ -215,8 +238,8 @@ const FilterModal = ({ headers, rows, onApply, onClose }) => {
                             className={styles.filterSelectNoChevron}
                           >
                             <option value="equals">=</option>
-                            <option value="greater"></option>
-                            <option value="less"></option>
+                            <option value="greater">{'>'}</option>
+                            <option value="less">{'<'}</option>
                             <option value="greaterOrEqual">≥</option>
                             <option value="lessOrEqual">≤</option>
                           </select>

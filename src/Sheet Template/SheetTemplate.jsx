@@ -11,7 +11,7 @@ const SheetTemplate = ({
   filters = {},
   sheets,
   activeSheetName,
-  onSheetChange,
+  Methyl,
   onEditSheet,
   onFilter,
   onRowClick,
@@ -21,6 +21,7 @@ const SheetTemplate = ({
   const scrollContainerRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRow, setSelectedRow] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const visibleHeaders = headers.filter((header) => header.visible);
@@ -35,7 +36,6 @@ const SheetTemplate = ({
 
   const isMobile = windowWidth <= 1024;
 
-  // Filter rows based on filters prop
   const filteredRows = rows.filter((row) => {
     return Object.entries(filters).every(([headerKey, filter]) => {
       const header = headers.find((h) => h.key === headerKey);
@@ -45,7 +45,7 @@ const SheetTemplate = ({
       switch (header.type) {
         case "number":
           if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
-          const numValue = Number(rowValue);
+          const numValue = Number(rowValue) || 0;
           if (filter.start || filter.end) {
             const startNum = filter.start ? Number(filter.start) : -Infinity;
             const endNum = filter.end ? Number(filter.end) : Infinity;
@@ -80,7 +80,7 @@ const SheetTemplate = ({
           return filter.values.includes(rowValue);
         case "text":
           if (!filter.value) return true;
-          const strValue = String(rowValue).toLowerCase();
+          const strValue = String(rowValue || "").toLowerCase();
           const filterStr = filter.value.toLowerCase();
           switch (filter.condition) {
             case "contains": return strValue.includes(filterStr);
@@ -94,20 +94,20 @@ const SheetTemplate = ({
     });
   });
 
-  // Sort rows based on filters prop
   const sortedRows = [...filteredRows].sort((a, b) => {
     for (const [headerKey, filter] of Object.entries(filters)) {
       const header = headers.find((h) => h.key === headerKey);
-      if (header.type === "number" && filter.sortOrder) {
-        const aValue = Number(a[headerKey]);
-        const bValue = Number(b[headerKey]);
-        return filter.sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+      if (header && filter.sortOrder) {
+        if (header.type === "number") {
+          const aValue = Number(a[headerKey] || 0);
+          const bValue = Number(b[headerKey] || 0);
+          return filter.sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        }
       }
     }
     return 0;
   });
 
-  // Apply search query filtering
   const finalRows = sortedRows.filter((row) =>
     visibleHeaders.some((header) =>
       String(row[header.key] || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -127,12 +127,18 @@ const SheetTemplate = ({
   };
 
   const handleRowClick = (rowData) => {
+    console.log("Row clicked:", rowData);
     setSelectedRow(rowData);
+    setIsClosing(false);
     onRowClick(rowData);
   };
 
   const handleCardClose = () => {
-    setSelectedRow(null);
+    setIsClosing(true);
+    setTimeout(() => {
+      setSelectedRow(null);
+      setIsClosing(false);
+    }, 300);
   };
 
   const handleCardSave = (updatedRow) => {
@@ -257,47 +263,47 @@ const SheetTemplate = ({
     </div>
   );
 
+  console.log("Rendering SheetTemplate, selectedRow:", selectedRow, "isMobile:", isMobile);
+
   return (
     <div className={styles.sheetWrapper}>
-      <div className={styles.tableContainer}>
-        {TableContent}
-        {isMobile && (
-          <div
-            className={`${styles.cardDetailsMobile} ${
-              selectedRow ? styles.cardOpen : styles.cardClosed
-            }`}
-          >
-            {selectedRow && (
-              <CardDetails
-                key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
-                rowData={selectedRow}
-                headers={visibleHeaders}
-                onClose={handleCardClose}
-                onSave={handleCardSave}
-                onDelete={handleCardDelete}
-              />
-            )}
-          </div>
-        )}
-        {!isMobile && (
-          <div className={styles.cardDetailsContainer}>
-            {selectedRow ? (
-              <CardDetails
-                key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
-                rowData={selectedRow}
-                headers={visibleHeaders}
-                onClose={handleCardClose}
-                onSave={handleCardSave}
-                onDelete={handleCardDelete}
-              />
-            ) : (
-              <div className={styles.placeholder}>
-                <p>Select a row to show its data</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <div className={styles.tableContainer}>{TableContent}</div>
+      {!isMobile && (
+        <div className={styles.cardDetailsContainer}>
+          {selectedRow ? (
+            <CardDetails
+              key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+              rowData={selectedRow}
+              headers={visibleHeaders}
+              onClose={handleCardClose}
+              onSave={handleCardSave}
+              onDelete={handleCardDelete}
+            />
+          ) : (
+            <div className={styles.placeholder}>
+              <p>Select a row to show its data</p>
+            </div>
+          )}
+        </div>
+      )}
+      {isMobile && (
+        <div
+          className={`${styles.cardDetailsMobile} ${
+            selectedRow && !isClosing ? styles.cardOpen : styles.cardClosed
+          }`}
+        >
+          {selectedRow && (
+            <CardDetails
+              key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+              rowData={selectedRow}
+              headers={visibleHeaders}
+              onClose={handleCardClose}
+              onSave={handleCardSave}
+              onDelete={handleCardDelete}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
