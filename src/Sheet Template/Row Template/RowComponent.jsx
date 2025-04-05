@@ -1,11 +1,22 @@
 import styles from "./RowComponent.module.css";
 
-const RowComponent = ({ rowData, headerNames }) => {
+const RowComponent = ({ rowData, headerNames, onClick }) => {
+  const isAddNew = rowData.isAddNew;
+
   return (
-    <div className={styles.bodyRow}>
+    <div
+      className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ""}`}
+      onClick={onClick}
+    >
       {headerNames.map((header, i) => (
         <div key={i} className={styles.bodyCell}>
-          {rowData[header] !== undefined ? String(rowData[header]) : ""}
+          {isAddNew && i === 0
+            ? "+ Add New Card"
+            : isAddNew
+            ? ""
+            : rowData[header] !== undefined
+            ? String(rowData[header])
+            : ""}
         </div>
       ))}
     </div>

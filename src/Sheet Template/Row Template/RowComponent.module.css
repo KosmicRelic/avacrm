@@ -7,12 +7,24 @@
   width: max-content;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin: 8px 16px;
+  cursor: pointer; /* Indicate clickable */
 }
 
 .bodyRow:hover {
   background: rgba(245, 245, 247, 0.9);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
+}
+
+.addNewRow {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  font-weight: 600;
+}
+
+.addNewRow:hover {
+  background: rgba(0, 122, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .bodyCell {

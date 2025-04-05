@@ -24,7 +24,7 @@ export const MainContextProvider = ({ children }) => {
             isActive: true,
         },
         {
-            sheetName: "Business_Partners",
+            sheetName: "Business Partners",
             headers: [
                 { key: "businessId", visible: true, hidden: false },
                 { key: "fullName", visible: true, hidden: false },

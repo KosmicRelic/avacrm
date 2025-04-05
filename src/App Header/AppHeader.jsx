@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
-import { ImProfile } from "react-icons/im";
-import { TfiDashboard } from "react-icons/tfi";
-import { FaFileInvoice } from "react-icons/fa";
+import { FaAddressCard, FaFileInvoice } from "react-icons/fa";
+import { SiGoogleadsense } from "react-icons/si";
+import { RiDashboard2Fill } from "react-icons/ri";
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption }) {
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -42,7 +42,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                             className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
                             onClick={() => handleOptionClick("dashboard")}
                         >
-                            <TfiDashboard size={20} />
+                            <RiDashboard2Fill size={20} />
                             <span>Dashboard</span>
                         </button>
                         <button
@@ -50,17 +50,17 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                             onClick={() => handleOptionClick("sheets")}
                         >
                             <span className={styles.iconWrapper}>
-                                <TfiDashboard size={20} /> {/* Replace with appropriate icon if needed */}
+                                <SiGoogleadsense size={20} />
                             </span>
                             <span>Sheets</span>
                         </button>
-                        <button
+                        {/* <button
                             className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
                             onClick={() => handleOptionClick("cards")}
                         >
-                            <ImProfile size={20} />
+                            <FaAddressCard size={20} />
                             <span>Cards</span>
-                        </button>
+                        </button> */}
                         <button
                             className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
                             onClick={() => handleOptionClick("invoices")}
@@ -84,7 +84,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
                         onClick={() => handleOptionClick("dashboard")}
                     >
-                        <TfiDashboard size={20} />
+                        <RiDashboard2Fill size={22} />
                         <span>Dashboard</span>
                     </button>
                     <button
@@ -92,17 +92,17 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         onClick={() => handleOptionClick("sheets")}
                     >
                         <span className={styles.iconWrapper}>
-                            <TfiDashboard size={20} />
+                            <SiGoogleadsense size={20} />
                         </span>
                         <span>Sheets</span>
                     </button>
-                    <button
+                    {/* <button
                         className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
                         onClick={() => handleOptionClick("cards")}
                     >
-                        <ImProfile size={20} />
+                        <FaAddressCard size={20} />
                         <span>Cards</span>
-                    </button>
+                    </button> */}
                     <button
                         className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
                         onClick={() => handleOptionClick("invoices")}
