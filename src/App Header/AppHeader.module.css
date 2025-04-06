@@ -21,9 +21,12 @@
 .avaTitle {
   margin: 0;
   font-size: 22px;
-  font-weight: 700;
-  color: #1d1d1f;
-  letter-spacing: -0.02em;
+  font-weight: 900;
+  background: linear-gradient(to right, #1E3A8A, #3B82F6, #8B5CF6, #9333EA);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.4em;
   flex-shrink: 0;
 }
 

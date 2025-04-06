@@ -54,13 +54,13 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                             </span>
                             <span>Sheets</span>
                         </button>
-                        {/* <button
+                        <button
                             className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
                             onClick={() => handleOptionClick("cards")}
                         >
                             <FaAddressCard size={20} />
                             <span>Cards</span>
-                        </button> */}
+                        </button>
                         <button
                             className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
                             onClick={() => handleOptionClick("invoices")}
@@ -96,13 +96,13 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         </span>
                         <span>Sheets</span>
                     </button>
-                    {/* <button
+                    <button
                         className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
                         onClick={() => handleOptionClick("cards")}
                     >
                         <FaAddressCard size={20} />
                         <span>Cards</span>
-                    </button> */}
+                    </button>
                     <button
                         className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}
                         onClick={() => handleOptionClick("invoices")}
