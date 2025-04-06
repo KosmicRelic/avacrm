@@ -49,15 +49,16 @@
   background: none;
   border: none;
   color: #007aff;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 0;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .closeButton:hover {
-  opacity: 0.8;
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .filterList {
@@ -99,14 +100,15 @@
 }
 
 .filterNameType span {
-  color: #1d1d1f;
-  font-size: 17px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6e6e73;
+  text-transform: uppercase;
 }
 
 .filterType {
   color: #6e6e73;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .primaryButtons {
@@ -117,7 +119,7 @@
 
 .filterSummary {
   color: #6e6e73;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
 }
 
@@ -125,15 +127,16 @@
   background: none;
   border: none;
   color: #007aff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  padding: 0;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .filterButton:hover {
-  opacity: 0.8;
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .filterButton:disabled {
@@ -156,16 +159,17 @@
   flex: 1;
   padding: 8px 12px;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
   background: #f5f5f7;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .filterSelect {
+  padding-right: 28px;
   background: #f5f5f7 url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
   -webkit-appearance: none;
   appearance: none;
@@ -199,13 +203,13 @@
   height: 100px;
   padding: 8px 12px;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
   background: #f5f5f7;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .filterMultiSelect:focus {
@@ -223,10 +227,11 @@
   background: none;
   border: none;
   color: #007aff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
   cursor: pointer;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
@@ -240,19 +245,19 @@
 }
 
 .cancelButton {
-  background: #007aff;
+  background: none;
   border: none;
-  color: white;
-  font-size: 15px;
+  color: #007aff;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
-  border-radius: 10px;
   cursor: pointer;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .cancelButton:hover {
-  background: #0066cc;
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .modalActions {
@@ -265,10 +270,11 @@
   background: none;
   border: none;
   color: #ff453a;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
   cursor: pointer;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
@@ -281,8 +287,8 @@
   border: none;
   color: white;
   padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;

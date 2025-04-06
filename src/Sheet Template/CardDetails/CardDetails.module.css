@@ -11,6 +11,7 @@
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Ensures flex child respects container height */
 }
 
 .cardHeader {
@@ -71,6 +72,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
+  overflow-y: auto; /* Scrollable content */
 }
 
 .fieldItem {
@@ -130,8 +132,7 @@
 }
 
 .cardActions {
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 12px 0;
   text-align: center;
 }
 
@@ -238,4 +239,54 @@
   outline: none;
   border-color: #007aff;
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .cardContent {
+    padding: 16px; /* Keep original padding */
+  }
+
+  .cardHeader {
+    /* Keep original horizontal layout and sticky behavior */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .fieldItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .fieldLabel {
+    flex: none;
+    width: 100%;
+  }
+
+  .fieldValue,
+  .fieldInput,
+  .fieldSelect {
+    flex: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .cardActions {
+    padding: 16px 0; /* Increased padding for visibility */
+    border-top: 1px solid rgba(0, 0, 0, 0.05); /* Add separator */
+  }
+
+  .deleteButton {
+    display: inline-block; /* Ensure visibility */
+    width: 100%;
+    padding: 10px 16px; /* Larger tap target */
+    font-size: 16px; /* Larger text for mobile */
+    border-radius: 8px;
+  }
+
+  .confirmDialog {
+    max-width: 90%;
+  }
 }

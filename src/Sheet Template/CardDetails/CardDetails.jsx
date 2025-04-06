@@ -108,14 +108,14 @@ const CardDetails = ({ rowData, headers: sheetHeaders, onClose, onSave, onDelete
         ) : (
           <p>No fields available</p>
         )}
+        {!isEditing && (
+          <div className={styles.cardActions}>
+            <button className={styles.deleteButton} onClick={() => setIsDeleteConfirmOpen(true)}>
+              Delete
+            </button>
+          </div>
+        )}
       </div>
-      {!isEditing && (
-        <div className={styles.cardActions}>
-          <button className={styles.deleteButton} onClick={() => setIsDeleteConfirmOpen(true)}>
-            Delete
-          </button>
-        </div>
-      )}
       {isDeleteConfirmOpen && (
         <div className={styles.confirmOverlay}>
           <div className={styles.confirmDialog}>
