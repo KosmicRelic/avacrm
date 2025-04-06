@@ -621,6 +621,30 @@ const SheetTemplate = ({
             </div>
           )
         ))}
+                <button
+          className={styles.addTabButton}
+          onClick={handleAddModalOpen}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            const touch = e.touches[0];
+            setTouchStartTime(Date.now());
+            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+            setTouchActive(true);
+          }}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchActive && touchDuration < 500) {
+              handleAddModalOpen();
+            }
+            setTouchActive(false);
+            setTouchStartTime(null);
+            setTouchStartPosition(null);
+          }}
+        >
+          +
+        </button>
         <button
           className={`${styles.orderButton} ${isOrderMode ? styles.activeOrderButton : ''}`}
           onClick={() => setIsOrderMode((prev) => !prev)}
@@ -644,30 +668,6 @@ const SheetTemplate = ({
           }}
         >
           {isOrderMode ? 'Done' : <HiMiniArrowsRightLeft />}
-        </button>
-        <button
-          className={styles.addTabButton}
-          onClick={handleAddModalOpen}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            const touch = e.touches[0];
-            setTouchStartTime(Date.now());
-            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-            setTouchActive(true);
-          }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchActive && touchDuration < 500) {
-              handleAddModalOpen();
-            }
-            setTouchActive(false);
-            setTouchStartTime(null);
-            setTouchStartPosition(null);
-          }}
-        >
-          +
         </button>
       </div>
       {isAddModalOpen && (

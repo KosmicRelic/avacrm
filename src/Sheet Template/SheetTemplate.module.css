@@ -204,7 +204,7 @@
 }
 
 .activeOrderButton {
-  background: rgba(0, 122, 255, 0.3);
+  background: rgba(0, 122, 255);
   color: #fff;
 }
 
@@ -486,12 +486,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(245, 245, 247, 0.9);
+  background: transparent;
   border-radius: 10px;
 }
 
 .editHeaderButton:hover {
-  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.05);
 }
 
