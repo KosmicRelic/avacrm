@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useCallback, useMemo } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
 import SheetModal from "./SheetModal/SheetModal";
@@ -20,33 +20,35 @@ function App() {
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
 
-  const activeSheet = sheets.find((sheet) => sheet.isActive);
+  const activeSheet = useMemo(() => sheets.find((sheet) => sheet.isActive), [sheets]);
   const activeSheetName = activeSheet?.sheetName;
 
-  const resolvedHeaders = activeSheet?.headers.map((sheetHeader) => {
-    const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
-    return header
-      ? {
-          key: sheetHeader.key,
-          name: header[sheetHeader.key],
-          type: header.type,
-          visible: sheetHeader.visible,
-          hidden: sheetHeader.hidden,
-        }
-      : {
-          key: sheetHeader.key,
-          name: sheetHeader.key,
-          type: "text",
-          visible: sheetHeader.visible,
-          hidden: sheetHeader.hidden,
-        };
-  }) || [];
+  const resolvedHeaders = useMemo(() => {
+    return activeSheet?.headers.map((sheetHeader) => {
+      const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
+      return header
+        ? {
+            key: sheetHeader.key,
+            name: header[sheetHeader.key],
+            type: header.type,
+            visible: sheetHeader.visible,
+            hidden: sheetHeader.hidden,
+          }
+        : {
+            key: sheetHeader.key,
+            name: sheetHeader.key,
+            type: "text",
+            visible: sheetHeader.visible,
+            hidden: sheetHeader.hidden,
+          };
+    }) || [];
+  }, [activeSheet, headers]);
 
-  const resolvedRows = activeSheet?.rows.map((leadId) =>
-    cards.find((card) => card.leadId === leadId) || {}
-  ) || [];
+  const resolvedRows = useMemo(() => {
+    return activeSheet?.rows.map((leadId) => cards.find((card) => card.leadId === leadId) || {}) || [];
+  }, [activeSheet, cards]);
 
-  const handleSheetChange = (sheetName) => {
+  const handleSheetChange = useCallback((sheetName) => {
     if (sheetName === "add-new-sheet") {
       setIsSheetModalEditMode(false);
       setIsSheetModalOpen(true);
@@ -58,9 +60,9 @@ function App() {
         }))
       );
     }
-  };
+  }, [setSheets]);
 
-  const handleSaveSheet = (sheetNameOrObj, headerObjects, pinnedHeaders) => {
+  const handleSaveSheet = useCallback((sheetNameOrObj, headerObjects, pinnedHeaders) => {
     if (isSheetModalEditMode) {
       const newSheetName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
       setSheets((prevSheets) => {
@@ -101,9 +103,9 @@ function App() {
       }
     }
     setIsSheetModalOpen(false);
-  };
+  }, [isSheetModalEditMode, activeSheet, activeSheetName, setSheets]);
 
-  const handlePinToggle = (headerKey) => {
+  const handlePinToggle = useCallback((headerKey) => {
     setSheets((prevSheets) =>
       prevSheets.map((sheet) =>
         sheet.sheetName === activeSheetName
@@ -116,16 +118,13 @@ function App() {
           : sheet
       )
     );
-  };
+  }, [activeSheetName, setSheets]);
 
-  const handleApplyFilters = (newFilters) => setFilters(newFilters);
+  const handleApplyFilters = useCallback((newFilters) => setFilters(newFilters), []);
 
-  const handleRowClick = (rowData) => {
-    console.log("App: Row clicked:", rowData); // Debug
-  };
+  const handleRowClick = useCallback((rowData) => {}, []);
 
-  const handleCardSave = (updatedRow) => {
-    console.log("Saving:", updatedRow);
+  const handleCardSave = useCallback((updatedRow) => {
     setCards((prevCards) =>
       prevCards.map((card) => (card.leadId === updatedRow.leadId ? updatedRow : card))
     );
@@ -141,10 +140,9 @@ function App() {
           : sheet
       )
     );
-  };
+  }, [activeSheetName, setCards, setSheets]);
 
-  const handleDelete = (rowData) => {
-    console.log("Deleting:", rowData);
+  const handleDelete = useCallback((rowData) => {
     setCards((prevCards) => prevCards.filter((card) => card.leadId !== rowData.leadId));
     setSheets((prevSheets) =>
       prevSheets.map((sheet) =>
@@ -153,7 +151,14 @@ function App() {
           : sheet
       )
     );
-  };
+  }, [activeSheetName, setCards, setSheets]);
+
+  const onEditSheet = useCallback(() => {
+    setIsSheetModalEditMode(true);
+    setIsSheetModalOpen(true);
+  }, []);
+
+  const onFilter = useCallback(() => setIsFilterModalOpen(true), []);
 
   return (
     <div className={styles.appContainer}>
@@ -174,11 +179,8 @@ function App() {
             sheets={sheets}
             activeSheetName={activeSheetName}
             onSheetChange={handleSheetChange}
-            onEditSheet={() => {
-              setIsSheetModalEditMode(true);
-              setIsSheetModalOpen(true);
-            }}
-            onFilter={() => setIsFilterModalOpen(true)}
+            onEditSheet={onEditSheet}
+            onFilter={onFilter}
             onRowClick={handleRowClick}
             onCardSave={handleCardSave}
             onCardDelete={handleDelete}
