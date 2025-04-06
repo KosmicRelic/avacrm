@@ -1,7 +1,7 @@
 import { useContext, useState, useCallback, useMemo } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
-import SheetModal from "./Sheet Template/SheetModal/SheetModal"
+import SheetModal from "./Sheet Template/SheetModal/SheetModal";
 import FilterModal from "./FilterModal/FilterModal";
 import { MainContext } from "./Contexts/MainContext";
 import ProfileModal from "./App Header/ProfileModal/ProfileModal";
@@ -179,10 +179,15 @@ function App() {
 
   const onFilter = useCallback(() => setIsFilterModalOpen(true), []);
 
+  // Updated to use sheets.structure for display order
+  const sheetDisplayOrder = useMemo(() => {
+    return sheets.structure.map((item) => item.sheetName || item.folderName);
+  }, [sheets.structure]);
+
   return (
     <div className={styles.appContainer}>
       <AppHeader
-        sheets={sheets.structure.map((item) => item.sheetName || item.folderName)} // Updated to use structure
+        sheets={sheetDisplayOrder} // Use the ordered structure
         activeSheet={activeSheetName}
         onSheetChange={handleSheetChange}
         setIsProfileModalOpen={setIsProfileModalOpen}
@@ -196,7 +201,7 @@ function App() {
             rows={resolvedRows}
             filters={filters}
             sheets={sheets}
-            setSheets={setSheets} // Add this
+            setSheets={setSheets}
             activeSheetName={activeSheetName}
             onSheetChange={handleSheetChange}
             onEditSheet={onEditSheet}

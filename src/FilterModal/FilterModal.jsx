@@ -40,7 +40,6 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   const handleFilterChange = useCallback((headerKey, value, type = "default") => {
     setFilterValues((prev) => {
       const newFilter = { ...prev[headerKey], [type]: value };
-      // Ensure empty strings are cleared to avoid invalid filters
       if (type === "start" || type === "end" || type === "value") {
         if (value === "") delete newFilter[type];
       }
@@ -86,7 +85,6 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   const cancelEdit = useCallback(() => setActiveFilterIndex(null), []);
 
   const handleApply = useCallback(() => {
-    // Clean up filterValues to remove empty or invalid entries
     const cleanedFilters = Object.fromEntries(
       Object.entries(filterValues).map(([key, filter]) => {
         if (numberRangeMode[key]) {
@@ -98,7 +96,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
         } else if (filter.order && filter.value) {
           return [key, {
             order: filter.order,
-            value: Number(filter.value),
+            value: filter.type === "number" ? Number(filter.value) : filter.value,
             sortOrder: filter.sortOrder || undefined,
           }];
         }
@@ -194,7 +192,6 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
               <div className={styles.filterRow}>
                 <div className={styles.filterNameType}>
                   <span>{header.name}</span>
-                  {/* <span className={styles.filterType}>({header.type})</span> */}
                 </div>
                 <div className={styles.primaryButtons}>
                   <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
@@ -239,8 +236,8 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                           className={styles.filterSelectNoChevron}
                         >
                           <option value="equals">=</option>
-                          <option value="greater">&gt;</option>
-                          <option value="less">&lt;</option>
+                          <option value="greater"></option>
+                          <option value="less"></option>
                           <option value="greaterOrEqual">≥</option>
                           <option value="lessOrEqual">≤</option>
                         </select>

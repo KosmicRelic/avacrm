@@ -113,6 +113,11 @@
   z-index: 50;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  touch-action: pan-x;
 }
 
 .sheetTabs::-webkit-scrollbar {
@@ -134,6 +139,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.tabButton.dragging {
+  opacity: 0.5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+  z-index: 60;
 }
 
 .activeTab {
@@ -142,7 +159,7 @@
 }
 
 .activeFolder {
-  background: rgba(0, 122, 255, 0.15);
+  background: rgba(0, 122, 255, 0.1);
   color: #007aff;
 }
 
@@ -156,55 +173,69 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .addTabButton:hover {
   background: rgba(0, 122, 255, 0.2);
 }
 
-.folderContainer {
-  position: relative;
+.orderButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.orderButton:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.activeOrderButton {
+  background: rgba(0, 122, 255, 0.3);
+  color: #fff;
+}
+
+.folderSheets {
+  margin-left: 6px;
+  font-size: 14px;
+  color: #6e6e73;
+}
+
+.folderPath {
+  font-size: 12px;
+  color: #007aff;
+  margin-left: 4px;
+}
+
+.inlineSheet {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.inlineSheet:hover {
+  color: #007aff;
+}
+
+.activeInlineSheet {
+  color: #007aff;
+  font-weight: 600;
 }
 
 .folderIcon {
   font-size: 16px;
-}
-
-.dropdown {
-  position: absolute;
-  bottom: 42px;
-  left: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 8px 0;
-  z-index: 60;
-  min-width: 180px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.dropdownItem {
-  display: block;
-  width: 100%;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #1d1d1f;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.dropdownItem:hover {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
-}
-
-.dropdownItem:active {
-  background: rgba(0, 122, 255, 0.2);
 }
 
 .addModal {
@@ -269,13 +300,14 @@
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(255, 255, 255, 0.9);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .input:focus {
   outline: none;
-  border-color: #007aff;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .selectionList {
@@ -472,6 +504,24 @@
   width: 100%;
 }
 
+.dropIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 24px;
+  background: #007aff;
+  border-radius: 1px;
+}
+
+.dropIndicator.left {
+  left: -4px;
+}
+
+.dropIndicator.right {
+  right: -4px;
+}
+
 @media (max-width: 1024px) {
   .sheetWrapper {
     height: calc(100vh - 179px);
@@ -504,25 +554,10 @@
     font-weight: 600;
   }
 
-  .sheetTabs {
-    position: sticky;
-    bottom: 0;
-    z-index: 50;
-  }
-
   .cardDetailsMobile {
     width: 100%;
     height: 100%;
     z-index: 40;
-  }
-
-  .dropdown {
-    position: absolute;
-    bottom: 42px;
-    left: 0;
-    width: 180px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .addModal {

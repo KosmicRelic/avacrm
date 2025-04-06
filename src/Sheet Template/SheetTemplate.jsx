@@ -5,13 +5,14 @@ import CardDetails from "./CardDetails/CardDetails";
 import { CiFilter } from "react-icons/ci";
 import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
+import { HiMiniArrowsRightLeft } from "react-icons/hi2";
 
 const SheetTemplate = ({
   headers,
   rows,
   filters = {},
   sheets,
-  setSheets, // Added setSheets prop
+  setSheets,
   activeSheetName,
   onSheetChange,
   onEditSheet,
@@ -21,26 +22,77 @@ const SheetTemplate = ({
   onCardDelete,
 }) => {
   const scrollContainerRef = useRef(null);
+  const modalRef = useRef(null);
+  const sheetTabsRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRow, setSelectedRow] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [openFolder, setOpenFolder] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addType, setAddType] = useState("sheet");
+  const [addType, setAddType] = useState(null);
   const [newSheetName, setNewSheetName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragTarget, setDragTarget] = useState(null);
+  const [dragTimer, setDragTimer] = useState(null);
+  const [dropSide, setDropSide] = useState('left');
+  const [touchStartTime, setTouchStartTime] = useState(null);
+  const [touchStartPosition, setTouchStartPosition] = useState(null);
+  const [touchActive, setTouchActive] = useState(false);
+  const [isOrderMode, setIsOrderMode] = useState(false);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
   const isMobile = windowWidth <= 1024;
+
+  const folderSheets = useMemo(() => {
+    const folderItems = sheets.structure.filter((item) => item.folderName);
+    return folderItems.flatMap((folder) => folder.sheets);
+  }, [sheets.structure]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target) && isAddModalOpen) {
+        setIsAddModalOpen(false);
+        setAddType(null);
+        setNewSheetName("");
+        setNewFolderName("");
+        setSelectedSheets([]);
+        setSelectedHeaders([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isAddModalOpen]);
+
+  useEffect(() => {
+    const handleClickOutsideFolder = (event) => {
+      if (openFolder && !event.target.closest(`.${styles.tabButton}`)) {
+        setOpenFolder(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutsideFolder);
+    document.addEventListener("touchstart", handleClickOutsideFolder);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideFolder);
+      document.removeEventListener("touchstart", handleClickOutsideFolder);
+    };
+  }, [openFolder]);
+
+  useEffect(() => {
+    if (sheetTabsRef.current) {
+      sheetTabsRef.current.scrollWidth;
+      sheetTabsRef.current.style.width = 'auto';
+    }
+  }, [openFolder, draggedItem]);
 
   const filteredRows = useMemo(() => {
     return rows.filter((row) =>
@@ -172,19 +224,25 @@ const SheetTemplate = ({
         newCard = { taskId: newId, description: "", dueDate: "", priority: "" };
         break;
       default:
-        newCard = { [visibleHeaders[0].key]: newId };
+        newCard = { [visibleHeaders[0]?.key]: newId };
     }
     onCardSave(newCard);
     setSelectedRow(newCard);
   }, [activeSheetName, visibleHeaders, onCardSave]);
 
   const toggleFolder = useCallback((folderName) => {
-    setOpenFolder((prev) => (prev === folderName ? null : folderName));
-  }, []);
+    setOpenFolder((prev) => {
+      const newState = prev === folderName ? null : folderName;
+      if (draggedItem && draggedItem.folderName === folderName) {
+        setDraggedItem(null);
+      }
+      return newState;
+    });
+  }, [draggedItem]);
 
   const handleAddModalOpen = useCallback(() => {
     setIsAddModalOpen(true);
-    setAddType("sheet");
+    setAddType(null);
     setNewSheetName("");
     setNewFolderName("");
     setSelectedSheets([]);
@@ -204,15 +262,26 @@ const SheetTemplate = ({
       alert("Please provide a sheet name.");
       return;
     }
-    onSheetChange({
-      sheetName: newSheetName,
-      headers: selectedHeaders.map((key) => ({ key, visible: true, hidden: false })),
-      pinnedHeaders: [],
-      rows: [],
-      isActive: true,
+    setSheets((prevSheets) => {
+      const newSheet = {
+        sheetName: newSheetName,
+        headers: selectedHeaders.map((key) => ({ key, visible: true, hidden: false })),
+        pinnedHeaders: [],
+        rows: [],
+        isActive: true,
+      };
+      return {
+        ...prevSheets,
+        allSheets: prevSheets.allSheets.map((sheet) => ({
+          ...sheet,
+          isActive: false,
+        })).concat(newSheet),
+        structure: [...prevSheets.structure, { sheetName: newSheetName }],
+      };
     });
     setIsAddModalOpen(false);
-  }, [newSheetName, selectedHeaders, onSheetChange]);
+    onSheetChange(newSheetName);
+  }, [newSheetName, selectedHeaders, setSheets, onSheetChange]);
 
   const handleFolderSave = useCallback(() => {
     if (!newFolderName) {
@@ -248,10 +317,145 @@ const SheetTemplate = ({
 
   const availableHeaders = useMemo(() => {
     return headers.map((h, index) => ({
-      key: h.key || `header-${index}`, // Fallback to index if key is missing
-      name: h.name || Object.values(h)[0], // Use h.name if available
+      key: h.key || `header-${index}`,
+      name: h.name || Object.values(h)[0],
     }));
   }, [headers]);
+
+  // Drag and Drop Handlers
+  const handleDragStart = useCallback((e, item) => {
+    e.preventDefault();
+    const timer = setTimeout(() => {
+      setDraggedItem(item);
+    }, 500);
+    setDragTimer(timer);
+  }, []);
+
+  const handleDragEnd = useCallback((e) => {
+    e.preventDefault();
+    if (dragTimer) {
+      clearTimeout(dragTimer);
+      setDragTimer(null);
+    }
+    if (draggedItem && dragTarget) {
+      const newStructure = [...sheets.structure];
+      const draggedIndex = newStructure.findIndex(
+        (i) => (i.sheetName && i.sheetName === draggedItem.sheetName) || 
+               (i.folderName && i.folderName === draggedItem.folderName)
+      );
+      const targetIndex = newStructure.findIndex(
+        (i) => (i.sheetName && i.sheetName === dragTarget.sheetName) || 
+               (i.folderName && i.folderName === dragTarget.folderName)
+      );
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const [dragged] = newStructure.splice(draggedIndex, 1);
+        const insertIndex = dropSide === 'left' ? targetIndex : targetIndex + 1;
+        newStructure.splice(insertIndex, 0, dragged);
+        setSheets((prev) => ({ ...prev, structure: newStructure }));
+      }
+    }
+    setDraggedItem(null);
+    setDragTarget(null);
+    setDropSide('left');
+  }, [draggedItem, dragTarget, sheets, setSheets, dragTimer, dropSide]);
+
+  const handleDragEnter = useCallback((e, item) => {
+    e.preventDefault();
+    if (draggedItem && 
+        ((item.sheetName && item.sheetName !== draggedItem.sheetName) || 
+         (item.folderName && item.folderName !== draggedItem.folderName))) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const halfWidth = rect.width / 2;
+      setDropSide(mouseX < halfWidth ? 'left' : 'right');
+      setDragTarget(item);
+    }
+  }, [draggedItem]);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const handleTouchStart = useCallback((e, item) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setTouchStartTime(Date.now());
+    setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+    setTouchActive(true);
+    if (isOrderMode) {
+      const timer = setTimeout(() => {
+        setDraggedItem(item);
+      }, 500);
+      setDragTimer(timer);
+    }
+  }, [isOrderMode]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!touchActive) return;
+    const touch = e.touches[0];
+    const distance = Math.sqrt(
+      Math.pow(touchStartPosition.x - touch.clientX, 2) +
+      Math.pow(touchStartPosition.y - touch.clientY, 2)
+    );
+    if (distance > 10) {
+      setTouchActive(false);
+    }
+    if (isOrderMode && draggedItem) {
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element) {
+        const target = element.closest(`.${styles.tabButton}`);
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          const touchX = touch.clientX - rect.left;
+          const halfWidth = rect.width / 2;
+          setDropSide(touchX < halfWidth ? 'left' : 'right');
+          const itemName = target.dataset.sheetName || target.dataset.folderName;
+          const newTarget = sheets.structure.find(
+            (i) => (i.sheetName === itemName) || (i.folderName === itemName)
+          );
+          if (newTarget && 
+              ((newTarget.sheetName && newTarget.sheetName !== draggedItem.sheetName) || 
+               (newTarget.folderName && newTarget.folderName !== draggedItem.folderName))) {
+            setDragTarget(newTarget);
+          }
+        }
+      }
+    }
+  }, [isOrderMode, draggedItem, sheets.structure, touchStartPosition, touchActive]);
+
+  const handleTouchEnd = useCallback((e, item) => {
+    e.preventDefault();
+    const touchDuration = Date.now() - touchStartTime;
+    if (isOrderMode && touchDuration >= 500 && draggedItem && dragTarget) {
+      const newStructure = [...sheets.structure];
+      const draggedIndex = newStructure.findIndex(
+        (i) => (i.sheetName && i.sheetName === draggedItem.sheetName) || 
+               (i.folderName && i.folderName === draggedItem.folderName)
+      );
+      const targetIndex = newStructure.findIndex(
+        (i) => (i.sheetName && i.sheetName === dragTarget.sheetName) || 
+               (i.folderName && i.folderName === dragTarget.folderName)
+      );
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const [dragged] = newStructure.splice(draggedIndex, 1);
+        const insertIndex = dropSide === 'left' ? targetIndex : targetIndex + 1;
+        newStructure.splice(insertIndex, 0, dragged);
+        setSheets((prev) => ({ ...prev, structure: newStructure }));
+      }
+    }
+    if (dragTimer) {
+      clearTimeout(dragTimer);
+      setDragTimer(null);
+    }
+    setDraggedItem(null);
+    setDragTarget(null);
+    setDropSide('left');
+    setTouchStartTime(null);
+    setTouchStartPosition(null);
+    setTouchActive(false);
+  }, [draggedItem, dragTarget, sheets, setSheets, dragTimer, dropSide, touchStartTime]);
 
   const TableContent = (
     <div className={styles.tableContent}>
@@ -305,51 +509,169 @@ const SheetTemplate = ({
           )}
         </div>
       </div>
-      <div className={styles.sheetTabs}>
-        {sheets.structure.map((item, index) =>
+      <div className={styles.sheetTabs} ref={sheetTabsRef}>
+        {sheets.structure.map((item, index) => (
           item.folderName ? (
             <div key={item.folderName} className={styles.folderContainer}>
               <button
-                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""}`}
-                onClick={() => toggleFolder(item.folderName)}
+                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""} ${
+                  draggedItem?.folderName === item.folderName ? styles.dragging : ''
+                }`}
+                data-folder-name={item.folderName}
+                onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
+                onMouseUp={isOrderMode ? handleDragEnd : undefined}
+                onMouseMove={isOrderMode ? handleDragOver : undefined}
+                onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
+                onTouchStart={(e) => handleTouchStart(e, item)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  const touchDuration = Date.now() - touchStartTime;
+                  if (!isOrderMode && touchActive && touchDuration < 500) {
+                    toggleFolder(item.folderName);
+                  }
+                  handleTouchEnd(e, item);
+                }}
+                onClick={!isOrderMode ? (e) => {
+                  e.preventDefault();
+                  toggleFolder(item.folderName);
+                } : undefined}
               >
                 <FaFolder className={styles.folderIcon} />
                 {item.folderName}
+                {openFolder === item.folderName ? (
+                  <span className={styles.folderSheets}>
+                    {' > '}
+                    {item.sheets.map((sheetName, idx) => (
+                      <span key={sheetName}>
+                        <span
+                          className={`${styles.inlineSheet} ${
+                            sheetName === activeSheetName ? styles.activeInlineSheet : ''
+                          }`}
+                          onClick={!isOrderMode ? (e) => {
+                            e.stopPropagation();
+                            handleSheetClick(sheetName);
+                          } : undefined}
+                          onTouchEnd={!isOrderMode ? (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const touchDuration = Date.now() - touchStartTime;
+                            if (touchActive && touchDuration < 500) {
+                              handleSheetClick(sheetName);
+                            }
+                            setTouchActive(false);
+                            setTouchStartTime(null);
+                            setTouchStartPosition(null);
+                          } : undefined}
+                        >
+                          {sheetName}
+                        </span>
+                        {idx < item.sheets.length - 1 && ' | '}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  item.sheets.includes(activeSheetName) && (
+                    <span className={styles.folderPath}> {` > ${activeSheetName}`}</span>
+                  )
+                )}
+                {dragTarget?.folderName === item.folderName && draggedItem && (
+                  <span className={`${styles.dropIndicator} ${styles[dropSide]}`}></span>
+                )}
               </button>
-              {openFolder === item.folderName && (
-                <div className={styles.dropdown}>
-                  {item.sheets.map((sheetName) => (
-                    <button
-                      key={sheetName}
-                      className={`${styles.dropdownItem} ${
-                        sheetName === activeSheetName ? styles.activeTab : ""
-                      }`}
-                      onClick={() => handleSheetClick(sheetName)}
-                    >
-                      {sheetName}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          ) : (
-            <button
-              key={item.sheetName}
-              className={`${styles.tabButton} ${
-                item.sheetName === activeSheetName ? styles.activeTab : ""
-              }`}
-              onClick={() => handleSheetClick(item.sheetName)}
-            >
-              {item.sheetName}
-            </button>
+          ) : !folderSheets.includes(item.sheetName) && (
+            <div key={item.sheetName} className={styles.sheetContainer}>
+              <button
+                className={`${styles.tabButton} ${
+                  item.sheetName === activeSheetName ? styles.activeTab : ""
+                } ${draggedItem?.sheetName === item.sheetName ? styles.dragging : ''}`}
+                data-sheet-name={item.sheetName}
+                onClick={!isOrderMode ? () => handleSheetClick(item.sheetName) : undefined}
+                onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
+                onMouseUp={isOrderMode ? handleDragEnd : undefined}
+                onMouseMove={isOrderMode ? handleDragOver : undefined}
+                onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  const touch = e.touches[0];
+                  setTouchStartTime(Date.now());
+                  setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+                  setTouchActive(true);
+                  if (isOrderMode) handleTouchStart(e, item);
+                }}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  const touchDuration = Date.now() - touchStartTime;
+                  if (!isOrderMode && touchActive && touchDuration < 500) {
+                    handleSheetClick(item.sheetName);
+                  }
+                  if (isOrderMode) handleTouchEnd(e, item);
+                  setTouchActive(false);
+                  setTouchStartTime(null);
+                  setTouchStartPosition(null);
+                }}
+              >
+                {dragTarget?.sheetName === item.sheetName && draggedItem && (
+                  <span className={`${styles.dropIndicator} ${styles[dropSide]}`}></span>
+                )}
+                {item.sheetName}
+              </button>
+            </div>
           )
-        )}
-        <button className={styles.addTabButton} onClick={handleAddModalOpen}>
+        ))}
+        <button
+          className={`${styles.orderButton} ${isOrderMode ? styles.activeOrderButton : ''}`}
+          onClick={() => setIsOrderMode((prev) => !prev)}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            const touch = e.touches[0];
+            setTouchStartTime(Date.now());
+            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+            setTouchActive(true);
+          }}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchActive && touchDuration < 500) {
+              setIsOrderMode((prev) => !prev);
+            }
+            setTouchActive(false);
+            setTouchStartTime(null);
+            setTouchStartPosition(null);
+          }}
+        >
+          {isOrderMode ? 'Done' : <HiMiniArrowsRightLeft />}
+        </button>
+        <button
+          className={styles.addTabButton}
+          onClick={handleAddModalOpen}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            const touch = e.touches[0];
+            setTouchStartTime(Date.now());
+            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+            setTouchActive(true);
+          }}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchActive && touchDuration < 500) {
+              handleAddModalOpen();
+            }
+            setTouchActive(false);
+            setTouchStartTime(null);
+            setTouchStartPosition(null);
+          }}
+        >
           +
         </button>
       </div>
       {isAddModalOpen && (
-        <div className={styles.addModal}>
+        <div className={styles.addModal} ref={modalRef}>
           <div className={styles.addTypeToggle}>
             <button
               className={`${styles.typeButton} ${addType === "sheet" ? styles.activeType : ""}`}
@@ -364,7 +686,7 @@ const SheetTemplate = ({
               Folder
             </button>
           </div>
-          {addType === "sheet" ? (
+          {addType === "sheet" && (
             <div className={styles.addForm}>
               <input
                 type="text"
@@ -390,7 +712,8 @@ const SheetTemplate = ({
                 <button onClick={() => setIsAddModalOpen(false)}>Cancel</button>
               </div>
             </div>
-          ) : (
+          )}
+          {addType === "folder" && (
             <div className={styles.addForm}>
               <input
                 type="text"

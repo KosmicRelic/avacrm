@@ -9,7 +9,7 @@ const SheetModal = ({
   sheetName: initialSheetName = "",
   headers: initialHeaders = [],
   pinnedHeaders: initialPinnedHeaders = [],
-  sheets = [],
+  sheets = [], // Default to empty array for safety
   onSave,
   onPinToggle,
   onClose,
@@ -81,13 +81,17 @@ const SheetModal = ({
 
   const handleSave = useCallback(() => {
     const trimmedName = sheetName.trim();
-    const existingSheetNames = sheets.map((sheet) => sheet.sheetName);
+    // Use sheets.structure if sheets is an object, otherwise use sheets directly
+    const sheetStructure = sheets.structure || sheets;
+    const existingSheetNames = Array.isArray(sheetStructure)
+      ? sheetStructure.map((item) => item.sheetName || item.folderName)
+      : [];
     const isDuplicate = isEditMode
       ? trimmedName !== initialSheetName && existingSheetNames.includes(trimmedName)
       : existingSheetNames.includes(trimmedName);
 
     if (isDuplicate) {
-      alert("A sheet with this name already exists. Please choose a different name.");
+      alert("A sheet or folder with this name already exists. Please choose a different name.");
       return;
     }
     if (!trimmedName) {
@@ -152,7 +156,6 @@ const SheetModal = ({
               <div className={styles.headerRow}>
                 <div className={styles.headerNameType}>
                   <span>{header.name}</span>
-                  {/* <span className={styles.headerType}>({header.type})</span> */}
                 </div>
                 <div className={styles.primaryButtons}>
                   <button

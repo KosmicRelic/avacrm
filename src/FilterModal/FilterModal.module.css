@@ -157,20 +157,20 @@
 .filterSelectNoChevron {
   width: auto;
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+  padding: 12px 16px; /* Match searchBar padding */
+  border: none; /* Remove border */
+  border-radius: 10px; /* Match searchBar radius */
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: #f5f5f7;
+  background: rgba(245, 245, 247, 0.9); /* Match searchBar background */
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .filterSelect {
   padding-right: 28px;
-  background: #f5f5f7 url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: rgba(245, 245, 247, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -184,8 +184,8 @@
 .filterSelect:focus,
 .filterSelectNoChevron:focus {
   outline: none;
-  border-color: #007aff;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95); /* Match searchBar focus */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Match searchBar focus */
 }
 
 .filterInput[type="number"]::-webkit-inner-spin-button,
