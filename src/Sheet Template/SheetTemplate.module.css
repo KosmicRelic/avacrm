@@ -28,6 +28,7 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
 .cardDetailsContainer {
@@ -47,7 +48,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%; /* Matches tableContainer */
+  width: 100%;
   height: 100%;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
@@ -104,12 +105,12 @@
   gap: 8px;
   overflow-x: auto;
   padding: 8px 16px;
-  background: rgb(255, 255, 255);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: sticky;
-  bottom: 0; /* Stick to bottom on mobile */
-  z-index: 50; /* Above cardDetailsMobile */
+  bottom: 0;
+  z-index: 50;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -121,40 +122,224 @@
 .tabButton {
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 10px;
-  height: 30px;
+  padding: 8px 12px;
+  height: 32px;
   color: #6e6e73;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(245, 245, 247, 0.9);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .activeTab {
-  background: rgba(0, 122, 255, 0.12);
+  background: rgba(0, 122, 255, 0.15);
+  color: #007aff;
+}
+
+.activeFolder {
+  background: rgba(0, 122, 255, 0.15);
   color: #007aff;
 }
 
 .addTabButton {
-  padding: 5px 16px;
+  padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
   color: #007aff;
   background: rgba(0, 122, 255, 0.1);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.addTabButton:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.folderContainer {
+  position: relative;
+}
+
+.folderIcon {
+  font-size: 16px;
+}
+
+.dropdown {
+  position: absolute;
+  bottom: 42px;
+  left: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  z-index: 60;
+  min-width: 180px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+}
+
+.dropdownItem:active {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.addModal {
+  position: absolute;
+  bottom: 50px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 70;
+  width: 320px;
+  max-height: 450px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.addTypeToggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: rgba(245, 245, 247, 0.9);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.typeButton {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6e6e73;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typeButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.activeType {
+  background: rgba(255, 255, 255, 0.95);
+  color: #007aff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input {
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+.selectionList {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.selectionItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: #1d1d1f;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.selectionItem:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.selectionItem input {
+  margin: 0;
+  accent-color: #007aff;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modalButtons button {
+  flex: 1;
+  padding: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalButtons button:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.modalButtons button:active {
+  background: rgba(0, 122, 255, 0.3);
 }
 
 .controls {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(255, 255, 255);
-  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   box-sizing: border-box;
   gap: 12px;
   position: sticky;
@@ -171,18 +356,18 @@
   width: 100%;
   padding: 12px 32px 12px 16px;
   border: none;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(245, 245, 247, 0.9);
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
 .searchBar:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -207,6 +392,7 @@
   flex: 1;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  z-index: 10;
 }
 
 .header {
@@ -216,12 +402,12 @@
   padding: 0 16px;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.08);
   color: #000000;
   position: sticky;
   top: 0px;
-  z-index: 10;
+  z-index: 15;
 }
 
 .headerCell {
@@ -242,8 +428,8 @@
 }
 
 .filterButton {
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.9);
+  border-radius: 10px;
   border: none;
   padding: 10px 12px;
   cursor: pointer;
@@ -257,22 +443,23 @@
 }
 
 .editHeaderButton {
-  border-radius: none;
   border: none;
-  padding: 8px 4px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
   color: #007aff;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background: rgba(245, 245, 247, 0.9);
+  border-radius: 10px;
 }
 
 .editHeaderButton:hover {
+  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.05);
 }
 
@@ -291,7 +478,7 @@
     display: block;
     padding: 0;
     margin: 0;
-    overflow-x: hidden; /* Prevent horizontal scroll */
+    overflow-x: hidden;
   }
 
   .tableContainer {
@@ -327,5 +514,22 @@
     width: 100%;
     height: 100%;
     z-index: 40;
+  }
+
+  .dropdown {
+    position: absolute;
+    bottom: 42px;
+    left: 0;
+    width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .addModal {
+    position: fixed;
+    bottom: 60px;
+    right: 10px;
+    width: 90%;
+    max-width: 320px;
   }
 }

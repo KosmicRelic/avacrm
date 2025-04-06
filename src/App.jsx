@@ -1,7 +1,7 @@
 import { useContext, useState, useCallback, useMemo } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
-import SheetModal from "./SheetModal/SheetModal";
+import SheetModal from "./Sheet Template/SheetModal/SheetModal"
 import FilterModal from "./FilterModal/FilterModal";
 import { MainContext } from "./Contexts/MainContext";
 import ProfileModal from "./App Header/ProfileModal/ProfileModal";
@@ -20,7 +20,11 @@ function App() {
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
 
-  const activeSheet = useMemo(() => sheets.find((sheet) => sheet.isActive), [sheets]);
+  // Find the active sheet
+  const activeSheet = useMemo(() => {
+    return sheets.allSheets.find((sheet) => sheet.isActive) || null;
+  }, [sheets]);
+
   const activeSheetName = activeSheet?.sheetName;
 
   const resolvedHeaders = useMemo(() => {
@@ -45,69 +49,82 @@ function App() {
   }, [activeSheet, headers]);
 
   const resolvedRows = useMemo(() => {
-    return activeSheet?.rows.map((leadId) => cards.find((card) => card.leadId === leadId) || {}) || [];
-  }, [activeSheet, cards]);
+    return activeSheet?.rows.map((leadId) => cards.find((card) => card[resolvedHeaders[0]?.key] === leadId) || {}) || [];
+  }, [activeSheet, cards, resolvedHeaders]);
 
+  // Handle sheet change
   const handleSheetChange = useCallback((sheetName) => {
     if (sheetName === "add-new-sheet") {
       setIsSheetModalEditMode(false);
       setIsSheetModalOpen(true);
     } else if (sheetName) {
-      setSheets((prevSheets) =>
-        prevSheets.map((sheet) => ({
+      setSheets((prevSheets) => ({
+        ...prevSheets,
+        allSheets: prevSheets.allSheets.map((sheet) => ({
           ...sheet,
           isActive: sheet.sheetName === sheetName,
-        }))
-      );
+        })),
+      }));
     }
   }, [setSheets]);
 
   const handleSaveSheet = useCallback((sheetNameOrObj, headerObjects, pinnedHeaders) => {
     if (isSheetModalEditMode) {
       const newSheetName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
-      setSheets((prevSheets) => {
-        const updatedSheet = {
-          ...activeSheet,
-          headers: headerObjects,
-          pinnedHeaders: pinnedHeaders || activeSheet.pinnedHeaders,
-          rows: activeSheet.rows,
-          isActive: true,
-        };
-        if (newSheetName && newSheetName !== activeSheetName) {
-          return prevSheets.map((sheet) =>
-            sheet.sheetName === activeSheetName
-              ? { ...updatedSheet, sheetName: newSheetName }
-              : { ...sheet, isActive: false }
-          );
-        }
-        return prevSheets.map((sheet) =>
-          sheet.sheetName === activeSheetName ? updatedSheet : { ...sheet, isActive: false }
-        );
-      });
+      setSheets((prevSheets) => ({
+        ...prevSheets,
+        allSheets: prevSheets.allSheets.map((sheet) =>
+          sheet.sheetName === activeSheetName
+            ? {
+                ...sheet,
+                sheetName: newSheetName || sheet.sheetName,
+                headers: headerObjects,
+                pinnedHeaders: pinnedHeaders || sheet.pinnedHeaders,
+                rows: sheet.rows,
+                isActive: true,
+              }
+            : { ...sheet, isActive: false }
+        ),
+        structure: prevSheets.structure.map((item) =>
+          item.sheetName === activeSheetName
+            ? { sheetName: newSheetName || item.sheetName }
+            : item.folderName
+            ? {
+                ...item,
+                sheets: item.sheets.map((s) => (s === activeSheetName ? newSheetName || s : s)),
+              }
+            : item
+        ),
+      }));
     } else {
       const newSheetName = sheetNameOrObj;
       if (newSheetName) {
-        setSheets((prevSheets) => [
-          ...prevSheets.map((sheet) => ({ ...sheet, isActive: false })),
-          {
-            sheetName: newSheetName,
-            headers: headerObjects,
-            pinnedHeaders: pinnedHeaders || [],
-            rows: [],
-            isActive: true,
-          },
-        ]);
+        setSheets((prevSheets) => ({
+          ...prevSheets,
+          allSheets: [
+            ...prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: false })),
+            {
+              sheetName: newSheetName,
+              headers: headerObjects,
+              pinnedHeaders: pinnedHeaders || [],
+              rows: [],
+              isActive: true,
+            },
+          ],
+          structure: [...prevSheets.structure, { sheetName: newSheetName }],
+        }));
       } else {
         alert("Please provide a sheet name.");
         return;
       }
     }
     setIsSheetModalOpen(false);
-  }, [isSheetModalEditMode, activeSheet, activeSheetName, setSheets]);
+  }, [isSheetModalEditMode, activeSheetName, setSheets]);
 
   const handlePinToggle = useCallback((headerKey) => {
-    setSheets((prevSheets) =>
-      prevSheets.map((sheet) =>
+    setSheets((prevSheets) => ({
+      ...prevSheets,
+      allSheets: prevSheets.allSheets.map((sheet) =>
         sheet.sheetName === activeSheetName
           ? {
               ...sheet,
@@ -116,8 +133,8 @@ function App() {
                 : [...sheet.pinnedHeaders, headerKey],
             }
           : sheet
-      )
-    );
+      ),
+    }));
   }, [activeSheetName, setSheets]);
 
   const handleApplyFilters = useCallback((newFilters) => setFilters(newFilters), []);
@@ -126,32 +143,34 @@ function App() {
 
   const handleCardSave = useCallback((updatedRow) => {
     setCards((prevCards) =>
-      prevCards.map((card) => (card.leadId === updatedRow.leadId ? updatedRow : card))
+      prevCards.map((card) => (card[resolvedHeaders[0]?.key] === updatedRow[resolvedHeaders[0]?.key] ? updatedRow : card))
     );
-    setSheets((prevSheets) =>
-      prevSheets.map((sheet) =>
+    setSheets((prevSheets) => ({
+      ...prevSheets,
+      allSheets: prevSheets.allSheets.map((sheet) =>
         sheet.sheetName === activeSheetName
           ? {
               ...sheet,
-              rows: sheet.rows.map((leadId) =>
-                leadId === updatedRow.leadId ? updatedRow.leadId : leadId
+              rows: sheet.rows.map((id) =>
+                id === updatedRow[resolvedHeaders[0]?.key] ? updatedRow[resolvedHeaders[0]?.key] : id
               ),
             }
           : sheet
-      )
-    );
-  }, [activeSheetName, setCards, setSheets]);
+      ),
+    }));
+  }, [activeSheetName, setCards, setSheets, resolvedHeaders]);
 
   const handleDelete = useCallback((rowData) => {
-    setCards((prevCards) => prevCards.filter((card) => card.leadId !== rowData.leadId));
-    setSheets((prevSheets) =>
-      prevSheets.map((sheet) =>
+    setCards((prevCards) => prevCards.filter((card) => card[resolvedHeaders[0]?.key] !== rowData[resolvedHeaders[0]?.key]));
+    setSheets((prevSheets) => ({
+      ...prevSheets,
+      allSheets: prevSheets.allSheets.map((sheet) =>
         sheet.sheetName === activeSheetName
-          ? { ...sheet, rows: sheet.rows.filter((leadId) => leadId !== rowData.leadId) }
+          ? { ...sheet, rows: sheet.rows.filter((id) => id !== rowData[resolvedHeaders[0]?.key]) }
           : sheet
-      )
-    );
-  }, [activeSheetName, setCards, setSheets]);
+      ),
+    }));
+  }, [activeSheetName, setCards, setSheets, resolvedHeaders]);
 
   const onEditSheet = useCallback(() => {
     setIsSheetModalEditMode(true);
@@ -163,7 +182,7 @@ function App() {
   return (
     <div className={styles.appContainer}>
       <AppHeader
-        sheets={sheets.map((sheet) => sheet.sheetName)}
+        sheets={sheets.structure.map((item) => item.sheetName || item.folderName)} // Updated to use structure
         activeSheet={activeSheetName}
         onSheetChange={handleSheetChange}
         setIsProfileModalOpen={setIsProfileModalOpen}
@@ -177,6 +196,7 @@ function App() {
             rows={resolvedRows}
             filters={filters}
             sheets={sheets}
+            setSheets={setSheets} // Add this
             activeSheetName={activeSheetName}
             onSheetChange={handleSheetChange}
             onEditSheet={onEditSheet}

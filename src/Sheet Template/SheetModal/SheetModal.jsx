@@ -2,7 +2,7 @@ import { useEffect, useState, useContext, useRef, useMemo, useCallback } from "r
 import styles from "./SheetModal.module.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
-import { MainContext } from "../Contexts/MainContext";
+import { MainContext } from "../../Contexts/MainContext";
 
 const SheetModal = ({
   isEditMode = false,

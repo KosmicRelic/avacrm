@@ -4,12 +4,14 @@ import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
 import { CiFilter } from "react-icons/ci";
 import { IoCloseCircle } from "react-icons/io5";
+import { FaFolder } from "react-icons/fa";
 
 const SheetTemplate = ({
   headers,
   rows,
   filters = {},
   sheets,
+  setSheets, // Added setSheets prop
   activeSheetName,
   onSheetChange,
   onEditSheet,
@@ -23,6 +25,13 @@ const SheetTemplate = ({
   const [selectedRow, setSelectedRow] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [openFolder, setOpenFolder] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addType, setAddType] = useState("sheet");
+  const [newSheetName, setNewSheetName] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [selectedSheets, setSelectedSheets] = useState([]);
+  const [selectedHeaders, setSelectedHeaders] = useState([]);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
   const isMobile = windowWidth <= 1024;
@@ -116,11 +125,8 @@ const SheetTemplate = ({
   }, [sortedRows, searchQuery, visibleHeaders]);
 
   const handleSheetClick = useCallback((sheetName) => {
-    if (sheetName === "add-new-sheet") {
-      onSheetChange("add-new-sheet");
-    } else {
-      onSheetChange(sheetName);
-    }
+    onSheetChange(sheetName);
+    setOpenFolder(null);
   }, [onSheetChange]);
 
   const clearSearch = useCallback(() => setSearchQuery(""), []);
@@ -159,6 +165,9 @@ const SheetTemplate = ({
       case "Business Partners":
         newCard = { businessId: newId, fullName: "", address: "", status: "" };
         break;
+      case "Vendors":
+        newCard = { vendorId: newId, name: "", contact: "" };
+        break;
       case "Tasks":
         newCard = { taskId: newId, description: "", dueDate: "", priority: "" };
         break;
@@ -168,6 +177,81 @@ const SheetTemplate = ({
     onCardSave(newCard);
     setSelectedRow(newCard);
   }, [activeSheetName, visibleHeaders, onCardSave]);
+
+  const toggleFolder = useCallback((folderName) => {
+    setOpenFolder((prev) => (prev === folderName ? null : folderName));
+  }, []);
+
+  const handleAddModalOpen = useCallback(() => {
+    setIsAddModalOpen(true);
+    setAddType("sheet");
+    setNewSheetName("");
+    setNewFolderName("");
+    setSelectedSheets([]);
+    setSelectedHeaders([]);
+  }, []);
+
+  const handleAddTypeChange = useCallback((type) => {
+    setAddType(type);
+    setNewSheetName("");
+    setNewFolderName("");
+    setSelectedSheets([]);
+    setSelectedHeaders([]);
+  }, []);
+
+  const handleSheetSave = useCallback(() => {
+    if (!newSheetName) {
+      alert("Please provide a sheet name.");
+      return;
+    }
+    onSheetChange({
+      sheetName: newSheetName,
+      headers: selectedHeaders.map((key) => ({ key, visible: true, hidden: false })),
+      pinnedHeaders: [],
+      rows: [],
+      isActive: true,
+    });
+    setIsAddModalOpen(false);
+  }, [newSheetName, selectedHeaders, onSheetChange]);
+
+  const handleFolderSave = useCallback(() => {
+    if (!newFolderName) {
+      alert("Please provide a folder name.");
+      return;
+    }
+    setSheets((prevSheets) => ({
+      ...prevSheets,
+      structure: [
+        ...prevSheets.structure,
+        {
+          folderName: newFolderName,
+          sheets: selectedSheets,
+        },
+      ],
+    }));
+    setNewFolderName("");
+    setSelectedSheets([]);
+    setIsAddModalOpen(false);
+  }, [newFolderName, selectedSheets, setSheets]);
+
+  const toggleSheetSelection = useCallback((sheetName) => {
+    setSelectedSheets((prev) =>
+      prev.includes(sheetName) ? prev.filter((s) => s !== sheetName) : [...prev, sheetName]
+    );
+  }, []);
+
+  const toggleHeaderSelection = useCallback((headerKey) => {
+    setSelectedHeaders((prev) =>
+      prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey]
+    );
+  }, []);
+
+  const availableHeaders = useMemo(() => {
+    return headers.map((h, index) => ({
+      key: h.key || `header-${index}`, // Fallback to index if key is missing
+      name: h.name || Object.values(h)[0], // Use h.name if available
+    }));
+  }, [headers]);
 
   const TableContent = (
     <div className={styles.tableContent}>
@@ -203,7 +287,7 @@ const SheetTemplate = ({
         </div>
         <div className={styles.bodyContainer}>
           <RowComponent
-            rowData={{ [visibleHeaders[0].key]: "Add New Card", isAddNew: true }}
+            rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={handleAddNewCard}
           />
@@ -222,21 +306,119 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={styles.sheetTabs}>
-        {sheets.map((sheet) => (
-          <button
-            key={sheet.sheetName}
-            className={`${styles.tabButton} ${
-              sheet.sheetName === activeSheetName ? styles.activeTab : ""
-            }`}
-            onClick={() => handleSheetClick(sheet.sheetName)}
-          >
-            {sheet.sheetName}
-          </button>
-        ))}
-        <button className={styles.addTabButton} onClick={() => handleSheetClick("add-new-sheet")}>
+        {sheets.structure.map((item, index) =>
+          item.folderName ? (
+            <div key={item.folderName} className={styles.folderContainer}>
+              <button
+                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""}`}
+                onClick={() => toggleFolder(item.folderName)}
+              >
+                <FaFolder className={styles.folderIcon} />
+                {item.folderName}
+              </button>
+              {openFolder === item.folderName && (
+                <div className={styles.dropdown}>
+                  {item.sheets.map((sheetName) => (
+                    <button
+                      key={sheetName}
+                      className={`${styles.dropdownItem} ${
+                        sheetName === activeSheetName ? styles.activeTab : ""
+                      }`}
+                      onClick={() => handleSheetClick(sheetName)}
+                    >
+                      {sheetName}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              key={item.sheetName}
+              className={`${styles.tabButton} ${
+                item.sheetName === activeSheetName ? styles.activeTab : ""
+              }`}
+              onClick={() => handleSheetClick(item.sheetName)}
+            >
+              {item.sheetName}
+            </button>
+          )
+        )}
+        <button className={styles.addTabButton} onClick={handleAddModalOpen}>
           +
         </button>
       </div>
+      {isAddModalOpen && (
+        <div className={styles.addModal}>
+          <div className={styles.addTypeToggle}>
+            <button
+              className={`${styles.typeButton} ${addType === "sheet" ? styles.activeType : ""}`}
+              onClick={() => handleAddTypeChange("sheet")}
+            >
+              Sheet
+            </button>
+            <button
+              className={`${styles.typeButton} ${addType === "folder" ? styles.activeType : ""}`}
+              onClick={() => handleAddTypeChange("folder")}
+            >
+              Folder
+            </button>
+          </div>
+          {addType === "sheet" ? (
+            <div className={styles.addForm}>
+              <input
+                type="text"
+                value={newSheetName}
+                onChange={(e) => setNewSheetName(e.target.value)}
+                placeholder="Sheet Name"
+                className={styles.input}
+              />
+              <div className={styles.selectionList}>
+                {availableHeaders.map((header) => (
+                  <label key={header.key} className={styles.selectionItem}>
+                    <input
+                      type="checkbox"
+                      checked={selectedHeaders.includes(header.key)}
+                      onChange={() => toggleHeaderSelection(header.key)}
+                    />
+                    {header.name}
+                  </label>
+                ))}
+              </div>
+              <div className={styles.modalButtons}>
+                <button onClick={handleSheetSave}>Save</button>
+                <button onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.addForm}>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Folder Name"
+                className={styles.input}
+              />
+              <div className={styles.selectionList}>
+                {sheets.allSheets.map((sheet) => (
+                  <label key={sheet.sheetName} className={styles.selectionItem}>
+                    <input
+                      type="checkbox"
+                      checked={selectedSheets.includes(sheet.sheetName)}
+                      onChange={() => toggleSheetSelection(sheet.sheetName)}
+                    />
+                    {sheet.sheetName}
+                  </label>
+                ))}
+              </div>
+              <div className={styles.modalButtons}>
+                <button onClick={handleFolderSave}>Save</button>
+                <button onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -247,7 +429,7 @@ const SheetTemplate = ({
         {isMobile && selectedRow && (
           <div className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}>
             <CardDetails
-              key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+              key={selectedRow[visibleHeaders[0]?.key] || Date.now()}
               rowData={selectedRow}
               headers={visibleHeaders}
               onClose={handleCardClose}
@@ -261,7 +443,7 @@ const SheetTemplate = ({
         <div className={styles.cardDetailsContainer}>
           {selectedRow ? (
             <CardDetails
-              key={selectedRow.leadId || selectedRow.businessId || selectedRow.taskId || Date.now()}
+              key={selectedRow[visibleHeaders[0]?.key] || Date.now()}
               rowData={selectedRow}
               headers={visibleHeaders}
               onClose={handleCardClose}
