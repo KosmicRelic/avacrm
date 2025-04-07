@@ -1,9 +1,10 @@
-import { useEffect, useState, useContext, useRef, useMemo, useCallback } from "react";
+import { useContext, useState, useCallback, useRef, useMemo } from "react";
 import Modal from "../../Modal/Modal";
 import styles from "./SheetModal.module.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 import { MainContext } from "../../Contexts/MainContext";
+import useClickOutside from "../../hooks/UseClickOutside";
 
 const SheetModal = ({
   isEditMode = false,
@@ -22,7 +23,7 @@ const SheetModal = ({
   );
   const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
   const [activeIndex, setActiveIndex] = useState(null);
-  const headerRefs = useRef([]);
+  const editActionsRef = useRef(null); // Single ref for active editActions
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -118,7 +119,7 @@ const SheetModal = ({
   }, []);
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex(index);
+    setActiveIndex((prev) => (prev === index ? null : index));
   }, []);
 
   const removeHeader = useCallback(
@@ -140,22 +141,11 @@ const SheetModal = ({
     [currentHeaders]
   );
 
-  useEffect(() => {
-    const handleClickOutsideHeader = (event) => {
-      const activeHeaderRef = headerRefs.current[activeIndex];
-      if (
-        activeIndex !== null &&
-        activeHeaderRef &&
-        !activeHeaderRef.contains(event.target) &&
-        !event.target.closest(`.${styles.doneButton}`) &&
-        !event.target.closest(`.${styles.headerItem}`)
-      ) {
-        setActiveIndex(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutsideHeader);
-    return () => document.removeEventListener("mousedown", handleClickOutsideHeader);
-  }, [activeIndex]);
+  useClickOutside(
+    editActionsRef,
+    activeIndex !== null,
+    () => setActiveIndex(null)
+  );
 
   return (
     <Modal title={isEditMode ? "Edit Sheet" : "New Sheet"} onClose={handleSaveAndClose}>
@@ -191,7 +181,6 @@ const SheetModal = ({
           <div
             key={header.key}
             className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${header.movingUp ? styles.movingUp : ""} ${header.movingDown ? styles.movingDown : ""}`}
-            ref={(el) => (headerRefs.current[index] = el)}
             onClick={(e) => {
               if (!e.target.closest("button")) toggleEdit(index);
             }}
@@ -210,7 +199,10 @@ const SheetModal = ({
               </div>
             </div>
             {activeIndex === index && (
-              <div className={styles.editActions}>
+              <div
+                className={styles.editActions}
+                ref={editActionsRef}
+              >
                 <button
                   onClick={() => removeHeader(index)}
                   disabled={pinnedHeaders.includes(header.key)}

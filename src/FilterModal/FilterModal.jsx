@@ -1,7 +1,8 @@
-import { useEffect, useState, useContext, useRef, useMemo, useCallback } from "react";
+import { useContext, useState, useCallback, useMemo, useRef } from "react";
 import Modal from "../Modal/Modal";
 import styles from "./FilterModal.module.css";
 import { MainContext } from "../Contexts/MainContext";
+import useClickOutside from "../hooks/UseClickOutside";
 
 const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters = {} }) => {
   const { headers: allHeaders } = useContext(MainContext);
@@ -25,8 +26,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     }, [initialFilters])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
-  const dropdownRefs = useRef({});
-  const filterActionsRef = useRef(null);
+  const filterActionsRef = useRef(null); // Single ref for active filterActions
 
   const visibleHeaders = useMemo(() => headers.filter((header) => !header.hidden), [headers]);
 
@@ -117,7 +117,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   const toggleNumberRangeMode = (headerKey) => toggleRangeMode(headerKey, false);
 
   const toggleFilter = useCallback((index) => {
-    setActiveFilterIndex(index);
+    setActiveFilterIndex((prev) => (prev === index ? null : index));
   }, []);
 
   const clearFilter = useCallback(
@@ -188,20 +188,11 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     [filterValues, numberRangeMode, dateRangeMode]
   );
 
-  useEffect(() => {
-    const handleClickOutsideFilter = (event) => {
-      if (
-        filterActionsRef.current &&
-        !filterActionsRef.current.contains(event.target) &&
-        activeFilterIndex !== null &&
-        !event.target.closest(`.${styles.filterItem}`)
-      ) {
-        setActiveFilterIndex(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutsideFilter);
-    return () => document.removeEventListener("mousedown", handleClickOutsideFilter);
-  }, [activeFilterIndex]);
+  useClickOutside(
+    filterActionsRef,
+    activeFilterIndex !== null,
+    () => setActiveFilterIndex(null)
+  );
 
   return (
     <Modal title="Filters" onClose={onClose}>
@@ -221,7 +212,10 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
               </div>
             </div>
             {activeFilterIndex === index && (
-              <div className={styles.filterActions} ref={filterActionsRef}>
+              <div
+                className={styles.filterActions}
+                ref={filterActionsRef}
+              >
                 {header.type === "number" ? (
                   numberRangeMode[header.key] ? (
                     <>
@@ -320,7 +314,6 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                 ) : header.type === "dropdown" ? (
                   <select
                     multiple
-                    ref={(el) => (dropdownRefs.current[header.key] = el)}
                     value={filterValues[header.key]?.values || []}
                     onChange={(e) => handleDropdownChange(header.key, e)}
                     className={styles.filterMultiSelect}
