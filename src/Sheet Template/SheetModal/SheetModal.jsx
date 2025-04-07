@@ -25,8 +25,9 @@ const SheetModal = ({
   );
   const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
   const [activeIndex, setActiveIndex] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
-  const headerRefs = useRef([]); // Refs for each header item
+  const headerRefs = useRef([]);
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -64,8 +65,19 @@ const SheetModal = ({
     } else {
       onSave(trimmedName, currentHeaders, pinnedHeaders);
     }
-    onClose();
-  }, [sheetName, sheets, isEditMode, initialSheetName, currentHeaders, pinnedHeaders, onSave, onClose]);
+    handleClose();
+  }, [sheetName, sheets, isEditMode, initialSheetName, currentHeaders, pinnedHeaders, onSave]);
+
+  const handleClose = useCallback(() => {
+    if (window.innerWidth <= 767) {
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+      }, 300);
+    } else {
+      onClose();
+    }
+  }, [onClose]);
 
   const moveUp = useCallback((index) => {
     if (index === 0) return;
@@ -132,7 +144,7 @@ const SheetModal = ({
   }, []);
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
+    setActiveIndex(index); // Always set to the clicked index, even if another is open
   }, []);
 
   const removeHeader = useCallback((index) => {
@@ -150,17 +162,16 @@ const SheetModal = ({
 
   useEffect(() => {
     const handleClickOutsideModal = (event) => {
-      // Only close if click is outside modalRef
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         handleSaveAndClose();
       } else {
-        // If click is inside modalRef but not in the active header, collapse edit actions
         const activeHeaderRef = headerRefs.current[activeIndex];
         if (
           activeIndex !== null &&
           activeHeaderRef &&
           !activeHeaderRef.contains(event.target) &&
-          !event.target.closest(`.${styles.doneButton}`) // Exclude Done button
+          !event.target.closest(`.${styles.doneButton}`) &&
+          !event.target.closest(`.${styles.headerItem}`) // Don’t collapse if clicking another header
         ) {
           setActiveIndex(null);
         }
@@ -176,7 +187,20 @@ const SheetModal = ({
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modalContent} ref={modalRef}>
+      <div className={`${styles.modalContent} ${isClosing ? styles.closing : ""}`} ref={modalRef}>
+        <div
+          style={{
+            width: "40px",
+            height: "5px",
+            backgroundColor: "rgba(0, 0, 0, 0.2)",
+            borderRadius: "2.5px",
+            margin: "0 auto 10px",
+            display: "none",
+            "@media (maxWidth: 767px)": {
+              display: "block",
+            },
+          }}
+        />
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{isEditMode ? "Edit Sheet" : "New Sheet"}</h2>
           <button className={styles.doneButton} onClick={handleSaveAndClose}>
@@ -215,10 +239,9 @@ const SheetModal = ({
             <div
               key={header.key}
               className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${header.movingUp ? styles.movingUp : ""} ${header.movingDown ? styles.movingDown : ""}`}
-              ref={(el) => (headerRefs.current[index] = el)} // Assign ref to each header item
+              ref={(el) => (headerRefs.current[index] = el)}
               onClick={(e) => {
-                // Only toggle edit if clicking outside buttons and editActions isn't already open
-                if (activeIndex !== index && !e.target.closest("button")) {
+                if (!e.target.closest("button")) {
                   toggleEdit(index);
                 }
               }}

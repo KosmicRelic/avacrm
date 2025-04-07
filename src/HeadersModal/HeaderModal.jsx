@@ -22,6 +22,7 @@ const HeadersModal = ({ onClose }) => {
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
   const headerRefs = useRef([]);
   const createHeaderRef = useRef(null);
@@ -111,31 +112,34 @@ const HeadersModal = ({ onClose }) => {
         updatedHeaders[index] = updatedHeader;
         return updatedHeaders;
       });
+      setActiveIndex(null); // Collapse after update
     },
     [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, setHeaders]
   );
 
   const handleKeyPress = useCallback(
     (e) => {
-      if (e.key === "Enter") activeIndex === -1 ? addHeader() : updateHeader(activeIndex);
+      if (e.key === "Enter") activeIndex === -1 ? addHeader() : null; // Only add on Enter, not update
     },
-    [activeIndex, addHeader, updateHeader]
+    [activeIndex, addHeader]
   );
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
-    if (index >= 0 && activeIndex !== index) {
-      const header = currentHeaders[index];
-      setNewHeaderKey(Object.keys(header)[0]);
-      setNewHeaderName(header[Object.keys(header)[0]]);
-      setNewHeaderType(header.type);
-      setNewHeaderOptions(header.options || []);
-    } else if (index === -1 && activeIndex !== -1) {
-      setNewHeaderKey("");
-      setNewHeaderName("");
-      setNewHeaderType("text");
-      setNewHeaderOptions([]);
-      setNewOption("");
+    if (activeIndex !== index) {
+      setActiveIndex(index);
+      if (index >= 0) {
+        const header = currentHeaders[index];
+        setNewHeaderKey(Object.keys(header)[0]);
+        setNewHeaderName(header[Object.keys(header)[0]]);
+        setNewHeaderType(header.type);
+        setNewHeaderOptions(header.options || []);
+      } else if (index === -1) {
+        setNewHeaderKey("");
+        setNewHeaderName("");
+        setNewHeaderType("text");
+        setNewHeaderOptions([]);
+        setNewOption("");
+      }
     }
   }, [currentHeaders, activeIndex]);
 
@@ -149,29 +153,29 @@ const HeadersModal = ({ onClose }) => {
     if (newOption.trim() && !newHeaderOptions.includes(newOption.trim())) {
       setNewHeaderOptions((prev) => [...prev, newOption.trim()]);
       setNewOption("");
-      if (activeIndex >= 0) updateHeader(activeIndex);
     }
-  }, [newOption, newHeaderOptions, activeIndex, updateHeader]);
+  }, [newOption, newHeaderOptions]);
 
   const removeOption = useCallback((option) => {
     setNewHeaderOptions((prev) => prev.filter((opt) => opt !== option));
-    if (activeIndex >= 0) updateHeader(activeIndex);
-  }, [activeIndex, updateHeader]);
+  }, []);
+
+  const handleClose = () => {
+    if (window.innerWidth <= 767) {
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+      }, 300);
+    } else {
+      onClose();
+    }
+  };
 
   useEffect(() => {
     const handleClickOutsideModal = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      } else {
-        const activeHeaderRef = activeIndex === -1 ? createHeaderRef.current : headerRefs.current[activeIndex];
-        if (
-          activeIndex !== null &&
-          activeHeaderRef &&
-          !activeHeaderRef.contains(event.target) &&
-          !event.target.closest(`.${styles.doneButton}`)
-        ) {
-          setActiveIndex(null);
-        }
+        setActiveIndex(null);
+        handleClose();
       }
     };
 
@@ -180,14 +184,27 @@ const HeadersModal = ({ onClose }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutsideModal);
     };
-  }, [onClose, activeIndex]);
+  }, [onClose]);
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modalContent} ref={modalRef}>
+      <div className={`${styles.modalContent} ${isClosing ? styles.closing : ""}`} ref={modalRef}>
+        <div
+          style={{
+            width: "40px",
+            height: "5px",
+            backgroundColor: "rgba(0, 0, 0, 0.2)",
+            borderRadius: "2.5px",
+            margin: "0 auto 10px",
+            display: "none",
+            "@media (maxWidth: 767px)": {
+              display: "block",
+            },
+          }}
+        />
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Manage Columns</h2>
-          <button className={styles.doneButton} onClick={onClose}>
+          <button className={styles.doneButton} onClick={handleClose}>
             Done
           </button>
         </div>
@@ -195,7 +212,7 @@ const HeadersModal = ({ onClose }) => {
           className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""}`}
           ref={createHeaderRef}
           onClick={(e) => {
-            if (activeIndex !== -1 && !e.target.closest("button")) {
+            if (!e.target.closest("button")) {
               toggleEdit(-1);
             }
           }}
@@ -276,7 +293,7 @@ const HeadersModal = ({ onClose }) => {
                 className={`${styles.headerItem} ${isActive ? styles.activeItem : ""}`}
                 ref={(el) => (headerRefs.current[index] = el)}
                 onClick={(e) => {
-                  if (activeIndex !== index && !e.target.closest("button")) {
+                  if (!e.target.closest("button")) {
                     toggleEdit(index);
                   }
                 }}
@@ -290,15 +307,19 @@ const HeadersModal = ({ onClose }) => {
                 </div>
                 {isActive && (
                   <div className={styles.editActions}>
-                    <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
-                      Remove
-                    </button>
+                    <div className={styles.editActionsButtons}>
+                      <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
+                        Remove
+                      </button>
+                      <button onClick={() => updateHeader(index)} className={styles.actionButton}>
+                        Update
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={newHeaderKey}
                       onChange={(e) => setNewHeaderKey(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      onBlur={() => updateHeader(index)}
                       placeholder="Key"
                       className={styles.inputField}
                     />
@@ -307,16 +328,12 @@ const HeadersModal = ({ onClose }) => {
                       value={newHeaderName}
                       onChange={(e) => setNewHeaderName(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      onBlur={() => updateHeader(index)}
                       placeholder="Name"
                       className={styles.inputField}
                     />
                     <select
                       value={newHeaderType}
-                      onChange={(e) => {
-                        setNewHeaderType(e.target.value);
-                        updateHeader(index);
-                      }}
+                      onChange={(e) => setNewHeaderType(e.target.value)}
                       className={styles.selectField}
                     >
                       <option value="text">Text</option>

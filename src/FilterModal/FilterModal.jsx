@@ -24,6 +24,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     }, [initialFilters])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const [isClosing, setIsClosing] = useState(false); // Added for closing animation
   const dropdownRefs = useRef({});
   const modalRef = useRef(null);
   const filterActionsRef = useRef(null);
@@ -189,10 +190,21 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     [filterValues, numberRangeMode, dateRangeMode]
   );
 
+  const handleClose = () => {
+    if (window.innerWidth <= 767) { // Animate on mobile
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+      }, 300); // Match animation duration
+    } else {
+      onClose(); // Immediate close on desktop
+    }
+  };
+
   useEffect(() => {
     const handleClickOutsideModal = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
+        handleClose();
       }
     };
 
@@ -218,9 +230,26 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modalContent} ref={modalRef}>
+      <div className={`${styles.modalContent} ${isClosing ? styles.closing : ""}`} ref={modalRef}>
+        {/* iOS-style handle bar for mobile */}
+        <div
+          style={{
+            width: "40px",
+            height: "5px",
+            backgroundColor: "rgba(0, 0, 0, 0.2)",
+            borderRadius: "2.5px",
+            margin: "0 auto 10px",
+            display: "none",
+            "@media (maxWidth: 767px)": {
+              display: "block",
+            },
+          }}
+        />
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Filters</h2>
+          <button className={styles.doneButton} onClick={handleClose}>
+            Done
+          </button>
         </div>
         <div className={styles.filterList}>
           {visibleHeaders.map((header, index) => (
