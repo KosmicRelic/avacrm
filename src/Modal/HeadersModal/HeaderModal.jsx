@@ -1,8 +1,8 @@
 import { useContext, useState, useCallback, useRef } from "react";
-import Modal from "../Modal/Modal";
+import Modal from "../Modal";
 import styles from "./HeadersModal.module.css";
-import { MainContext } from "../Contexts/MainContext";
-import useClickOutside from "../hooks/UseClickOutside";
+import { MainContext } from "../../Contexts/MainContext";
+import useClickOutside from "../Hooks/UseClickOutside";
 
 const HeadersModal = ({ onClose }) => {
   const { headers, setHeaders } = useContext(MainContext);
@@ -24,7 +24,7 @@ const HeadersModal = ({ onClose }) => {
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
-  const editActionsRef = useRef(null); // Single ref for the active editActions
+  const editActionsRef = useRef(null);
 
   const validateHeader = useCallback(
     (key, name, existingHeaders, isUpdate = false, index = null) => {
@@ -108,10 +108,7 @@ const HeadersModal = ({ onClose }) => {
   );
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => {
-      if (prev === index) return null; // Close if clicking the same header
-      return index; // Open new header, implicitly closing previous
-    });
+    setActiveIndex((prev) => (prev === index ? null : index));
   }, []);
 
   const deleteHeader = useCallback(
@@ -134,24 +131,13 @@ const HeadersModal = ({ onClose }) => {
     setNewHeaderOptions((prev) => prev.filter((opt) => opt !== option));
   }, []);
 
-  useClickOutside(
-    editActionsRef,
-    activeIndex !== null,
-    () => {
-      console.log("Click detected outside edit actions, closing...");
-      setActiveIndex(null);
-    }
-  );
+  useClickOutside(editActionsRef, activeIndex !== null, () => setActiveIndex(null));
 
   return (
     <Modal title="Manage Columns" onClose={onClose}>
       <div
         className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""}`}
-        onClick={(e) => {
-          if (!e.target.closest("button")) {
-            toggleEdit(-1);
-          }
-        }}
+        onClick={() => toggleEdit(-1)}
       >
         <div className={styles.headerRow}>
           <div className={styles.headerNameType}>
@@ -161,7 +147,8 @@ const HeadersModal = ({ onClose }) => {
         {activeIndex === -1 && (
           <div
             className={styles.editActions}
-            ref={editActionsRef} // Assign ref here
+            ref={editActionsRef}
+            onClick={(e) => e.stopPropagation()} // Prevents clicks from closing
           >
             <input
               type="text"
@@ -230,11 +217,7 @@ const HeadersModal = ({ onClose }) => {
             <div
               key={key}
               className={`${styles.headerItem} ${isActive ? styles.activeItem : ""}`}
-              onClick={(e) => {
-                if (!e.target.closest("button")) {
-                  toggleEdit(index);
-                }
-              }}
+              onClick={() => toggleEdit(index)}
             >
               <div className={styles.headerRow}>
                 <div className={styles.headerNameType}>
@@ -245,7 +228,8 @@ const HeadersModal = ({ onClose }) => {
               {isActive && (
                 <div
                   className={styles.editActions}
-                  ref={editActionsRef} // Assign ref here
+                  ref={editActionsRef}
+                  onClick={(e) => e.stopPropagation()} // Prevents clicks from closing
                 >
                   <div className={styles.editActionsButtons}>
                     <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>

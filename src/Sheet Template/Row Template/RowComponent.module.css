@@ -31,8 +31,8 @@
   padding: 14px 12px;
   width: 150px;
   text-align: center;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 13px;
+  font-weight: 550;
   color: #1d1d1f;
   white-space: nowrap;
   overflow: hidden;
@@ -42,7 +42,8 @@
 @media (max-width: 1024px) {
   .bodyCell {
     width: 120px;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 550;
   }
   .bodyRow {
     margin: 8px 16px;

@@ -1,8 +1,8 @@
 import { useContext, useState, useCallback, useMemo, useRef } from "react";
-import Modal from "../Modal/Modal";
+import Modal from "../Modal";
 import styles from "./FilterModal.module.css";
-import { MainContext } from "../Contexts/MainContext";
-import useClickOutside from "../hooks/UseClickOutside";
+import { MainContext } from "../../Contexts/MainContext";
+import useClickOutside from "../Hooks/UseClickOutside";
 
 const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters = {} }) => {
   const { headers: allHeaders } = useContext(MainContext);
@@ -26,7 +26,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     }, [initialFilters])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
-  const filterActionsRef = useRef(null); // Single ref for active filterActions
+  const filterActionsRef = useRef(null);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => !header.hidden), [headers]);
 
@@ -188,11 +188,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     [filterValues, numberRangeMode, dateRangeMode]
   );
 
-  useClickOutside(
-    filterActionsRef,
-    activeFilterIndex !== null,
-    () => setActiveFilterIndex(null)
-  );
+  useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
 
   return (
     <Modal title="Filters" onClose={onClose}>
@@ -215,6 +211,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
               <div
                 className={styles.filterActions}
                 ref={filterActionsRef}
+                onClick={(e) => e.stopPropagation()} // Prevents clicks from closing the filter
               >
                 {header.type === "number" ? (
                   numberRangeMode[header.key] ? (
@@ -358,7 +355,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                 )}
                 <button
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Ensures Clear button works without closing
                     clearFilter(header.key);
                   }}
                   className={styles.clearButton}

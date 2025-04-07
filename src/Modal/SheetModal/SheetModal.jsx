@@ -4,7 +4,7 @@ import styles from "./SheetModal.module.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 import { MainContext } from "../../Contexts/MainContext";
-import useClickOutside from "../../hooks/UseClickOutside";
+import useClickOutside from "../Hooks/UseClickOutside";
 
 const SheetModal = ({
   isEditMode = false,
@@ -23,7 +23,7 @@ const SheetModal = ({
   );
   const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
   const [activeIndex, setActiveIndex] = useState(null);
-  const editActionsRef = useRef(null); // Single ref for active editActions
+  const editActionsRef = useRef(null);
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -141,11 +141,7 @@ const SheetModal = ({
     [currentHeaders]
   );
 
-  useClickOutside(
-    editActionsRef,
-    activeIndex !== null,
-    () => setActiveIndex(null)
-  );
+  useClickOutside(editActionsRef, activeIndex !== null, () => setActiveIndex(null));
 
   return (
     <Modal title={isEditMode ? "Edit Sheet" : "New Sheet"} onClose={handleSaveAndClose}>
@@ -202,6 +198,7 @@ const SheetModal = ({
               <div
                 className={styles.editActions}
                 ref={editActionsRef}
+                onClick={(e) => e.stopPropagation()} // Prevents clicks from closing the edit section
               >
                 <button
                   onClick={() => removeHeader(index)}
