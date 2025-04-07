@@ -45,22 +45,6 @@
   margin: 0;
 }
 
-.closeButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.closeButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
 .filterList {
   margin-bottom: 20px;
   border-radius: 10px;
@@ -106,42 +90,10 @@
   text-transform: uppercase;
 }
 
-.filterType {
-  color: #6e6e73;
-  font-size: 14px;
-}
-
-.primaryButtons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .filterSummary {
   color: #6e6e73;
   font-size: 14px;
   font-weight: 400;
-}
-
-.filterButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.filterButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
-.filterButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 .filterActions {
@@ -157,13 +109,13 @@
 .filterSelectNoChevron {
   width: auto;
   flex: 1;
-  padding: 12px 16px; /* Match searchBar padding */
-  border: none; /* Remove border */
-  border-radius: 10px; /* Match searchBar radius */
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(245, 245, 247, 0.9); /* Match searchBar background */
+  background: rgba(245, 245, 247, 0.9);
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -184,8 +136,8 @@
 .filterSelect:focus,
 .filterSelectNoChevron:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.95); /* Match searchBar focus */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Match searchBar focus */
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .filterInput[type="number"]::-webkit-inner-spin-button,
@@ -244,26 +196,11 @@
   cursor: not-allowed;
 }
 
-.cancelButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
 .modalActions {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-end;
+  padding: 10px 20px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .resetButton {
@@ -282,18 +219,18 @@
   background: rgba(255, 69, 58, 0.1);
 }
 
-.applyButton {
-  background: #007aff;
+.clearButton {
+  background: none;
   border: none;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 12px;
+  color: #007aff;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 8px 12px;
   cursor: pointer;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
-.applyButton:hover {
-  background: #0066cc;
+.clearButton:hover {
+  background: rgba(0, 122, 255, 0.1);
 }

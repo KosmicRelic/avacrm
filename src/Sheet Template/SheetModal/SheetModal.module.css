@@ -28,9 +28,8 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  position: relative;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
 }
 
 .modalHeader {
@@ -48,51 +47,50 @@
   margin: 0;
 }
 
-.closeButton {
+.doneButton {
   background: none;
   border: none;
   color: #007aff;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
-  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
-.closeButton:hover {
+.doneButton:hover {
   background: rgba(0, 122, 255, 0.1);
+  border-radius: 12px;
 }
 
 .sheetNameInput,
 .addHeaderSelect {
   width: 100%;
-  padding: 12px 16px; /* Match searchBar padding */
-  border-radius: 10px; /* Match searchBar radius */
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(245, 245, 247, 0.9); /* Match searchBar background */
+  background: rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
   transition: all 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
   margin-bottom: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .sheetNameInput:focus,
 .addHeaderSelect:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.95); /* Match searchBar focus */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Match searchBar focus */
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .addHeaderSelect {
   padding-right: 32px;
-  background: rgba(245, 245, 247, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
 }
-
 
 .headerList {
   margin-bottom: 20px;
@@ -104,7 +102,8 @@
 .headerItem {
   padding: 12px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background 0.2s ease;
+  transition: transform 0.3s ease, background 0.2s ease;
+  position: relative;
 }
 
 .headerItem:last-child {
@@ -117,6 +116,24 @@
 
 .activeItem {
   background: rgba(0, 122, 255, 0.1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+.headerItem.movingUp {
+  animation: slideUp 0.3s ease forwards;
+}
+
+.headerItem.movingDown {
+  animation: slideDown 0.3s ease forwards;
 }
 
 .headerRow {
@@ -139,57 +156,31 @@
   text-transform: uppercase;
 }
 
-.headerType {
-  color: #6e6e73;
-  font-size: 14px;
-}
-
 .primaryButtons {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.iconButton {
+.visibilityIconButton, .filterIconButton {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 17px;
   color: #6e6e73;
   padding: 6px;
+  position: absolute;
+  right: 3em;
   border-radius: 12px;
   transition: all 0.2s ease;
+}
+.filterIconButton{
+  right: 0.5em;
 }
 
 .iconButton:hover {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
-}
-
-.iconButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.editButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.editButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
-.editButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 .editActions {
@@ -239,37 +230,4 @@
 .deleteButton:disabled {
   color: #d2d2d7;
   cursor: not-allowed;
-}
-
-.cancelButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
-.saveButton {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: #007aff;
-  color: white;
-  font-size: 17px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.saveButton:hover {
-  background: #0066cc;
 }

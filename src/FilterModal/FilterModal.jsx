@@ -26,6 +26,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const dropdownRefs = useRef({});
   const modalRef = useRef(null);
+  const filterActionsRef = useRef(null);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => !header.hidden), [headers]);
 
@@ -37,56 +38,9 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
     [allHeaders]
   );
 
-  const handleFilterChange = useCallback((headerKey, value, type = "default") => {
-    setFilterValues((prev) => {
-      const newFilter = { ...prev[headerKey], [type]: value };
-      if (type === "start" || type === "end" || type === "value") {
-        if (value === "") delete newFilter[type];
-      }
-      return { ...prev, [headerKey]: newFilter };
-    });
-  }, []);
-
-  const handleDropdownChange = useCallback(
-    (headerKey, e) => {
-      const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
-      handleFilterChange(headerKey, selectedValues, "values");
-    },
-    [handleFilterChange]
-  );
-
-  const toggleDateRangeMode = useCallback((headerKey) => {
-    setDateRangeMode((prev) => {
-      const newMode = !prev[headerKey];
-      setFilterValues((prevFilters) => ({
-        ...prevFilters,
-        [headerKey]: newMode
-          ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
-          : { value: prevFilters[headerKey]?.value || "", order: "on" },
-      }));
-      return { ...prev, [headerKey]: newMode };
-    });
-  }, []);
-
-  const toggleNumberRangeMode = useCallback((headerKey) => {
-    setNumberRangeMode((prev) => {
-      const newMode = !prev[headerKey];
-      setFilterValues((prevFilters) => ({
-        ...prevFilters,
-        [headerKey]: newMode
-          ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
-          : { value: prevFilters[headerKey]?.value || "", order: "equals" },
-      }));
-      return { ...prev, [headerKey]: newMode };
-    });
-  }, []);
-
-  const editFilter = useCallback((index) => setActiveFilterIndex(index), []);
-  const cancelEdit = useCallback(() => setActiveFilterIndex(null), []);
-
-  const handleApply = useCallback(() => {
+  const applyFilters = useCallback((filters) => {
     const cleanedFilters = Object.fromEntries(
-      Object.entries(filterValues).map(([key, filter]) => {
+      Object.entries(filters).map(([key, filter]) => {
         if (numberRangeMode[key]) {
           return [key, {
             start: filter.start ? Number(filter.start) : undefined,
@@ -104,20 +58,89 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
       })
     );
     onApply(cleanedFilters);
-    onClose();
-  }, [filterValues, numberRangeMode, onApply, onClose]);
+  }, [numberRangeMode, onApply]);
+
+  const handleFilterChange = useCallback((headerKey, value, type = "default") => {
+    setFilterValues((prev) => {
+      const newFilter = { ...prev[headerKey], [type]: value };
+      if (type === "start" || type === "end" || type === "value") {
+        if (value === "") delete newFilter[type];
+      }
+      const updatedFilters = { ...prev, [headerKey]: newFilter };
+      setTimeout(() => applyFilters(updatedFilters), 0);
+      return updatedFilters;
+    });
+  }, [applyFilters]);
+
+  const handleDropdownChange = useCallback(
+    (headerKey, e) => {
+      const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
+      handleFilterChange(headerKey, selectedValues, "values");
+    },
+    [handleFilterChange]
+  );
+
+  const toggleDateRangeMode = useCallback((headerKey) => {
+    setDateRangeMode((prev) => {
+      const newMode = !prev[headerKey];
+      setFilterValues((prevFilters) => {
+        const updatedFilters = {
+          ...prevFilters,
+          [headerKey]: newMode
+            ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
+            : { value: prevFilters[headerKey]?.value || "", order: "on" },
+        };
+        setTimeout(() => applyFilters(updatedFilters), 0);
+        return updatedFilters;
+      });
+      return { ...prev, [headerKey]: newMode };
+    });
+  }, [applyFilters]);
+
+  const toggleNumberRangeMode = useCallback((headerKey) => {
+    setNumberRangeMode((prev) => {
+      const newMode = !prev[headerKey];
+      setFilterValues((prevFilters) => {
+        const updatedFilters = {
+          ...prevFilters,
+          [headerKey]: newMode
+            ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
+            : { value: prevFilters[headerKey]?.value || "", order: "equals" },
+        };
+        setTimeout(() => applyFilters(updatedFilters), 0);
+        return updatedFilters;
+      });
+      return { ...prev, [headerKey]: newMode };
+    });
+  }, [applyFilters]);
+
+  const toggleFilter = useCallback((index) => {
+    setActiveFilterIndex(index);
+  }, []);
+
+  const clearFilter = useCallback((headerKey) => {
+    setFilterValues((prev) => {
+      const updatedFilters = { ...prev, [headerKey]: {} };
+      applyFilters(updatedFilters);
+      return updatedFilters;
+    });
+    setDateRangeMode((prev) => ({ ...prev, [headerKey]: false }));
+    setNumberRangeMode((prev) => ({ ...prev, [headerKey]: false }));
+  }, [applyFilters]);
 
   const handleReset = useCallback(() => {
-    setFilterValues({});
+    const clearedFilters = {};
+    setFilterValues(clearedFilters);
     setDateRangeMode({});
     setNumberRangeMode({});
     setActiveFilterIndex(null);
-  }, []);
+    applyFilters(clearedFilters);
+  }, [applyFilters]);
 
   const getFilterSummary = useCallback(
     (header) => {
-      const filter = filterValues[header.key];
-      if (!filter) return "None";
+      const filter = filterValues[header.key] || {};
+      if (Object.keys(filter).length === 0) return "None";
 
       switch (header.type) {
         case "number":
@@ -167,27 +190,44 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   );
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) onClose();
+    const handleClickOutsideModal = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+
+    const handleClickOutsideFilter = (event) => {
+      if (
+        filterActionsRef.current &&
+        !filterActionsRef.current.contains(event.target) &&
+        activeFilterIndex !== null &&
+        !event.target.closest(`.${styles.filterItem}`)
+      ) {
+        setActiveFilterIndex(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideModal);
+    document.addEventListener("mousedown", handleClickOutsideFilter);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideModal);
+      document.removeEventListener("mousedown", handleClickOutsideFilter);
+    };
+  }, [onClose, activeFilterIndex]);
 
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent} ref={modalRef}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Refine</h2>
-          <button className={styles.closeButton} onClick={onClose}>
-            Close
-          </button>
+          <h2 className={styles.modalTitle}>Filters</h2>
         </div>
         <div className={styles.filterList}>
           {visibleHeaders.map((header, index) => (
             <div
               key={header.key}
               className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""}`}
+              onClick={() => toggleFilter(index)}
             >
               <div className={styles.filterRow}>
                 <div className={styles.filterNameType}>
@@ -195,17 +235,10 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                 </div>
                 <div className={styles.primaryButtons}>
                   <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
-                  <button
-                    onClick={() => editFilter(index)}
-                    className={styles.filterButton}
-                    disabled={activeFilterIndex !== null && activeFilterIndex !== index}
-                  >
-                    Refine
-                  </button>
                 </div>
               </div>
               {activeFilterIndex === index && (
-                <div className={styles.filterActions}>
+                <div className={styles.filterActions} ref={filterActionsRef}>
                   {header.type === "number" ? (
                     numberRangeMode[header.key] ? (
                       <>
@@ -236,8 +269,8 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                           className={styles.filterSelectNoChevron}
                         >
                           <option value="equals">=</option>
-                          <option value="greater"></option>
-                          <option value="less"></option>
+                          <option value="greater">{">"}</option>
+                          <option value="less">{"<"}</option>
                           <option value="greaterOrEqual">≥</option>
                           <option value="lessOrEqual">≤</option>
                         </select>
@@ -264,6 +297,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                           type="date"
                           value={filterValues[header.key]?.start || ""}
                           onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
+                          placeholder="From"
                           className={styles.filterInput}
                         />
                         <span className={styles.separator}>–</span>
@@ -271,6 +305,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                           type="date"
                           value={filterValues[header.key]?.end || ""}
                           onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
+                          placeholder="To"
                           className={styles.filterInput}
                         />
                         <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
@@ -329,7 +364,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                         type="text"
                         value={filterValues[header.key]?.value || ""}
                         onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                        placeholder={`Refine ${header.name}`}
+                        placeholder={`Edit ${header.name}`}
                         className={styles.filterInput}
                       />
                     </>
@@ -345,8 +380,14 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
                       <option value="descending">High to Low</option>
                     </select>
                   )}
-                  <button onClick={cancelEdit} className={styles.cancelButton}>
-                    Close
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter(header.key);
+                    }}
+                    className={styles.clearButton}
+                  >
+                    Clear
                   </button>
                 </div>
               )}
@@ -355,10 +396,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
         </div>
         <div className={styles.modalActions}>
           <button onClick={handleReset} className={styles.resetButton}>
-            Clear
-          </button>
-          <button onClick={handleApply} className={styles.applyButton}>
-            Apply
+            Clear All
           </button>
         </div>
       </div>

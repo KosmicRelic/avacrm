@@ -9,7 +9,7 @@ const SheetModal = ({
   sheetName: initialSheetName = "",
   headers: initialHeaders = [],
   pinnedHeaders: initialPinnedHeaders = [],
-  sheets = [], // Default to empty array for safety
+  sheets = [],
   onSave,
   onPinToggle,
   onClose,
@@ -24,8 +24,9 @@ const SheetModal = ({
     }))
   );
   const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
-  const [editIndex, setEditIndex] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(null);
   const modalRef = useRef(null);
+  const headerRefs = useRef([]); // Refs for each header item
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -35,53 +36,8 @@ const SheetModal = ({
         : { ...header, name: header.key, type: "text" };
     }), [currentHeaders, allHeaders]);
 
-  const moveUp = useCallback((index) => {
-    if (index === 0) return;
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      [newHeaders[index - 1], newHeaders[index]] = [newHeaders[index], newHeaders[index - 1]];
-      return newHeaders;
-    });
-    setEditIndex(index - 1);
-  }, []);
-
-  const moveDown = useCallback((index) => {
-    if (index === currentHeaders.length - 1) return;
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      [newHeaders[index], newHeaders[index + 1]] = [newHeaders[index + 1], newHeaders[index]];
-      return newHeaders;
-    });
-    setEditIndex(index + 1);
-  }, [currentHeaders.length]);
-
-  const togglePin = useCallback((headerKey) => {
-    setPinnedHeaders((prev) => {
-      const newPinned = prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey];
-      if (isEditMode && onPinToggle) onPinToggle(headerKey);
-      return newPinned;
-    });
-  }, [isEditMode, onPinToggle]);
-
-  const toggleVisible = useCallback((index) => {
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      newHeaders[index].visible = !newHeaders[index].visible;
-      return newHeaders;
-    });
-  }, []);
-
-  const toggleHidden = useCallback((index) => {
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      newHeaders[index].hidden = !newHeaders[index].hidden;
-      return newHeaders;
-    });
-  }, []);
-
-  const handleSave = useCallback(() => {
+  const handleSaveAndClose = useCallback(() => {
     const trimmedName = sheetName.trim();
-    // Use sheets.structure if sheets is an object, otherwise use sheets directly
     const sheetStructure = sheets.structure || sheets;
     const existingSheetNames = Array.isArray(sheetStructure)
       ? sheetStructure.map((item) => item.sheetName || item.folderName)
@@ -111,34 +67,121 @@ const SheetModal = ({
     onClose();
   }, [sheetName, sheets, isEditMode, initialSheetName, currentHeaders, pinnedHeaders, onSave, onClose]);
 
-  const editHeader = useCallback((index) => setEditIndex(index), []);
-  const removeHeader = useCallback(() => {
-    if (editIndex !== null && !pinnedHeaders.includes(currentHeaders[editIndex].key)) {
-      setCurrentHeaders((prev) => prev.filter((_, i) => i !== editIndex));
-      setEditIndex(null);
+  const moveUp = useCallback((index) => {
+    if (index === 0) return;
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      const temp = newHeaders[index];
+      newHeaders[index] = { ...newHeaders[index - 1], movingUp: true };
+      newHeaders[index - 1] = { ...temp, movingDown: true };
+      setTimeout(() => {
+        setCurrentHeaders((prev) => {
+          const cleaned = [...prev];
+          delete cleaned[index].movingUp;
+          delete cleaned[index - 1].movingDown;
+          return cleaned;
+        });
+      }, 300);
+      return newHeaders;
+    });
+    setActiveIndex(index - 1);
+  }, []);
+
+  const moveDown = useCallback((index) => {
+    if (index === currentHeaders.length - 1) return;
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      const temp = newHeaders[index];
+      newHeaders[index] = { ...newHeaders[index + 1], movingDown: true };
+      newHeaders[index + 1] = { ...temp, movingUp: true };
+      setTimeout(() => {
+        setCurrentHeaders((prev) => {
+          const cleaned = [...prev];
+          delete cleaned[index].movingDown;
+          delete cleaned[index + 1].movingUp;
+          return cleaned;
+        });
+      }, 300);
+      return newHeaders;
+    });
+    setActiveIndex(index + 1);
+  }, [currentHeaders.length]);
+
+  const togglePin = useCallback((headerKey) => {
+    setPinnedHeaders((prev) => {
+      const newPinned = prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey];
+      if (isEditMode && onPinToggle) onPinToggle(headerKey);
+      return newPinned;
+    });
+  }, [isEditMode, onPinToggle]);
+
+  const toggleVisible = useCallback((index) => {
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      newHeaders[index].visible = !newHeaders[index].visible;
+      return newHeaders;
+    });
+  }, []);
+
+  const toggleHidden = useCallback((index) => {
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      newHeaders[index].hidden = !newHeaders[index].hidden;
+      return newHeaders;
+    });
+  }, []);
+
+  const toggleEdit = useCallback((index) => {
+    setActiveIndex((prev) => (prev === index ? null : index));
+  }, []);
+
+  const removeHeader = useCallback((index) => {
+    if (!pinnedHeaders.includes(currentHeaders[index].key)) {
+      setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
+      setActiveIndex(null);
     }
-  }, [editIndex, pinnedHeaders, currentHeaders]);
+  }, [pinnedHeaders, currentHeaders]);
+
   const addHeader = useCallback((headerKey) => {
     if (!currentHeaders.some((h) => h.key === headerKey)) {
       setCurrentHeaders((prev) => [...prev, { key: headerKey, visible: true, hidden: false }]);
     }
   }, [currentHeaders]);
-  const cancelEdit = useCallback(() => setEditIndex(null), []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) onClose();
+    const handleClickOutsideModal = (event) => {
+      // Only close if click is outside modalRef
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        handleSaveAndClose();
+      } else {
+        // If click is inside modalRef but not in the active header, collapse edit actions
+        const activeHeaderRef = headerRefs.current[activeIndex];
+        if (
+          activeIndex !== null &&
+          activeHeaderRef &&
+          !activeHeaderRef.contains(event.target) &&
+          !event.target.closest(`.${styles.doneButton}`) // Exclude Done button
+        ) {
+          setActiveIndex(null);
+        }
+      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+
+    document.addEventListener("mousedown", handleClickOutsideModal);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideModal);
+    };
+  }, [handleSaveAndClose, activeIndex]);
 
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent} ref={modalRef}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{isEditMode ? "Edit Sheet" : "New Sheet"}</h2>
-          <button className={styles.closeButton} onClick={onClose}>Close</button>
+          <button className={styles.doneButton} onClick={handleSaveAndClose}>
+            Done
+          </button>
         </div>
         <input
           type="text"
@@ -147,70 +190,6 @@ const SheetModal = ({
           placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
           className={styles.sheetNameInput}
         />
-        <div className={styles.headerList}>
-          {resolvedHeaders.map((header, index) => (
-            <div
-              key={header.key}
-              className={`${styles.headerItem} ${editIndex === index ? styles.activeItem : ""}`}
-            >
-              <div className={styles.headerRow}>
-                <div className={styles.headerNameType}>
-                  <span>{header.name}</span>
-                </div>
-                <div className={styles.primaryButtons}>
-                  <button
-                    onClick={() => toggleVisible(index)}
-                    className={styles.iconButton}
-                    disabled={editIndex !== null && editIndex !== index}
-                  >
-                    {header.visible ? <FaEye /> : <FaEyeSlash />}
-                  </button>
-                  <button
-                    onClick={() => toggleHidden(index)}
-                    className={styles.iconButton}
-                    disabled={editIndex !== null && editIndex !== index}
-                  >
-                    {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
-                  </button>
-                  <button
-                    onClick={() => editHeader(index)}
-                    className={styles.editButton}
-                    disabled={editIndex !== null && editIndex !== index}
-                  >
-                    Modify
-                  </button>
-                </div>
-              </div>
-              {editIndex === index && (
-                <div className={styles.editActions}>
-                  <button onClick={() => togglePin(header.key)} className={styles.actionButton}>
-                    {pinnedHeaders.includes(header.key) ? "Unpin" : "Pin"}
-                  </button>
-                  <button onClick={() => moveUp(index)} disabled={index === 0} className={styles.actionButton}>
-                    Move Up
-                  </button>
-                  <button
-                    onClick={() => moveDown(index)}
-                    disabled={index === currentHeaders.length - 1}
-                    className={styles.actionButton}
-                  >
-                    Move Down
-                  </button>
-                  <button
-                    onClick={removeHeader}
-                    disabled={pinnedHeaders.includes(header.key)}
-                    className={styles.deleteButton}
-                  >
-                    Remove
-                  </button>
-                  <button onClick={cancelEdit} className={styles.cancelButton}>
-                    Close
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
         <select
           onChange={(e) => {
             const selectedKey = e.target.value;
@@ -231,9 +210,59 @@ const SheetModal = ({
               );
             })}
         </select>
-        <button onClick={handleSave} className={styles.saveButton}>
-          Save
-        </button>
+        <div className={styles.headerList}>
+          {resolvedHeaders.map((header, index) => (
+            <div
+              key={header.key}
+              className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${header.movingUp ? styles.movingUp : ""} ${header.movingDown ? styles.movingDown : ""}`}
+              ref={(el) => (headerRefs.current[index] = el)} // Assign ref to each header item
+              onClick={(e) => {
+                // Only toggle edit if clicking outside buttons and editActions isn't already open
+                if (activeIndex !== index && !e.target.closest("button")) {
+                  toggleEdit(index);
+                }
+              }}
+            >
+              <div className={styles.headerRow}>
+                <div className={styles.headerNameType}>
+                  <span>{header.name}</span>
+                </div>
+                <div className={styles.primaryButtons}>
+                  <button onClick={() => toggleVisible(index)} className={styles.visibilityIconButton}>
+                    {header.visible ? <FaEye /> : <FaEyeSlash />}
+                  </button>
+                  <button onClick={() => toggleHidden(index)} className={styles.filterIconButton}>
+                    {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
+                  </button>
+                </div>
+              </div>
+              {activeIndex === index && (
+                <div className={styles.editActions}>
+                  <button
+                    onClick={() => removeHeader(index)}
+                    disabled={pinnedHeaders.includes(header.key)}
+                    className={styles.deleteButton}
+                  >
+                    Remove
+                  </button>
+                  <button onClick={() => togglePin(header.key)} className={styles.actionButton}>
+                    {pinnedHeaders.includes(header.key) ? "Unpin" : "Pin"}
+                  </button>
+                  <button onClick={() => moveUp(index)} disabled={index === 0} className={styles.actionButton}>
+                    Move Up
+                  </button>
+                  <button
+                    onClick={() => moveDown(index)}
+                    disabled={index === currentHeaders.length - 1}
+                    className={styles.actionButton}
+                  >
+                    Move Down
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

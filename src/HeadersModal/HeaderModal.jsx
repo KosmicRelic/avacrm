@@ -4,297 +4,359 @@ import { MainContext } from "../Contexts/MainContext";
 
 const HeadersModal = ({ onClose }) => {
   const { headers, setHeaders } = useContext(MainContext);
-  const [currentHeaders, setCurrentHeaders] = useState(headers.map((h) => ({ ...h })));
+  const [currentHeaders, setCurrentHeaders] = useState(() => {
+    const uniqueHeaders = [];
+    const seenKeys = new Set();
+    headers.forEach((h) => {
+      const key = Object.keys(h)[0];
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueHeaders.push({ ...h });
+      }
+    });
+    return uniqueHeaders;
+  });
   const [newHeaderKey, setNewHeaderKey] = useState("");
   const [newHeaderName, setNewHeaderName] = useState("");
   const [newHeaderType, setNewHeaderType] = useState("text");
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
-  const [editIndex, setEditIndex] = useState(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(null);
   const modalRef = useRef(null);
+  const headerRefs = useRef([]);
+  const createHeaderRef = useRef(null);
 
   const addHeader = useCallback(() => {
-    const trimmedKey = newHeaderKey.trim();
-    const trimmedName = newHeaderName.trim().toUpperCase();
-    if (!trimmedKey || !trimmedName || currentHeaders.some((h) => Object.keys(h)[0] === trimmedKey)) {
-      alert("Column key and name must be unique and non-empty.");
+    const rawKey = newHeaderKey;
+    const rawName = newHeaderName;
+  
+    const trimmedKey = rawKey.trim().replace(/\s+/g, "");
+    const trimmedName = rawName.trim();
+    const loweredKey = trimmedKey.toLowerCase();
+    const loweredName = trimmedName.toLowerCase();
+  
+    const keyExists = currentHeaders.some((h) => Object.keys(h)[0].toLowerCase() === loweredKey);
+    const nameExists = currentHeaders.some((h) => Object.values(h)[0].toLowerCase() === loweredName);
+  
+    if (!trimmedKey || !trimmedName) {
+      alert("Column key and name must be non-empty.");
       return;
     }
-    setCurrentHeaders((prev) => [
-      ...prev,
-      {
-        [trimmedKey]: trimmedName,
-        type: newHeaderType,
-        ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
-      },
-    ]);
-    clearForm();
-  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders]);
-
-  const updateHeader = useCallback(
-    (index) => {
-      const trimmedKey = newHeaderKey.trim();
-      const trimmedName = newHeaderName.trim().toUpperCase();
-      if (!trimmedKey || !trimmedName || currentHeaders.some((h, i) => Object.keys(h)[0] === trimmedKey && i !== index)) {
-        alert("Column key and name must be unique and non-empty.");
-        return;
-      }
-      setCurrentHeaders((prev) => {
-        const updatedHeaders = [...prev];
-        updatedHeaders[index] = {
-          [trimmedKey]: trimmedName,
-          type: newHeaderType,
-          ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
-        };
-        return updatedHeaders;
-      });
-      clearForm();
-    },
-    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders]
-  );
-
-  const handleKeyPress = useCallback(
-    (e) => {
-      if (e.key === "Enter") editIndex !== null ? updateHeader(editIndex) : isAdding ? addHeader() : null;
-    },
-    [editIndex, isAdding, updateHeader, addHeader]
-  );
-
-  const editHeader = useCallback((index) => {
-    setEditIndex(index);
-    setIsAdding(false);
-    const header = currentHeaders[index];
-    setNewHeaderKey(Object.keys(header)[0]);
-    setNewHeaderName(header[Object.keys(header)[0]]);
-    setNewHeaderType(header.type);
-    setNewHeaderOptions(header.options || []);
-  }, [currentHeaders]);
-
-  const deleteHeader = useCallback((index) => {
-    setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
-    clearForm();
-  }, []);
-
-  const clearForm = useCallback(() => {
+    if (/\s/.test(rawKey)) {
+      alert("Key must be a single word with no spaces.");
+      return;
+    }
+    if (keyExists || nameExists) {
+      alert(`A column with the ${keyExists ? "key" : "name"} "${keyExists ? trimmedKey : trimmedName}" already exists.`);
+      return;
+    }
+  
+    const newHeader = {
+      [trimmedKey]: trimmedName,
+      type: newHeaderType,
+      ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
+    };
+    setCurrentHeaders((prev) => [...prev, newHeader]);
+    setHeaders((prev) => [...prev, newHeader]);
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
     setNewHeaderOptions([]);
     setNewOption("");
-    setEditIndex(null);
-    setIsAdding(false);
-  }, []);
+    setActiveIndex(null);
+  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, setHeaders]);
+
+  const updateHeader = useCallback(
+    (index) => {
+      const rawKey = newHeaderKey;
+      const rawName = newHeaderName;
+  
+      const trimmedKey = rawKey.trim().replace(/\s+/g, "");
+      const trimmedName = rawName.trim();
+      const loweredKey = trimmedKey.toLowerCase();
+      const loweredName = trimmedName.toLowerCase();
+  
+      const keyConflict = currentHeaders.some(
+        (h, i) => Object.keys(h)[0].toLowerCase() === loweredKey && i !== index
+      );
+      const nameConflict = currentHeaders.some(
+        (h, i) => Object.values(h)[0].toLowerCase() === loweredName && i !== index
+      );
+  
+      if (!trimmedKey || !trimmedName) {
+        alert("Column key and name must be non-empty.");
+        return;
+      }
+      if (/\s/.test(rawKey)) {
+        alert("Key must be a single word with no spaces.");
+        return;
+      }
+      if (keyConflict || nameConflict) {
+        alert(`Column ${keyConflict ? "key" : "name"} must be unique.`);
+        return;
+      }
+  
+      const updatedHeader = {
+        [trimmedKey]: trimmedName,
+        type: newHeaderType,
+        ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
+      };
+      setCurrentHeaders((prev) => {
+        const updatedHeaders = [...prev];
+        updatedHeaders[index] = updatedHeader;
+        return updatedHeaders;
+      });
+      setHeaders((prev) => {
+        const updatedHeaders = [...prev];
+        updatedHeaders[index] = updatedHeader;
+        return updatedHeaders;
+      });
+    },
+    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, setHeaders]
+  );
+
+  const handleKeyPress = useCallback(
+    (e) => {
+      if (e.key === "Enter") activeIndex === -1 ? addHeader() : updateHeader(activeIndex);
+    },
+    [activeIndex, addHeader, updateHeader]
+  );
+
+  const toggleEdit = useCallback((index) => {
+    setActiveIndex((prev) => (prev === index ? null : index));
+    if (index >= 0 && activeIndex !== index) {
+      const header = currentHeaders[index];
+      setNewHeaderKey(Object.keys(header)[0]);
+      setNewHeaderName(header[Object.keys(header)[0]]);
+      setNewHeaderType(header.type);
+      setNewHeaderOptions(header.options || []);
+    } else if (index === -1 && activeIndex !== -1) {
+      setNewHeaderKey("");
+      setNewHeaderName("");
+      setNewHeaderType("text");
+      setNewHeaderOptions([]);
+      setNewOption("");
+    }
+  }, [currentHeaders, activeIndex]);
+
+  const deleteHeader = useCallback((index) => {
+    setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
+    setHeaders((prev) => prev.filter((_, i) => i !== index));
+    setActiveIndex(null);
+  }, [setHeaders]);
 
   const addOption = useCallback(() => {
     if (newOption.trim() && !newHeaderOptions.includes(newOption.trim())) {
       setNewHeaderOptions((prev) => [...prev, newOption.trim()]);
       setNewOption("");
+      if (activeIndex >= 0) updateHeader(activeIndex);
     }
-  }, [newOption, newHeaderOptions]);
+  }, [newOption, newHeaderOptions, activeIndex, updateHeader]);
 
   const removeOption = useCallback((option) => {
     setNewHeaderOptions((prev) => prev.filter((opt) => opt !== option));
-  }, []);
-
-  const handleSave = useCallback(() => {
-    setHeaders(currentHeaders);
-    onClose();
-  }, [currentHeaders, setHeaders, onClose]);
-
-  const toggleAddForm = useCallback(() => {
-    setIsAdding((prev) => !prev);
-    setEditIndex(null);
-    setNewHeaderKey("");
-    setNewHeaderName("");
-    setNewHeaderType("text");
-    setNewHeaderOptions([]);
-    setNewOption("");
-  }, []);
+    if (activeIndex >= 0) updateHeader(activeIndex);
+  }, [activeIndex, updateHeader]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) onClose();
+    const handleClickOutsideModal = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      } else {
+        const activeHeaderRef = activeIndex === -1 ? createHeaderRef.current : headerRefs.current[activeIndex];
+        if (
+          activeIndex !== null &&
+          activeHeaderRef &&
+          !activeHeaderRef.contains(event.target) &&
+          !event.target.closest(`.${styles.doneButton}`)
+        ) {
+          setActiveIndex(null);
+        }
+      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+
+    document.addEventListener("mousedown", handleClickOutsideModal);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideModal);
+    };
+  }, [onClose, activeIndex]);
 
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent} ref={modalRef}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Manage Columns</h2>
-          <button className={styles.closeButton} onClick={onClose}>Close</button>
+          <button className={styles.doneButton} onClick={onClose}>
+            Done
+          </button>
+        </div>
+        <div
+          className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""}`}
+          ref={createHeaderRef}
+          onClick={(e) => {
+            if (activeIndex !== -1 && !e.target.closest("button")) {
+              toggleEdit(-1);
+            }
+          }}
+        >
+          <div className={styles.headerRow}>
+            <div className={styles.headerNameType}>
+              <span>Create New Header</span>
+            </div>
+          </div>
+          {activeIndex === -1 && (
+            <div className={styles.editActions}>
+              <input
+                type="text"
+                value={newHeaderKey}
+                onChange={(e) => setNewHeaderKey(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Key"
+                className={styles.inputField}
+              />
+              <input
+                type="text"
+                value={newHeaderName}
+                onChange={(e) => setNewHeaderName(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Name"
+                className={styles.inputField}
+              />
+              <select
+                value={newHeaderType}
+                onChange={(e) => setNewHeaderType(e.target.value)}
+                className={styles.selectField}
+              >
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+                <option value="dropdown">Pop-up Menu</option>
+              </select>
+              {newHeaderType === "dropdown" && (
+                <div className={styles.optionsSection}>
+                  <div className={styles.optionInputRow}>
+                    <input
+                      type="text"
+                      value={newOption}
+                      onChange={(e) => setNewOption(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addOption()}
+                      placeholder="Add item"
+                      className={styles.inputField}
+                    />
+                    <button onClick={addOption} className={styles.addOptionButton}>
+                      +
+                    </button>
+                  </div>
+                  <div className={styles.optionsList}>
+                    {newHeaderOptions.map((option) => (
+                      <div key={option} className={styles.optionItem}>
+                        <span>{option}</span>
+                        <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button onClick={addHeader} className={styles.actionButton}>
+                Add
+              </button>
+            </div>
+          )}
         </div>
         <div className={styles.headerList}>
           {currentHeaders.map((header, index) => {
             const key = Object.keys(header)[0];
-            const isEditing = editIndex === index;
+            const isActive = activeIndex === index;
             return (
-              <div key={key} className={`${styles.headerItem} ${isEditing ? styles.activeItem : ""}`}>
+              <div
+                key={key}
+                className={`${styles.headerItem} ${isActive ? styles.activeItem : ""}`}
+                ref={(el) => (headerRefs.current[index] = el)}
+                onClick={(e) => {
+                  if (activeIndex !== index && !e.target.closest("button")) {
+                    toggleEdit(index);
+                  }
+                }}
+              >
                 <div className={styles.headerRow}>
-                  {!isEditing ? (
-                    <>
-                      <span>{header[key]}</span>
-                      <span className={styles.headerType}>({header.type})</span>
-                      <button
-                        onClick={() => editHeader(index)}
-                        className={styles.editButton}
-                        disabled={editIndex !== null || isAdding}
-                      >
-                        Modify
-                      </button>
-                    </>
-                  ) : (
-                    <div className={styles.editFields}>
-                      <input
-                        type="text"
-                        value={newHeaderKey}
-                        onChange={(e) => setNewHeaderKey(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Key"
-                        className={styles.inputField}
-                      />
-                      <input
-                        type="text"
-                        value={newHeaderName}
-                        onChange={(e) => setNewHeaderName(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Name"
-                        className={styles.inputField}
-                      />
-                      <select
-                        value={newHeaderType}
-                        onChange={(e) => setNewHeaderType(e.target.value)}
-                        className={styles.selectField}
-                      >
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="date">Date</option>
-                        <option value="dropdown">Pop-up Menu</option>
-                      </select>
-                      {newHeaderType === "dropdown" && (
-                        <div className={styles.optionsSection}>
-                          <div className={styles.optionInputRow}>
-                            <input
-                              type="text"
-                              value={newOption}
-                              onChange={(e) => setNewOption(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && addOption()}
-                              placeholder="Add item"
-                              className={styles.inputField}
-                            />
-                            <button onClick={addOption} className={styles.addOptionButton}>
-                              +
-                            </button>
-                          </div>
-                          <div className={styles.optionsList}>
-                            {newHeaderOptions.map((option) => (
-                              <div key={option} className={styles.optionItem}>
-                                <span>{option}</span>
-                                <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className={styles.editActions}>
-                        <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
-                          Remove
-                        </button>
-                        <button onClick={() => updateHeader(index)} className={styles.actionButton}>
-                          Update
-                        </button>
-                        <button onClick={clearForm} className={styles.cancelButton}>
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <div className={styles.headerNameType}>
+                    <span>{header[key]}</span>
+                    <span className={styles.headerType}>({header.type})</span>
+                  </div>
+                  <div className={styles.primaryButtons}></div>
                 </div>
+                {isActive && (
+                  <div className={styles.editActions}>
+                    <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
+                      Remove
+                    </button>
+                    <input
+                      type="text"
+                      value={newHeaderKey}
+                      onChange={(e) => setNewHeaderKey(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      onBlur={() => updateHeader(index)}
+                      placeholder="Key"
+                      className={styles.inputField}
+                    />
+                    <input
+                      type="text"
+                      value={newHeaderName}
+                      onChange={(e) => setNewHeaderName(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      onBlur={() => updateHeader(index)}
+                      placeholder="Name"
+                      className={styles.inputField}
+                    />
+                    <select
+                      value={newHeaderType}
+                      onChange={(e) => {
+                        setNewHeaderType(e.target.value);
+                        updateHeader(index);
+                      }}
+                      className={styles.selectField}
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="date">Date</option>
+                      <option value="dropdown">Pop-up Menu</option>
+                    </select>
+                    {newHeaderType === "dropdown" && (
+                      <div className={styles.optionsSection}>
+                        <div className={styles.optionInputRow}>
+                          <input
+                            type="text"
+                            value={newOption}
+                            onChange={(e) => setNewOption(e.target.value)}
+                            onKeyPress={(e) => e.key === "Enter" && addOption()}
+                            placeholder="Add item"
+                            className={styles.inputField}
+                          />
+                          <button onClick={addOption} className={styles.addOptionButton}>
+                            +
+                          </button>
+                        </div>
+                        <div className={styles.optionsList}>
+                          {newHeaderOptions.map((option) => (
+                            <div key={option} className={styles.optionItem}>
+                              <span>{option}</span>
+                              <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
-          <div className={`${styles.headerItem} ${isAdding ? styles.activeItem : ""}`}>
-            <div className={styles.headerRow}>
-              {!isAdding ? (
-                <button onClick={toggleAddForm} className={styles.addButton} disabled={editIndex !== null}>
-                  New Column
-                </button>
-              ) : (
-                <div className={styles.editFields}>
-                  <input
-                    type="text"
-                    value={newHeaderKey}
-                    onChange={(e) => setNewHeaderKey(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Key"
-                    className={styles.inputField}
-                  />
-                  <input
-                    type="text"
-                    value={newHeaderName}
-                    onChange={(e) => setNewHeaderName(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Name"
-                    className={styles.inputField}
-                  />
-                  <select
-                    value={newHeaderType}
-                    onChange={(e) => setNewHeaderType(e.target.value)}
-                    className={styles.selectField}
-                  >
-                    <option value="text">Text</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date</option>
-                    <option value="dropdown">Pop-up Menu</option>
-                  </select>
-                  {newHeaderType === "dropdown" && (
-                    <div className={styles.optionsSection}>
-                      <div className={styles.optionInputRow}>
-                        <input
-                          type="text"
-                          value={newOption}
-                          onChange={(e) => setNewOption(e.target.value)}
-                          onKeyPress={(e) => e.key === "Enter" && addOption()}
-                          placeholder="Add item"
-                          className={styles.inputField}
-                        />
-                        <button onClick={addOption} className={styles.addOptionButton}>
-                          +
-                        </button>
-                      </div>
-                      <div className={styles.optionsList}>
-                        {newHeaderOptions.map((option) => (
-                          <div key={option} className={styles.optionItem}>
-                            <span>{option}</span>
-                            <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className={styles.editActions}>
-                    <button onClick={addHeader} className={styles.actionButton}>
-                      Add
-                    </button>
-                    <button onClick={clearForm} className={styles.cancelButton}>
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
-        <button onClick={handleSave} className={styles.saveButton}>
-          Save
-        </button>
       </div>
     </div>
   );

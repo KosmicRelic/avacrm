@@ -6,7 +6,7 @@
   padding: 16px 0;
   box-sizing: border-box;
   overflow: hidden;
-  gap: 8px;
+  gap: 16px;
 }
 
 .tableContainer {
@@ -118,6 +118,8 @@
   -moz-user-select: none;
   -ms-user-select: none;
   touch-action: pan-x;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  touch-action: pan-x; /* Restrict to horizontal scrolling */
 }
 
 .sheetTabs::-webkit-scrollbar {
@@ -514,11 +516,33 @@
 }
 
 .dropIndicator.left {
-  left: -4px;
+  left: 0; /* Move to edge of button for clarity */
 }
 
 .dropIndicator.right {
-  right: -4px;
+  right: 0; /* Move to edge of button for clarity */
+}
+
+.jiggle {
+  animation: jiggle 0.2s infinite;
+}
+
+@keyframes jiggle {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(2deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 @media (max-width: 1024px) {

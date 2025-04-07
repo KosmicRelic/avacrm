@@ -28,9 +28,8 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  position: relative;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
 }
 
 .modalHeader {
@@ -48,19 +47,35 @@
   margin: 0;
 }
 
-.closeButton {
+.doneButton {
   background: none;
   border: none;
   color: #007aff;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
-  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
-.closeButton:hover {
+.doneButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+  border-radius: 12px;
+}
+
+.createHeader {
+  padding: 12px 16px; /* Matches SheetModal */
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  transition: background 0.2s ease;
+}
+
+.createHeader:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.createHeader.activeItem {
   background: rgba(0, 122, 255, 0.1);
 }
 
@@ -72,9 +87,10 @@
 }
 
 .headerItem {
-  padding: 12px 16px;
+  padding: 12px 16px; /* Matches SheetModal */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
+  position: relative;
 }
 
 .headerItem:last-child {
@@ -91,16 +107,23 @@
 
 .headerRow {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
 }
 
-.headerItem span {
+.headerNameType {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 1;
+}
+
+.headerNameType span {
   font-size: 14px;
   font-weight: 500;
   color: #6e6e73;
   text-transform: uppercase;
-  flex-grow: 1;
 }
 
 .headerType {
@@ -108,41 +131,17 @@
   font-size: 14px;
 }
 
-.editButton,
-.addButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+.primaryButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.editButton:hover,
-.addButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
-.editButton:disabled,
-.addButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.addButton {
-  width: 100%;
-  text-align: left;
-  padding: 8px 12px;
-}
-
-.editFields {
+.editActions {
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 12px;
 }
 
 .inputField,
@@ -237,12 +236,6 @@
   background: rgba(255, 69, 58, 0.1);
 }
 
-.editActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
 .deleteButton {
   background: none;
   border: none;
@@ -273,37 +266,4 @@
 
 .actionButton:hover {
   background: rgba(0, 122, 255, 0.1);
-}
-
-.cancelButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-}
-
-.saveButton {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: #007aff;
-  color: white;
-  font-size: 17px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.saveButton:hover {
-  background: #0066cc;
 }
