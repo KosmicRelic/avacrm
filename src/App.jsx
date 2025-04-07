@@ -3,10 +3,10 @@ import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
 import SheetModal from "./Sheet Template/SheetModal/SheetModal";
 import FilterModal from "./FilterModal/FilterModal";
-import { MainContext } from "./Contexts/MainContext";
-import ProfileModal from "./App Header/ProfileModal/ProfileModal";
 import HeadersModal from "./HeadersModal/HeaderModal";
+import ProfileModal from "./App Header/ProfileModal/ProfileModal";
 import SettingsModal from "./SettingsModal/SettingsModal";
+import { MainContext } from "./Contexts/MainContext";
 import styles from "./App.module.css";
 
 function App() {
@@ -20,31 +20,15 @@ function App() {
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
 
-  // Find the active sheet
-  const activeSheet = useMemo(() => {
-    return sheets.allSheets.find((sheet) => sheet.isActive) || null;
-  }, [sheets]);
-
+  const activeSheet = useMemo(() => sheets.allSheets.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
 
   const resolvedHeaders = useMemo(() => {
     return activeSheet?.headers.map((sheetHeader) => {
       const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
       return header
-        ? {
-            key: sheetHeader.key,
-            name: header[sheetHeader.key],
-            type: header.type,
-            visible: sheetHeader.visible,
-            hidden: sheetHeader.hidden,
-          }
-        : {
-            key: sheetHeader.key,
-            name: sheetHeader.key,
-            type: "text",
-            visible: sheetHeader.visible,
-            hidden: sheetHeader.hidden,
-          };
+        ? { key: sheetHeader.key, name: header[sheetHeader.key], type: header.type, visible: sheetHeader.visible, hidden: sheetHeader.hidden }
+        : { key: sheetHeader.key, name: sheetHeader.key, type: "text", visible: sheetHeader.visible, hidden: sheetHeader.hidden };
     }) || [];
   }, [activeSheet, headers]);
 
@@ -52,7 +36,6 @@ function App() {
     return activeSheet?.rows.map((leadId) => cards.find((card) => card[resolvedHeaders[0]?.key] === leadId) || {}) || [];
   }, [activeSheet, cards, resolvedHeaders]);
 
-  // Handle sheet change
   const handleSheetChange = useCallback((sheetName) => {
     if (sheetName === "add-new-sheet") {
       setIsSheetModalEditMode(false);
@@ -60,117 +43,132 @@ function App() {
     } else if (sheetName) {
       setSheets((prevSheets) => ({
         ...prevSheets,
-        allSheets: prevSheets.allSheets.map((sheet) => ({
-          ...sheet,
-          isActive: sheet.sheetName === sheetName,
-        })),
+        allSheets: prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: sheet.sheetName === sheetName })),
       }));
     }
   }, [setSheets]);
 
-  const handleSaveSheet = useCallback((sheetNameOrObj, headerObjects, pinnedHeaders) => {
-    if (isSheetModalEditMode) {
-      const newSheetName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
+  const handleSheetUpdate = useCallback(
+    (sheetNameOrObj, headerObjects, pinnedHeaders, shouldSave = false) => {
+      const trimmedName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
+      const sheetStructure = sheets.structure || sheets;
+      const existingSheetNames = Array.isArray(sheetStructure)
+        ? sheetStructure.map((item) => item.sheetName || item.folderName)
+        : [];
+      const isDuplicate = isSheetModalEditMode
+        ? trimmedName !== activeSheetName && existingSheetNames.includes(trimmedName)
+        : existingSheetNames.includes(trimmedName);
+
+      if (shouldSave) {
+        if (isDuplicate) {
+          alert("A sheet or folder with this name already exists.");
+          return;
+        }
+        if (!trimmedName) {
+          alert("Please provide a sheet name.");
+          return;
+        }
+        if (headerObjects.length === 0) {
+          alert("Please select at least one header.");
+          return;
+        }
+      }
+
+      if (isDuplicate) return;
+
+      setSheets((prevSheets) => {
+        if (isSheetModalEditMode) {
+          return {
+            ...prevSheets,
+            allSheets: prevSheets.allSheets.map((sheet) =>
+              sheet.sheetName === activeSheetName
+                ? { ...sheet, sheetName: trimmedName, headers: headerObjects, pinnedHeaders, isActive: true }
+                : { ...sheet, isActive: false }
+            ),
+            structure: prevSheets.structure.map((item) =>
+              item.sheetName === activeSheetName
+                ? { sheetName: trimmedName }
+                : item.folderName
+                ? { ...item, sheets: item.sheets.map((s) => (s === activeSheetName ? trimmedName : s)) }
+                : item
+            ),
+          };
+        } else if (trimmedName) {
+          return {
+            ...prevSheets,
+            allSheets: [
+              ...prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: false })),
+              { sheetName: trimmedName, headers: headerObjects, pinnedHeaders: pinnedHeaders || [], rows: [], isActive: true },
+            ],
+            structure: [...prevSheets.structure, { sheetName: trimmedName }],
+          };
+        }
+        return prevSheets;
+      });
+    },
+    [isSheetModalEditMode, activeSheetName, sheets, setSheets]
+  );
+
+  const handleSaveSheet = (sheetNameOrObj, headerObjects, pinnedHeaders) =>
+    handleSheetUpdate(sheetNameOrObj, headerObjects, pinnedHeaders, true);
+
+  const handlePinToggle = useCallback(
+    (headerKey) => {
       setSheets((prevSheets) => ({
         ...prevSheets,
         allSheets: prevSheets.allSheets.map((sheet) =>
           sheet.sheetName === activeSheetName
             ? {
                 ...sheet,
-                sheetName: newSheetName || sheet.sheetName,
-                headers: headerObjects,
-                pinnedHeaders: pinnedHeaders || sheet.pinnedHeaders,
-                rows: sheet.rows,
-                isActive: true,
+                pinnedHeaders: sheet.pinnedHeaders.includes(headerKey)
+                  ? sheet.pinnedHeaders.filter((h) => h !== headerKey)
+                  : [...sheet.pinnedHeaders, headerKey],
               }
-            : { ...sheet, isActive: false }
-        ),
-        structure: prevSheets.structure.map((item) =>
-          item.sheetName === activeSheetName
-            ? { sheetName: newSheetName || item.sheetName }
-            : item.folderName
-            ? {
-                ...item,
-                sheets: item.sheets.map((s) => (s === activeSheetName ? newSheetName || s : s)),
-              }
-            : item
+            : sheet
         ),
       }));
-    } else {
-      const newSheetName = sheetNameOrObj;
-      if (newSheetName) {
-        setSheets((prevSheets) => ({
-          ...prevSheets,
-          allSheets: [
-            ...prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: false })),
-            {
-              sheetName: newSheetName,
-              headers: headerObjects,
-              pinnedHeaders: pinnedHeaders || [],
-              rows: [],
-              isActive: true,
-            },
-          ],
-          structure: [...prevSheets.structure, { sheetName: newSheetName }],
-        }));
-      } else {
-        alert("Please provide a sheet name.");
-        return;
-      }
-    }
-    setIsSheetModalOpen(false);
-  }, [isSheetModalEditMode, activeSheetName, setSheets]);
-
-  const handlePinToggle = useCallback((headerKey) => {
-    setSheets((prevSheets) => ({
-      ...prevSheets,
-      allSheets: prevSheets.allSheets.map((sheet) =>
-        sheet.sheetName === activeSheetName
-          ? {
-              ...sheet,
-              pinnedHeaders: sheet.pinnedHeaders.includes(headerKey)
-                ? sheet.pinnedHeaders.filter((h) => h !== headerKey)
-                : [...sheet.pinnedHeaders, headerKey],
-            }
-          : sheet
-      ),
-    }));
-  }, [activeSheetName, setSheets]);
+    },
+    [activeSheetName, setSheets]
+  );
 
   const handleApplyFilters = useCallback((newFilters) => setFilters(newFilters), []);
 
-  const handleRowClick = useCallback((rowData) => {}, []);
+  const handleRowClick = () => {};
 
-  const handleCardSave = useCallback((updatedRow) => {
-    setCards((prevCards) =>
-      prevCards.map((card) => (card[resolvedHeaders[0]?.key] === updatedRow[resolvedHeaders[0]?.key] ? updatedRow : card))
-    );
-    setSheets((prevSheets) => ({
-      ...prevSheets,
-      allSheets: prevSheets.allSheets.map((sheet) =>
-        sheet.sheetName === activeSheetName
-          ? {
-              ...sheet,
-              rows: sheet.rows.map((id) =>
-                id === updatedRow[resolvedHeaders[0]?.key] ? updatedRow[resolvedHeaders[0]?.key] : id
-              ),
-            }
-          : sheet
-      ),
-    }));
-  }, [activeSheetName, setCards, setSheets, resolvedHeaders]);
+  const handleCardSave = useCallback(
+    (updatedRow) => {
+      setCards((prevCards) =>
+        prevCards.map((card) => (card[resolvedHeaders[0]?.key] === updatedRow[resolvedHeaders[0]?.key] ? updatedRow : card))
+      );
+      setSheets((prevSheets) => ({
+        ...prevSheets,
+        allSheets: prevSheets.allSheets.map((sheet) =>
+          sheet.sheetName === activeSheetName
+            ? {
+                ...sheet,
+                rows: sheet.rows.map((id) => (id === updatedRow[resolvedHeaders[0]?.key] ? updatedRow[resolvedHeaders[0]?.key] : id)),
+              }
+            : sheet
+        ),
+      }));
+    },
+    [activeSheetName, setCards, setSheets, resolvedHeaders]
+  );
 
-  const handleDelete = useCallback((rowData) => {
-    setCards((prevCards) => prevCards.filter((card) => card[resolvedHeaders[0]?.key] !== rowData[resolvedHeaders[0]?.key]));
-    setSheets((prevSheets) => ({
-      ...prevSheets,
-      allSheets: prevSheets.allSheets.map((sheet) =>
-        sheet.sheetName === activeSheetName
-          ? { ...sheet, rows: sheet.rows.filter((id) => id !== rowData[resolvedHeaders[0]?.key]) }
-          : sheet
-      ),
-    }));
-  }, [activeSheetName, setCards, setSheets, resolvedHeaders]);
+  const handleDelete = useCallback(
+    (rowData) => {
+      setCards((prevCards) => prevCards.filter((card) => card[resolvedHeaders[0]?.key] !== rowData[resolvedHeaders[0]?.key]));
+      setSheets((prevSheets) => ({
+        ...prevSheets,
+        allSheets: prevSheets.allSheets.map((sheet) =>
+          sheet.sheetName === activeSheetName
+            ? { ...sheet, rows: sheet.rows.filter((id) => id !== rowData[resolvedHeaders[0]?.key]) }
+            : sheet
+        ),
+      }));
+    },
+    [activeSheetName, setCards, setSheets, resolvedHeaders]
+  );
 
   const onEditSheet = useCallback(() => {
     setIsSheetModalEditMode(true);
@@ -179,15 +177,12 @@ function App() {
 
   const onFilter = useCallback(() => setIsFilterModalOpen(true), []);
 
-  // Updated to use sheets.structure for display order
-  const sheetDisplayOrder = useMemo(() => {
-    return sheets.structure.map((item) => item.sheetName || item.folderName);
-  }, [sheets.structure]);
+  const sheetDisplayOrder = sheets.structure.map((item) => item.sheetName || item.folderName);
 
   return (
     <div className={styles.appContainer}>
       <AppHeader
-        sheets={sheetDisplayOrder} // Use the ordered structure
+        sheets={sheetDisplayOrder}
         activeSheet={activeSheetName}
         onSheetChange={handleSheetChange}
         setIsProfileModalOpen={setIsProfileModalOpen}
