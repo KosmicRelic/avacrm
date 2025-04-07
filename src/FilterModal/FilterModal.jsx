@@ -206,7 +206,7 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         handleClose();
       }
-    };
+  };
 
     const handleClickOutsideFilter = (event) => {
       if (

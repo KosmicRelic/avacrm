@@ -171,10 +171,10 @@ const HeadersModal = ({ onClose }) => {
     }
   };
 
+  // Effect for closing the modal when clicking outside
   useEffect(() => {
     const handleClickOutsideModal = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setActiveIndex(null);
         handleClose();
       }
     };
@@ -185,6 +185,29 @@ const HeadersModal = ({ onClose }) => {
       document.removeEventListener("mousedown", handleClickOutsideModal);
     };
   }, [onClose]);
+
+  // New effect for collapsing edit actions when clicking outside them
+  useEffect(() => {
+    const handleClickOutsideEdit = (event) => {
+      if (activeIndex === null) return; // No edit actions open
+
+      const isClickInsideModal = modalRef.current && modalRef.current.contains(event.target);
+      if (!isClickInsideModal) return; // Let modal close handler deal with it
+
+      const activeRef = activeIndex === -1 ? createHeaderRef.current : headerRefs.current[activeIndex];
+      const isClickInsideActiveItem = activeRef && activeRef.contains(event.target);
+
+      if (!isClickInsideActiveItem) {
+        setActiveIndex(null); // Collapse edit actions
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideEdit);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideEdit);
+    };
+  }, [activeIndex]);
 
   return (
     <div className={styles.modalOverlay}>

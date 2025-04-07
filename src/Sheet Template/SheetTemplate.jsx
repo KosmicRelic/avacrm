@@ -647,129 +647,81 @@ const SheetTemplate = ({
             <div key={item.folderName} className={styles.folderContainer}>
               <button
                 className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""} ${
-                  draggedItem?.folderName === item.folderName ? styles.dragging : ''
-                } ${isOrderMode && !draggedItem ? styles.jiggle : ''}`}
+                  draggedItem?.folderName === item.folderName ? styles.dragging : ""
+                } ${isOrderMode && !draggedItem ? styles.jiggle : ""}`}
                 data-folder-name={item.folderName}
+                onClick={!isOrderMode ? () => toggleFolder(item.folderName) : undefined} // Trigger folder toggle only outside order mode
                 onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
                 onMouseUp={isOrderMode ? handleDragEnd : undefined}
                 onMouseMove={isOrderMode ? handleDragOver : undefined}
                 onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
                 onTouchStart={(e) => handleTouchStart(e, item)}
-                onTouchMove={handleTouchMove}
+                onTouchMove={isOrderMode ? handleTouchMove : undefined}
                 onTouchEnd={(e) => handleTouchEnd(e, item)}
               >
                 <FaFolder className={styles.folderIcon} />
                 {item.folderName}
-                {openFolder === item.folderName ? (
+                {openFolder === item.folderName && (
                   <span className={styles.folderSheets}>
-                    {' > '}
+                    {" > "}
                     {item.sheets.map((sheetName, idx) => (
                       <span key={sheetName}>
                         <span
                           className={`${styles.inlineSheet} ${
-                            sheetName === activeSheetName ? styles.activeInlineSheet : ''
+                            sheetName === activeSheetName ? styles.activeInlineSheet : ""
                           }`}
-                          onClick={!isOrderMode ? (e) => {
-                            e.stopPropagation();
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent folder toggle when clicking a sheet
                             handleSheetClick(sheetName);
-                          } : undefined}
-                          onTouchEnd={!isOrderMode ? (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const touchDuration = Date.now() - touchStartTime;
-                            if (touchActive && touchDuration < 300) {
-                              handleSheetClick(sheetName);
-                            }
-                          } : undefined}
+                          }}
                         >
                           {sheetName}
                         </span>
-                        {idx < item.sheets.length - 1 && ' | '}
+                        {idx < item.sheets.length - 1 && " | "}
                       </span>
                     ))}
                   </span>
-                ) : (
-                  item.sheets.includes(activeSheetName) && (
-                    <span className={styles.folderPath}> {` > ${activeSheetName}`}</span>
-                  )
+                )}
+                {openFolder !== item.folderName && item.sheets.includes(activeSheetName) && (
+                  <span className={styles.folderPath}> {` > ${activeSheetName}`}</span>
                 )}
               </button>
             </div>
-          ) : !folderSheets.includes(item.sheetName) && (
-            <div key={item.sheetName} className={styles.sheetContainer}>
-              <button
-                className={`${styles.tabButton} ${
-                  item.sheetName === activeSheetName ? styles.activeTab : ""
-                } ${draggedItem?.sheetName === item.sheetName ? styles.dragging : ''} ${
-                  isOrderMode && !draggedItem ? styles.jiggle : ''
-                }`}
-                data-sheet-name={item.sheetName}
-                onClick={!isOrderMode ? () => handleSheetClick(item.sheetName) : undefined}
-                onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
-                onMouseUp={isOrderMode ? handleDragEnd : undefined}
-                onMouseMove={isOrderMode ? handleDragOver : undefined}
-                onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
-                onTouchStart={(e) => handleTouchStart(e, item)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={(e) => handleTouchEnd(e, item)}
-              >
-                {item.sheetName}
-              </button>
-            </div>
+          ) : (
+            !folderSheets.includes(item.sheetName) && (
+              <div key={item.sheetName} className={styles.sheetContainer}>
+                <button
+                  className={`${styles.tabButton} ${
+                    item.sheetName === activeSheetName ? styles.activeTab : ""
+                  } ${draggedItem?.sheetName === item.sheetName ? styles.dragging : ""} ${
+                    isOrderMode && !draggedItem ? styles.jiggle : ""
+                  }`}
+                  data-sheet-name={item.sheetName}
+                  onClick={!isOrderMode ? () => handleSheetClick(item.sheetName) : undefined}
+                  onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
+                  onMouseUp={isOrderMode ? handleDragEnd : undefined}
+                  onMouseMove={isOrderMode ? handleDragOver : undefined}
+                  onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
+                  onTouchStart={(e) => handleTouchStart(e, item)}
+                  onTouchMove={isOrderMode ? handleTouchMove : undefined}
+                  onTouchEnd={(e) => handleTouchEnd(e, item)}
+                >
+                  {item.sheetName}
+                </button>
+              </div>
+            )
           )
         ))}
         {draggedItem && dropPositionX !== null && (
-          <span
-            className={styles.dropIndicator}
-            style={{ left: `${dropPositionX}px` }}
-          ></span>
+          <span className={styles.dropIndicator} style={{ left: `${dropPositionX}px` }}></span>
         )}
         <button
-          className={`${styles.orderButton} ${isOrderMode ? styles.activeOrderButton : ''}`}
+          className={`${styles.orderButton} ${isOrderMode ? styles.activeOrderButton : ""}`}
           onClick={toggleOrderMode}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            const touch = e.touches[0];
-            setTouchStartTime(Date.now());
-            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-            setTouchActive(true);
-          }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchActive && touchDuration < 300) {
-              toggleOrderMode();
-            }
-            setTouchActive(false);
-            setTouchStartTime(null);
-            setTouchStartPosition(null);
-          }}
         >
-          {isOrderMode ? 'Done' : <HiMiniArrowsRightLeft />}
+          {isOrderMode ? "Done" : <HiMiniArrowsRightLeft />}
         </button>
-        <button
-          className={styles.addTabButton}
-          onClick={handleAddModalOpen}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            const touch = e.touches[0];
-            setTouchStartTime(Date.now());
-            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-            setTouchActive(true);
-          }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchActive && touchDuration < 300) {
-              handleAddModalOpen();
-            }
-            setTouchActive(false);
-            setTouchStartTime(null);
-            setTouchStartPosition(null);
-          }}
-        >
+        <button className={styles.addTabButton} onClick={handleAddModalOpen}>
           +
         </button>
       </div>

@@ -41,7 +41,7 @@
 }
 
 /* Mobile-specific styles */
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
   .modalOverlay {
     align-items: flex-end; /* Align modal to bottom */
   }

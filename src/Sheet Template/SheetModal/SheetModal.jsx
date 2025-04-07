@@ -65,17 +65,17 @@ const SheetModal = ({
     } else {
       onSave(trimmedName, currentHeaders, pinnedHeaders);
     }
-    handleClose();
+    handleClose(); // Use handleClose for consistent closing behavior
   }, [sheetName, sheets, isEditMode, initialSheetName, currentHeaders, pinnedHeaders, onSave]);
 
   const handleClose = useCallback(() => {
-    if (window.innerWidth <= 767) {
+    if (window.innerWidth <= 767) { // Animate on mobile, matching FilterModal
       setIsClosing(true);
       setTimeout(() => {
         onClose();
-      }, 300);
+      }, 300); // Match animation duration
     } else {
-      onClose();
+      onClose(); // Immediate close on desktop
     }
   }, [onClose]);
 
@@ -163,7 +163,7 @@ const SheetModal = ({
   useEffect(() => {
     const handleClickOutsideModal = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        handleSaveAndClose();
+        handleClose(); // Match FilterModal: close without saving on outside click
       } else {
         const activeHeaderRef = headerRefs.current[activeIndex];
         if (
@@ -183,7 +183,7 @@ const SheetModal = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutsideModal);
     };
-  }, [handleSaveAndClose, activeIndex]);
+  }, [handleClose, activeIndex]); // Updated dependency to use handleClose
 
   return (
     <div className={styles.modalOverlay}>
@@ -196,7 +196,7 @@ const SheetModal = ({
             borderRadius: "2.5px",
             margin: "0 auto 10px",
             display: "none",
-            "@media (maxWidth: 767px)": {
+            "@media (maxWidth: 767px)": { // Match FilterModal’s breakpoint
               display: "block",
             },
           }}
