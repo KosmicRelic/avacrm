@@ -20,6 +20,7 @@ const SheetTemplate = ({
   onRowClick,
   onCardSave,
   onCardDelete,
+  onOpenSheetsModal,
 }) => {
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
@@ -35,15 +36,6 @@ const SheetTemplate = ({
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [dragTarget, setDragTarget] = useState(null);
-  const [dragTimer, setDragTimer] = useState(null);
-  const [dropSide, setDropSide] = useState(null);
-  const [dropPositionX, setDropPositionX] = useState(null); // New state for indicator position
-  const [touchStartTime, setTouchStartTime] = useState(null);
-  const [touchStartPosition, setTouchStartPosition] = useState(null);
-  const [touchActive, setTouchActive] = useState(false);
-  const [isOrderMode, setIsOrderMode] = useState(false);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
   const isMobile = windowWidth <= 1024;
@@ -91,9 +83,9 @@ const SheetTemplate = ({
   useEffect(() => {
     if (sheetTabsRef.current) {
       sheetTabsRef.current.scrollWidth;
-      sheetTabsRef.current.style.width = 'auto';
+      sheetTabsRef.current.style.width = "auto";
     }
-  }, [openFolder, draggedItem]);
+  }, [openFolder]);
 
   const filteredRows = useMemo(() => {
     return rows.filter((row) =>
@@ -232,14 +224,8 @@ const SheetTemplate = ({
   }, [activeSheetName, visibleHeaders, onCardSave]);
 
   const toggleFolder = useCallback((folderName) => {
-    setOpenFolder((prev) => {
-      const newState = prev === folderName ? null : folderName;
-      if (draggedItem && draggedItem.folderName === folderName) {
-        setDraggedItem(null);
-      }
-      return newState;
-    });
-  }, [draggedItem]);
+    setOpenFolder((prev) => (prev === folderName ? null : folderName));
+  }, []);
 
   const handleAddModalOpen = useCallback(() => {
     setIsAddModalOpen(true);
@@ -323,272 +309,6 @@ const SheetTemplate = ({
     }));
   }, [headers]);
 
-  // Drag and Drop Handlers
-  const handleDragStart = useCallback((e, item) => {
-    e.preventDefault();
-    const timer = setTimeout(() => {
-      setDraggedItem(item);
-      setDropSide(null);
-      setDropPositionX(null);
-    }, 300);
-    setDragTimer(timer);
-  }, []);
-
-  const handleDragEnd = useCallback((e) => {
-    e.preventDefault();
-    if (dragTimer) {
-      clearTimeout(dragTimer);
-      setDragTimer(null);
-    }
-    if (draggedItem && dragTarget && dropSide) {
-      const newStructure = [...sheets.structure];
-      const draggedIndex = newStructure.findIndex(
-        (i) => (i.sheetName && i.sheetName === draggedItem.sheetName) || 
-               (i.folderName && i.folderName === draggedItem.folderName)
-      );
-      const targetIndex = newStructure.findIndex(
-        (i) => (i.sheetName && i.sheetName === dragTarget.sheetName) || 
-               (i.folderName && i.folderName === dragTarget.folderName)
-      );
-
-      if (draggedIndex !== -1 && targetIndex !== -1) {
-        const [dragged] = newStructure.splice(draggedIndex, 1);
-        const insertIndex = dropSide === 'left' ? targetIndex : targetIndex + 1;
-        newStructure.splice(insertIndex, 0, dragged);
-        setSheets((prev) => ({ ...prev, structure: newStructure }));
-      }
-    }
-    setDraggedItem(null);
-    setDragTarget(null);
-    setDropSide(null);
-    setDropPositionX(null);
-  }, [draggedItem, dragTarget, sheets, setSheets, dragTimer, dropSide]);
-
-  const handleDragEnter = useCallback((e, item) => {
-    e.preventDefault();
-    if (draggedItem && 
-        ((item.sheetName && item.sheetName !== draggedItem.sheetName) || 
-         (item.folderName && item.folderName !== draggedItem.folderName))) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const threshold = rect.width * 0.25;
-      setDropSide(mouseX < threshold ? 'left' : 'right');
-      setDragTarget(item);
-      setDropPositionX(mouseX < threshold ? rect.left - 6 : rect.right + 6);
-    }
-  }, [draggedItem]);
-
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    if (!draggedItem || !isOrderMode || !sheetTabsRef.current) return;
-  
-    const rect = sheetTabsRef.current.getBoundingClientRect();
-    const scrollSpeed = 15;
-    const edgeThreshold = 50;
-  
-    // Scroll the container based on cursor position
-    if (e.clientX < rect.left + edgeThreshold) {
-      sheetTabsRef.current.scrollLeft -= scrollSpeed;
-    } else if (e.clientX > rect.right - edgeThreshold) {
-      sheetTabsRef.current.scrollLeft += scrollSpeed;
-    }
-  
-    // Update drop indicator position to follow the cursor
-    const containerRect = sheetTabsRef.current.getBoundingClientRect();
-    const positionX = e.clientX - containerRect.left + sheetTabsRef.current.scrollLeft;
-    setDropPositionX(positionX);
-  
-    // Determine the target tab and drop side
-    const target = e.currentTarget;
-    const itemName = target.dataset.sheetName || target.dataset.folderName;
-    const item = sheets.structure.find(
-      (i) => (i.sheetName === itemName) || (i.folderName === itemName)
-    );
-  
-    if (!item || 
-        (item.sheetName && item.sheetName === draggedItem.sheetName) || 
-        (item.folderName && item.folderName === draggedItem.folderName)) {
-      setDragTarget(null);
-      setDropSide(null);
-      return;
-    }
-  
-    const targetRect = target.getBoundingClientRect();
-    const mouseX = e.clientX - targetRect.left;
-    const threshold = targetRect.width * 0.5;
-    const newDropSide = mouseX < threshold ? 'left' : 'right';
-  
-    setDragTarget(item);
-    setDropSide(newDropSide);
-  }, [draggedItem, isOrderMode, sheets.structure]);
-
-  const handleTouchStart = useCallback((e, item) => {
-    e.stopPropagation();
-    const touch = e.touches[0];
-    setTouchStartTime(Date.now());
-    setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-    setTouchActive(true);
-    if (isOrderMode) {
-      const timer = setTimeout(() => {
-        setDraggedItem(item);
-        setDropSide(null);
-        setDropPositionX(null);
-      }, 300);
-      setDragTimer(timer);
-    }
-  }, [isOrderMode]);
-
-  const handleTouchMove = useCallback((e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const distance = Math.sqrt(
-      Math.pow(touchStartPosition.x - touch.clientX, 2) +
-      Math.pow(touchStartPosition.y - touch.clientY, 2)
-    );
-  
-    if (!isOrderMode && distance > 10) {
-      setTouchActive(false);
-    }
-  
-    if (sheetTabsRef.current) {
-      const rect = sheetTabsRef.current.getBoundingClientRect();
-      const scrollSpeed = 15;
-      const edgeThreshold = 50;
-  
-      // Handle dragging and scrolling in order mode
-      if (isOrderMode && draggedItem) {
-        // Scroll the container based on cursor position
-        if (touch.clientX < rect.left + edgeThreshold) {
-          sheetTabsRef.current.scrollLeft -= scrollSpeed;
-        } else if (touch.clientX > rect.right - edgeThreshold) {
-          sheetTabsRef.current.scrollLeft += scrollSpeed;
-        }
-  
-        // Update drop indicator position to follow the cursor
-        const containerRect = sheetTabsRef.current.getBoundingClientRect();
-        const positionX = touch.clientX - containerRect.left + sheetTabsRef.current.scrollLeft;
-        setDropPositionX(positionX);
-  
-        // Determine the target tab and drop side
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (element) {
-          const target = element.closest(`.${styles.tabButton}`);
-          if (target) {
-            const rect = target.getBoundingClientRect();
-            const touchX = touch.clientX - rect.left;
-            const threshold = rect.width * 0.5;
-            const targetIndex = sheets.structure.findIndex(
-              (i) => (i.sheetName === target.dataset.sheetName) || (i.folderName === target.dataset.folderName)
-            );
-  
-            let newDropSide = touchX < threshold ? 'left' : 'right';
-            const itemName = target.dataset.sheetName || target.dataset.folderName;
-            const newTarget = sheets.structure.find(
-              (i) => (i.sheetName === itemName) || (i.folderName === itemName)
-            );
-  
-            if (newTarget && 
-                ((newTarget.sheetName && newTarget.sheetName !== draggedItem.sheetName) || 
-                 (newTarget.folderName && newTarget.folderName !== draggedItem.folderName))) {
-              setDragTarget(newTarget);
-              setDropSide(newDropSide);
-            }
-          } else {
-            // If cursor is outside tabs, set to edge of list
-            if (touch.clientX < sheetTabsRef.current.children[0].getBoundingClientRect().left) {
-              setDragTarget(sheets.structure[0]);
-              setDropSide('left');
-            } else if (touch.clientX > sheetTabsRef.current.children[sheets.structure.length - 1].getBoundingClientRect().right) {
-              setDragTarget(sheets.structure[sheets.structure.length - 1]);
-              setDropSide('right');
-            } else {
-              setDragTarget(null);
-              setDropSide(null);
-            }
-          }
-        }
-      }
-      // Allow scrolling before dragging starts
-      else if (isOrderMode && !draggedItem && distance > 10) {
-        if (touch.clientX < rect.left + edgeThreshold) {
-          sheetTabsRef.current.scrollLeft -= scrollSpeed;
-        } else if (touch.clientX > rect.right - edgeThreshold) {
-          sheetTabsRef.current.scrollLeft += scrollSpeed;
-        }
-      }
-    }
-  }, [isOrderMode, draggedItem, sheets.structure, touchStartPosition]);
-
-  const handleTouchEnd = useCallback((e, item) => {
-    e.preventDefault();
-    const touchDuration = Date.now() - touchStartTime;
-    const distance = touchStartPosition
-      ? Math.sqrt(
-          Math.pow(touchStartPosition.x - (e.changedTouches[0]?.clientX || touchStartPosition.x), 2) +
-          Math.pow(touchStartPosition.y - (e.changedTouches[0]?.clientY || touchStartPosition.y), 2)
-        )
-      : 0;
-  
-    if (!isOrderMode && touchActive && touchDuration < 300 && distance < 10) {
-      if (item.sheetName) handleSheetClick(item.sheetName);
-      else if (item.folderName) toggleFolder(item.folderName);
-    } else if (isOrderMode && touchDuration >= 300 && draggedItem && dragTarget && dropSide) {
-      const newStructure = [...sheets.structure];
-      const draggedIndex = newStructure.findIndex(
-        (i) => (i.sheetName && i.sheetName === draggedItem.sheetName) || 
-               (i.folderName && i.folderName === draggedItem.folderName)
-      );
-      const targetIndex = newStructure.findIndex(
-        (i) => (i.sheetName && i.sheetName === dragTarget.sheetName) || 
-               (i.folderName && i.folderName === dragTarget.folderName)
-      );
-  
-      if (draggedIndex !== -1 && targetIndex !== -1) {
-        const [dragged] = newStructure.splice(draggedIndex, 1);
-        const insertIndex = dropSide === 'left' ? targetIndex : targetIndex + 1;
-        newStructure.splice(insertIndex, 0, dragged);
-        setSheets((prev) => ({ ...prev, structure: newStructure }));
-  
-        setTimeout(() => {
-          if (sheetTabsRef.current) {
-            const droppedElement = sheetTabsRef.current.children[insertIndex].querySelector(`.${styles.tabButton}`);
-            if (droppedElement) {
-              const rect = droppedElement.getBoundingClientRect();
-              const containerRect = sheetTabsRef.current.getBoundingClientRect();
-              const scrollLeft = rect.left - containerRect.left + sheetTabsRef.current.scrollLeft - (containerRect.width - rect.width) / 2;
-              sheetTabsRef.current.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-            }
-          }
-        }, 0);
-      }
-    }
-  
-    if (dragTimer) {
-      clearTimeout(dragTimer);
-      setDragTimer(null);
-    }
-    setDraggedItem(null);
-    setDragTarget(null);
-    setDropSide(null);
-    setDropPositionX(null);
-    setTouchStartTime(null);
-    setTouchStartPosition(null);
-    setTouchActive(false);
-  }, [draggedItem, dragTarget, sheets, setSheets, dragTimer, dropSide, touchStartTime, isOrderMode, handleSheetClick, toggleFolder]);
-
-  const toggleOrderMode = useCallback(() => {
-    setIsOrderMode((prev) => {
-      if (prev) {
-        setDraggedItem(null);
-        setDragTarget(null);
-        setDropSide(null);
-        setDropPositionX(null);
-        setDragTimer(null);
-      }
-      return !prev;
-    });
-  }, []);
-
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={styles.controls}>
@@ -646,18 +366,9 @@ const SheetTemplate = ({
           item.folderName ? (
             <div key={item.folderName} className={styles.folderContainer}>
               <button
-                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""} ${
-                  draggedItem?.folderName === item.folderName ? styles.dragging : ""
-                } ${isOrderMode && !draggedItem ? styles.jiggle : ""}`}
+                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""}`}
                 data-folder-name={item.folderName}
-                onClick={!isOrderMode ? () => toggleFolder(item.folderName) : undefined} // Trigger folder toggle only outside order mode
-                onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
-                onMouseUp={isOrderMode ? handleDragEnd : undefined}
-                onMouseMove={isOrderMode ? handleDragOver : undefined}
-                onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
-                onTouchStart={(e) => handleTouchStart(e, item)}
-                onTouchMove={isOrderMode ? handleTouchMove : undefined}
-                onTouchEnd={(e) => handleTouchEnd(e, item)}
+                onClick={() => toggleFolder(item.folderName)}
               >
                 <FaFolder className={styles.folderIcon} />
                 {item.folderName}
@@ -671,7 +382,7 @@ const SheetTemplate = ({
                             sheetName === activeSheetName ? styles.activeInlineSheet : ""
                           }`}
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent folder toggle when clicking a sheet
+                            e.stopPropagation();
                             handleSheetClick(sheetName);
                           }}
                         >
@@ -693,18 +404,9 @@ const SheetTemplate = ({
                 <button
                   className={`${styles.tabButton} ${
                     item.sheetName === activeSheetName ? styles.activeTab : ""
-                  } ${draggedItem?.sheetName === item.sheetName ? styles.dragging : ""} ${
-                    isOrderMode && !draggedItem ? styles.jiggle : ""
                   }`}
                   data-sheet-name={item.sheetName}
-                  onClick={!isOrderMode ? () => handleSheetClick(item.sheetName) : undefined}
-                  onMouseDown={isOrderMode ? (e) => handleDragStart(e, item) : undefined}
-                  onMouseUp={isOrderMode ? handleDragEnd : undefined}
-                  onMouseMove={isOrderMode ? handleDragOver : undefined}
-                  onMouseEnter={isOrderMode ? (e) => handleDragEnter(e, item) : undefined}
-                  onTouchStart={(e) => handleTouchStart(e, item)}
-                  onTouchMove={isOrderMode ? handleTouchMove : undefined}
-                  onTouchEnd={(e) => handleTouchEnd(e, item)}
+                  onClick={() => handleSheetClick(item.sheetName)}
                 >
                   {item.sheetName}
                 </button>
@@ -712,14 +414,8 @@ const SheetTemplate = ({
             )
           )
         ))}
-        {draggedItem && dropPositionX !== null && (
-          <span className={styles.dropIndicator} style={{ left: `${dropPositionX}px` }}></span>
-        )}
-        <button
-          className={`${styles.orderButton} ${isOrderMode ? styles.activeOrderButton : ""}`}
-          onClick={toggleOrderMode}
-        >
-          {isOrderMode ? "Done" : <HiMiniArrowsRightLeft />}
+        <button className={styles.orderButton} onClick={onOpenSheetsModal}>
+          <HiMiniArrowsRightLeft />
         </button>
         <button className={styles.addTabButton} onClick={handleAddModalOpen}>
           +

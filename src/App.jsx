@@ -3,24 +3,25 @@ import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
 import FilterModal from "./Modal/FilterModal/FilterModal";
 import HeadersModal from "./Modal/HeadersModal/HeaderModal";
-import ProfileModal from "./App Header/ProfileModal/ProfileModal";
-import SettingsModal from "./SettingsModal/SettingsModal";
 import { MainContext } from "./Contexts/MainContext";
 import styles from "./App.module.css";
 import SheetModal from "./Modal/SheetModal/SheetModal";
 import useModal from "./Modal/Hooks/UseModal";
 import useSheets from "./Modal/Hooks/UseSheets";
+import Modal from "./Modal/Modal"; // Adjust path as needed
+import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 
 function App() {
   const { sheets, setSheets, cards, setCards, headers } = useContext(MainContext);
   const sheetModal = useModal();
   const filterModal = useModal();
   const headersModal = useModal();
-  const profileModal = useModal();
-  const settingsModal = useModal();
+  const sheetsModal = useModal(); // New hook for SheetsModal
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
+  const [activeModal, setActiveModal] = useState(null);
+  const [isModalClosing, setIsModalClosing] = useState(false);
 
   const activeSheet = useMemo(() => sheets.allSheets.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -97,12 +98,84 @@ function App() {
 
   const onEditSheet = useCallback(() => {
     setIsSheetModalEditMode(true);
+    setActiveModal({ type: "sheet", data: { isEditMode: true } });
     sheetModal.open();
   }, [sheetModal]);
 
-  const onFilter = useCallback(() => filterModal.open(), [filterModal]);
+  const onFilter = useCallback(() => {
+    setActiveModal({ type: "filter" });
+    filterModal.open();
+  }, [filterModal]);
+
+  const onManageHeaders = useCallback(() => {
+    setActiveModal({ type: "headers" });
+    headersModal.open();
+  }, [headersModal]);
+
+  const onOpenSheetsModal = useCallback(() => {
+    setActiveModal({ type: "sheets" });
+    sheetsModal.open();
+  }, [sheetsModal]);
+
+  const handleSaveSheetOrder = useCallback((newOrder) => {
+    // Optionally handle additional save logic if needed
+    console.log("New sheet order:", newOrder);
+  }, []);
 
   const sheetDisplayOrder = sheets.structure.map((item) => item.sheetName || item.folderName);
+
+  const handleModalClose = useCallback(() => {
+    setIsModalClosing(true);
+    setTimeout(() => {
+      setIsModalClosing(false);
+      setActiveModal(null);
+      sheetModal.close();
+      filterModal.close();
+      headersModal.close();
+      sheetsModal.close();
+    }, 300);
+  }, [sheetModal, filterModal, headersModal, sheetsModal]);
+
+  const renderModalContent = () => {
+    if (!activeModal) return null;
+
+    switch (activeModal.type) {
+      case "sheet":
+        return (
+          <SheetModal
+            isEditMode={isSheetModalEditMode}
+            sheetName={isSheetModalEditMode ? activeSheetName : ""}
+            headers={resolvedHeaders}
+            pinnedHeaders={isSheetModalEditMode ? activeSheet?.pinnedHeaders || [] : []}
+            sheets={sheets}
+            onSave={(sheetNameOrObj, headerObjects, pinnedHeaders) =>
+              handleSaveSheet(sheetNameOrObj, headerObjects, pinnedHeaders, isSheetModalEditMode)
+            }
+            onPinToggle={handlePinToggle}
+          />
+        );
+      case "filter":
+        return (
+          <FilterModal
+            headers={resolvedHeaders}
+            rows={resolvedRows}
+            filters={filters}
+            onApply={handleApplyFilters}
+          />
+        );
+      case "headers":
+        return <HeadersModal />;
+      case "sheets":
+        return (
+          <SheetsModal
+            sheets={sheets}
+            onSaveOrder={handleSaveSheetOrder}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className={styles.appContainer}>
@@ -110,7 +183,7 @@ function App() {
         sheets={sheetDisplayOrder}
         activeSheet={activeSheetName}
         onSheetChange={handleSheetChange}
-        setIsProfileModalOpen={profileModal.open}
+        setIsProfileModalOpen={() => {}}
         activeOption={activeOption}
         setActiveOption={setActiveOption}
       />
@@ -129,56 +202,24 @@ function App() {
             onRowClick={() => {}}
             onCardSave={handleCardSave}
             onCardDelete={handleDelete}
+            onOpenSheetsModal={onOpenSheetsModal} // Pass new prop
           />
         )}
-        {sheetModal.isOpen && (
-          <SheetModal
-            isEditMode={isSheetModalEditMode}
-            sheetName={isSheetModalEditMode ? activeSheetName : ""}
-            headers={resolvedHeaders}
-            pinnedHeaders={isSheetModalEditMode ? activeSheet?.pinnedHeaders || [] : []}
-            sheets={sheets}
-            onSave={(sheetNameOrObj, headerObjects, pinnedHeaders) =>
-              handleSaveSheet(sheetNameOrObj, headerObjects, pinnedHeaders, isSheetModalEditMode)
+        {/* <button onClick={onManageHeaders} style={{ margin: "10px" }}>
+          Manage Headers
+        </button> */}
+        {activeModal && (
+          <Modal
+            title={
+              activeModal.type === "sheet" ? (isSheetModalEditMode ? "Edit Sheet" : "New Sheet") :
+              activeModal.type === "filter" ? "Filters" :
+              activeModal.type === "headers" ? "Manage Columns" :
+              activeModal.type === "sheets" ? "Manage Sheets" : ""
             }
-            onPinToggle={handlePinToggle}
-            onClose={sheetModal.close}
-          />
-        )}
-        {filterModal.isOpen && (
-          <FilterModal
-            headers={resolvedHeaders}
-            rows={resolvedRows}
-            filters={filters}
-            onApply={handleApplyFilters}
-            onClose={filterModal.close}
-          />
-        )}
-        {headersModal.isOpen && <HeadersModal onClose={headersModal.close} />}
-        {profileModal.isOpen && (
-          <ProfileModal
-            onClose={profileModal.close}
-            onManageHeaders={() => {
-              headersModal.open();
-              profileModal.close();
-            }}
-            onOptionChange={(option) => {
-              setActiveOption(option);
-              if (option === "sheets" && activeSheetName) handleSheetChange(activeSheetName);
-            }}
-            activeOption={activeOption}
-            isMobile={window.innerWidth <= 768}
-            setIsSettingsModalOpen={settingsModal.open}
-          />
-        )}
-        {settingsModal.isOpen && (
-          <SettingsModal
-            onClose={settingsModal.close}
-            onManageHeaders={() => {
-              headersModal.open();
-              settingsModal.close();
-            }}
-          />
+            onClose={handleModalClose}
+          >
+            {renderModalContent()}
+          </Modal>
         )}
       </div>
     </div>

@@ -26,6 +26,7 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
         ? trimmedName !== activeSheetName && existingSheetNames.includes(trimmedName)
         : existingSheetNames.includes(trimmedName);
 
+      // Only validate if shouldSave is true (final save)
       if (shouldSave) {
         if (isDuplicate) {
           alert("A sheet or folder with this name already exists.");
@@ -41,7 +42,8 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
         }
       }
 
-      if (isDuplicate) return;
+      // Skip update if duplicate and not saving (to avoid overwriting)
+      if (isDuplicate && !shouldSave) return;
 
       setSheets((prevSheets) => {
         if (isEditMode) {

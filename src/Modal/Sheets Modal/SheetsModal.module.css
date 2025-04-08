@@ -1,0 +1,64 @@
+.sheetList {
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+  }
+  
+  .sheetItem {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.95);
+    transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    position: relative;
+  }
+  
+  .sheetItem:last-child {
+    border-bottom: none;
+  }
+  
+  .sheetItem:hover {
+    background: rgba(245, 245, 247, 0.9);
+  }
+  
+  .sheetItem.dragging {
+    background: rgba(0, 122, 255, 0.1);
+    opacity: 0.7;
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+  
+  .sheetRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .sheetName {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6e6e73;
+    text-transform: uppercase;
+  }
+  
+  .dragIcon {
+    font-size: 16px;
+    color: #6e6e73;
+    cursor: grab;
+    padding: 4px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  
+  .dragIcon:active {
+    cursor: grabbing;
+  }

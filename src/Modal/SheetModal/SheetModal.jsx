@@ -1,10 +1,8 @@
-import { useContext, useState, useCallback, useRef, useMemo } from "react";
-import Modal from "../../Modal/Modal";
+import { useContext, useState, useCallback, useRef, useMemo, useEffect } from "react";
 import styles from "./SheetModal.module.css";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 import { MainContext } from "../../Contexts/MainContext";
-import useClickOutside from "../Hooks/UseClickOutside";
+import { FaEye, FaEyeSlash, FaLock, FaUnlock } from "react-icons/fa";
+import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 
 const SheetModal = ({
   isEditMode = false,
@@ -12,9 +10,8 @@ const SheetModal = ({
   headers: initialHeaders = [],
   pinnedHeaders: initialPinnedHeaders = [],
   sheets = [],
-  onSave,
+  onSave, // Still passed but not used for manual save; kept for compatibility
   onPinToggle,
-  onClose,
 }) => {
   const { headers: allHeaders } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(initialSheetName);
@@ -22,8 +19,8 @@ const SheetModal = ({
     initialHeaders.map((h) => ({ key: h.key, visible: h.visible ?? true, hidden: h.hidden ?? false }))
   );
   const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
-  const [activeIndex, setActiveIndex] = useState(null);
-  const editActionsRef = useRef(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const dragItemRef = useRef(null);
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -33,122 +30,141 @@ const SheetModal = ({
         : { ...header, name: header.key, type: "text" };
     }), [currentHeaders, allHeaders]);
 
-  const handleSaveAndClose = useCallback(() => {
-    const trimmedName = sheetName.trim();
-    const sheetStructure = sheets.structure || sheets;
-    const existingSheetNames = Array.isArray(sheetStructure)
-      ? sheetStructure.map((item) => item.sheetName || item.folderName)
-      : [];
-    const isDuplicate = isEditMode
-      ? trimmedName !== initialSheetName && existingSheetNames.includes(trimmedName)
-      : existingSheetNames.includes(trimmedName);
+  // Update context with current state
+  const updateContext = useCallback(() => {
+    onSave(isEditMode ? { sheetName } : sheetName, currentHeaders, pinnedHeaders, false, isEditMode);
+  }, [onSave, isEditMode, sheetName, currentHeaders, pinnedHeaders]);
 
-    if (isDuplicate) {
-      alert("A sheet or folder with this name already exists.");
-      return;
-    }
-    if (!trimmedName) {
-      alert("Please provide a sheet name.");
-      return;
-    }
-    if (currentHeaders.length === 0) {
-      alert("Please select at least one header.");
-      return;
-    }
+  // Drag handlers
+  const handleDragStart = useCallback((e, index) => {
+    setDraggedIndex(index);
+    dragItemRef.current = e.target.closest(`.${styles.headerItem}`);
+    e.dataTransfer.effectAllowed = "move";
+    setTimeout(() => dragItemRef.current.classList.add(styles.dragging), 0);
+  }, []);
 
-    if (isEditMode) {
-      onSave({ sheetName: trimmedName }, currentHeaders, pinnedHeaders);
-    } else {
-      onSave(trimmedName, currentHeaders, pinnedHeaders);
+  const handleDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newHeaders = [...currentHeaders];
+    const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+    newHeaders.splice(index, 0, draggedItem);
+    setCurrentHeaders(newHeaders);
+    setDraggedIndex(index);
+    updateContext(); // Update context on drag
+  }, [draggedIndex, currentHeaders, updateContext]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragItemRef.current) {
+      dragItemRef.current.classList.remove(styles.dragging);
     }
-    onClose();
-  }, [sheetName, sheets, isEditMode, initialSheetName, currentHeaders, pinnedHeaders, onSave, onClose]);
+    setDraggedIndex(null);
+  }, []);
 
-  const moveHeader = useCallback((index, direction) => {
-    const isUp = direction === "up";
-    if (isUp && index === 0) return;
-    if (!isUp && index === currentHeaders.length - 1) return;
+  // Touch handlers for mobile
+  const handleTouchStart = useCallback((e, index) => {
+    e.stopPropagation();
+    setDraggedIndex(index);
+    dragItemRef.current = e.target.closest(`.${styles.headerItem}`);
+    dragItemRef.current.classList.add(styles.dragging);
+    document.body.style.touchAction = "none";
+  }, []);
 
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      const targetIndex = isUp ? index - 1 : index + 1;
-      const temp = newHeaders[index];
-      newHeaders[index] = { ...newHeaders[targetIndex], [isUp ? "movingUp" : "movingDown"]: true };
-      newHeaders[targetIndex] = { ...temp, [isUp ? "movingDown" : "movingUp"]: true };
-      setTimeout(() => {
-        setCurrentHeaders((prev) => {
-          const cleaned = [...prev];
-          delete cleaned[index][isUp ? "movingUp" : "movingDown"];
-          delete cleaned[targetIndex][isUp ? "movingDown" : "movingUp"];
-          return cleaned;
-        });
-      }, 300);
-      return newHeaders;
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+    if (draggedIndex === null || !dragItemRef.current) return;
+
+    const touch = e.touches[0];
+    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const targetItem = elements.find((el) => el.classList.contains(styles.headerItem));
+    if (targetItem) {
+      const targetIndex = Array.from(targetItem.parentNode.children).indexOf(targetItem);
+      if (targetIndex !== draggedIndex) {
+        const newHeaders = [...currentHeaders];
+        const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+        newHeaders.splice(targetIndex, 0, draggedItem);
+        setCurrentHeaders(newHeaders);
+        setDraggedIndex(targetIndex);
+        updateContext(); // Update context on touch move
+      }
+    }
+  }, [draggedIndex, currentHeaders, updateContext]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dragItemRef.current) {
+      dragItemRef.current.classList.remove(styles.dragging);
+    }
+    setDraggedIndex(null);
+    document.body.style.touchAction = "";
+  }, []);
+
+  const togglePin = useCallback((index) => {
+    const headerKey = currentHeaders[index].key;
+    setPinnedHeaders((prev) => {
+      const newPinned = prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey];
+      if (isEditMode && onPinToggle) onPinToggle(headerKey);
+      updateContext(); // Update context on pin toggle
+      return newPinned;
     });
-    setActiveIndex(isUp ? index - 1 : index + 1);
-  }, [currentHeaders.length]);
-
-  const moveUp = (index) => moveHeader(index, "up");
-  const moveDown = (index) => moveHeader(index, "down");
-
-  const togglePin = useCallback(
-    (headerKey) => {
-      setPinnedHeaders((prev) => {
-        const newPinned = prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey];
-        if (isEditMode && onPinToggle) onPinToggle(headerKey);
-        return newPinned;
-      });
-    },
-    [isEditMode, onPinToggle]
-  );
+  }, [currentHeaders, isEditMode, onPinToggle, updateContext]);
 
   const toggleVisible = useCallback((index) => {
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
       newHeaders[index].visible = !newHeaders[index].visible;
+      updateContext(); // Update context on visibility toggle
       return newHeaders;
     });
-  }, []);
+  }, [updateContext]);
 
   const toggleHidden = useCallback((index) => {
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
       newHeaders[index].hidden = !newHeaders[index].hidden;
+      updateContext(); // Update context on hidden toggle
       return newHeaders;
     });
-  }, []);
+  }, [updateContext]);
 
-  const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
-  }, []);
+  const removeHeader = useCallback((index) => {
+    const headerKey = currentHeaders[index].key;
+    if (!pinnedHeaders.includes(headerKey)) {
+      setCurrentHeaders((prev) => {
+        const newHeaders = prev.filter((_, i) => i !== index);
+        updateContext(); // Update context on header removal
+        return newHeaders;
+      });
+    }
+  }, [pinnedHeaders, currentHeaders, updateContext]);
 
-  const removeHeader = useCallback(
-    (index) => {
-      if (!pinnedHeaders.includes(currentHeaders[index].key)) {
-        setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
-        setActiveIndex(null);
-      }
-    },
-    [pinnedHeaders, currentHeaders]
-  );
+  const addHeader = useCallback((headerKey) => {
+    if (!currentHeaders.some((h) => h.key === headerKey)) {
+      setCurrentHeaders((prev) => {
+        const newHeaders = [...prev, { key: headerKey, visible: true, hidden: false }];
+        updateContext(); // Update context on header addition
+        return newHeaders;
+      });
+    }
+  }, [currentHeaders, updateContext]);
 
-  const addHeader = useCallback(
-    (headerKey) => {
-      if (!currentHeaders.some((h) => h.key === headerKey)) {
-        setCurrentHeaders((prev) => [...prev, { key: headerKey, visible: true, hidden: false }]);
-      }
-    },
-    [currentHeaders]
-  );
+  const handleSheetNameChange = useCallback((e) => {
+    setSheetName(e.target.value);
+    updateContext(); // Update context on sheet name change
+  }, [updateContext]);
 
-  useClickOutside(editActionsRef, activeIndex !== null, () => setActiveIndex(null));
+  // Sync headers with props if they change externally
+  useEffect(() => {
+    setCurrentHeaders(initialHeaders);
+    setPinnedHeaders(initialPinnedHeaders);
+  }, [initialHeaders, initialPinnedHeaders]);
 
   return (
-    <Modal title={isEditMode ? "Edit Sheet" : "New Sheet"} onClose={handleSaveAndClose}>
+    <div>
       <input
         type="text"
         value={sheetName}
-        onChange={(e) => setSheetName(e.target.value)}
+        onChange={handleSheetNameChange}
         placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
         className={styles.sheetNameInput}
       />
@@ -176,56 +192,56 @@ const SheetModal = ({
         {resolvedHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${header.movingUp ? styles.movingUp : ""} ${header.movingDown ? styles.movingDown : ""}`}
-            onClick={(e) => {
-              if (!e.target.closest("button")) toggleEdit(index);
-            }}
+            className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""}`}
+            onDragOver={(e) => handleDragOver(e, index)}
           >
             <div className={styles.headerRow}>
-              <div className={styles.headerNameType}>
-                <span>{header.name}</span>
-              </div>
-              <div className={styles.primaryButtons}>
-                <button onClick={() => toggleVisible(index)} className={styles.visibilityIconButton}>
-                  {header.visible ? <FaEye /> : <FaEyeSlash />}
-                </button>
-                <button onClick={() => toggleHidden(index)} className={styles.filterIconButton}>
-                  {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
-                </button>
-              </div>
-            </div>
-            {activeIndex === index && (
-              <div
-                className={styles.editActions}
-                ref={editActionsRef}
-                onClick={(e) => e.stopPropagation()} // Prevents clicks from closing the edit section
-              >
+              <span className={styles.headerName}>{header.name}</span>
+              <div className={styles.actions}>
                 <button
-                  onClick={() => removeHeader(index)}
-                  disabled={pinnedHeaders.includes(header.key)}
-                  className={styles.deleteButton}
-                >
-                  Remove
-                </button>
-                <button onClick={() => togglePin(header.key)} className={styles.actionButton}>
-                  {pinnedHeaders.includes(header.key) ? "Unpin" : "Pin"}
-                </button>
-                <button onClick={() => moveUp(index)} disabled={index === 0} className={styles.actionButton}>
-                  Move Up
-                </button>
-                <button
-                  onClick={() => moveDown(index)}
-                  disabled={index === currentHeaders.length - 1}
+                  onClick={() => toggleVisible(index)}
                   className={styles.actionButton}
                 >
-                  Move Down
+                  {header.visible ? <FaEye /> : <FaEyeSlash />}
                 </button>
+                <button
+                  onClick={() => toggleHidden(index)}
+                  className={styles.actionButton}
+                >
+                  {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
+                </button>
+                <button
+                  onClick={() => togglePin(index)}
+                  className={`${styles.actionButton} ${pinnedHeaders.includes(header.key) ? styles.pinned : ""}`}
+                >
+                  {pinnedHeaders.includes(header.key) ? <FaLock /> : <FaUnlock />}
+                </button>
+                {!pinnedHeaders.includes(header.key) && (
+                  <button
+                    onClick={() => removeHeader(index)}
+                    className={`${styles.actionButton} ${styles.removeButton}`}
+                  >
+                    ✕
+                  </button>
+                )}
+                <span
+                  className={styles.dragIcon}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onTouchStart={(e) => handleTouchStart(e, index)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  ☰
+                </span>
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
-    </Modal>
+    </div>
   );
 };
 

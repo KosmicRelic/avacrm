@@ -118,8 +118,7 @@
   -moz-user-select: none;
   -ms-user-select: none;
   touch-action: pan-x;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  touch-action: pan-x; /* Restrict to horizontal scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 
 .sheetTabs::-webkit-scrollbar {
@@ -186,15 +185,15 @@
 }
 
 .orderButton {
-  padding: 8px 16px;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #6e6e73;
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  transition: background 0.2s ease;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -202,12 +201,7 @@
 }
 
 .orderButton:hover {
-  background: rgba(0, 122, 255, 0.2);
-}
-
-.activeOrderButton {
-  background: rgba(0, 122, 255);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .folderSheets {
@@ -377,7 +371,7 @@
   box-sizing: border-box;
   gap: 12px;
   position: sticky;
-  top: 0px;
+  top: 0;
   z-index: 20;
 }
 
@@ -440,7 +434,7 @@
   box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.08);
   color: #000000;
   position: sticky;
-  top: 0px;
+  top: 0;
   z-index: 15;
 }
 
@@ -516,11 +510,11 @@
 }
 
 .dropIndicator.left {
-  left: 0; /* Move to edge of button for clarity */
+  left: 0;
 }
 
 .dropIndicator.right {
-  right: 0; /* Move to edge of button for clarity */
+  right: 0;
 }
 
 .jiggle {

@@ -1,10 +1,9 @@
 import { useContext, useState, useCallback, useRef } from "react";
-import Modal from "../Modal";
 import styles from "./HeadersModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const HeadersModal = ({ onClose }) => {
+const HeadersModal = () => {
   const { headers, setHeaders } = useContext(MainContext);
   const [currentHeaders, setCurrentHeaders] = useState(() => {
     const uniqueHeaders = [];
@@ -134,7 +133,7 @@ const HeadersModal = ({ onClose }) => {
   useClickOutside(editActionsRef, activeIndex !== null, () => setActiveIndex(null));
 
   return (
-    <Modal title="Manage Columns" onClose={onClose}>
+    <div>
       <div
         className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""}`}
         onClick={() => toggleEdit(-1)}
@@ -148,7 +147,7 @@ const HeadersModal = ({ onClose }) => {
           <div
             className={styles.editActions}
             ref={editActionsRef}
-            onClick={(e) => e.stopPropagation()} // Prevents clicks from closing
+            onClick={(e) => e.stopPropagation()}
           >
             <input
               type="text"
@@ -229,7 +228,7 @@ const HeadersModal = ({ onClose }) => {
                 <div
                   className={styles.editActions}
                   ref={editActionsRef}
-                  onClick={(e) => e.stopPropagation()} // Prevents clicks from closing
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className={styles.editActionsButtons}>
                     <button onClick={() => deleteHeader(index)} className={styles.deleteButton}>
@@ -298,7 +297,7 @@ const HeadersModal = ({ onClose }) => {
           );
         })}
       </div>
-    </Modal>
+    </div>
   );
 };
 

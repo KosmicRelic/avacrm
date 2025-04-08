@@ -1,10 +1,9 @@
 import { useContext, useState, useCallback, useMemo, useRef } from "react";
-import Modal from "../Modal";
 import styles from "./FilterModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters = {} }) => {
+const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) => {
   const { headers: allHeaders } = useContext(MainContext);
   const [filterValues, setFilterValues] = useState(initialFilters);
   const [dateRangeMode, setDateRangeMode] = useState(
@@ -191,188 +190,186 @@ const FilterModal = ({ headers, rows, onApply, onClose, filters: initialFilters 
   useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
 
   return (
-    <Modal title="Filters" onClose={onClose}>
-      <div className={styles.filterList}>
-        {visibleHeaders.map((header, index) => (
-          <div
-            key={header.key}
-            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""}`}
-            onClick={() => toggleFilter(index)}
-          >
-            <div className={styles.filterRow}>
-              <div className={styles.filterNameType}>
-                <span>{header.name}</span>
-              </div>
-              <div className={styles.primaryButtons}>
-                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
-              </div>
+    <div className={styles.filterList}>
+      {visibleHeaders.map((header, index) => (
+        <div
+          key={header.key}
+          className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""}`}
+          onClick={() => toggleFilter(index)}
+        >
+          <div className={styles.filterRow}>
+            <div className={styles.filterNameType}>
+              <span>{header.name}</span>
             </div>
-            {activeFilterIndex === index && (
-              <div
-                className={styles.filterActions}
-                ref={filterActionsRef}
-                onClick={(e) => e.stopPropagation()} // Prevents clicks from closing the filter
-              >
-                {header.type === "number" ? (
-                  numberRangeMode[header.key] ? (
-                    <>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.start || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
-                        placeholder="From"
-                        className={styles.filterInput}
-                      />
-                      <span className={styles.separator}>–</span>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.end || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
-                        placeholder="To"
-                        className={styles.filterInput}
-                      />
-                      <button onClick={() => toggleNumberRangeMode(header.key)} className={styles.actionButton}>
-                        Value
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <select
-                        value={filterValues[header.key]?.order || "equals"}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
-                        className={styles.filterSelectNoChevron}
-                      >
-                        <option value="equals">=</option>
-                        <option value="greater">{">"}</option>
-                        <option value="less">{"<"}</option>
-                        <option value="greaterOrEqual">≥</option>
-                        <option value="lessOrEqual">≤</option>
-                      </select>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.value || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                        placeholder="Value"
-                        className={styles.filterInput}
-                      />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={styles.actionButton}
-                        disabled={filterValues[header.key]?.order !== "equals"}
-                      >
-                        Range
-                      </button>
-                    </>
-                  )
-                ) : header.type === "date" ? (
-                  dateRangeMode[header.key] ? (
-                    <>
-                      <input
-                        type="date"
-                        value={filterValues[header.key]?.start || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
-                        placeholder="From"
-                        className={styles.filterInput}
-                      />
-                      <span className={styles.separator}>–</span>
-                      <input
-                        type="date"
-                        value={filterValues[header.key]?.end || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
-                        placeholder="To"
-                        className={styles.filterInput}
-                      />
-                      <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
-                        Date
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <select
-                        value={filterValues[header.key]?.order || "on"}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
-                        className={styles.filterSelect}
-                      >
-                        <option value="on">On</option>
-                        <option value="before">Before</option>
-                        <option value="after">After</option>
-                      </select>
-                      <input
-                        type="date"
-                        value={filterValues[header.key]?.value || ""}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                        className={styles.filterInput}
-                      />
-                      <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
-                        Range
-                      </button>
-                    </>
-                  )
-                ) : header.type === "dropdown" ? (
-                  <select
-                    multiple
-                    value={filterValues[header.key]?.values || []}
-                    onChange={(e) => handleDropdownChange(header.key, e)}
-                    className={styles.filterMultiSelect}
-                  >
-                    {getDropdownOptions(header.key).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+            <div className={styles.primaryButtons}>
+              <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+            </div>
+          </div>
+          {activeFilterIndex === index && (
+            <div
+              className={styles.filterActions}
+              ref={filterActionsRef}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {header.type === "number" ? (
+                numberRangeMode[header.key] ? (
+                  <>
+                    <input
+                      type="number"
+                      value={filterValues[header.key]?.start || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
+                      placeholder="From"
+                      className={styles.filterInput}
+                    />
+                    <span className={styles.separator}>–</span>
+                    <input
+                      type="number"
+                      value={filterValues[header.key]?.end || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
+                      placeholder="To"
+                      className={styles.filterInput}
+                    />
+                    <button onClick={() => toggleNumberRangeMode(header.key)} className={styles.actionButton}>
+                      Value
+                    </button>
+                  </>
                 ) : (
                   <>
                     <select
-                      value={filterValues[header.key]?.condition || "equals"}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, "condition")}
-                      className={styles.filterSelect}
+                      value={filterValues[header.key]?.order || "equals"}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
+                      className={styles.filterSelectNoChevron}
                     >
-                      <option value="equals">Equals</option>
-                      <option value="contains">Contains</option>
-                      <option value="startsWith">Starts With</option>
-                      <option value="endsWith">Ends With</option>
+                      <option value="equals">=</option>
+                      <option value="greater">{">"}</option>
+                      <option value="less">{"<"}</option>
+                      <option value="greaterOrEqual">≥</option>
+                      <option value="lessOrEqual">≤</option>
                     </select>
                     <input
-                      type="text"
+                      type="number"
                       value={filterValues[header.key]?.value || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                      placeholder={`Edit ${header.name}`}
+                      placeholder="Value"
                       className={styles.filterInput}
                     />
+                    <button
+                      onClick={() => toggleNumberRangeMode(header.key)}
+                      className={styles.actionButton}
+                      disabled={filterValues[header.key]?.order !== "equals"}
+                    >
+                      Range
+                    </button>
                   </>
-                )}
-                {header.type === "number" && (
+                )
+              ) : header.type === "date" ? (
+                dateRangeMode[header.key] ? (
+                  <>
+                    <input
+                      type="date"
+                      value={filterValues[header.key]?.start || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
+                      placeholder="From"
+                      className={styles.filterInput}
+                    />
+                    <span className={styles.separator}>–</span>
+                    <input
+                      type="date"
+                      value={filterValues[header.key]?.end || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
+                      placeholder="To"
+                      className={styles.filterInput}
+                    />
+                    <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
+                      Date
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <select
+                      value={filterValues[header.key]?.order || "on"}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
+                      className={styles.filterSelect}
+                    >
+                      <option value="on">On</option>
+                      <option value="before">Before</option>
+                      <option value="after">After</option>
+                    </select>
+                    <input
+                      type="date"
+                      value={filterValues[header.key]?.value || ""}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
+                      className={styles.filterInput}
+                    />
+                    <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
+                      Range
+                    </button>
+                  </>
+                )
+              ) : header.type === "dropdown" ? (
+                <select
+                  multiple
+                  value={filterValues[header.key]?.values || []}
+                  onChange={(e) => handleDropdownChange(header.key, e)}
+                  className={styles.filterMultiSelect}
+                >
+                  {getDropdownOptions(header.key).map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <>
                   <select
-                    value={filterValues[header.key]?.sortOrder || ""}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, "sortOrder")}
+                    value={filterValues[header.key]?.condition || "equals"}
+                    onChange={(e) => handleFilterChange(header.key, e.target.value, "condition")}
                     className={styles.filterSelect}
                   >
-                    <option value="">No Sort</option>
-                    <option value="ascending">Low to High</option>
-                    <option value="descending">High to Low</option>
+                    <option value="equals">Equals</option>
+                    <option value="contains">Contains</option>
+                    <option value="startsWith">Starts With</option>
+                    <option value="endsWith">Ends With</option>
                   </select>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); // Ensures Clear button works without closing
-                    clearFilter(header.key);
-                  }}
-                  className={styles.clearButton}
+                  <input
+                    type="text"
+                    value={filterValues[header.key]?.value || ""}
+                    onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
+                    placeholder={`Edit ${header.name}`}
+                    className={styles.filterInput}
+                  />
+                </>
+              )}
+              {header.type === "number" && (
+                <select
+                  value={filterValues[header.key]?.sortOrder || ""}
+                  onChange={(e) => handleFilterChange(header.key, e.target.value, "sortOrder")}
+                  className={styles.filterSelect}
                 >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+                  <option value="">No Sort</option>
+                  <option value="ascending">Low to High</option>
+                  <option value="descending">High to Low</option>
+                </select>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearFilter(header.key);
+                }}
+                className={styles.clearButton}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
       <div className={styles.modalActions}>
         <button onClick={handleReset} className={styles.resetButton}>
           Clear All
         </button>
       </div>
-    </Modal>
+    </div>
   );
 };
 
