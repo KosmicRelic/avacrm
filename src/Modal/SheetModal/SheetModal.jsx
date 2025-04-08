@@ -14,19 +14,18 @@ const SheetModal = ({
   const { headers: allHeaders } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || "");
   const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || []);
-  const [rows] = useState(tempData.rows || []); // Preserve rows from tempData
+  const [rows] = useState(tempData.rows || []);
   const [pinnedStates, setPinnedStates] = useState({});
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
 
-  // Sync tempData with local state changes after render
   useEffect(() => {
     setTempData((prev) => ({
       ...prev,
       sheetName,
       currentHeaders,
-      rows, // Include rows in tempData
+      rows,
     }));
   }, [sheetName, currentHeaders, rows, setTempData]);
 
@@ -45,11 +44,14 @@ const SheetModal = ({
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
-    e.preventDefault();
-    setDraggedIndex(index);
-    setTouchStartY(e.touches[0].clientY);
-    setTouchTargetIndex(index);
-    e.target.classList.add(styles.dragging);
+    // Only initiate drag if touch starts on the drag icon
+    if (e.target.classList.contains(styles.dragIcon)) {
+      e.preventDefault(); // Prevent default only for drag handle
+      setDraggedIndex(index);
+      setTouchStartY(e.touches[0].clientY);
+      setTouchTargetIndex(index);
+      e.target.closest(`.${styles.headerItem}`).classList.add(styles.dragging);
+    }
   }, []);
 
   const handleDragOver = useCallback((e, index) => {
@@ -66,8 +68,8 @@ const SheetModal = ({
   }, [draggedIndex]);
 
   const handleTouchMove = useCallback((e, index) => {
-    e.preventDefault();
     if (draggedIndex === null || touchStartY === null) return;
+    e.preventDefault(); // Still prevent default during drag movement
 
     const touchY = e.touches[0].clientY;
     const itemHeight = 48; // Adjust based on your CSS
@@ -91,7 +93,6 @@ const SheetModal = ({
   }, []);
 
   const handleTouchEnd = useCallback((e) => {
-    e.preventDefault();
     const target = e.target.closest(`.${styles.headerItem}`);
     if (target) target.classList.remove(styles.dragging);
     setDraggedIndex(null);
@@ -193,6 +194,8 @@ const SheetModal = ({
             <div className={styles.headerRow}>
               <div className={styles.headerLeft}>
                 <span className={styles.headerName}>{header.name}</span>
+              </div>
+              <div className={styles.actions}>
                 <button
                   onClick={() => toggleVisible(index)}
                   className={styles.actionButton}
@@ -205,8 +208,7 @@ const SheetModal = ({
                 >
                   {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                 </button>
-              </div>
-              <div className={styles.actions}>
+                <div className={styles.buttonSpacer}></div>
                 <button
                   onClick={() => togglePin(header.key)}
                   className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""}`}
@@ -216,7 +218,7 @@ const SheetModal = ({
                 {pinnedStates[header.key] && (
                   <button
                     onClick={() => removeHeader(header.key)}
-                    className={`${styles.removeTextButton}`}
+                    className={styles.removeTextButton}
                   >
                     Remove
                   </button>

@@ -151,31 +151,39 @@ function App() {
 
   const renderModalContent = () => {
     if (!activeModal) return null;
-
+  
     switch (activeModal.type) {
       case "sheet":
         return (
           <SheetModal
             isEditMode={isSheetModalEditMode}
+            tempData={{
+              sheetName: isSheetModalEditMode ? activeSheetName : "",
+              currentHeaders: resolvedHeaders,
+              rows: activeSheet?.rows || [],
+            }}
+            setTempData={(newData) => {
+              if (isSheetModalEditMode) {
+                setSheets((prev) => ({
+                  ...prev,
+                  allSheets: prev.allSheets.map((sheet) =>
+                    sheet.sheetName === activeSheetName ? { ...sheet, ...newData } : sheet
+                  ),
+                }));
+              } else {
+                handleSaveSheet(newData.sheetName, newData.currentHeaders);
+              }
+            }}
             sheets={sheets}
             onPinToggle={handlePinToggle}
           />
         );
       case "filter":
-        return (
-          <FilterModal
-            headers={resolvedHeaders}
-            rows={resolvedRows}
-          />
-        );
+        return <FilterModal headers={resolvedHeaders} rows={resolvedRows} />;
       case "headers":
         return <HeadersModal />;
       case "sheets":
-        return (
-          <SheetsModal
-            sheets={sheets}
-          />
-        );
+        return <SheetsModal sheets={sheets} />;
       default:
         return null;
     }
