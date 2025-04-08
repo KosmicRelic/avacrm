@@ -2,7 +2,7 @@
   padding: 12px 16px; /* Matches .editActions */
   margin-bottom: 20px;
   border-radius: 12px; /* Matches .editActions */
-  background: rgba(0, 0, 0, 0.03); /* Matches .editActions input background */
+  background: rgba(255, 255, 255, 0.95);
   transition: background 0.2s ease;
   box-sizing: border-box; /* Consistent with inputs */
 }
@@ -12,23 +12,20 @@
 }
 
 .createHeader.activeItem {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .headerList {
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .headerItem {
-  padding: 12px 16px; /* Matches .editActions */
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
-  position: relative;
-  border-radius: 12px; /* Matches .editActions */
-  background: rgba(0, 0, 0, 0.03); /* Matches .editActions input background */
 }
 
 .headerItem:last-child {
@@ -40,7 +37,7 @@
 }
 
 .activeItem {
-  background: rgba(225, 225, 225, 0.1);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .headerRow {
@@ -58,9 +55,10 @@
 }
 
 .headerNameType span {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6e6e73;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

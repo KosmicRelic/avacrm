@@ -4,27 +4,30 @@
   padding: 12px 16px;
   border: none;
   border-radius: 12px;
-  font-size: 14px;
-  font-weight: 400;
   color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.95);
   box-sizing: border-box;
   transition: all 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
   margin-bottom: 20px;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .sheetNameInput:focus,
 .addHeaderSelect:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .addHeaderSelect {
   padding-right: 32px;
-  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .headerList {
@@ -77,9 +80,10 @@
 }
 
 .headerName {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6e6e73;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -105,8 +109,15 @@
   color: #007aff;
 }
 
-.pinned {
+.actionButton.pinned {
   color: #007aff;
+  transform: rotate(-45deg);
+}
+
+.actionButton.pinned:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  transform: rotate(-45deg);
 }
 
 .removeTextButton {
@@ -141,5 +152,5 @@
 }
 
 .buttonSpacer {
-  width: 2em; /* Adds 2em separation between eye/filter and pin/remove buttons */
+  width: 1em;
 }

@@ -44,9 +44,8 @@ const SheetModal = ({
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
-    // Only initiate drag if touch starts on the drag icon
     if (e.target.classList.contains(styles.dragIcon)) {
-      e.preventDefault(); // Prevent default only for drag handle
+      e.preventDefault();
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
@@ -69,10 +68,10 @@ const SheetModal = ({
 
   const handleTouchMove = useCallback((e, index) => {
     if (draggedIndex === null || touchStartY === null) return;
-    e.preventDefault(); // Still prevent default during drag movement
+    e.preventDefault();
 
     const touchY = e.touches[0].clientY;
-    const itemHeight = 48; // Adjust based on your CSS
+    const itemHeight = 48;
     const delta = Math.round((touchY - touchStartY) / itemHeight);
 
     const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
@@ -193,22 +192,6 @@ const SheetModal = ({
           >
             <div className={styles.headerRow}>
               <div className={styles.headerLeft}>
-                <span className={styles.headerName}>{header.name}</span>
-              </div>
-              <div className={styles.actions}>
-                <button
-                  onClick={() => toggleVisible(index)}
-                  className={styles.actionButton}
-                >
-                  {header.visible ? <FaEye /> : <FaEyeSlash />}
-                </button>
-                <button
-                  onClick={() => toggleHidden(index)}
-                  className={styles.actionButton}
-                >
-                  {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
-                </button>
-                <div className={styles.buttonSpacer}></div>
                 <button
                   onClick={() => togglePin(header.key)}
                   className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""}`}
@@ -223,6 +206,23 @@ const SheetModal = ({
                     Remove
                   </button>
                 )}
+                <span className={styles.headerName}>{header.name}</span>
+              </div>
+              <div className={styles.actions}>
+              <button
+                  onClick={() => toggleHidden(index)}
+                  className={styles.actionButton}
+                >
+                  {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
+                </button>
+                <button
+                  onClick={() => toggleVisible(index)}
+                  className={styles.actionButton}
+                >
+                  {header.visible ? <FaEye /> : <FaEyeSlash />}
+                </button>
+
+                <div className={styles.buttonSpacer}></div>
                 <span className={styles.dragIcon}>☰</span>
               </div>
             </div>
