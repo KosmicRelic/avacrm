@@ -2,10 +2,10 @@ import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import styles from "./SheetTemplate.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
-import { CiFilter } from "react-icons/ci";
 import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
-import { HiMiniArrowsRightLeft } from "react-icons/hi2";
+import { MdFilterAlt } from "react-icons/md";
+import { CgArrowsExchangeAlt } from "react-icons/cg";
 
 const SheetTemplate = ({
   headers,
@@ -312,6 +312,9 @@ const SheetTemplate = ({
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={styles.controls}>
+      <button className={styles.filterButton} onClick={onFilter}>
+          <MdFilterAlt size={20} />
+        </button>
         <div className={styles.searchContainer}>
           <input
             type="text"
@@ -326,9 +329,6 @@ const SheetTemplate = ({
             </button>
           )}
         </div>
-        <button className={styles.filterButton} onClick={onFilter}>
-          <CiFilter size={20} />
-        </button>
         <button className={styles.editHeaderButton} onClick={onEditSheet}>
           Edit
         </button>
@@ -362,6 +362,9 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={styles.sheetTabs} ref={sheetTabsRef}>
+      <button className={styles.orderButton} onClick={onOpenSheetsModal}>
+          <CgArrowsExchangeAlt />
+        </button>
         {sheets.structure.map((item, index) => (
           item.folderName ? (
             <div key={item.folderName} className={styles.folderContainer}>
@@ -414,9 +417,6 @@ const SheetTemplate = ({
             )
           )
         ))}
-        <button className={styles.orderButton} onClick={onOpenSheetsModal}>
-          <HiMiniArrowsRightLeft />
-        </button>
         <button className={styles.addTabButton} onClick={handleAddModalOpen}>
           +
         </button>
