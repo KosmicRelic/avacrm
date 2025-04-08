@@ -29,7 +29,6 @@
   position: relative;
   border-radius: 12px; /* Matches .editActions */
   background: rgba(0, 0, 0, 0.03); /* Matches .editActions input background */
-  margin: 4px 0; /* Slight spacing like options */
 }
 
 .headerItem:last-child {
@@ -41,7 +40,7 @@
 }
 
 .activeItem {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(225, 225, 225, 0.1);
 }
 
 .headerRow {

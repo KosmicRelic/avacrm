@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback, useMemo } from "react";
+import { createContext, useState, useCallback, useMemo, useEffect, useContext } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
 import FilterModal from "./Modal/FilterModal/FilterModal";
@@ -111,6 +111,18 @@ function App() {
     [activeSheetName, setCards, setSheets, resolvedHeaders]
   );
 
+  const handleSaveOrder = useCallback((newOrder) => {
+    console.log("Received new order in App.jsx:", newOrder);
+    setSheets((prev) => {
+      const updatedSheets = {
+        ...prev,
+        structure: newOrder,
+      };
+      console.log("Updated sheets structure in App.jsx:", updatedSheets.structure);
+      return updatedSheets;
+    });
+  }, [setSheets]);
+
   const onEditSheet = useCallback(() => {
     setIsSheetModalEditMode(true);
     setActiveModal({ type: "sheet", data: { isEditMode: true } });
@@ -140,7 +152,6 @@ function App() {
     sheetsModal.close();
   }, [sheetModal, filterModal, headersModal, sheetsModal]);
 
-  // ProfileModal handlers
   const handleOpenProfileModal = useCallback(() => {
     setIsProfileModalOpen(true);
   }, []);
@@ -149,9 +160,14 @@ function App() {
     setIsProfileModalOpen(false);
   }, []);
 
+  // Debug log to track sheets.structure changes
+  useEffect(() => {
+    console.log("Current sheets structure in App.jsx after render:", sheets.structure);
+  }, [sheets.structure]);
+
   const renderModalContent = () => {
     if (!activeModal) return null;
-  
+
     switch (activeModal.type) {
       case "sheet":
         return (
@@ -183,7 +199,7 @@ function App() {
       case "headers":
         return <HeadersModal />;
       case "sheets":
-        return <SheetsModal sheets={sheets} />;
+        return <SheetsModal sheets={sheets} onSaveOrder={handleSaveOrder} />;
       default:
         return null;
     }
@@ -231,7 +247,7 @@ function App() {
               activeModal.type === "sheet" ? {
                 sheetName: isSheetModalEditMode ? activeSheetName : "",
                 currentHeaders: resolvedHeaders,
-                rows: activeSheet?.rows || [], // Pass rows to SheetModal
+                rows: activeSheet?.rows || [],
               } :
               activeModal.type === "filter" ? { filterValues: filters } :
               activeModal.type === "headers" ? { currentHeaders: headers } :
