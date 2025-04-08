@@ -1,3 +1,4 @@
+// Modal.jsx
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Modal.module.css";
 import { useContext } from "react";
@@ -24,20 +25,18 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
         setSheets((prevSheets) => {
           const updatedSheets = prevSheets.allSheets.map((sheet) => {
             if (sheet.sheetName === initialData.sheetName) {
-              // Merge existing sheet data with updated tempData
               return {
                 ...sheet,
                 sheetName: tempData.sheetName,
                 headers: tempData.currentHeaders,
-                rows: tempData.rows || sheet.rows, // Preserve rows if not in tempData
-                pinnedHeaders: sheet.pinnedHeaders, // Preserve pinnedHeaders
+                rows: tempData.rows || sheet.rows,
+                pinnedHeaders: sheet.pinnedHeaders,
                 isActive: sheet.isActive,
               };
             }
             return sheet;
           });
 
-          // If it's a new sheet, add it with defaults
           if (!updatedSheets.some((sheet) => sheet.sheetName === tempData.sheetName)) {
             updatedSheets.push({
               sheetName: tempData.sheetName,
@@ -80,9 +79,7 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
       case "sheets":
         setSheets((prevSheets) => ({
           ...prevSheets,
-          structure: tempData.newOrder.map((name) =>
-            prevSheets.structure.find((item) => item.sheetName === name || item.folderName === name) || { sheetName: name }
-          ),
+          structure: tempData.newOrder // This comes from SheetsModal through tempData
         }));
         break;
       default:

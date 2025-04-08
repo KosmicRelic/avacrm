@@ -1,3 +1,4 @@
+// App.jsx
 import { createContext, useState, useCallback, useMemo, useEffect, useContext } from "react";
 import SheetTemplate from "./Sheet Template/SheetTemplate";
 import AppHeader from "./App Header/AppHeader";
@@ -112,15 +113,10 @@ function App() {
   );
 
   const handleSaveOrder = useCallback((newOrder) => {
-    console.log("Received new order in App.jsx:", newOrder);
-    setSheets((prev) => {
-      const updatedSheets = {
-        ...prev,
-        structure: newOrder,
-      };
-      console.log("Updated sheets structure in App.jsx:", updatedSheets.structure);
-      return updatedSheets;
-    });
+    setSheets((prev) => ({
+      ...prev,
+      structure: newOrder
+    }));
   }, [setSheets]);
 
   const onEditSheet = useCallback(() => {
@@ -159,11 +155,6 @@ function App() {
   const handleCloseProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
   }, []);
-
-  // Debug log to track sheets.structure changes
-  useEffect(() => {
-    console.log("Current sheets structure in App.jsx after render:", sheets.structure);
-  }, [sheets.structure]);
 
   const renderModalContent = () => {
     if (!activeModal) return null;
@@ -251,7 +242,7 @@ function App() {
               } :
               activeModal.type === "filter" ? { filterValues: filters } :
               activeModal.type === "headers" ? { currentHeaders: headers } :
-              activeModal.type === "sheets" ? { newOrder: sheets.structure.map((item) => item.sheetName || item.folderName) } : {}
+              activeModal.type === "sheets" ? { newOrder: sheets.structure } : {}
             }
             modalType={activeModal.type}
           >

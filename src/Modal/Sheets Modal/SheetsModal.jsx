@@ -1,14 +1,34 @@
+// SheetsModal.jsx
 import { useContext, useState, useCallback, useRef, useEffect } from "react";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
-const SheetsModal = ({ sheets, onSaveOrder }) => {
+const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const { setSheets } = useContext(MainContext);
-  const [orderedItems, setOrderedItems] = useState(sheets.structure);
+  const [orderedItems, setOrderedItems] = useState(() => {
+    return sheets.structure.map(item => ({
+      ...item,
+      displayName: item.sheetName || item.folderName
+    }));
+  });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const dragItemRef = useRef(null);
+
+  // Update tempData whenever orderedItems changes
+  useEffect(() => {
+    const newStructure = orderedItems.map(item => {
+      if (item.folderName) {
+        return { folderName: item.folderName, sheets: item.sheets };
+      }
+      return { sheetName: item.sheetName };
+    });
+    setTempData((prev) => ({
+      ...prev,
+      newOrder: newStructure
+    }));
+  }, [orderedItems, setTempData]);
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
@@ -35,13 +55,7 @@ const SheetsModal = ({ sheets, onSaveOrder }) => {
       dragItemRef.current.classList.remove(styles.dragging);
     }
     setDraggedIndex(null);
-    setSheets((prev) => ({
-      ...prev,
-      structure: orderedItems,
-    }));
-    console.log("Saving order on drag end:", orderedItems); // Debug log
-    onSaveOrder(orderedItems); // Call onSaveOrder with updated order
-  }, [orderedItems, setSheets, onSaveOrder]);
+  }, []);
 
   const handleTouchStart = useCallback((e, index) => {
     if (e.target.classList.contains(styles.dragIcon)) {
@@ -81,29 +95,26 @@ const SheetsModal = ({ sheets, onSaveOrder }) => {
     setDraggedIndex(null);
     setTouchStartY(null);
     setTouchTargetIndex(null);
-    setSheets((prev) => ({
-      ...prev,
-      structure: orderedItems,
-    }));
-    console.log("Saving order on touch end:", orderedItems); // Debug log
-    onSaveOrder(orderedItems); // Call onSaveOrder with updated order
-  }, [orderedItems, setSheets, onSaveOrder]);
+  }, []);
 
   useEffect(() => {
-    setOrderedItems(sheets.structure); // Sync with prop changes
+    setOrderedItems(sheets.structure.map(item => ({
+      ...item,
+      displayName: item.sheetName || item.folderName
+    })));
   }, [sheets.structure]);
 
   return (
     <div className={styles.sheetList}>
       {orderedItems.map((item, index) => (
         <div
-          key={item.sheetName || item.folderName}
+          key={item.displayName} // Unique key based on displayName
           className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""}`}
           onDragOver={(e) => handleDragOver(e, index)}
         >
           <div className={styles.sheetRow}>
             <span className={styles.sheetName}>
-              {item.sheetName || item.folderName}
+              {item.displayName}
             </span>
             <span
               className={styles.dragIcon}
