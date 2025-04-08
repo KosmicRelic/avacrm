@@ -70,12 +70,17 @@
   align-items: center;
 }
 
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .headerName {
   font-size: 14px;
   font-weight: 500;
   color: #6e6e73;
   text-transform: uppercase;
-  flex: 1;
 }
 
 .actions {
@@ -104,13 +109,20 @@
   color: #007aff;
 }
 
-.removeButton {
+.removeTextButton {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
   color: #ff453a;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.removeButton:hover {
+.removeTextButton:hover {
   background: rgba(255, 69, 58, 0.1);
-  color: #ff453a;
 }
 
 .dragIcon {
@@ -126,4 +138,17 @@
 
 .dragIcon:active {
   cursor: grabbing;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.actionButton.pinned {
+  transform: rotate(45deg); /* Rotate the pin when active */
+  color: #007bff; /* Optional: Change color when pinned */
 }

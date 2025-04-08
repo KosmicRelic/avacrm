@@ -1,9 +1,10 @@
 .createHeader {
-  padding: 12px 16px;
+  padding: 12px 16px; /* Matches .editActions */
   margin-bottom: 20px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px; /* Matches .editActions */
+  background: rgba(0, 0, 0, 0.03); /* Matches .editActions input background */
   transition: background 0.2s ease;
+  box-sizing: border-box; /* Consistent with inputs */
 }
 
 .createHeader:hover:not(.activeItem) {
@@ -22,10 +23,13 @@
 }
 
 .headerItem {
-  padding: 12px 16px;
+  padding: 12px 16px; /* Matches .editActions */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
   position: relative;
+  border-radius: 12px; /* Matches .editActions */
+  background: rgba(0, 0, 0, 0.03); /* Matches .editActions input background */
+  margin: 4px 0; /* Slight spacing like options */
 }
 
 .headerItem:last-child {

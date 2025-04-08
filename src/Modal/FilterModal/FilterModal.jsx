@@ -1,33 +1,62 @@
-import { useContext, useState, useCallback, useMemo, useRef } from "react";
+import { useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import styles from "./FilterModal.module.css";
-import { MainContext } from "../../Contexts/MainContext";
+import { MainContext } from "../../Contexts/MainContext"; // Corrected import path
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) => {
+const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const { headers: allHeaders } = useContext(MainContext);
-  const [filterValues, setFilterValues] = useState(initialFilters);
+  const [filterValues, setFilterValues] = useState(tempData.filterValues || {});
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
       const initial = {};
-      Object.entries(initialFilters).forEach(([key, filter]) => {
+      Object.entries(tempData.filterValues || {}).forEach(([key, filter]) => {
         if (filter.start || filter.end) initial[key] = true;
       });
       return initial;
-    }, [initialFilters])
+    }, [tempData.filterValues])
   );
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
       const initial = {};
-      Object.entries(initialFilters).forEach(([key, filter]) => {
+      Object.entries(tempData.filterValues || {}).forEach(([key, filter]) => {
         if (filter.start || filter.end) initial[key] = true;
       });
       return initial;
-    }, [initialFilters])
+    }, [tempData.filterValues])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => !header.hidden), [headers]);
+
+  // Sync filterValues with tempData whenever filterValues changes
+  useEffect(() => {
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filterValues).map(([key, filter]) => {
+        if (numberRangeMode[key]) {
+          return [
+            key,
+            {
+              start: filter.start ? Number(filter.start) : undefined,
+              end: filter.end ? Number(filter.end) : undefined,
+              sortOrder: filter.sortOrder || undefined,
+            },
+          ];
+        } else if (filter.order && filter.value) {
+          return [
+            key,
+            {
+              order: filter.order,
+              value: filter.type === "number" ? Number(filter.value) : filter.value,
+              sortOrder: filter.sortOrder || undefined,
+            },
+          ];
+        }
+        return [key, filter];
+      })
+    );
+    setTempData((prev) => ({ ...prev, filterValues: cleanedFilters }));
+  }, [filterValues, numberRangeMode, setTempData]);
 
   const getDropdownOptions = useCallback(
     (headerKey) => {
@@ -37,37 +66,6 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) =
     [allHeaders]
   );
 
-  const applyFilters = useCallback(
-    (filters) => {
-      const cleanedFilters = Object.fromEntries(
-        Object.entries(filters).map(([key, filter]) => {
-          if (numberRangeMode[key]) {
-            return [
-              key,
-              {
-                start: filter.start ? Number(filter.start) : undefined,
-                end: filter.end ? Number(filter.end) : undefined,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          } else if (filter.order && filter.value) {
-            return [
-              key,
-              {
-                order: filter.order,
-                value: filter.type === "number" ? Number(filter.value) : filter.value,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          }
-          return [key, filter];
-        })
-      );
-      onApply(cleanedFilters);
-    },
-    [numberRangeMode, onApply]
-  );
-
   const handleFilterChange = useCallback(
     (headerKey, value, type = "default") => {
       setFilterValues((prev) => {
@@ -75,12 +73,10 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) =
         if (type === "start" || type === "end" || type === "value") {
           if (value === "") delete newFilter[type];
         }
-        const updatedFilters = { ...prev, [headerKey]: newFilter };
-        setTimeout(() => applyFilters(updatedFilters), 0);
-        return updatedFilters;
+        return { ...prev, [headerKey]: newFilter };
       });
     },
-    [applyFilters]
+    []
   );
 
   const handleDropdownChange = useCallback(
@@ -96,20 +92,16 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) =
       const setRangeMode = isDate ? setDateRangeMode : setNumberRangeMode;
       setRangeMode((prev) => {
         const newMode = !prev[headerKey];
-        setFilterValues((prevFilters) => {
-          const updatedFilters = {
-            ...prevFilters,
-            [headerKey]: newMode
-              ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
-              : { value: prevFilters[headerKey]?.value || "", order: isDate ? "on" : "equals" },
-          };
-          setTimeout(() => applyFilters(updatedFilters), 0);
-          return updatedFilters;
-        });
+        setFilterValues((prevFilters) => ({
+          ...prevFilters,
+          [headerKey]: newMode
+            ? { start: prevFilters[headerKey]?.start || "", end: prevFilters[headerKey]?.end || "" }
+            : { value: prevFilters[headerKey]?.value || "", order: isDate ? "on" : "equals" },
+        }));
         return { ...prev, [headerKey]: newMode };
       });
     },
-    [applyFilters]
+    []
   );
 
   const toggleDateRangeMode = (headerKey) => toggleRangeMode(headerKey, true);
@@ -121,15 +113,11 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) =
 
   const clearFilter = useCallback(
     (headerKey) => {
-      setFilterValues((prev) => {
-        const updatedFilters = { ...prev, [headerKey]: {} };
-        applyFilters(updatedFilters);
-        return updatedFilters;
-      });
+      setFilterValues((prev) => ({ ...prev, [headerKey]: {} }));
       setDateRangeMode((prev) => ({ ...prev, [headerKey]: false }));
       setNumberRangeMode((prev) => ({ ...prev, [headerKey]: false }));
     },
-    [applyFilters]
+    []
   );
 
   const handleReset = useCallback(() => {
@@ -138,8 +126,7 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {} }) =
     setDateRangeMode({});
     setNumberRangeMode({});
     setActiveFilterIndex(null);
-    applyFilters(clearedFilters);
-  }, [applyFilters]);
+  }, []);
 
   const isFilterEmpty = (filter) =>
     Object.keys(filter).length === 0 || (!filter.start && !filter.end && !filter.value && !filter.values?.length);

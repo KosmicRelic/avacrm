@@ -1,22 +1,11 @@
-import { useContext, useState, useCallback, useRef } from "react";
+import { useContext, useState, useCallback, useRef, useEffect } from "react";
 import styles from "./HeadersModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const HeadersModal = () => {
-  const { headers, setHeaders } = useContext(MainContext);
-  const [currentHeaders, setCurrentHeaders] = useState(() => {
-    const uniqueHeaders = [];
-    const seenKeys = new Set();
-    headers.forEach((h) => {
-      const key = Object.keys(h)[0];
-      if (!seenKeys.has(key)) {
-        seenKeys.add(key);
-        uniqueHeaders.push({ ...h });
-      }
-    });
-    return uniqueHeaders;
-  });
+const HeadersModal = ({ tempData, setTempData }) => {
+  const { headers } = useContext(MainContext);
+  const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || headers);
   const [newHeaderKey, setNewHeaderKey] = useState("");
   const [newHeaderName, setNewHeaderName] = useState("");
   const [newHeaderType, setNewHeaderType] = useState("text");
@@ -24,6 +13,14 @@ const HeadersModal = () => {
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const editActionsRef = useRef(null);
+
+  useEffect(() => {
+    setCurrentHeaders(tempData.currentHeaders || headers);
+  }, [tempData.currentHeaders, headers]);
+
+  useEffect(() => {
+    setTempData((prev) => ({ ...prev, currentHeaders }));
+  }, [currentHeaders, setTempData]);
 
   const validateHeader = useCallback(
     (key, name, existingHeaders, isUpdate = false, index = null) => {
@@ -68,9 +65,13 @@ const HeadersModal = () => {
       ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
     };
     setCurrentHeaders((prev) => [...prev, newHeader]);
-    setHeaders((prev) => [...prev, newHeader]);
-    resetForm();
-  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, setHeaders, validateHeader]);
+    setNewHeaderKey("");
+    setNewHeaderName("");
+    setNewHeaderType("text");
+    setNewHeaderOptions([]);
+    setNewOption("");
+    setActiveIndex(null);
+  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]);
 
   const updateHeader = useCallback(
     (index) => {
@@ -84,10 +85,9 @@ const HeadersModal = () => {
         ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
       };
       setCurrentHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
-      setHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
       setActiveIndex(null);
     },
-    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, setHeaders, validateHeader]
+    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]
   );
 
   const resetForm = useCallback(() => {
@@ -96,7 +96,6 @@ const HeadersModal = () => {
     setNewHeaderType("text");
     setNewHeaderOptions([]);
     setNewOption("");
-    setActiveIndex(null);
   }, []);
 
   const handleKeyPress = useCallback(
@@ -107,16 +106,29 @@ const HeadersModal = () => {
   );
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
-  }, []);
+    console.log("toggleEdit called with index:", index);
+    setActiveIndex((prev) => {
+      console.log("Previous activeIndex:", prev, "New activeIndex:", prev === index ? null : index);
+      return prev === index ? null : index;
+    });
+    if (index !== -1 && index !== null) {
+      const header = currentHeaders[index];
+      const key = Object.keys(header)[0];
+      setNewHeaderKey(key);
+      setNewHeaderName(header[key]);
+      setNewHeaderType(header.type || "text");
+      setNewHeaderOptions(header.options || []);
+    } else if (index === -1) {
+      resetForm();
+    }
+  }, [currentHeaders, resetForm]);
 
   const deleteHeader = useCallback(
     (index) => {
       setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
-      setHeaders((prev) => prev.filter((_, i) => i !== index));
       setActiveIndex(null);
     },
-    [setHeaders]
+    []
   );
 
   const addOption = useCallback(() => {
@@ -143,78 +155,80 @@ const HeadersModal = () => {
             <span>Create New Header</span>
           </div>
         </div>
-        {activeIndex === -1 && (
-          <div
-            className={styles.editActions}
-            ref={editActionsRef}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="text"
-              value={newHeaderKey}
-              onChange={(e) => setNewHeaderKey(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Key"
-              className={styles.inputField}
-            />
-            <input
-              type="text"
-              value={newHeaderName}
-              onChange={(e) => setNewHeaderName(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Name"
-              className={styles.inputField}
-            />
-            <select
-              value={newHeaderType}
-              onChange={(e) => setNewHeaderType(e.target.value)}
-              className={styles.selectField}
-            >
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-              <option value="date">Date</option>
-              <option value="dropdown">Pop-up Menu</option>
-            </select>
-            {newHeaderType === "dropdown" && (
-              <div className={styles.optionsSection}>
-                <div className={styles.optionInputRow}>
-                  <input
-                    type="text"
-                    value={newOption}
-                    onChange={(e) => setNewOption(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && addOption()}
-                    placeholder="Add item"
-                    className={styles.inputField}
-                  />
-                  <button onClick={addOption} className={styles.addOptionButton}>
-                    +
-                  </button>
-                </div>
-                <div className={styles.optionsList}>
-                  {newHeaderOptions.map((option) => (
-                    <div key={option} className={styles.optionItem}>
-                      <span>{option}</span>
-                      <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button onClick={addHeader} className={styles.actionButton}>
-              Add
-            </button>
-          </div>
-        )}
       </div>
+      {activeIndex === -1 && (
+        <div
+          className={styles.editActions}
+          ref={editActionsRef}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="text"
+            value={newHeaderKey}
+            onChange={(e) => setNewHeaderKey(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Key"
+            className={styles.inputField}
+          />
+          <input
+            type="text"
+            value={newHeaderName}
+            onChange={(e) => setNewHeaderName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Name"
+            className={styles.inputField}
+          />
+          <select
+            value={newHeaderType}
+            onChange={(e) => setNewHeaderType(e.target.value)}
+            className={styles.selectField}
+          >
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="dropdown">Pop-up Menu</option>
+          </select>
+          {newHeaderType === "dropdown" && (
+            <div className={styles.optionsSection}>
+              <div className={styles.optionInputRow}>
+                <input
+                  type="text"
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && addOption()}
+                  placeholder="Add item"
+                  className={styles.inputField}
+                />
+                <button onClick={addOption} className={styles.addOptionButton}>
+                  +
+                </button>
+              </div>
+              <div className={styles.optionsList}>
+                {newHeaderOptions.map((option) => (
+                  <div key={option} className={styles.optionItem}>
+                    <span>{option}</span>
+                    <button onClick={() => removeOption(option)} className={styles.removeOptionButton}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <button onClick={addHeader} className={styles.actionButton}>
+            Add
+          </button>
+        </div>
+      )}
       <div className={styles.headerList}>
         {currentHeaders.map((header, index) => {
           const key = Object.keys(header)[0];
           const isActive = activeIndex === index;
+          // Use a composite key to ensure uniqueness
+          const uniqueKey = `${key}-${index}`;
           return (
             <div
-              key={key}
+              key={uniqueKey}
               className={`${styles.headerItem} ${isActive ? styles.activeItem : ""}`}
               onClick={() => toggleEdit(index)}
             >

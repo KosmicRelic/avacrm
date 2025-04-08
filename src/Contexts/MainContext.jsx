@@ -97,7 +97,7 @@ export const MainContextProvider = ({ children }) => {
 
   const [headers, setHeaders] = useState([
     { leadId: "LEAD ID", type: "number" },
-    { name: "NAME", type: "text" },
+    { leadName: "NAME", type: "text" }, // Changed from "name" to "leadName"
     { phone: "PHONE", type: "text" },
     { email: "EMAIL", type: "text" },
     { leadScore: "LEAD SCORE", type: "number" },
@@ -108,7 +108,7 @@ export const MainContextProvider = ({ children }) => {
     { address: "ADDRESS", type: "text" },
     { status: "STATUS", type: "dropdown", options: ["Active", "Inactive", "Pending"] },
     { vendorId: "VENDOR ID", type: "number" },
-    { name: "NAME", type: "text" },
+    { vendorName: "NAME", type: "text" }, // Changed from "name" to "vendorName"
     { contact: "CONTACT", type: "text" },
     { taskId: "TASK ID", type: "number" },
     { description: "DESCRIPTION", type: "text" },

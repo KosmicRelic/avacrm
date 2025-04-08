@@ -101,7 +101,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         onClick={() => handleOptionClick("cards")}
                     >
                         <FaAddressCard size={20} />
-                        <span>Cards</span>
+                        <span>Financials</span>
                     </button>
                     <button
                         className={`${styles.navButton} ${activeOption === "invoices" ? styles.activeInvoices : ""}`}

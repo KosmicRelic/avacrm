@@ -26,7 +26,6 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
         ? trimmedName !== activeSheetName && existingSheetNames.includes(trimmedName)
         : existingSheetNames.includes(trimmedName);
 
-      // Only validate if shouldSave is true (final save)
       if (shouldSave) {
         if (isDuplicate) {
           alert("A sheet or folder with this name already exists.");
@@ -42,7 +41,6 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
         }
       }
 
-      // Skip update if duplicate and not saving (to avoid overwriting)
       if (isDuplicate && !shouldSave) return;
 
       setSheets((prevSheets) => {
@@ -67,7 +65,13 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
             ...prevSheets,
             allSheets: [
               ...prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: false })),
-              { sheetName: trimmedName, headers: headerObjects, pinnedHeaders: pinnedHeaders || [], rows: [], isActive: true },
+              { 
+                sheetName: trimmedName, 
+                headers: headerObjects.map((h, i) => ({ ...h, order: i, locked: h.locked || false })), 
+                pinnedHeaders: pinnedHeaders || [], 
+                rows: [], 
+                isActive: true 
+              },
             ],
             structure: [...prevSheets.structure, { sheetName: trimmedName }],
           };

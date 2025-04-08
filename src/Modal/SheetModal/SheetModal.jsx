@@ -1,26 +1,34 @@
-import { useContext, useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useContext, useState, useCallback, useMemo, useEffect } from "react";
 import styles from "./SheetModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
-import { FaEye, FaEyeSlash, FaLock, FaUnlock } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaThumbtack } from "react-icons/fa";
 import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 
 const SheetModal = ({
   isEditMode = false,
-  sheetName: initialSheetName = "",
-  headers: initialHeaders = [],
-  pinnedHeaders: initialPinnedHeaders = [],
+  tempData,
+  setTempData,
   sheets = [],
-  onSave, // Still passed but not used for manual save; kept for compatibility
   onPinToggle,
 }) => {
   const { headers: allHeaders } = useContext(MainContext);
-  const [sheetName, setSheetName] = useState(initialSheetName);
-  const [currentHeaders, setCurrentHeaders] = useState(
-    initialHeaders.map((h) => ({ key: h.key, visible: h.visible ?? true, hidden: h.hidden ?? false }))
-  );
-  const [pinnedHeaders, setPinnedHeaders] = useState(initialPinnedHeaders);
+  const [sheetName, setSheetName] = useState(tempData.sheetName || "");
+  const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || []);
+  const [rows] = useState(tempData.rows || []); // Preserve rows from tempData
+  const [pinnedStates, setPinnedStates] = useState({});
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const dragItemRef = useRef(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchTargetIndex, setTouchTargetIndex] = useState(null);
+
+  // Sync tempData with local state changes after render
+  useEffect(() => {
+    setTempData((prev) => ({
+      ...prev,
+      sheetName,
+      currentHeaders,
+      rows, // Include rows in tempData
+    }));
+  }, [sheetName, currentHeaders, rows, setTempData]);
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
@@ -30,134 +38,115 @@ const SheetModal = ({
         : { ...header, name: header.key, type: "text" };
     }), [currentHeaders, allHeaders]);
 
-  // Update context with current state
-  const updateContext = useCallback(() => {
-    onSave(isEditMode ? { sheetName } : sheetName, currentHeaders, pinnedHeaders, false, isEditMode);
-  }, [onSave, isEditMode, sheetName, currentHeaders, pinnedHeaders]);
-
-  // Drag handlers
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.headerItem}`);
     e.dataTransfer.effectAllowed = "move";
-    setTimeout(() => dragItemRef.current.classList.add(styles.dragging), 0);
+    e.target.classList.add(styles.dragging);
+  }, []);
+
+  const handleTouchStart = useCallback((e, index) => {
+    e.preventDefault();
+    setDraggedIndex(index);
+    setTouchStartY(e.touches[0].clientY);
+    setTouchTargetIndex(index);
+    e.target.classList.add(styles.dragging);
   }, []);
 
   const handleDragOver = useCallback((e, index) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
 
-    const newHeaders = [...currentHeaders];
-    const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-    newHeaders.splice(index, 0, draggedItem);
-    setCurrentHeaders(newHeaders);
-    setDraggedIndex(index);
-    updateContext(); // Update context on drag
-  }, [draggedIndex, currentHeaders, updateContext]);
-
-  const handleDragEnd = useCallback(() => {
-    if (dragItemRef.current) {
-      dragItemRef.current.classList.remove(styles.dragging);
-    }
-    setDraggedIndex(null);
-  }, []);
-
-  // Touch handlers for mobile
-  const handleTouchStart = useCallback((e, index) => {
-    e.stopPropagation();
-    setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.headerItem}`);
-    dragItemRef.current.classList.add(styles.dragging);
-    document.body.style.touchAction = "none";
-  }, []);
-
-  const handleTouchMove = useCallback((e) => {
-    e.preventDefault();
-    if (draggedIndex === null || !dragItemRef.current) return;
-
-    const touch = e.touches[0];
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-    const targetItem = elements.find((el) => el.classList.contains(styles.headerItem));
-    if (targetItem) {
-      const targetIndex = Array.from(targetItem.parentNode.children).indexOf(targetItem);
-      if (targetIndex !== draggedIndex) {
-        const newHeaders = [...currentHeaders];
-        const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-        newHeaders.splice(targetIndex, 0, draggedItem);
-        setCurrentHeaders(newHeaders);
-        setDraggedIndex(targetIndex);
-        updateContext(); // Update context on touch move
-      }
-    }
-  }, [draggedIndex, currentHeaders, updateContext]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (dragItemRef.current) {
-      dragItemRef.current.classList.remove(styles.dragging);
-    }
-    setDraggedIndex(null);
-    document.body.style.touchAction = "";
-  }, []);
-
-  const togglePin = useCallback((index) => {
-    const headerKey = currentHeaders[index].key;
-    setPinnedHeaders((prev) => {
-      const newPinned = prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey];
-      if (isEditMode && onPinToggle) onPinToggle(headerKey);
-      updateContext(); // Update context on pin toggle
-      return newPinned;
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+      newHeaders.splice(index, 0, draggedItem);
+      setDraggedIndex(index);
+      return newHeaders;
     });
-  }, [currentHeaders, isEditMode, onPinToggle, updateContext]);
+  }, [draggedIndex]);
+
+  const handleTouchMove = useCallback((e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || touchStartY === null) return;
+
+    const touchY = e.touches[0].clientY;
+    const itemHeight = 48; // Adjust based on your CSS
+    const delta = Math.round((touchY - touchStartY) / itemHeight);
+
+    const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
+    if (newIndex !== draggedIndex) {
+      setCurrentHeaders((prev) => {
+        const newHeaders = [...prev];
+        const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+        newHeaders.splice(newIndex, 0, draggedItem);
+        setDraggedIndex(newIndex);
+        return newHeaders;
+      });
+    }
+  }, [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]);
+
+  const handleDragEnd = useCallback((e) => {
+    e.target.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    e.preventDefault();
+    const target = e.target.closest(`.${styles.headerItem}`);
+    if (target) target.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchTargetIndex(null);
+  }, []);
+
+  const togglePin = useCallback((headerKey) => {
+    setPinnedStates((prev) => ({
+      ...prev,
+      [headerKey]: !prev[headerKey],
+    }));
+    onPinToggle(headerKey);
+  }, [onPinToggle]);
 
   const toggleVisible = useCallback((index) => {
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
-      newHeaders[index].visible = !newHeaders[index].visible;
-      updateContext(); // Update context on visibility toggle
+      newHeaders[index] = { ...newHeaders[index], visible: !newHeaders[index].visible };
       return newHeaders;
     });
-  }, [updateContext]);
+  }, []);
 
   const toggleHidden = useCallback((index) => {
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
-      newHeaders[index].hidden = !newHeaders[index].hidden;
-      updateContext(); // Update context on hidden toggle
+      newHeaders[index] = { ...newHeaders[index], hidden: !newHeaders[index].hidden };
       return newHeaders;
     });
-  }, [updateContext]);
+  }, []);
 
-  const removeHeader = useCallback((index) => {
-    const headerKey = currentHeaders[index].key;
-    if (!pinnedHeaders.includes(headerKey)) {
-      setCurrentHeaders((prev) => {
-        const newHeaders = prev.filter((_, i) => i !== index);
-        updateContext(); // Update context on header removal
-        return newHeaders;
+  const removeHeader = useCallback((headerKey) => {
+    setCurrentHeaders((prev) => {
+      const newHeaders = prev.filter((h) => h.key !== headerKey);
+      setPinnedStates((prev) => {
+        const newPinned = { ...prev };
+        delete newPinned[headerKey];
+        return newPinned;
       });
-    }
-  }, [pinnedHeaders, currentHeaders, updateContext]);
+      return newHeaders;
+    });
+  }, []);
 
   const addHeader = useCallback((headerKey) => {
     if (!currentHeaders.some((h) => h.key === headerKey)) {
-      setCurrentHeaders((prev) => {
-        const newHeaders = [...prev, { key: headerKey, visible: true, hidden: false }];
-        updateContext(); // Update context on header addition
-        return newHeaders;
-      });
+      setCurrentHeaders((prev) => [
+        ...prev,
+        { key: headerKey, visible: true, hidden: false },
+      ]);
     }
-  }, [currentHeaders, updateContext]);
+  }, [currentHeaders]);
 
   const handleSheetNameChange = useCallback((e) => {
     setSheetName(e.target.value);
-    updateContext(); // Update context on sheet name change
-  }, [updateContext]);
-
-  // Sync headers with props if they change externally
-  useEffect(() => {
-    setCurrentHeaders(initialHeaders);
-    setPinnedHeaders(initialPinnedHeaders);
-  }, [initialHeaders, initialPinnedHeaders]);
+  }, []);
 
   return (
     <div>
@@ -193,11 +182,17 @@ const SheetModal = ({
           <div
             key={header.key}
             className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnd={handleDragEnd}
+            onTouchStart={(e) => handleTouchStart(e, index)}
+            onTouchMove={(e) => handleTouchMove(e, index)}
+            onTouchEnd={handleTouchEnd}
           >
             <div className={styles.headerRow}>
-              <span className={styles.headerName}>{header.name}</span>
-              <div className={styles.actions}>
+              <div className={styles.headerLeft}>
+                <span className={styles.headerName}>{header.name}</span>
                 <button
                   onClick={() => toggleVisible(index)}
                   className={styles.actionButton}
@@ -210,32 +205,23 @@ const SheetModal = ({
                 >
                   {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                 </button>
+              </div>
+              <div className={styles.actions}>
                 <button
-                  onClick={() => togglePin(index)}
-                  className={`${styles.actionButton} ${pinnedHeaders.includes(header.key) ? styles.pinned : ""}`}
+                  onClick={() => togglePin(header.key)}
+                  className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""}`}
                 >
-                  {pinnedHeaders.includes(header.key) ? <FaLock /> : <FaUnlock />}
+                  <FaThumbtack />
                 </button>
-                {!pinnedHeaders.includes(header.key) && (
+                {pinnedStates[header.key] && (
                   <button
-                    onClick={() => removeHeader(index)}
-                    className={`${styles.actionButton} ${styles.removeButton}`}
+                    onClick={() => removeHeader(header.key)}
+                    className={`${styles.removeTextButton}`}
                   >
-                    ✕
+                    Remove
                   </button>
                 )}
-                <span
-                  className={styles.dragIcon}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragEnd={handleDragEnd}
-                  onTouchStart={(e) => handleTouchStart(e, index)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  ☰
-                </span>
+                <span className={styles.dragIcon}>☰</span>
               </div>
             </div>
           </div>
