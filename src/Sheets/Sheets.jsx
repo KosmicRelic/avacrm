@@ -202,7 +202,7 @@ const SheetTemplate = ({
     setSelectedRow(null);
   }, [onCardDelete]);
 
-  const handleAddNewCard = useCallback(() => {
+  const handleAddNewCards = useCallback(() => {
     const newId = `${Date.now()}`;
     let newCard;
     switch (activeSheetName) {
@@ -347,7 +347,7 @@ const SheetTemplate = ({
           <RowComponent
             rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
-            onClick={handleAddNewCard}
+            onClick={handleAddNewCards}
           />
           {finalRows.length > 0 ? (
             finalRows.map((rowData, rowIndex) => (

@@ -4,8 +4,13 @@ export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    // Initialize from localStorage, defaulting to true (dark theme) if not set
-    return localStorage.getItem("theme") === "dark" || true;
+    // Check localStorage first to respect user override
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme) {
+      return storedTheme === "dark";
+    }
+    // If no stored preference, default to device's preference
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   const [sheets, setSheets] = useState({
@@ -102,7 +107,7 @@ export const MainContextProvider = ({ children }) => {
 
   const [headers, setHeaders] = useState([
     { leadId: "LEAD ID", type: "number" },
-    { leadName: "NAME", type: "text" }, // Changed from "name" to "leadName"
+    { leadName: "NAME", type: "text" },
     { phone: "PHONE", type: "text" },
     { email: "EMAIL", type: "text" },
     { leadScore: "LEAD SCORE", type: "number" },
@@ -113,7 +118,7 @@ export const MainContextProvider = ({ children }) => {
     { address: "ADDRESS", type: "text" },
     { status: "STATUS", type: "dropdown", options: ["Active", "Inactive", "Pending"] },
     { vendorId: "VENDOR ID", type: "number" },
-    { vendorName: "NAME", type: "text" }, // Changed from "name" to "vendorName"
+    { vendorName: "NAME", type: "text" },
     { contact: "CONTACT", type: "text" },
     { taskId: "TASK ID", type: "number" },
     { description: "DESCRIPTION", type: "text" },
@@ -121,25 +126,18 @@ export const MainContextProvider = ({ children }) => {
     { priority: "PRIORITY", type: "dropdown", options: ["High", "Medium", "Low"] },
   ]);
 
-  const [cardTypes, setCardTypes] = useState([
-    {
-      name: "Lead Card",
-      sections: [
-        { name: "Primary Information", fields: [{ header: "name", value: "" }, { header: "email", value: "" }] },
-        { name: "Follow-Up", fields: [{ header: "nextActions", value: "" }, { header: "followUpDate", value: "" }] },
-      ],
-    },
-  ]);
-
   // Sync theme with data-theme attribute and localStorage
   useEffect(() => {
+    console.log("isDarkTheme updated to:", isDarkTheme);
     document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
-    localStorage.setItem("theme", isDarkTheme ? "dark" : "light");
+    if (localStorage.getItem("theme") !== null) {
+      localStorage.setItem("theme", isDarkTheme ? "dark" : "light");
+    }
   }, [isDarkTheme]);
 
   return (
     <MainContext.Provider
-      value={{ sheets, setSheets, cards, setCards, headers, setHeaders, isDarkTheme, setIsDarkTheme, cardTypes, setCardTypes }}
+      value={{ sheets, setSheets, cards, setCards, headers, setHeaders, isDarkTheme, setIsDarkTheme }}
     >
       {children}
     </MainContext.Provider>

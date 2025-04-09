@@ -14,7 +14,7 @@ const RowComponent = ({ rowData, headerNames, onClick }) => {
       {headerNames.map((header, i) => (
         <div key={i} className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {isAddNew && i === 0
-            ? "+ Add New Card"
+            ? "+ Add"
             : isAddNew
             ? ""
             : rowData[header] !== undefined

@@ -1,6 +1,6 @@
 .headersModal {
   background: transparent; /* Light mode: no additional background */
-  transition: background 0.3s ease; /* Added theme transition */
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
 .headersModal.darkTheme {
@@ -9,10 +9,10 @@
 
 .createHeader {
   padding: 19.5px 16px;
-  margin-bottom: 20px;
+  margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.95); /* Light mode */
-  transition: background 0.2s ease; /* Added theme transition */
+  transition: background 0.2s ease; /* Smooth theme transition */
   box-sizing: border-box;
 }
 
@@ -21,41 +21,43 @@
 }
 
 .createHeader:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05); /* Light mode */
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
 }
 
 .createHeader.darkTheme:hover:not(.activeItem) {
-  background: rgba(255, 255, 255, 0.1); /* Dark mode */
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
 }
 
 .createHeader.activeItem {
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.95); /* Light mode active */
 }
 
 .createHeader.darkTheme.activeItem {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode active */
 }
 
 .headerList {
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
-  transition: background 0.3s ease; /* Added theme transition */
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
 .headerList.darkTheme {
-  background: rgba(28, 28, 30, 0.95); /* Dark mode */
+  background: transparent; /* Dark mode: keep transparent */
 }
 
 .headerItem {
   padding: 19px 16px;
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
-  transition: background 0.2s ease, border-bottom 0.3s ease; /* Added theme transition */
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
 }
 
 .headerItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
 .headerItem:last-child {
@@ -63,20 +65,20 @@
 }
 
 .headerItem:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05); /* Light mode */
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
 }
 
 .headerItem.darkTheme:hover:not(.activeItem) {
-  background: rgba(255, 255, 255, 0.1); /* Dark mode */
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
 }
 
 .activeItem {
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
-  transition: background 0.3s ease; /* Added theme transition */
+  background: rgba(255, 255, 255, 0.95); /* Light mode active */
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
 .activeItem.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode active */
 }
 
 .headerRow {
@@ -98,20 +100,18 @@
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode */
-  transition: color 0.3s ease; /* Added theme transition */
+  color: #1d1d1f; /* Light mode default */
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
-/* Specific fix for dark theme header names */
-.headerList.darkTheme .headerNameType span,
-.createHeader.darkTheme .headerNameType span {
-  color: #ffffff; /* Dark mode: white for header names */
+.headerNameType.darkTheme span {
+  color: #ffffff; /* Dark mode override */
 }
 
 .headerType {
   color: #6e6e73; /* Light mode */
   font-size: 14px;
-  transition: color 0.3s ease; /* Added theme transition */
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
 .headerType.darkTheme {
@@ -123,6 +123,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode, matches headerItem */
+  padding: 16px 0; /* Consistent padding */
+  border-radius: 12px; /* Rounded corners */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.editActions.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode, matches headerItem */
 }
 
 .editActionsButtons {
@@ -138,30 +146,30 @@
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
-  color: #1d1d1f; /* Light mode */
-  background: rgba(0, 0, 0, 0.03); /* Light mode */
+  color: #1d1d1f; /* Light mode text */
+  background: rgba(0, 0, 0, 0.03); /* Light mode background */
   box-sizing: border-box;
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Added theme transition */
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
   -webkit-appearance: none;
   appearance: none;
 }
 
 .inputField.darkTheme,
 .selectField.darkTheme {
-  color: #ffffff; /* Dark mode */
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  color: #ffffff; /* Dark mode text */
+  background: rgba(58, 58, 60, 0.9); /* Dark mode background */
 }
 
 .inputField:focus,
 .selectField:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.9); /* Light mode */
+  background: rgba(255, 255, 255, 0.9); /* Light mode focus */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .inputField.darkTheme:focus,
 .selectField.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.95); /* Dark mode */
+  background: rgba(72, 72, 74, 0.95); /* Dark mode focus */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -194,7 +202,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
 }
 
 .addOptionButton.darkTheme {
@@ -202,11 +210,11 @@
 }
 
 .addOptionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode */
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
 }
 
 .addOptionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode */
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
 }
 
 .optionsList {
@@ -223,7 +231,7 @@
   background: rgba(0, 0, 0, 0.02); /* Light mode */
   border-radius: 8px;
   margin-bottom: 4px;
-  transition: background 0.3s ease; /* Added theme transition */
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
 .optionItem.darkTheme {
@@ -233,7 +241,7 @@
 .optionItem span {
   color: #1d1d1f; /* Light mode */
   font-size: 14px;
-  transition: color 0.3s ease; /* Added theme transition */
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
 .optionItem.darkTheme span {
@@ -249,7 +257,7 @@
   cursor: pointer;
   padding: 4px;
   border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
 }
 
 .removeOptionButton.darkTheme {
@@ -257,11 +265,11 @@
 }
 
 .removeOptionButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode */
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
 }
 
 .removeOptionButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode */
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
 }
 
 .deleteButton {
@@ -273,7 +281,7 @@
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
 }
 
 .deleteButton.darkTheme {
@@ -281,11 +289,11 @@
 }
 
 .deleteButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode */
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
 }
 
 .deleteButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode */
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
 }
 
 .actionButton {
@@ -297,7 +305,7 @@
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
 }
 
 .actionButton.darkTheme {
@@ -305,9 +313,9 @@
 }
 
 .actionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode */
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
 }
 
 .actionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode */
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
 }

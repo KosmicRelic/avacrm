@@ -1,9 +1,8 @@
-// AppHeader.jsx
 import { CgDarkMode } from "react-icons/cg";
 import { useState, useEffect, useRef, useContext } from "react";
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
-import { FaAddressCard, FaBullhorn, FaChartBar } from "react-icons/fa"; // Removed FaFileInvoice
+import { FaBullhorn, FaChartBar, FaMoneyBillWave } from "react-icons/fa"; // Replaced FaAddressCard with FaMoneyBillWave
 import { SiGoogleadsense } from "react-icons/si";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { MainContext } from "../Contexts/MainContext";
@@ -72,11 +71,11 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
               <span>Sheets</span>
             </button>
             <button
-              className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
-              onClick={() => handleOptionClick("cards")}
+              className={`${styles.navButton} ${activeOption === "financials" ? styles.activeFinancials : ""}`}
+              onClick={() => handleOptionClick("financials")}
             >
-              <FaAddressCard size={20} />
-              <span>Cards</span>
+              <FaMoneyBillWave size={20} />
+              <span>Financials</span>
             </button>
             <button
               className={`${styles.navButton} ${activeOption === "marketing" ? styles.activeMarketing : ""}`}
@@ -121,11 +120,11 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
             <span>Sheets</span>
           </button>
           <button
-            className={`${styles.navButton} ${activeOption === "cards" ? styles.activeCards : ""}`}
-            onClick={() => handleOptionClick("cards")}
+            className={`${styles.navButton} ${activeOption === "financials" ? styles.activeFinancials : ""}`}
+            onClick={() => handleOptionClick("financials")}
           >
-            <FaAddressCard size={20} />
-            <span>Cards</span>
+            <FaMoneyBillWave size={20} />
+            <span>Financials</span>
           </button>
           <button
             className={`${styles.navButton} ${activeOption === "marketing" ? styles.activeMarketing : ""}`}

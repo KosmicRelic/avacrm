@@ -106,9 +106,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
   );
 
   const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => {
-      return prev === index ? null : index;
-    });
+    setActiveIndex((prev) => (prev === index ? null : index));
     if (index !== -1 && index !== null) {
       const header = currentHeaders[index];
       const key = Object.keys(header)[0];
@@ -149,75 +147,77 @@ const HeadersModal = ({ tempData, setTempData }) => {
         onClick={() => toggleEdit(-1)}
       >
         <div className={styles.headerRow}>
-          <div className={styles.headerNameType}>
+          <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
             <span>Create New Header</span>
           </div>
         </div>
-      </div>
-      {activeIndex === -1 && (
-        <div
-          className={styles.editActions}
-          ref={editActionsRef}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <input
-            type="text"
-            value={newHeaderKey}
-            onChange={(e) => setNewHeaderKey(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Key"
-            className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-          />
-          <input
-            type="text"
-            value={newHeaderName}
-            onChange={(e) => setNewHeaderName(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Name"
-            className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-          />
-          <select
-            value={newHeaderType}
-            onChange={(e) => setNewHeaderType(e.target.value)}
-            className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+        {activeIndex === -1 && (
+          <div
+            className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
+            ref={editActionsRef}
+            onClick={(e) => e.stopPropagation()}
           >
-            <option value="text">Text</option>
-            <option value="number">Number</option>
-            <option value="date">Date</option>
-            <option value="dropdown">Pop-up Menu</option>
-          </select>
-          {newHeaderType === "dropdown" && (
-            <div className={styles.optionsSection}>
-              <div className={styles.optionInputRow}>
-                <input
-                  type="text"
-                  value={newOption}
-                  onChange={(e) => setNewOption(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && addOption()}
-                  placeholder="Add item"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
-                <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  +
-                </button>
+            <input
+              type="text"
+              value={newHeaderKey}
+              onChange={(e) => setNewHeaderKey(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Key"
+              className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+            />
+            <input
+              type="text"
+              value={newHeaderName}
+              onChange={(e) => setNewHeaderName(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Name"
+              className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+            />
+            <select
+              value={newHeaderType}
+              onChange={(e) => setNewHeaderType(e.target.value)}
+              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+            >
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="date">Date</option>
+              <option value="dropdown">Pop-up Menu</option>
+            </select>
+            {newHeaderType === "dropdown" && (
+              <div className={styles.optionsSection}>
+                <div className={styles.optionInputRow}>
+                  <input
+                    type="text"
+                    value={newOption}
+                    onChange={(e) => setNewOption(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && addOption()}
+                    placeholder="Add item"
+                    className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                  <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    +
+                  </button>
+                </div>
+                <div className={styles.optionsList}>
+                  {newHeaderOptions.map((option) => (
+                    <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <span>{option}</span>
+                      <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className={styles.optionsList}>
-                {newHeaderOptions.map((option) => (
-                  <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    <span>{option}</span>
-                    <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+            )}
+            <div className={styles.editActionsButtons}>
+              <button onClick={addHeader} className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Add
+              </button>
             </div>
-          )}
-          <button onClick={addHeader} className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            Add
-          </button>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
       <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {currentHeaders.map((header, index) => {
           const key = Object.keys(header)[0];
@@ -230,14 +230,14 @@ const HeadersModal = ({ tempData, setTempData }) => {
               onClick={() => toggleEdit(index)}
             >
               <div className={styles.headerRow}>
-                <div className={styles.headerNameType}>
+                <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
                   <span>{header[key]}</span>
                   <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ""}`}>({header.type})</span>
                 </div>
               </div>
               {isActive && (
                 <div
-                  className={styles.editActions}
+                  className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                   ref={editActionsRef}
                   onClick={(e) => e.stopPropagation()}
                 >
