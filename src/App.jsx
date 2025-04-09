@@ -1,4 +1,3 @@
-// App.jsx
 import { createContext, useState, useCallback, useMemo, useEffect, useContext } from "react";
 import Sheets from "./Sheets/Sheets";
 import AppHeader from "./App Header/AppHeader";
@@ -12,6 +11,7 @@ import useSheets from "./Modal/Hooks/UseSheets";
 import Modal from "./Modal/Modal";
 import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
+import CardsTransportationModal from "./Modal/Cards Transportaion Modal/CardsTransportaionModal";
 
 function App() {
   const { sheets, setSheets, cards, setCards, headers, setHeaders } = useContext(MainContext);
@@ -19,6 +19,7 @@ function App() {
   const filterModal = useModal();
   const headersModal = useModal();
   const sheetsModal = useModal();
+  const transportModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
@@ -146,7 +147,8 @@ function App() {
     filterModal.close();
     headersModal.close();
     sheetsModal.close();
-  }, [sheetModal, filterModal, headersModal, sheetsModal]);
+    transportModal.close();
+  }, [sheetModal, filterModal, headersModal, sheetsModal, transportModal]);
 
   const handleOpenProfileModal = useCallback(() => {
     setIsProfileModalOpen(true);
@@ -191,6 +193,14 @@ function App() {
         return <HeadersModal />;
       case "sheets":
         return <SheetsModal sheets={sheets} onSaveOrder={handleSaveOrder} />;
+      case "transport":
+        return (
+          <CardsTransportationModal
+            tempData={activeModal.data}
+            setTempData={(data) => setActiveModal({ ...activeModal, data })}
+            onSave={handleModalClose} // Close modal after saving
+          />
+        );
       default:
         return null;
     }
@@ -230,10 +240,11 @@ function App() {
               activeModal.type === "sheet" ? (isSheetModalEditMode ? "Edit Sheet" : "New Sheet") :
               activeModal.type === "filter" ? "Filters" :
               activeModal.type === "headers" ? "Manage Columns" :
-              activeModal.type === "sheets" ? "Manage Sheets" : ""
+              activeModal.type === "sheets" ? "Manage Sheets" :
+              activeModal.type === "transport" ? (activeModal.data.action === "move" ? "Move Cards" : "Copy Cards") : ""
             }
             onClose={handleModalClose}
-            onSave={setFilters}
+            onSave={activeModal.type === "transport" ? handleModalClose : setFilters}
             initialData={
               activeModal.type === "sheet" ? {
                 sheetName: isSheetModalEditMode ? activeSheetName : "",
@@ -242,7 +253,8 @@ function App() {
               } :
               activeModal.type === "filter" ? { filterValues: filters } :
               activeModal.type === "headers" ? { currentHeaders: headers } :
-              activeModal.type === "sheets" ? { newOrder: sheets.structure } : {}
+              activeModal.type === "sheets" ? { newOrder: sheets.structure } :
+              activeModal.type === "transport" ? activeModal.data : {}
             }
             modalType={activeModal.type}
           >

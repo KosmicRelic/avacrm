@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo, useCallback, useContext } from "react";
+import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import styles from "./Sheets.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
@@ -38,6 +38,9 @@ const SheetTemplate = ({
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [activeModal, setActiveModal] = useState(null); // Local state for modal control
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
   const isMobile = windowWidth <= 1024;
@@ -311,12 +314,95 @@ const SheetTemplate = ({
     }));
   }, [headers]);
 
+// Inside SheetTemplate component
+const handleSelectToggle = useCallback(() => {
+  setIsSelectMode((prev) => !prev);
+  setSelectedRowIds([]); // Reset selection when toggling mode
+}, []);
+
+const handleRowSelect = useCallback((rowData) => {
+  if (isSelectMode) {
+    const rowId = rowData[visibleHeaders[0]?.key];
+    setSelectedRowIds((prev) =>
+      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
+    );
+  } else {
+    handleRowClick(rowData);
+  }
+}, [isSelectMode, visibleHeaders, handleRowClick]);
+
+const handleMoveOrCopy = useCallback((action) => {
+  setActiveModal({ type: "transport", data: { action, selectedRowIds } });
+}, [selectedRowIds]);
+
+// In the TableContent JSX
+<div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+  <RowComponent
+    rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
+    headerNames={visibleHeaders.map((h) => h.key)}
+    onClick={handleAddNewCards}
+    isSelected={false}
+  />
+  {finalRows.length > 0 ? (
+    finalRows.map((rowData, rowIndex) => (
+      <RowComponent
+        key={rowIndex}
+        rowData={rowData}
+        headerNames={visibleHeaders.map((h) => h.key)}
+        onClick={() => handleRowSelect(rowData)}
+        isSelected={selectedRowIds.includes(rowData[visibleHeaders[0]?.key])}
+      />
+    ))
+  ) : (
+    <div className={styles.noResults}>No results found</div>
+  )}
+</div>
+
+  const handleModalClose = useCallback(() => {
+    setActiveModal(null);
+  }, []);
+
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
-          <MdFilterAlt size={20} />
-        </button>
+        {!isSelectMode ? (
+          <>
+            <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
+              <MdFilterAlt size={20} />
+            </button>
+            <button
+              className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={handleSelectToggle}
+            >
+              Select
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={handleSelectToggle}
+            >
+              Cancel
+            </button>
+            {selectedRowIds.length > 0 && (
+              <>
+                <button
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={() => handleMoveOrCopy("move")}
+                >
+                  Move
+                </button>
+                <button
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={() => handleMoveOrCopy("copy")}
+                >
+                  Copy
+                </button>
+              </>
+            )}
+          </>
+        )}
         <div className={styles.searchContainer}>
           <input
             type="text"
@@ -335,7 +421,7 @@ const SheetTemplate = ({
           Edit
         </button>
       </div>
-      <div className={`${styles.tableWrapper} ${isDarkTheme?styles.darkTheme:""}`} ref={scrollContainerRef}>
+      <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {visibleHeaders.map((header) => (
             <div key={header.key} className={styles.headerCell}>
@@ -343,11 +429,12 @@ const SheetTemplate = ({
             </div>
           ))}
         </div>
-        <div className={`${styles.bodyContainer} ${isDarkTheme?styles.darkTheme:""}`}>
+        <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <RowComponent
             rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={handleAddNewCards}
+            isSelected={false}
           />
           {finalRows.length > 0 ? (
             finalRows.map((rowData, rowIndex) => (
@@ -355,7 +442,8 @@ const SheetTemplate = ({
                 key={rowIndex}
                 rowData={rowData}
                 headerNames={visibleHeaders.map((h) => h.key)}
-                onClick={() => handleRowClick(rowData)}
+                onClick={() => handleRowSelect(rowData)}
+                isSelected={selectedRowIds.includes(rowData[visibleHeaders[0]?.key])}
               />
             ))
           ) : (

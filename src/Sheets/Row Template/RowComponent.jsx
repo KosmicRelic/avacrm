@@ -2,13 +2,15 @@ import { useContext } from "react";
 import styles from "./RowComponent.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
-const RowComponent = ({ rowData, headerNames, onClick }) => {
+const RowComponent = ({ rowData, headerNames, onClick, isSelected }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme } = useContext(MainContext);
 
   return (
     <div
-      className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+      className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ""} ${
+        isSelected ? styles.selectedRow : ""
+      } ${isDarkTheme ? styles.darkTheme : ""}`}
       onClick={onClick}
     >
       {headerNames.map((header, i) => (

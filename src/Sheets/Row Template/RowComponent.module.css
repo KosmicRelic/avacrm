@@ -67,6 +67,26 @@
   color: rgb(235, 235, 245); /* Kept dark mode */
 }
 
+.selectedRow {
+  background: rgba(0, 122, 255, 0.25); /* Increased opacity for visibility */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 122, 255, 0.5); /* Added border for emphasis */
+}
+
+.selectedRow.darkTheme {
+  background: rgba(10, 132, 255, 0.35); /* Slightly stronger in dark mode */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(10, 132, 255, 0.7);
+}
+
+.selectedRow:hover {
+  background: rgba(0, 122, 255, 0.35);
+}
+
+.selectedRow.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.45);
+}
+
 @media (max-width: 1024px) {
   .bodyCell {
     width: 120px;

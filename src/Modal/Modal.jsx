@@ -50,13 +50,15 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
                 ...sheet,
                 isActive: sheet.sheetName === tempData.sheetName,
               })),
-              structure: prevSheets.structure.map((item) =>
-                item.sheetName === initialData.sheetName ? { sheetName: tempData.sheetName } : item
-              ).concat(
-                !prevSheets.structure.some((item) => item.sheetName === tempData.sheetName)
-                  ? [{ sheetName: tempData.sheetName }]
-                  : []
-              ),
+              structure: prevSheets.structure
+                .map((item) =>
+                  item.sheetName === initialData.sheetName ? { sheetName: tempData.sheetName } : item
+                )
+                .concat(
+                  !prevSheets.structure.some((item) => item.sheetName === tempData.sheetName)
+                    ? [{ sheetName: tempData.sheetName }]
+                    : []
+                ),
             };
           }
 
@@ -78,8 +80,11 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
       case "sheets":
         setSheets((prevSheets) => ({
           ...prevSheets,
-          structure: tempData.newOrder // This comes from SheetsModal through tempData
+          structure: tempData.newOrder,
         }));
+        break;
+      case "transport":
+        // No explicit save action here; handled by CardsTransportationModal
         break;
       default:
         break;
@@ -90,18 +95,22 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        handleSaveAndClose();
+        if (modalType !== "transport") {
+          handleSaveAndClose(); // Transport modal closes on sheet selection, not outside click
+        } else {
+          handleClose();
+        }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [tempData, handleSaveAndClose]);
+  }, [tempData, handleSaveAndClose, modalType]);
 
   const enhancedChildren = React.Children.map(children, (child) =>
     React.cloneElement(child, {
       tempData,
       setTempData,
-      onSave: handleSaveAndClose,
+      onSave: modalType === "transport" ? handleClose : handleSaveAndClose, // Transport modal uses handleClose directly
     })
   );
 
@@ -121,12 +130,14 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
             <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
               {title}
             </h2>
-            <button
-              className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleSaveAndClose}
-            >
-              Done
-            </button>
+            {modalType !== "transport" && ( // Hide "Done" button for transport modal
+              <button
+                className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleSaveAndClose}
+              >
+                Done
+              </button>
+            )}
           </div>
         )}
         {enhancedChildren}

@@ -8,7 +8,7 @@
   overflow: hidden;
   gap: 16px;
   background: rgb(242, 242, 242);
-  transition: background 0.3s ease; /* Already present */
+  transition: background 0.3s ease;
 }
 
 .sheetWrapper.darkTheme {
@@ -27,7 +27,7 @@
   overflow: hidden;
   margin-left: 16px;
   position: relative;
-  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .tableContainer.darkTheme {
@@ -41,7 +41,6 @@
   width: 100%;
   height: 100%;
   position: relative;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .cardDetailsContainer {
@@ -55,7 +54,7 @@
   box-sizing: border-box;
   margin-right: 16px;
   display: block;
-  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .cardDetailsContainer.darkTheme {
@@ -75,7 +74,7 @@
   overflow-y: auto;
   box-sizing: border-box;
   z-index: 40;
-  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .cardDetailsMobile.darkTheme {
@@ -101,7 +100,7 @@
   font-weight: 400;
   text-align: center;
   padding: 20px;
-  transition: color 0.3s ease; /* Already present */
+  transition: color 0.3s ease;
 }
 
 .placeholder.darkTheme {
@@ -149,7 +148,7 @@
   -ms-user-select: none;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
-  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .sheetTabs.darkTheme {
@@ -171,7 +170,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, background 0.3s ease, color 0.3Ds ease;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -204,7 +203,7 @@
   background: rgba(0, 122, 255, 0.15);
   color: #007aff;
   font-weight: 600;
-  transition: background 0.3s ease, color 0.3s ease; /* Added for theme transition */
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .activeTab.darkTheme {
@@ -215,7 +214,7 @@
 .activeFolder {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
-  transition: background 0.3s ease, color 0.3s ease; /* Added for theme transition */
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .activeFolder.darkTheme {
@@ -232,7 +231,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
 }
 
 .addTabButton.darkTheme {
@@ -258,7 +257,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,7 +281,7 @@
   margin-left: 6px;
   font-size: 14px;
   color: #6e6e73;
-  transition: color 0.3s ease; /* Already present */
+  transition: color 0.3s ease;
 }
 
 .folderSheets.darkTheme {
@@ -293,7 +292,7 @@
   font-size: 12px;
   color: #007aff;
   margin-left: 4px;
-  transition: color 0.3s ease; /* Already present */
+  transition: color 0.3s ease;
 }
 
 .folderPath.darkTheme {
@@ -302,7 +301,7 @@
 
 .inlineSheet {
   cursor: pointer;
-  transition: color 0.2s ease; /* Already present for hover */
+  transition: color 0.2s ease;
 }
 
 .inlineSheet:hover {
@@ -316,7 +315,7 @@
 .activeInlineSheet {
   color: #007aff;
   font-weight: 600;
-  transition: color 0.3s ease; /* Added for theme transition */
+  transition: color 0.3s ease;
 }
 
 .activeInlineSheet.darkTheme {
@@ -325,7 +324,6 @@
 
 .folderIcon {
   font-size: 16px;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .addModal {
@@ -342,7 +340,7 @@
   max-height: 450px;
   overflow-y: auto;
   border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .addModal.darkTheme {
@@ -358,7 +356,7 @@
   background: rgba(245, 245, 247, 0.9);
   padding: 4px;
   border-radius: 10px;
-  transition: background 0.3s ease; /* Already present */
+  transition: background 0.3s ease;
 }
 
 .addTypeToggle.darkTheme {
@@ -375,7 +373,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, color 0.3s ease;
 }
 
 .typeButton.darkTheme {
@@ -394,7 +392,7 @@
   background: rgba(255, 255, 255, 0.95);
   color: #007aff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; /* Added for theme transition */
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .activeType.darkTheme {
@@ -406,7 +404,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .input {
@@ -417,7 +414,7 @@
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(255, 255, 255, 0.9);
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease, border 0.3s ease; /* Already present */
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease, border 0.3s ease;
 }
 
 .input.darkTheme {
@@ -446,7 +443,6 @@
   flex-direction: column;
   gap: 2px;
   padding: 4px 0;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .selectionItem {
@@ -457,7 +453,7 @@
   color: #1d1d1f;
   padding: 8px 12px;
   border-radius: 6px;
-  transition: background 0.2s ease, color 0.3s ease; /* Already present */
+  transition: background 0.2s ease, color 0.3s ease;
 }
 
 .selectionItem.darkTheme {
@@ -475,7 +471,7 @@
 .selectionItem input {
   margin: 0;
   accent-color: #007aff;
-  transition: accent-color 0.3s ease; /* Already present */
+  transition: accent-color 0.3s ease;
 }
 
 .selectionItem.darkTheme input {
@@ -486,7 +482,6 @@
   display: flex;
   gap: 8px;
   margin-top: 12px;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .modalButtons button {
@@ -499,7 +494,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
 }
 
 .modalButtons button.darkTheme {
@@ -534,7 +529,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  transition: background 0.3s ease; /* Already present */
+  transition: background 0.3s ease;
 }
 
 .controls.darkTheme {
@@ -544,7 +539,6 @@
 .searchContainer {
   position: relative;
   flex-grow: 1;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .searchBar {
@@ -556,7 +550,7 @@
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(245, 245, 247, 0.9);
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
   box-sizing: border-box;
 }
 
@@ -586,7 +580,7 @@
   padding: 0;
   cursor: pointer;
   color: #6e6e73;
-  transition: color 0.2s ease; /* Already present for hover */
+  transition: color 0.2s ease;
 }
 
 .clearButton.darkTheme {
@@ -606,12 +600,11 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 10;
-  /* No theme-specific changes, so no transition needed */
   background: rgba(255, 255, 255, 0.95);
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
 
-.tableWrapper.darkTheme{
+.tableWrapper.darkTheme {
   background: rgba(28, 28, 30, 0.95);
 }
 
@@ -628,7 +621,7 @@
   position: sticky;
   top: 0;
   z-index: 15;
-  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; /* Already present */
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .header.darkTheme {
@@ -647,14 +640,13 @@
   padding-bottom: 8px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  /* No theme-specific changes, so no transition needed */
 }
 
 .bodyContainer {
   width: max-content;
   min-width: 100%;
   background-color: white;
-  transition: background 0.3s ease; /* Added for theme transition */
+  transition: background 0.3s ease;
 }
 
 .bodyContainer.darkTheme {
@@ -671,7 +663,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -691,11 +683,89 @@
   color: #0A84FF;
 }
 
+.selectButton {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  height: 32px;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.selectButton.darkTheme {
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.selectButton:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.selectButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.3);
+}
+
+.cancelButton {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  height: 32px;
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.1);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.cancelButton.darkTheme {
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.2);
+}
+
+.cancelButton:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
+.cancelButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.3);
+}
+
+.actionButton {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  height: 32px;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.actionButton.darkTheme {
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.actionButton:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.3);
+}
+
 .editHeaderButton {
   border: none;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease; /* Already present */
+  transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease;
   color: #007aff;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   font-size: 16px;
@@ -722,7 +792,7 @@
   font-size: 17px;
   font-weight: 400;
   width: 100%;
-  transition: color 0.3s ease; /* Already present */
+  transition: color 0.3s ease;
 }
 
 .noResults.darkTheme {
@@ -737,7 +807,7 @@
   height: 24px;
   background: #007aff;
   border-radius: 1px;
-  transition: background 0.3s ease; /* Already present */
+  transition: background 0.3s ease;
 }
 
 .dropIndicator.darkTheme {
