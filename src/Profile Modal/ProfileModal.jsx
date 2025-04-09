@@ -4,7 +4,7 @@ import { FaAddressCard } from "react-icons/fa";
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 
-const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption }) => {
+const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption, onOpenCardsTemplateModal }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
@@ -34,8 +34,7 @@ const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption }) 
   };
 
   const handleCardsClick = () => {
-    setActiveOption("cards");
-    handleClose();
+    handleButtonClick(onOpenCardsTemplateModal); // Open CardsTemplate modal instead of setting activeOption
   };
 
   if (!isOpen && !isAnimating) return null; // Don’t render when closed and not animating

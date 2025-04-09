@@ -1,7 +1,7 @@
 import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import styles from "./Sheets.module.css";
 import RowComponent from "./Row Template/RowComponent";
-import CardDetails from "./CardDetails/CardDetails";
+import CardsEditor from "./Cards Editor/CardsEditor";
 import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
 import { MdFilterAlt } from "react-icons/md";
@@ -24,7 +24,7 @@ const SheetTemplate = ({
   onOpenSheetsModal,
   onOpenTransportModal,
 }) => {
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards } = useContext(MainContext); // Add cards for lookup
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -34,6 +34,7 @@ const SheetTemplate = ({
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [openFolder, setOpenFolder] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [addType, setAddType] = useState(null);
   const [newSheetName, setNewSheetName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
@@ -181,39 +182,67 @@ const SheetTemplate = ({
 
   const clearSearch = useCallback(() => setSearchQuery(""), []);
 
-  const handleRowClick = useCallback((rowData) => {
-    setSelectedRow(rowData);
-    setIsClosing(false);
-    onRowClick(rowData);
-  }, [onRowClick]);
+  const handleRowClick = useCallback(
+    (rowData) => {
+      if (rowData.isAddNew) {
+        setIsEditorOpen(true);
+        setSelectedRow(null);
+      } else {
+        const fullCard = cards.find((card) => card.id === rowData.id) || rowData;
+        setSelectedRow(fullCard);
+        setIsEditorOpen(true);
+        setIsClosing(false);
+        onRowClick(fullCard);
+      }
+    },
+    [onRowClick, cards]
+  );
 
-  const handleCardClose = useCallback(() => {
+  const handleEditorClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
+      setIsEditorOpen(false);
       setSelectedRow(null);
       setIsClosing(false);
     }, 300);
   }, []);
 
-  const handleCardSave = useCallback((updatedRow) => {
-    onCardSave(updatedRow);
-    setSelectedRow(updatedRow);
-  }, [onCardSave]);
+  const handleEditorSave = useCallback(
+    (updatedRow) => {
+      const isNewRow = !rows.some((r) => r === updatedRow.id);
+      const newId = updatedRow.id || `${Date.now()}`;
+      const newCardData = { ...updatedRow, id: newId };
 
-  const handleCardDelete = useCallback((rowData) => {
-    onCardDelete(rowData);
-    setSelectedRow(null);
-  }, [onCardDelete]);
+      if (isNewRow) {
+        setSheets((prev) => ({
+          ...prev,
+          allSheets: prev.allSheets.map((sheet) =>
+            sheet.sheetName === updatedRow.sheetName
+              ? { ...sheet, rows: [...sheet.rows, newId] }
+              : sheet
+          ),
+        }));
+        setCards((prev) => [...prev, newCardData]);
+      } else {
+        onCardSave(newCardData);
+        setCards((prev) =>
+          prev.map((card) => (card.id === newId ? newCardData : card))
+        );
+      }
+      setSelectedRow(newCardData);
+      setIsEditorOpen(false);
+    },
+    [rows, setSheets, setCards, onCardSave]
+  );
 
-  const handleAddNewCards = useCallback(() => {
-    const newId = `${Date.now()}`;
-    const newCard = visibleHeaders.reduce((acc, header) => {
-      acc[header.key] = header.key === "id" ? newId : "";
-      return acc;
-    }, {});
-    onCardSave(newCard);
-    setSelectedRow(newCard);
-  }, [visibleHeaders, onCardSave]);
+  const handleCardDelete = useCallback(
+    (rowData) => {
+      onCardDelete(rowData);
+      setSelectedRow(null);
+      setIsEditorOpen(false);
+    },
+    [onCardDelete]
+  );
 
   const toggleFolder = useCallback((folderName) => {
     setOpenFolder((prev) => (prev === folderName ? null : folderName));
@@ -251,10 +280,12 @@ const SheetTemplate = ({
       };
       return {
         ...prevSheets,
-        allSheets: prevSheets.allSheets.map((sheet) => ({
-          ...sheet,
-          isActive: false,
-        })).concat(newSheet),
+        allSheets: prevSheets.allSheets
+          .map((sheet) => ({
+            ...sheet,
+            isActive: false,
+          }))
+          .concat(newSheet),
         structure: [...prevSheets.structure, { sheetName: newSheetName }],
       };
     });
@@ -303,26 +334,32 @@ const SheetTemplate = ({
 
   const handleSelectToggle = useCallback(() => {
     setIsSelectMode((prev) => !prev);
-    if (isSelectMode) setSelectedRowIds([]); // Clear selection when exiting
+    if (isSelectMode) setSelectedRowIds([]);
   }, [isSelectMode]);
 
-  const handleRowSelect = useCallback((rowData) => {
-    if (isSelectMode) {
-      const rowId = rowData.id;
-      setSelectedRowIds((prev) =>
-        prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
-      );
-    } else {
-      handleRowClick(rowData);
-    }
-  }, [isSelectMode, handleRowClick]);
+  const handleRowSelect = useCallback(
+    (rowData) => {
+      if (isSelectMode) {
+        const rowId = rowData.id || rowData; // Handle both ID and full object
+        setSelectedRowIds((prev) =>
+          prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
+        );
+      } else {
+        handleRowClick(rowData);
+      }
+    },
+    [isSelectMode, handleRowClick]
+  );
 
-  const handleMoveOrCopy = useCallback((action) => {
-    onOpenTransportModal(action, selectedRowIds, () => {
-      setIsSelectMode(false); // Exit select mode
-      setSelectedRowIds([]);  // Clear selected rows
-    });
-  }, [selectedRowIds, onOpenTransportModal]);
+  const handleMoveOrCopy = useCallback(
+    (action) => {
+      onOpenTransportModal(action, selectedRowIds, () => {
+        setIsSelectMode(false);
+        setSelectedRowIds([]);
+      });
+    },
+    [selectedRowIds, onOpenTransportModal]
+  );
 
   const TableContent = (
     <div className={styles.tableContent}>
@@ -335,7 +372,10 @@ const SheetTemplate = ({
             >
               Select
             </button>
-            <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
+            <button
+              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={onFilter}
+            >
               <MdFilterAlt size={20} />
             </button>
           </>
@@ -395,7 +435,7 @@ const SheetTemplate = ({
           <RowComponent
             rowData={{ id: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
-            onClick={handleAddNewCards}
+            onClick={() => handleRowClick({ isAddNew: true })}
             isSelected={false}
           />
           {finalRows.length > 0 ? (
@@ -405,7 +445,7 @@ const SheetTemplate = ({
                 rowData={rowData}
                 headerNames={visibleHeaders.map((h) => h.key)}
                 onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData.id)}
+                isSelected={selectedRowIds.includes(rowData.id || rowData)}
               />
             ))
           ) : (
@@ -414,16 +454,19 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
-        <button className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onOpenSheetsModal}>
+        <button
+          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          onClick={onOpenSheetsModal}
+        >
           <CgArrowsExchangeAlt />
         </button>
-        {sheets.structure.map((item, index) => (
+        {sheets.structure.map((item, index) =>
           item.folderName ? (
             <div key={item.folderName} className={styles.folderContainer}>
               <button
-                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""} ${
-                  isDarkTheme ? styles.darkTheme : ""
-                }`}
+                className={`${styles.tabButton} ${
+                  openFolder === item.folderName ? styles.activeFolder : ""
+                } ${isDarkTheme ? styles.darkTheme : ""}`}
                 data-folder-name={item.folderName}
                 onClick={() => toggleFolder(item.folderName)}
               >
@@ -470,8 +513,11 @@ const SheetTemplate = ({
               </div>
             )
           )
-        ))}
-        <button className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={handleAddModalOpen}>
+        )}
+        <button
+          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          onClick={handleAddModalOpen}
+        >
           +
         </button>
       </div>
@@ -554,29 +600,31 @@ const SheetTemplate = ({
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {TableContent}
-        {isMobile && selectedRow && (
-          <div className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}>
-            <CardDetails
-              key={selectedRow.id || Date.now()}
-              rowData={selectedRow}
-              headers={visibleHeaders}
-              onClose={handleCardClose}
-              onSave={handleCardSave}
-              onDelete={handleCardDelete}
+        {isMobile && isEditorOpen && (
+          <div
+            className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
+          >
+            <CardsEditor
+              key={selectedRow?.id || Date.now()}
+              onClose={handleEditorClose}
+              onSave={handleEditorSave}
+              initialRowData={selectedRow}
+              startInEditMode={!!selectedRow}
+              preSelectedSheet={activeSheetName}
             />
           </div>
         )}
       </div>
       {!isMobile && (
         <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          {selectedRow ? (
-            <CardDetails
-              key={selectedRow.id || Date.now()}
-              rowData={selectedRow}
-              headers={visibleHeaders}
-              onClose={handleCardClose}
-              onSave={handleCardSave}
-              onDelete={handleCardDelete}
+          {isEditorOpen ? (
+            <CardsEditor
+              key={selectedRow?.id || Date.now()}
+              onClose={handleEditorClose}
+              onSave={handleEditorSave}
+              initialRowData={selectedRow}
+              startInEditMode={!!selectedRow}
+              preSelectedSheet={activeSheetName}
             />
           ) : (
             <div className={styles.placeholder}>

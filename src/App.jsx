@@ -12,6 +12,7 @@ import Modal from "./Modal/Modal";
 import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
 import CardsTransportationModal from "./Modal/Cards Transportaion Modal/CardsTransportaionModal";
+import CardsTemplate from "./Modal/Cards Template/CardsTemplate"; // Adjusted path as per your import
 
 function App() {
   const { sheets, setSheets, cards, setCards, headers, setHeaders } = useContext(MainContext);
@@ -20,6 +21,7 @@ function App() {
   const headersModal = useModal();
   const sheetsModal = useModal();
   const transportModal = useModal();
+  const cardsTemplateModal = useModal(); // New modal hook for CardsTemplate
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
@@ -134,6 +136,11 @@ function App() {
     transportModal.open();
   }, [transportModal]);
 
+  const onOpenCardsTemplateModal = useCallback(() => {
+    setActiveModal({ type: "cardsTemplate" });
+    cardsTemplateModal.open();
+  }, [cardsTemplateModal]);
+
   const handleModalClose = useCallback(() => {
     setActiveModal(null);
     sheetModal.close();
@@ -141,7 +148,8 @@ function App() {
     headersModal.close();
     sheetsModal.close();
     transportModal.close();
-  }, [sheetModal, filterModal, headersModal, sheetsModal, transportModal]);
+    cardsTemplateModal.close();
+  }, [sheetModal, filterModal, headersModal, sheetsModal, transportModal, cardsTemplateModal]);
 
   const handleOpenProfileModal = useCallback(() => {
     setIsProfileModalOpen(true);
@@ -194,6 +202,8 @@ function App() {
             onSave={handleModalClose}
           />
         );
+      case "cardsTemplate":
+        return <CardsTemplate />; // Render CardsTemplate inside the modal
       default:
         return null;
     }
@@ -228,6 +238,7 @@ function App() {
             onOpenTransportModal={onOpenTransportModal}
           />
         )}
+        {/* Removed direct CardsTemplate rendering */}
         {activeModal && (
           <Modal
             title={
@@ -235,7 +246,8 @@ function App() {
               activeModal.type === "filter" ? "Filters" :
               activeModal.type === "headers" ? "Manage Columns" :
               activeModal.type === "sheets" ? "Manage Sheets" :
-              activeModal.type === "transport" ? (activeModal.data.action === "move" ? "Move Cards" : "Copy Cards") : ""
+              activeModal.type === "transport" ? (activeModal.data.action === "move" ? "Move Cards" : "Copy Cards") :
+              activeModal.type === "cardsTemplate" ? "Card Templates" : ""
             }
             onClose={handleModalClose}
             onSave={activeModal.type === "transport" ? handleModalClose : setFilters}
@@ -259,6 +271,8 @@ function App() {
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
           onOpenHeadersModal={onManageHeaders}
+          setActiveOption={setActiveOption}
+          onOpenCardsTemplateModal={onOpenCardsTemplateModal} // Pass new prop
         />
       </div>
     </div>
