@@ -1,11 +1,11 @@
 /* index.css */
 :root {
-    --background-color: rgb(245, 245, 245); /* Light theme default */
+    --background-color: rgb(255, 255, 255); /* Light theme default */
     --text-color: rgb(29, 29, 31); /* Light theme text: dark gray */
   }
   
   [data-theme="dark"] {
-    --background-color: rgb(28, 28, 30); /* Dark theme background */
+    --background-color: black; /* Dark theme background */
     --text-color: rgb(255, 255, 255); /* Dark theme text: white */
   }
   

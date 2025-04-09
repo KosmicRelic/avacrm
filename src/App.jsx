@@ -1,6 +1,6 @@
 // App.jsx
 import { createContext, useState, useCallback, useMemo, useEffect, useContext } from "react";
-import SheetTemplate from "./Sheet Template/SheetTemplate";
+import Sheets from "./Sheets/Sheets";
 import AppHeader from "./App Header/AppHeader";
 import FilterModal from "./Modal/FilterModal/FilterModal";
 import HeadersModal from "./Modal/HeadersModal/HeaderModal";
@@ -208,7 +208,7 @@ function App() {
       />
       <div className={styles.contentWrapper}>
         {activeOption === "sheets" && activeSheetName && (
-          <SheetTemplate
+          <Sheets
             headers={resolvedHeaders}
             rows={resolvedRows}
             filters={filters}

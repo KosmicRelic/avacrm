@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback, useContext } from "react";
-import styles from "./SheetTemplate.module.css";
+import styles from "./Sheets.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
 import { IoCloseCircle } from "react-icons/io5";
