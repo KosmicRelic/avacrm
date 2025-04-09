@@ -3,38 +3,42 @@ import styles from "./CardsTransportationModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
 const CardsTransportationModal = ({ tempData, setTempData, onSave }) => {
-  const { sheets, setSheets, cards, isDarkTheme } = useContext(MainContext);
-  const { action, selectedRowIds } = tempData;
+  const { sheets, setSheets, isDarkTheme } = useContext(MainContext);
+  const { action, selectedRowIds, onComplete } = tempData; // onComplete is optional
 
   const handleSheetSelect = useCallback(
-    (sheetName) => {
+    (targetSheetName) => {
       setSheets((prevSheets) => {
-        const updatedSheets = { ...prevSheets };
-        const sourceSheet = updatedSheets.allSheets.find((s) => s.isActive);
-        const targetSheet = updatedSheets.allSheets.find((s) => s.sheetName === sheetName);
+        const newSheets = { ...prevSheets, allSheets: [...prevSheets.allSheets] };
+        const sourceSheetIndex = newSheets.allSheets.findIndex((s) => s.isActive);
+        const targetSheetIndex = newSheets.allSheets.findIndex((s) => s.sheetName === targetSheetName);
 
-        if (!sourceSheet || !targetSheet) return prevSheets;
+        if (sourceSheetIndex === -1 || targetSheetIndex === -1) return prevSheets;
 
-        const selectedCards = cards.filter((card) =>
-          selectedRowIds.includes(card[sourceSheet.headers[0].key])
-        );
+        const sourceSheet = newSheets.allSheets[sourceSheetIndex];
+        const targetSheet = newSheets.allSheets[targetSheetIndex];
 
-        // Add selected cards to target sheet (using full card data for flexibility)
-        targetSheet.rows = [
+        // Add IDs to target sheet, avoiding duplicates
+        const newTargetRows = [
           ...targetSheet.rows,
-          ...selectedCards.map((card) => card[sourceSheet.headers[0].key]),
+          ...selectedRowIds.filter((id) => !targetSheet.rows.includes(id)),
         ];
+        newSheets.allSheets[targetSheetIndex] = { ...targetSheet, rows: newTargetRows };
 
+        // Remove IDs from source sheet if moving
         if (action === "move") {
-          // Remove selected rows from source sheet
-          sourceSheet.rows = sourceSheet.rows.filter((id) => !selectedRowIds.includes(id));
+          newSheets.allSheets[sourceSheetIndex] = {
+            ...sourceSheet,
+            rows: sourceSheet.rows.filter((id) => !selectedRowIds.includes(id)),
+          };
         }
 
-        return updatedSheets;
+        return newSheets;
       });
-      onSave(); // Close the modal after saving
+      if (onComplete) onComplete(); // Call only if defined
+      onSave(); // Close the modal
     },
-    [action, selectedRowIds, cards, setSheets, onSave]
+    [action, selectedRowIds, setSheets, onSave, onComplete]
   );
 
   return (

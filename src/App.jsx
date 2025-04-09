@@ -39,25 +39,9 @@ function App() {
     }) || [];
   }, [activeSheet, headers]);
 
-  const getRowIdKey = useCallback(() => {
-    switch (activeSheetName) {
-      case "Leads":
-        return "leadId";
-      case "Business Partners":
-        return "businessId";
-      case "Vendors":
-        return "vendorId";
-      case "Tasks":
-        return "taskId";
-      default:
-        return resolvedHeaders[0]?.key || "id";
-    }
-  }, [activeSheetName, resolvedHeaders]);
-
   const resolvedRows = useMemo(() => {
-    const rowIdKey = getRowIdKey();
-    return activeSheet?.rows.map((rowId) => cards.find((card) => card[rowIdKey] === rowId) || {}) || [];
-  }, [activeSheet, cards, getRowIdKey]);
+    return activeSheet?.rows.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
+  }, [activeSheet, cards]);
 
   const handlePinToggle = useCallback(
     (headerKey) => {
@@ -80,43 +64,47 @@ function App() {
 
   const handleCardSave = useCallback(
     (updatedRow) => {
-      setCards((prevCards) =>
-        prevCards.map((card) => (card[resolvedHeaders[0]?.key] === updatedRow[resolvedHeaders[0]?.key] ? updatedRow : card))
-      );
+      setCards((prevCards) => {
+        const existingCard = prevCards.find((card) => card.id === updatedRow.id);
+        if (existingCard) {
+          return prevCards.map((card) => (card.id === updatedRow.id ? { ...card, ...updatedRow } : card));
+        }
+        return [...prevCards, updatedRow];
+      });
       setSheets((prevSheets) => ({
         ...prevSheets,
         allSheets: prevSheets.allSheets.map((sheet) =>
           sheet.sheetName === activeSheetName
             ? {
                 ...sheet,
-                rows: sheet.rows.map((id) => (id === updatedRow[resolvedHeaders[0]?.key] ? updatedRow[resolvedHeaders[0]?.key] : id)),
+                rows: sheet.rows.includes(updatedRow.id) ? sheet.rows : [...sheet.rows, updatedRow.id],
               }
             : sheet
         ),
       }));
     },
-    [activeSheetName, setCards, setSheets, resolvedHeaders]
+    [activeSheetName, setCards, setSheets]
   );
 
   const handleDelete = useCallback(
     (rowData) => {
-      setCards((prevCards) => prevCards.filter((card) => card[resolvedHeaders[0]?.key] !== rowData[resolvedHeaders[0]?.key]));
+      setCards((prevCards) => prevCards.filter((card) => card.id !== rowData.id));
       setSheets((prevSheets) => ({
         ...prevSheets,
         allSheets: prevSheets.allSheets.map((sheet) =>
           sheet.sheetName === activeSheetName
-            ? { ...sheet, rows: sheet.rows.filter((id) => id !== rowData[resolvedHeaders[0]?.key]) }
+            ? { ...sheet, rows: sheet.rows.filter((id) => id !== rowData.id) }
             : sheet
         ),
       }));
     },
-    [activeSheetName, setCards, setSheets, resolvedHeaders]
+    [activeSheetName, setCards, setSheets]
   );
 
   const handleSaveOrder = useCallback((newOrder) => {
     setSheets((prev) => ({
       ...prev,
-      structure: newOrder
+      structure: newOrder,
     }));
   }, [setSheets]);
 
@@ -140,6 +128,11 @@ function App() {
     setActiveModal({ type: "sheets" });
     sheetsModal.open();
   }, [sheetsModal]);
+
+  const onOpenTransportModal = useCallback((action, selectedRowIds, onComplete) => {
+    setActiveModal({ type: "transport", data: { action, selectedRowIds, onComplete } });
+    transportModal.open();
+  }, [transportModal]);
 
   const handleModalClose = useCallback(() => {
     setActiveModal(null);
@@ -198,7 +191,7 @@ function App() {
           <CardsTransportationModal
             tempData={activeModal.data}
             setTempData={(data) => setActiveModal({ ...activeModal, data })}
-            onSave={handleModalClose} // Close modal after saving
+            onSave={handleModalClose}
           />
         );
       default:
@@ -232,6 +225,7 @@ function App() {
             onCardSave={handleCardSave}
             onCardDelete={handleDelete}
             onOpenSheetsModal={onOpenSheetsModal}
+            onOpenTransportModal={onOpenTransportModal}
           />
         )}
         {activeModal && (

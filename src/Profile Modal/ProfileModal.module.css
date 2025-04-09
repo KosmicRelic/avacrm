@@ -6,24 +6,46 @@
   height: 100%;
   background: rgba(0, 0, 0, 0); /* Fully transparent initially */
   backdrop-filter: blur(0px); /* No blur initially */
-  display: none;
+  display: none; /* Hidden by default */
   z-index: 1000;
-  transition: background 0.4s ease, backdrop-filter 0.4s ease; /* Smooth fade */
 }
 
 .profileOverlay.open {
-  display: block;
-  background: rgba(0, 0, 0, 0.4); /* Light mode: semi-transparent */
-  backdrop-filter: blur(20px); /* iOS-style blur */
-}
-
-.profileOverlay.darkTheme {
-  background: rgba(28, 28, 30, 0); /* Dark mode: transparent initially */
+  display: flex; /* Show and animate when open */
+  animation: fadeIn 0.4s ease-out forwards; /* Fade in: 0.4s */
 }
 
 .profileOverlay.darkTheme.open {
-  background: rgba(28, 28, 30, 0.7); /* Dark mode: stronger overlay */
-  backdrop-filter: blur(20px);
+  animation: fadeInDark 0.4s ease-out forwards; /* Dark mode fade in: 0.4s */
+}
+
+.profileOverlay.closed {
+  display: flex; /* Keep visible during fade-out */
+  animation: fadeOut 0.4s ease-in forwards; /* Fade out: 0.4s */
+}
+
+.profileOverlay.darkTheme.closed {
+  animation: fadeOutDark 0.4s ease-in forwards; /* Dark mode fade out: 0.4s */
+}
+
+@keyframes fadeIn {
+  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); } /* Light mode, match Modal */
+}
+
+@keyframes fadeInDark {
+  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); } /* Dark mode, match Modal */
+}
+
+@keyframes fadeOut {
+  from { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
+  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Light mode */
+}
+
+@keyframes fadeOutDark {
+  from { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
+  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Dark mode */
 }
 
 .profileContent {
@@ -40,9 +62,6 @@
   padding: 20px;
   border-radius: 14px 0 0 14px; /* Rounded left corners */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease; /* Smooth slide and fade */
-  transform: translateX(0);
-  opacity: 0; /* Start invisible */
 }
 
 .profileContent.darkTheme {
@@ -53,11 +72,13 @@
 .slideIn {
   transform: translateX(-100%); /* Slide in from right to left */
   opacity: 1; /* Fade in */
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
 }
 
 .slideOut {
   transform: translateX(0); /* Slide out to the right */
   opacity: 0; /* Fade out */
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
 }
 
 .header {

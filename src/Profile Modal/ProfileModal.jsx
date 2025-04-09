@@ -11,15 +11,15 @@ const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption }) 
 
   useEffect(() => {
     if (isOpen) {
-      setIsAnimating(true);
-    } else {
-      setIsAnimating(false);
+      setIsAnimating(true); // Start fade-in and slide-in when opened
     }
   }, [isOpen]);
 
   const handleClose = () => {
-    setIsAnimating(false);
-    setTimeout(onClose, 400); // Match animation duration
+    setIsAnimating(false); // Trigger fade-out and slide-out
+    setTimeout(() => {
+      onClose(); // Call onClose after animation completes
+    }, 400); // Match 0.4s animation duration
   };
 
   const handleBackgroundClick = (e) => {
@@ -38,14 +38,20 @@ const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption }) 
     handleClose();
   };
 
+  if (!isOpen && !isAnimating) return null; // Don’t render when closed and not animating
+
   return (
     <div
       ref={overlayRef}
-      className={`${styles.profileOverlay} ${isOpen ? styles.open : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+      className={`${styles.profileOverlay} ${isAnimating ? styles.open : styles.closed} ${
+        isDarkTheme ? styles.darkTheme : ""
+      }`}
       onClick={handleBackgroundClick}
     >
       <div
-        className={`${styles.profileContent} ${isAnimating ? styles.slideIn : styles.slideOut} ${isDarkTheme ? styles.darkTheme : ""}`}
+        className={`${styles.profileContent} ${isAnimating ? styles.slideIn : styles.slideOut} ${
+          isDarkTheme ? styles.darkTheme : ""
+        }`}
       >
         <div className={styles.header}>
           <h2 className={`${styles.settingsTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Settings</h2>

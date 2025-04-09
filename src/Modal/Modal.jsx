@@ -10,12 +10,12 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
   const modalRef = useRef(null);
 
   const handleClose = () => {
-    if (window.innerWidth <= 767) {
-      setIsClosing(true);
-      setTimeout(() => onClose(), 300);
-    } else {
+    setIsClosing(true);
+    const timeoutDuration = window.innerWidth <= 767 ? 300 : 200; // Match mobile (0.3s) or desktop (0.2s)
+    setTimeout(() => {
+      setIsClosing(false); // Reset after animation
       onClose();
-    }
+    }, timeoutDuration);
   };
 
   const handleSaveAndClose = () => {
@@ -96,7 +96,7 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         if (modalType !== "transport") {
-          handleSaveAndClose(); // Transport modal closes on sheet selection, not outside click
+          handleSaveAndClose();
         } else {
           handleClose();
         }
@@ -110,12 +110,16 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
     React.cloneElement(child, {
       tempData,
       setTempData,
-      onSave: modalType === "transport" ? handleClose : handleSaveAndClose, // Transport modal uses handleClose directly
+      onSave: modalType === "transport" ? handleClose : handleSaveAndClose,
     })
   );
 
   return (
-    <div className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""}`}>
+    <div
+      className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""} ${
+        isClosing ? styles.closing : ""
+      }`}
+    >
       <div
         className={`${styles.modalContent} ${isClosing ? styles.closing : ""} ${
           isDarkTheme ? styles.darkTheme : ""
@@ -130,7 +134,7 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
             <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
               {title}
             </h2>
-            {modalType !== "transport" && ( // Hide "Done" button for transport modal
+            {modalType !== "transport" && (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSaveAndClose}

@@ -170,7 +170,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3Ds ease;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -656,7 +656,7 @@
 .filterButton {
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 12px;
+  padding: 21px 12px;
   height: 32px;
   color: #6e6e73;
   background: rgba(245, 245, 247, 0.9);
@@ -684,29 +684,23 @@
 }
 
 .selectButton {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  height: 32px;
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
   border: none;
-  border-radius: 10px;
+  padding: 8px 6px; /* Adjusted padding to match editHeaderButton */
   cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
-}
-
-.selectButton.darkTheme {
-  color: #0a84ff;
-  background: rgba(10, 132, 255, 0.2);
+  transition: transform 0.1s ease, color 0.3s ease;
+  color: #007aff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 16px; /* Match editHeaderButton */
+  font-weight: 400; /* Match editHeaderButton */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent; /* Match editHeaderButton */
+  border-radius: 10px;
 }
 
 .selectButton:hover {
-  background: rgba(0, 122, 255, 0.2);
-}
-
-.selectButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.3);
+  transform: scale(1.05); /* Match editHeaderButton hover effect */
 }
 
 .cancelButton {
@@ -763,7 +757,7 @@
 
 .editHeaderButton {
   border: none;
-  padding: 8px 12px;
+  padding: 8px 6px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease;
   color: #007aff;

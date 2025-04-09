@@ -22,6 +22,7 @@ const SheetTemplate = ({
   onCardSave,
   onCardDelete,
   onOpenSheetsModal,
+  onOpenTransportModal,
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const scrollContainerRef = useRef(null);
@@ -40,7 +41,6 @@ const SheetTemplate = ({
   const [selectedHeaders, setSelectedHeaders] = useState([]);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
-  const [activeModal, setActiveModal] = useState(null); // Local state for modal control
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
   const isMobile = windowWidth <= 1024;
@@ -207,26 +207,13 @@ const SheetTemplate = ({
 
   const handleAddNewCards = useCallback(() => {
     const newId = `${Date.now()}`;
-    let newCard;
-    switch (activeSheetName) {
-      case "Leads":
-        newCard = { leadId: newId, name: "", phone: "", email: "", leadScore: "", nextActions: "", followUpDate: "" };
-        break;
-      case "Business Partners":
-        newCard = { businessId: newId, fullName: "", address: "", status: "" };
-        break;
-      case "Vendors":
-        newCard = { vendorId: newId, name: "", contact: "" };
-        break;
-      case "Tasks":
-        newCard = { taskId: newId, description: "", dueDate: "", priority: "" };
-        break;
-      default:
-        newCard = { [visibleHeaders[0]?.key]: newId };
-    }
+    const newCard = visibleHeaders.reduce((acc, header) => {
+      acc[header.key] = header.key === "id" ? newId : "";
+      return acc;
+    }, {});
     onCardSave(newCard);
     setSelectedRow(newCard);
-  }, [activeSheetName, visibleHeaders, onCardSave]);
+  }, [visibleHeaders, onCardSave]);
 
   const toggleFolder = useCallback((folderName) => {
     setOpenFolder((prev) => (prev === folderName ? null : folderName));
@@ -314,67 +301,42 @@ const SheetTemplate = ({
     }));
   }, [headers]);
 
-// Inside SheetTemplate component
-const handleSelectToggle = useCallback(() => {
-  setIsSelectMode((prev) => !prev);
-  setSelectedRowIds([]); // Reset selection when toggling mode
-}, []);
+  const handleSelectToggle = useCallback(() => {
+    setIsSelectMode((prev) => !prev);
+    if (isSelectMode) setSelectedRowIds([]); // Clear selection when exiting
+  }, [isSelectMode]);
 
-const handleRowSelect = useCallback((rowData) => {
-  if (isSelectMode) {
-    const rowId = rowData[visibleHeaders[0]?.key];
-    setSelectedRowIds((prev) =>
-      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
-    );
-  } else {
-    handleRowClick(rowData);
-  }
-}, [isSelectMode, visibleHeaders, handleRowClick]);
+  const handleRowSelect = useCallback((rowData) => {
+    if (isSelectMode) {
+      const rowId = rowData.id;
+      setSelectedRowIds((prev) =>
+        prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
+      );
+    } else {
+      handleRowClick(rowData);
+    }
+  }, [isSelectMode, handleRowClick]);
 
-const handleMoveOrCopy = useCallback((action) => {
-  setActiveModal({ type: "transport", data: { action, selectedRowIds } });
-}, [selectedRowIds]);
-
-// In the TableContent JSX
-<div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-  <RowComponent
-    rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
-    headerNames={visibleHeaders.map((h) => h.key)}
-    onClick={handleAddNewCards}
-    isSelected={false}
-  />
-  {finalRows.length > 0 ? (
-    finalRows.map((rowData, rowIndex) => (
-      <RowComponent
-        key={rowIndex}
-        rowData={rowData}
-        headerNames={visibleHeaders.map((h) => h.key)}
-        onClick={() => handleRowSelect(rowData)}
-        isSelected={selectedRowIds.includes(rowData[visibleHeaders[0]?.key])}
-      />
-    ))
-  ) : (
-    <div className={styles.noResults}>No results found</div>
-  )}
-</div>
-
-  const handleModalClose = useCallback(() => {
-    setActiveModal(null);
-  }, []);
+  const handleMoveOrCopy = useCallback((action) => {
+    onOpenTransportModal(action, selectedRowIds, () => {
+      setIsSelectMode(false); // Exit select mode
+      setSelectedRowIds([]);  // Clear selected rows
+    });
+  }, [selectedRowIds, onOpenTransportModal]);
 
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {!isSelectMode ? (
           <>
-            <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
-              <MdFilterAlt size={20} />
-            </button>
             <button
               className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               onClick={handleSelectToggle}
             >
               Select
+            </button>
+            <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
+              <MdFilterAlt size={20} />
             </button>
           </>
         ) : (
@@ -431,7 +393,7 @@ const handleMoveOrCopy = useCallback((action) => {
         </div>
         <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <RowComponent
-            rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
+            rowData={{ id: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={handleAddNewCards}
             isSelected={false}
@@ -443,7 +405,7 @@ const handleMoveOrCopy = useCallback((action) => {
                 rowData={rowData}
                 headerNames={visibleHeaders.map((h) => h.key)}
                 onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData[visibleHeaders[0]?.key])}
+                isSelected={selectedRowIds.includes(rowData.id)}
               />
             ))
           ) : (
@@ -595,7 +557,7 @@ const handleMoveOrCopy = useCallback((action) => {
         {isMobile && selectedRow && (
           <div className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}>
             <CardDetails
-              key={selectedRow[visibleHeaders[0]?.key] || Date.now()}
+              key={selectedRow.id || Date.now()}
               rowData={selectedRow}
               headers={visibleHeaders}
               onClose={handleCardClose}
@@ -609,7 +571,7 @@ const handleMoveOrCopy = useCallback((action) => {
         <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {selectedRow ? (
             <CardDetails
-              key={selectedRow[visibleHeaders[0]?.key] || Date.now()}
+              key={selectedRow.id || Date.now()}
               rowData={selectedRow}
               headers={visibleHeaders}
               onClose={handleCardClose}
