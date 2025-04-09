@@ -1,10 +1,9 @@
-// SheetsModal.jsx
 import { useContext, useState, useCallback, useRef, useEffect } from "react";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
 const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
-  const { setSheets } = useContext(MainContext);
+  const { setSheets, isDarkTheme } = useContext(MainContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     return sheets.structure.map(item => ({
       ...item,
@@ -16,7 +15,6 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const dragItemRef = useRef(null);
 
-  // Update tempData whenever orderedItems changes
   useEffect(() => {
     const newStructure = orderedItems.map(item => {
       if (item.folderName) {
@@ -105,11 +103,13 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   }, [sheets.structure]);
 
   return (
-    <div className={styles.sheetList}>
+    <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""}`}>
       {orderedItems.map((item, index) => (
         <div
-          key={item.displayName} // Unique key based on displayName
-          className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""}`}
+          key={item.displayName}
+          className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
+            isDarkTheme ? styles.darkTheme : ""
+          }`}
           onDragOver={(e) => handleDragOver(e, index)}
         >
           <div className={styles.sheetRow}>
@@ -117,7 +117,7 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
               {item.displayName}
             </span>
             <span
-              className={styles.dragIcon}
+              className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
               draggable
               onDragStart={(e) => handleDragStart(e, index)}
               onDragEnd={handleDragEnd}

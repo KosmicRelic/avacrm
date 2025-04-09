@@ -1,31 +1,61 @@
+.headersModal {
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.headersModal.darkTheme {
+  background: transparent; /* Dark mode: keep transparent to match modal */
+}
+
 .createHeader {
-  padding: 12px 16px; /* Matches .editActions */
+  padding: 19.5px 16px;
   margin-bottom: 20px;
-  border-radius: 12px; /* Matches .editActions */
-  background: rgba(255, 255, 255, 0.95);
-  transition: background 0.2s ease;
-  box-sizing: border-box; /* Consistent with inputs */
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  transition: background 0.2s ease; /* Added theme transition */
+  box-sizing: border-box;
+}
+
+.createHeader.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
 }
 
 .createHeader:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.05); /* Light mode */
+}
+
+.createHeader.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode */
 }
 
 .createHeader.activeItem {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+}
+
+.createHeader.darkTheme.activeItem {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
 }
 
 .headerList {
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.headerList.darkTheme {
+  background: rgba(28, 28, 30, 0.95); /* Dark mode */
 }
 
 .headerItem {
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background 0.2s ease;
+  padding: 19px 16px;
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  transition: background 0.2s ease, border-bottom 0.3s ease; /* Added theme transition */
+}
+
+.headerItem.darkTheme {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
 }
 
 .headerItem:last-child {
@@ -33,11 +63,20 @@
 }
 
 .headerItem:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.05); /* Light mode */
+}
+
+.headerItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode */
 }
 
 .activeItem {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.activeItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
 }
 
 .headerRow {
@@ -59,11 +98,24 @@
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
+  color: #1d1d1f; /* Light mode */
+  transition: color 0.3s ease; /* Added theme transition */
+}
+
+/* Specific fix for dark theme header names */
+.headerList.darkTheme .headerNameType span,
+.createHeader.darkTheme .headerNameType span {
+  color: #ffffff; /* Dark mode: white for header names */
 }
 
 .headerType {
-  color: #6e6e73;
+  color: #6e6e73; /* Light mode */
   font-size: 14px;
+  transition: color 0.3s ease; /* Added theme transition */
+}
+
+.headerType.darkTheme {
+  color: #8e8e93; /* Dark mode */
 }
 
 .editActions {
@@ -86,24 +138,40 @@
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
-  color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.03);
+  color: #1d1d1f; /* Light mode */
+  background: rgba(0, 0, 0, 0.03); /* Light mode */
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Added theme transition */
   -webkit-appearance: none;
   appearance: none;
+}
+
+.inputField.darkTheme,
+.selectField.darkTheme {
+  color: #ffffff; /* Dark mode */
+  background: rgba(58, 58, 60, 0.9); /* Dark mode */
 }
 
 .inputField:focus,
 .selectField:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.9); /* Light mode */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inputField.darkTheme:focus,
+.selectField.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.95); /* Dark mode */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .selectField {
   padding-right: 32px;
-  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Light mode */
+}
+
+.selectField.darkTheme {
+  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Dark mode */
 }
 
 .optionsSection {
@@ -119,18 +187,26 @@
 .addOptionButton {
   background: none;
   border: none;
-  color: #007aff;
+  color: #007aff; /* Light mode */
   width: 28px;
   height: 28px;
   border-radius: 50%;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+}
+
+.addOptionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
 }
 
 .addOptionButton:hover {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.1); /* Light mode */
+}
+
+.addOptionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode */
 }
 
 .optionsList {
@@ -144,60 +220,94 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(0, 0, 0, 0.02); /* Light mode */
   border-radius: 8px;
   margin-bottom: 4px;
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.optionItem.darkTheme {
+  background: rgba(58, 58, 60, 0.9); /* Dark mode */
 }
 
 .optionItem span {
-  color: #1d1d1f;
+  color: #1d1d1f; /* Light mode */
   font-size: 14px;
+  transition: color 0.3s ease; /* Added theme transition */
+}
+
+.optionItem.darkTheme span {
+  color: #ffffff; /* Dark mode */
 }
 
 .removeOptionButton {
   background: none;
   border: none;
-  color: #ff453a;
+  color: #ff453a; /* Light mode */
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   padding: 4px;
   border-radius: 12px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+}
+
+.removeOptionButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
 }
 
 .removeOptionButton:hover {
-  background: rgba(255, 69, 58, 0.1);
+  background: rgba(255, 69, 58, 0.1); /* Light mode */
+}
+
+.removeOptionButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode */
 }
 
 .deleteButton {
   background: none;
   border: none;
-  color: #ff453a;
+  color: #ff453a; /* Light mode */
   font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 12px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+}
+
+.deleteButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
 }
 
 .deleteButton:hover {
-  background: rgba(255, 69, 58, 0.1);
+  background: rgba(255, 69, 58, 0.1); /* Light mode */
+}
+
+.deleteButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode */
 }
 
 .actionButton {
   background: none;
   border: none;
-  color: #007aff;
+  color: #007aff; /* Light mode */
   font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 12px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+}
+
+.actionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
 }
 
 .actionButton:hover {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.1); /* Light mode */
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode */
 }

@@ -1,6 +1,26 @@
-body{
-    background-color: rgb(245, 245, 245);
+/* index.css */
+:root {
+    --background-color: rgb(245, 245, 245); /* Light theme default */
+    --text-color: rgb(29, 29, 31); /* Light theme text: dark gray */
+  }
+  
+  [data-theme="dark"] {
+    --background-color: rgb(28, 28, 30); /* Dark theme background */
+    --text-color: rgb(255, 255, 255); /* Dark theme text: white */
+  }
+  
+  body {
+    background-color: var(--background-color);
+    color: var(--text-color);
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-}
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+  }
+  
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }

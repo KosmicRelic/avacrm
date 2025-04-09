@@ -1,106 +1,135 @@
 .modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.2s ease-out;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* Light mode: semi-transparent gray */
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.modalOverlay.darkTheme {
+  background: rgba(0, 0, 0, 0.6); /* Dark mode: darker overlay for contrast */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: rgba(255, 255, 255, 0.95); /* Light mode: iOS white */
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition: background 0.3s ease, box-shadow 0.3s ease; /* Added theme transition */
+}
+
+.modalContent.darkTheme {
+  background: rgba(28, 28, 30, 0.95); /* Dark mode: iOS deep gray-black */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); /* Stronger shadow for depth */
+}
+
+.modalContent::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .modalOverlay {
+    align-items: flex-end;
   }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
+
   .modalContent {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    padding: 20px;
-    border-radius: 20px;
-    width: 100%;
-    max-width: 480px;
-    height: 70vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    max-width: 100%;
+    height: 80vh;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    animation: slideUp 0.3s ease-out forwards;
   }
-  
-  .modalContent::-webkit-scrollbar {
-    display: none;
+
+  .modalContent.closing {
+    animation: slideDown 0.3s ease-in forwards;
   }
-  
-  @media (max-width: 767px) {
-    .modalOverlay {
-      align-items: flex-end;
-    }
-  
-    .modalContent {
-      max-width: 100%;
-      height: 80vh;
-      border-radius: 20px 20px 0 0;
-      transform: translateY(100%);
-      animation: slideUp 0.3s ease-out forwards;
-    }
-  
-    .modalContent.closing {
-      animation: slideDown 0.3s ease-in forwards;
-    }
-  }
-  
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  
-  @keyframes slideDown {
-    from { transform: translateY(0); }
-    to { transform: translateY(100%); }
-  }
-  
-  .modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .modalTitle {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1d1d1f;
-    margin: 0;
-  }
-  
-  .doneButton {
-    background: none;
-    border: none;
-    color: #007aff;
-    font-size: 17px;
-    font-weight: 600;
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .doneButton:hover {
-    background: rgba(0, 122, 255, 0.1);
-    border-radius: 12px;
-  }
-  
-  .handleBar {
-    width: 40px;
-    height: 5px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 2.5px;
-    margin: 0 auto 10px;
-  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f; /* Light mode: dark text */
+  margin: 0;
+  transition: color 0.3s ease; /* Added theme transition */
+}
+
+.modalTitle.darkTheme {
+  color: #ffffff; /* Dark mode: white text */
+}
+
+.doneButton {
+  background: none;
+  border: none;
+  color: #007aff; /* Light mode: iOS blue */
+  font-size: 17px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease; /* Added theme transition */
+}
+
+.doneButton.darkTheme {
+  color: #0a84ff; /* Dark mode: vibrant iOS blue */
+}
+
+.doneButton:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+  border-radius: 12px;
+}
+
+.doneButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover: vibrant blue tint */
+}
+
+.handleBar {
+  width: 40px;
+  height: 5px;
+  background-color: rgba(0, 0, 0, 0.2); /* Light mode: subtle gray */
+  border-radius: 2.5px;
+  margin: 0 auto 10px;
+  transition: background 0.3s ease; /* Added theme transition */
+}
+
+.handleBar.darkTheme {
+  background-color: rgba(255, 255, 255, 0.3); /* Dark mode: subtle white */
+}

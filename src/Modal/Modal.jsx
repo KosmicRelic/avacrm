@@ -1,11 +1,10 @@
-// Modal.jsx
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Modal.module.css";
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 
 const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initialData, modalType }) => {
-  const { setSheets, setHeaders } = useContext(MainContext);
+  const { setSheets, setHeaders, isDarkTheme } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
   const [tempData, setTempData] = useState(initialData || {});
   const modalRef = useRef(null);
@@ -107,13 +106,25 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
   );
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={`${styles.modalContent} ${isClosing ? styles.closing : ""}`} ref={modalRef}>
-        {showHandleBar && window.innerWidth <= 767 && <div className={styles.handleBar} />}
+    <div className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      <div
+        className={`${styles.modalContent} ${isClosing ? styles.closing : ""} ${
+          isDarkTheme ? styles.darkTheme : ""
+        }`}
+        ref={modalRef}
+      >
+        {showHandleBar && window.innerWidth <= 767 && (
+          <div className={`${styles.handleBar} ${isDarkTheme ? styles.darkTheme : ""}`} />
+        )}
         {title && (
           <div className={styles.modalHeader}>
-            <h2 className={styles.modalTitle}>{title}</h2>
-            <button className={styles.doneButton} onClick={handleSaveAndClose}>
+            <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              {title}
+            </h2>
+            <button
+              className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={handleSaveAndClose}
+            >
               Done
             </button>
           </div>

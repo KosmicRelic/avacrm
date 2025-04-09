@@ -7,6 +7,12 @@
   box-sizing: border-box;
   overflow: hidden;
   gap: 16px;
+  background: rgb(242, 242, 242);
+  transition: background 0.3s ease; /* Already present */
+}
+
+.sheetWrapper.darkTheme {
+  background: rgb(28, 28, 30);
 }
 
 .tableContainer {
@@ -21,6 +27,12 @@
   overflow: hidden;
   margin-left: 16px;
   position: relative;
+  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.tableContainer.darkTheme {
+  background: rgb(44, 44, 46);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .tableContent {
@@ -29,6 +41,7 @@
   width: 100%;
   height: 100%;
   position: relative;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .cardDetailsContainer {
@@ -42,6 +55,12 @@
   box-sizing: border-box;
   margin-right: 16px;
   display: block;
+  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.cardDetailsContainer.darkTheme {
+  background: rgb(44, 44, 46);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .cardDetailsMobile {
@@ -56,6 +75,12 @@
   overflow-y: auto;
   box-sizing: border-box;
   z-index: 40;
+  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.cardDetailsMobile.darkTheme {
+  background: rgb(44, 44, 46);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .cardOpen {
@@ -76,6 +101,11 @@
   font-weight: 400;
   text-align: center;
   padding: 20px;
+  transition: color 0.3s ease; /* Already present */
+}
+
+.placeholder.darkTheme {
+  color: rgb(142, 142, 147);
 }
 
 @keyframes slideInCard {
@@ -119,6 +149,12 @@
   -ms-user-select: none;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
+  transition: background 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.sheetTabs.darkTheme {
+  background: rgba(28, 28, 30);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .sheetTabs::-webkit-scrollbar {
@@ -135,16 +171,26 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 6px;
   position: relative;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+}
+
+.tabButton.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.9);
+}
+
+.tabButton:hover {
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.tabButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
+  color: #0A84FF;
 }
 
 .tabButton.dragging {
@@ -157,11 +203,24 @@
 .activeTab {
   background: rgba(0, 122, 255, 0.15);
   color: #007aff;
+  font-weight: 600;
+  transition: background 0.3s ease, color 0.3s ease; /* Added for theme transition */
+}
+
+.activeTab.darkTheme {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0A84FF;
 }
 
 .activeFolder {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
+  transition: background 0.3s ease, color 0.3s ease; /* Added for theme transition */
+}
+
+.activeFolder.darkTheme {
+  background: rgba(10, 132, 255, 0.15);
+  color: #0A84FF;
 }
 
 .addTabButton {
@@ -173,64 +232,100 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+}
+
+.addTabButton.darkTheme {
+  color: #0A84FF;
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .addTabButton:hover {
   background: rgba(0, 122, 255, 0.2);
 }
 
+.addTabButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.3);
+}
+
 .orderButton {
-  background: none;
-  border: none;
-  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  height: 32px;
   color: #6e6e73;
-  font-size: 22px;
-  border-radius: 8px;
-  transition: background 0.2s ease;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(245, 245, 247, 0.9);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orderButton.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.9);
 }
 
 .orderButton:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.orderButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
+  color: #0A84FF;
 }
 
 .folderSheets {
   margin-left: 6px;
   font-size: 14px;
   color: #6e6e73;
+  transition: color 0.3s ease; /* Already present */
+}
+
+.folderSheets.darkTheme {
+  color: rgb(142, 142, 147);
 }
 
 .folderPath {
   font-size: 12px;
   color: #007aff;
   margin-left: 4px;
+  transition: color 0.3s ease; /* Already present */
+}
+
+.folderPath.darkTheme {
+  color: #0A84FF;
 }
 
 .inlineSheet {
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease; /* Already present for hover */
 }
 
 .inlineSheet:hover {
   color: #007aff;
 }
 
+.inlineSheet.darkTheme:hover {
+  color: #0A84FF;
+}
+
 .activeInlineSheet {
   color: #007aff;
   font-weight: 600;
+  transition: color 0.3s ease; /* Added for theme transition */
+}
+
+.activeInlineSheet.darkTheme {
+  color: #0A84FF;
 }
 
 .folderIcon {
   font-size: 16px;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .addModal {
@@ -247,6 +342,13 @@
   max-height: 450px;
   overflow-y: auto;
   border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.addModal.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .addTypeToggle {
@@ -256,6 +358,11 @@
   background: rgba(245, 245, 247, 0.9);
   padding: 4px;
   border-radius: 10px;
+  transition: background 0.3s ease; /* Already present */
+}
+
+.addTypeToggle.darkTheme {
+  background: rgba(58, 58, 60, 0.9);
 }
 
 .typeButton {
@@ -268,23 +375,38 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease; /* Already present */
+}
+
+.typeButton.darkTheme {
+  color: rgb(142, 142, 147);
 }
 
 .typeButton:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.typeButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
 }
 
 .activeType {
   background: rgba(255, 255, 255, 0.95);
   color: #007aff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; /* Added for theme transition */
+}
+
+.activeType.darkTheme {
+  background: rgba(72, 72, 74, 0.95);
+  color: #0A84FF;
 }
 
 .addForm {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .input {
@@ -295,7 +417,13 @@
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(255, 255, 255, 0.9);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease, border 0.3s ease; /* Already present */
+}
+
+.input.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .input:focus {
@@ -305,6 +433,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.input.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .selectionList {
   max-height: 250px;
   overflow-y: auto;
@@ -312,6 +446,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 4px 0;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .selectionItem {
@@ -322,22 +457,36 @@
   color: #1d1d1f;
   padding: 8px 12px;
   border-radius: 6px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.3s ease; /* Already present */
+}
+
+.selectionItem.darkTheme {
+  color: rgb(235, 235, 245);
 }
 
 .selectionItem:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.selectionItem.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
 }
 
 .selectionItem input {
   margin: 0;
   accent-color: #007aff;
+  transition: accent-color 0.3s ease; /* Already present */
+}
+
+.selectionItem.darkTheme input {
+  accent-color: #0A84FF;
 }
 
 .modalButtons {
   display: flex;
   gap: 8px;
   margin-top: 12px;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .modalButtons button {
@@ -350,15 +499,28 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+}
+
+.modalButtons button.darkTheme {
+  color: #0A84FF;
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .modalButtons button:hover {
   background: rgba(0, 122, 255, 0.2);
 }
 
+.modalButtons button.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.3);
+}
+
 .modalButtons button:active {
   background: rgba(0, 122, 255, 0.3);
+}
+
+.modalButtons button.darkTheme:active {
+  background: rgba(10, 132, 255, 0.4);
 }
 
 .controls {
@@ -372,11 +534,17 @@
   position: sticky;
   top: 0;
   z-index: 20;
+  transition: background 0.3s ease; /* Already present */
+}
+
+.controls.darkTheme {
+  background: rgba(28, 28, 30);
 }
 
 .searchContainer {
   position: relative;
   flex-grow: 1;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .searchBar {
@@ -388,14 +556,24 @@
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(245, 245, 247, 0.9);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Already present */
   box-sizing: border-box;
+}
+
+.searchBar.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.9);
 }
 
 .searchBar:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.searchBar.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .clearButton {
@@ -408,11 +586,19 @@
   padding: 0;
   cursor: pointer;
   color: #6e6e73;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease; /* Already present for hover */
+}
+
+.clearButton.darkTheme {
+  color: rgb(142, 142, 147);
 }
 
 .clearButton:hover {
   color: #007aff;
+}
+
+.clearButton.darkTheme:hover {
+  color: #0A84FF;
 }
 
 .tableWrapper {
@@ -420,6 +606,13 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 10;
+  /* No theme-specific changes, so no transition needed */
+  background: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+}
+
+.tableWrapper.darkTheme{
+  background: rgba(28, 28, 30, 0.95);
 }
 
 .header {
@@ -431,10 +624,17 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.08);
-  color: #000000;
+  color: #1d1d1f;
   position: sticky;
   top: 0;
   z-index: 15;
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; /* Already present */
+}
+
+.header.darkTheme {
+  background: rgba(28, 28, 30);
+  color: rgb(235, 235, 245);
+  box-shadow: 0 6px 6px -4px rgba(0, 0, 0, 0.2);
 }
 
 .headerCell {
@@ -447,33 +647,55 @@
   padding-bottom: 8px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  /* No theme-specific changes, so no transition needed */
 }
 
 .bodyContainer {
   width: max-content;
   min-width: 100%;
+  background-color: white;
+  transition: background 0.3s ease; /* Added for theme transition */
+}
+
+.bodyContainer.darkTheme {
+  background: rgba(28, 28, 30);
 }
 
 .filterButton {
-  background: rgba(245, 245, 247, 0.9);
-  border-radius: 10px;
-  border: none;
-  padding: 10px 12px;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  height: 32px;
   color: #6e6e73;
+  background: rgba(245, 245, 247, 0.9);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease; /* Already present */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filterButton.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.9);
 }
 
 .filterButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-  transform: scale(1.05);
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.filterButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
+  color: #0A84FF;
 }
 
 .editHeaderButton {
   border: none;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease; /* Already present */
   color: #007aff;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   font-size: 16px;
@@ -483,6 +705,10 @@
   justify-content: center;
   background: transparent;
   border-radius: 10px;
+}
+
+.editHeaderButton.darkTheme {
+  color: #0A84FF;
 }
 
 .editHeaderButton:hover {
@@ -496,6 +722,11 @@
   font-size: 17px;
   font-weight: 400;
   width: 100%;
+  transition: color 0.3s ease; /* Already present */
+}
+
+.noResults.darkTheme {
+  color: rgb(142, 142, 147);
 }
 
 .dropIndicator {
@@ -506,6 +737,11 @@
   height: 24px;
   background: #007aff;
   border-radius: 1px;
+  transition: background 0.3s ease; /* Already present */
+}
+
+.dropIndicator.darkTheme {
+  background: #0A84FF;
 }
 
 .dropIndicator.left {
@@ -521,26 +757,16 @@
 }
 
 @keyframes jiggle {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(2deg);
-  }
-  50% {
-    transform: rotate(0deg);
-  }
-  75% {
-    transform: rotate(-2deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(2deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
 }
 
 @media (max-width: 1024px) {
   .sheetWrapper {
-    height: calc(100vh - 179px);
+    height: calc(100vh - 176px);
     display: block;
     padding: 0;
     margin: 0;
@@ -566,8 +792,13 @@
 
   .activeTab {
     background: rgba(0, 122, 255, 0.2);
-    color: #005ecb;
+    color: #007aff;
     font-weight: 600;
+  }
+
+  .activeTab.darkTheme {
+    background: rgba(10, 132, 255, 0.25);
+    color: #0A84FF;
   }
 
   .cardDetailsMobile {

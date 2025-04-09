@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback, useContext } from "react";
 import styles from "./SheetTemplate.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardDetails from "./CardDetails/CardDetails";
@@ -6,6 +6,7 @@ import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
 import { MdFilterAlt } from "react-icons/md";
 import { CgArrowsExchangeAlt } from "react-icons/cg";
+import { MainContext } from "../Contexts/MainContext";
 
 const SheetTemplate = ({
   headers,
@@ -22,6 +23,7 @@ const SheetTemplate = ({
   onCardDelete,
   onOpenSheetsModal,
 }) => {
+  const { isDarkTheme } = useContext(MainContext);
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -311,8 +313,8 @@ const SheetTemplate = ({
 
   const TableContent = (
     <div className={styles.tableContent}>
-      <div className={styles.controls}>
-      <button className={styles.filterButton} onClick={onFilter}>
+      <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        <button className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onFilter}>
           <MdFilterAlt size={20} />
         </button>
         <div className={styles.searchContainer}>
@@ -321,7 +323,7 @@ const SheetTemplate = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search"
-            className={styles.searchBar}
+            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
           />
           {searchQuery && (
             <button className={styles.clearButton} onClick={clearSearch}>
@@ -333,15 +335,15 @@ const SheetTemplate = ({
           Edit
         </button>
       </div>
-      <div className={styles.tableWrapper} ref={scrollContainerRef}>
-        <div className={styles.header}>
+      <div className={`${styles.tableWrapper} ${isDarkTheme?styles.darkTheme:""}`} ref={scrollContainerRef}>
+        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {visibleHeaders.map((header) => (
             <div key={header.key} className={styles.headerCell}>
               {header.name}
             </div>
           ))}
         </div>
-        <div className={styles.bodyContainer}>
+        <div className={`${styles.bodyContainer} ${isDarkTheme?styles.darkTheme:""}`}>
           <RowComponent
             rowData={{ [visibleHeaders[0]?.key]: "Add New Card", isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
@@ -361,15 +363,17 @@ const SheetTemplate = ({
           )}
         </div>
       </div>
-      <div className={styles.sheetTabs} ref={sheetTabsRef}>
-      <button className={styles.orderButton} onClick={onOpenSheetsModal}>
+      <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
+        <button className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={onOpenSheetsModal}>
           <CgArrowsExchangeAlt />
         </button>
         {sheets.structure.map((item, index) => (
           item.folderName ? (
             <div key={item.folderName} className={styles.folderContainer}>
               <button
-                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""}`}
+                className={`${styles.tabButton} ${openFolder === item.folderName ? styles.activeFolder : ""} ${
+                  isDarkTheme ? styles.darkTheme : ""
+                }`}
                 data-folder-name={item.folderName}
                 onClick={() => toggleFolder(item.folderName)}
               >
@@ -407,7 +411,7 @@ const SheetTemplate = ({
                 <button
                   className={`${styles.tabButton} ${
                     item.sheetName === activeSheetName ? styles.activeTab : ""
-                  }`}
+                  } ${isDarkTheme ? styles.darkTheme : ""}`}
                   data-sheet-name={item.sheetName}
                   onClick={() => handleSheetClick(item.sheetName)}
                 >
@@ -417,13 +421,13 @@ const SheetTemplate = ({
             )
           )
         ))}
-        <button className={styles.addTabButton} onClick={handleAddModalOpen}>
+        <button className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={handleAddModalOpen}>
           +
         </button>
       </div>
       {isAddModalOpen && (
-        <div className={styles.addModal} ref={modalRef}>
-          <div className={styles.addTypeToggle}>
+        <div className={`${styles.addModal} ${isDarkTheme ? styles.darkTheme : ""}`} ref={modalRef}>
+          <div className={`${styles.addTypeToggle} ${isDarkTheme ? styles.darkTheme : ""}`}>
             <button
               className={`${styles.typeButton} ${addType === "sheet" ? styles.activeType : ""}`}
               onClick={() => handleAddTypeChange("sheet")}
@@ -444,7 +448,7 @@ const SheetTemplate = ({
                 value={newSheetName}
                 onChange={(e) => setNewSheetName(e.target.value)}
                 placeholder="Sheet Name"
-                className={styles.input}
+                className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
               />
               <div className={styles.selectionList}>
                 {availableHeaders.map((header) => (
@@ -471,7 +475,7 @@ const SheetTemplate = ({
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="Folder Name"
-                className={styles.input}
+                className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
               />
               <div className={styles.selectionList}>
                 {sheets.allSheets.map((sheet) => (
@@ -497,8 +501,8 @@ const SheetTemplate = ({
   );
 
   return (
-    <div className={styles.sheetWrapper}>
-      <div className={styles.tableContainer}>
+    <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {TableContent}
         {isMobile && selectedRow && (
           <div className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}>
@@ -514,7 +518,7 @@ const SheetTemplate = ({
         )}
       </div>
       {!isMobile && (
-        <div className={styles.cardDetailsContainer}>
+        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {selectedRow ? (
             <CardDetails
               key={selectedRow[visibleHeaders[0]?.key] || Date.now()}

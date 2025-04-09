@@ -11,7 +11,7 @@ const SheetModal = ({
   sheets = [],
   onPinToggle,
 }) => {
-  const { headers: allHeaders } = useContext(MainContext);
+  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || "");
   const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || []);
   const [rows] = useState(tempData.rows || []);
@@ -149,13 +149,13 @@ const SheetModal = ({
   }, []);
 
   return (
-    <div>
+    <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <input
         type="text"
         value={sheetName}
         onChange={handleSheetNameChange}
         placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
-        className={styles.sheetNameInput}
+        className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
       />
       <select
         onChange={(e) => {
@@ -163,7 +163,7 @@ const SheetModal = ({
           if (selectedKey) addHeader(selectedKey);
           e.target.value = "";
         }}
-        className={styles.addHeaderSelect}
+        className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
       >
         <option value="">Add Column</option>
         {allHeaders
@@ -177,11 +177,13 @@ const SheetModal = ({
             );
           })}
       </select>
-      <div className={styles.headerList}>
+      <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {resolvedHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""}`}
+            className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""} ${
+              isDarkTheme ? styles.darkTheme : ""
+            }`}
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
@@ -194,14 +196,16 @@ const SheetModal = ({
               <div className={styles.headerLeft}>
                 <button
                   onClick={() => togglePin(header.key)}
-                  className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""}`}
+                  className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""} ${
+                    isDarkTheme ? styles.darkTheme : ""
+                  }`}
                 >
                   <FaThumbtack />
                 </button>
                 {pinnedStates[header.key] && (
                   <button
                     onClick={() => removeHeader(header.key)}
-                    className={styles.removeTextButton}
+                    className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
                     Remove
                   </button>
@@ -209,21 +213,22 @@ const SheetModal = ({
                 <span className={styles.headerName}>{header.name}</span>
               </div>
               <div className={styles.actions}>
-              <button
+                <button
                   onClick={() => toggleHidden(index)}
-                  className={styles.actionButton}
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
                   {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                 </button>
                 <button
                   onClick={() => toggleVisible(index)}
-                  className={styles.actionButton}
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
                   {header.visible ? <FaEye /> : <FaEyeSlash />}
                 </button>
-
                 <div className={styles.buttonSpacer}></div>
-                <span className={styles.dragIcon}>☰</span>
+                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  ☰
+                </span>
               </div>
             </div>
           </div>

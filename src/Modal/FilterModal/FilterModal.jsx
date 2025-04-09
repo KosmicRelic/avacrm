@@ -1,10 +1,10 @@
 import { useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import styles from "./FilterModal.module.css";
-import { MainContext } from "../../Contexts/MainContext"; // Corrected import path
+import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const FilterModal = ({ headers, rows, tempData, setTempData }) => {
-  const { headers: allHeaders } = useContext(MainContext);
+  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const [filterValues, setFilterValues] = useState(tempData.filterValues || {});
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
@@ -29,7 +29,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
 
   const visibleHeaders = useMemo(() => headers.filter((header) => !header.hidden), [headers]);
 
-  // Sync filterValues with tempData whenever filterValues changes
   useEffect(() => {
     const cleanedFilters = Object.fromEntries(
       Object.entries(filterValues).map(([key, filter]) => {
@@ -177,19 +176,23 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
 
   return (
-    <div className={styles.filterList}>
+    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ""}`}>
       {visibleHeaders.map((header, index) => (
         <div
           key={header.key}
-          className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""}`}
+          className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""} ${
+            isDarkTheme ? styles.darkTheme : ""
+          }`}
           onClick={() => toggleFilter(index)}
         >
-          <div className={styles.filterRow}>
-            <div className={styles.filterNameType}>
+         <div className={styles.filterRow}>
+            <div className={`${styles.filterNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
               <span>{header.name}</span>
             </div>
             <div className={styles.primaryButtons}>
-              <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+              <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                {getFilterSummary(header)}
+              </span>
             </div>
           </div>
           {activeFilterIndex === index && (
@@ -206,17 +209,22 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       value={filterValues[header.key]?.start || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
                       placeholder="From"
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
-                    <span className={styles.separator}>–</span>
+                    <span className={`${styles.separator} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      –
+                    </span>
                     <input
                       type="number"
                       value={filterValues[header.key]?.end || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
                       placeholder="To"
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
-                    <button onClick={() => toggleNumberRangeMode(header.key)} className={styles.actionButton}>
+                    <button
+                      onClick={() => toggleNumberRangeMode(header.key)}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
                       Value
                     </button>
                   </>
@@ -225,7 +233,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                     <select
                       value={filterValues[header.key]?.order || "equals"}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
-                      className={styles.filterSelectNoChevron}
+                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ""}`}
                     >
                       <option value="equals">=</option>
                       <option value="greater">{">"}</option>
@@ -238,11 +246,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       value={filterValues[header.key]?.value || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
                       placeholder="Value"
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
                     <button
                       onClick={() => toggleNumberRangeMode(header.key)}
-                      className={styles.actionButton}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                       disabled={filterValues[header.key]?.order !== "equals"}
                     >
                       Range
@@ -257,17 +265,22 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       value={filterValues[header.key]?.start || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "start")}
                       placeholder="From"
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
-                    <span className={styles.separator}>–</span>
+                    <span className={`${styles.separator} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      –
+                    </span>
                     <input
                       type="date"
                       value={filterValues[header.key]?.end || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "end")}
                       placeholder="To"
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
-                    <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
+                    <button
+                      onClick={() => toggleDateRangeMode(header.key)}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
                       Date
                     </button>
                   </>
@@ -276,7 +289,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                     <select
                       value={filterValues[header.key]?.order || "on"}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "order")}
-                      className={styles.filterSelect}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
                     >
                       <option value="on">On</option>
                       <option value="before">Before</option>
@@ -286,9 +299,12 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       type="date"
                       value={filterValues[header.key]?.value || ""}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
-                      className={styles.filterInput}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                     />
-                    <button onClick={() => toggleDateRangeMode(header.key)} className={styles.actionButton}>
+                    <button
+                      onClick={() => toggleDateRangeMode(header.key)}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
                       Range
                     </button>
                   </>
@@ -298,7 +314,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   multiple
                   value={filterValues[header.key]?.values || []}
                   onChange={(e) => handleDropdownChange(header.key, e)}
-                  className={styles.filterMultiSelect}
+                  className={`${styles.filterMultiSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
                   {getDropdownOptions(header.key).map((option) => (
                     <option key={option} value={option}>
@@ -311,7 +327,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   <select
                     value={filterValues[header.key]?.condition || "equals"}
                     onChange={(e) => handleFilterChange(header.key, e.target.value, "condition")}
-                    className={styles.filterSelect}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
                     <option value="equals">Equals</option>
                     <option value="contains">Contains</option>
@@ -323,7 +339,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                     value={filterValues[header.key]?.value || ""}
                     onChange={(e) => handleFilterChange(header.key, e.target.value, "value")}
                     placeholder={`Edit ${header.name}`}
-                    className={styles.filterInput}
+                    className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                   />
                 </>
               )}
@@ -331,7 +347,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 <select
                   value={filterValues[header.key]?.sortOrder || ""}
                   onChange={(e) => handleFilterChange(header.key, e.target.value, "sortOrder")}
-                  className={styles.filterSelect}
+                  className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
                   <option value="">No Sort</option>
                   <option value="ascending">Low to High</option>
@@ -343,7 +359,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   e.stopPropagation();
                   clearFilter(header.key);
                 }}
-                className={styles.clearButton}
+                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               >
                 Clear
               </button>
@@ -351,8 +367,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
           )}
         </div>
       ))}
-      <div className={styles.modalActions}>
-        <button onClick={handleReset} className={styles.resetButton}>
+      <div className={`${styles.modalActions} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        <button
+          onClick={handleReset}
+          className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+        >
           Clear All
         </button>
       </div>

@@ -1,8 +1,13 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
 
 export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    // Initialize from localStorage, defaulting to true (dark theme) if not set
+    return localStorage.getItem("theme") === "dark" || true;
+  });
+
   const [sheets, setSheets] = useState({
     allSheets: [
       {
@@ -116,8 +121,26 @@ export const MainContextProvider = ({ children }) => {
     { priority: "PRIORITY", type: "dropdown", options: ["High", "Medium", "Low"] },
   ]);
 
+  const [cardTypes, setCardTypes] = useState([
+    {
+      name: "Lead Card",
+      sections: [
+        { name: "Primary Information", fields: [{ header: "name", value: "" }, { header: "email", value: "" }] },
+        { name: "Follow-Up", fields: [{ header: "nextActions", value: "" }, { header: "followUpDate", value: "" }] },
+      ],
+    },
+  ]);
+
+  // Sync theme with data-theme attribute and localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
+    localStorage.setItem("theme", isDarkTheme ? "dark" : "light");
+  }, [isDarkTheme]);
+
   return (
-    <MainContext.Provider value={{ sheets, setSheets, cards, setCards, headers, setHeaders }}>
+    <MainContext.Provider
+      value={{ sheets, setSheets, cards, setCards, headers, setHeaders, isDarkTheme, setIsDarkTheme, cardTypes, setCardTypes }}
+    >
       {children}
     </MainContext.Provider>
   );
