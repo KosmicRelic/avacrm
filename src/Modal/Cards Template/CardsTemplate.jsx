@@ -1,9 +1,10 @@
 import { useContext, useState, useCallback, useRef, useEffect } from "react";
+import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { FaPlus } from "react-icons/fa";
 
-const CardsTemplate = () => {
+const CardsTemplate = ({ tempData, setTempData }) => {
   const { headers, cardTemplates, setCardTemplates, isDarkTheme } = useContext(MainContext);
   const [view, setView] = useState("list"); // "list" or "editor"
   const [isAnimating, setIsAnimating] = useState(false);
@@ -20,16 +21,19 @@ const CardsTemplate = () => {
     type: h.type,
   }));
 
-  const handleOpenEditor = useCallback((template = null) => {
-    setSelectedTemplate(template);
-    setTemplateName(template ? template.name : "");
-    setSections(template ? convertKeysToSections(template.keys) : [{ name: "General", keys: [] }]);
-    setIsAnimating(true);
-    setTimeout(() => {
-      setView("editor");
-      setIsAnimating(false);
-    }, 300); // Match animation duration
-  }, []);
+  const handleOpenEditor = useCallback(
+    (template = null) => {
+      setSelectedTemplate(template);
+      setTemplateName(template ? template.name : "");
+      setSections(template ? convertKeysToSections(template.keys) : [{ name: "General", keys: [] }]);
+      setIsAnimating(true);
+      setTimeout(() => {
+        setView("editor");
+        setIsAnimating(false);
+      }, 300); // Match animation duration
+    },
+    []
+  );
 
   const handleCloseEditor = useCallback(() => {
     setIsAnimating(true);
@@ -62,9 +66,7 @@ const CardsTemplate = () => {
     setCardTemplates((prev) => {
       if (selectedTemplate) {
         return prev.map((t) =>
-          t.name === selectedTemplate.name
-            ? { ...t, name: templateName, keys: allKeys }
-            : t
+          t.name === selectedTemplate.name ? { ...t, name: templateName, keys: allKeys } : t
         );
       }
       // Ensure unique names for new templates
@@ -91,9 +93,7 @@ const CardsTemplate = () => {
         idx === sectionIndex
           ? {
               ...section,
-              keys: section.keys.includes(key)
-                ? section.keys.filter((k) => k !== key)
-                : [...section.keys, key],
+              keys: section.keys.includes(key) ? section.keys.filter((k) => k !== key) : [...section.keys, key],
             }
           : section
       )
@@ -119,23 +119,26 @@ const CardsTemplate = () => {
     e.dataTransfer.effectAllowed = "move";
   }, []);
 
-  const handleDragOver = useCallback((e, sectionIndex, headerIndex) => {
-    e.preventDefault();
-    if (
-      draggedIndex === null ||
-      (draggedIndex.sectionIndex === sectionIndex && draggedIndex.headerIndex === headerIndex)
-    )
-      return;
+  const handleDragOver = useCallback(
+    (e, sectionIndex, headerIndex) => {
+      e.preventDefault();
+      if (
+        draggedIndex === null ||
+        (draggedIndex.sectionIndex === sectionIndex && draggedIndex.headerIndex === headerIndex)
+      )
+        return;
 
-    setSections((prev) => {
-      const newSections = [...prev];
-      const section = newSections[draggedIndex.sectionIndex];
-      const [draggedItem] = section.keys.splice(draggedIndex.headerIndex, 1);
-      newSections[sectionIndex].keys.splice(headerIndex, 0, draggedItem);
-      setDraggedIndex({ sectionIndex, headerIndex });
-      return newSections;
-    });
-  }, [draggedIndex]);
+      setSections((prev) => {
+        const newSections = [...prev];
+        const section = newSections[draggedIndex.sectionIndex];
+        const [draggedItem] = section.keys.splice(draggedIndex.headerIndex, 1);
+        newSections[sectionIndex].keys.splice(headerIndex, 0, draggedItem);
+        setDraggedIndex({ sectionIndex, headerIndex });
+        return newSections;
+      });
+    },
+    [draggedIndex]
+  );
 
   const handleDragEnd = useCallback(() => {
     if (dragItemRef.current) {
@@ -282,6 +285,11 @@ const CardsTemplate = () => {
       </div>
     </div>
   );
+};
+
+CardsTemplate.propTypes = {
+  tempData: PropTypes.object, // Not used directly, but required for Modal compatibility
+  setTempData: PropTypes.func, // Not used directly, but required for Modal compatibility
 };
 
 export default CardsTemplate;

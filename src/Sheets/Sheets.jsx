@@ -1,4 +1,5 @@
 import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import PropTypes from "prop-types";
 import styles from "./Sheets.module.css";
 import RowComponent from "./Row Template/RowComponent";
 import CardsEditor from "./Cards Editor/CardsEditor";
@@ -211,15 +212,12 @@ const SheetTemplate = ({
     (updatedRow, isEditing) => {
       const rowId = updatedRow.id;
       const newCardData = { ...updatedRow, id: rowId };
-      console.log("handleEditorSave - updatedRow:", updatedRow, "isEditing:", isEditing, "rows:", rows);
   
       // Double-check the active sheet's rows directly from sheets
       const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
       const sheetRows = activeSheet ? activeSheet.rows : [];
-      console.log("Active sheet rows:", sheetRows);
   
       if (!isEditing) {
-        console.log("Creating new card with ID:", rowId);
         setSheets((prev) => ({
           ...prev,
           allSheets: prev.allSheets.map((sheet) =>
@@ -230,7 +228,6 @@ const SheetTemplate = ({
         }));
         setCards((prev) => [...prev, newCardData]);
       } else {
-        console.log("Updating card with ID:", rowId);
         setCards((prev) =>
           prev.map((card) => (card.id === rowId ? newCardData : card))
         );
@@ -239,7 +236,7 @@ const SheetTemplate = ({
       setSelectedRow(newCardData);
       setIsEditorOpen(false);
     },
-    [rows, setSheets, setCards, onCardSave, sheets.allSheets] // Added sheets.allSheets to dependencies
+    [rows, setSheets, setCards, onCardSave, sheets.allSheets]
   );
 
   const handleCardDelete = useCallback(
@@ -642,6 +639,38 @@ const SheetTemplate = ({
       )}
     </div>
   );
+};
+
+SheetTemplate.propTypes = {
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      type: PropTypes.string,
+      visible: PropTypes.bool,
+      hidden: PropTypes.bool,
+    })
+  ).isRequired,
+  rows: PropTypes.array.isRequired,
+  filters: PropTypes.object,
+  sheets: PropTypes.shape({
+    allSheets: PropTypes.array.isRequired,
+    structure: PropTypes.array.isRequired,
+  }).isRequired,
+  setSheets: PropTypes.func.isRequired,
+  activeSheetName: PropTypes.string,
+  onSheetChange: PropTypes.func.isRequired,
+  onEditSheet: PropTypes.func.isRequired,
+  onFilter: PropTypes.func.isRequired,
+  onRowClick: PropTypes.func.isRequired,
+  onCardSave: PropTypes.func.isRequired,
+  onCardDelete: PropTypes.func.isRequired,
+  onOpenSheetsModal: PropTypes.func.isRequired,
+  onOpenTransportModal: PropTypes.func.isRequired,
+};
+
+SheetTemplate.defaultProps = {
+  filters: {},
 };
 
 export default SheetTemplate;

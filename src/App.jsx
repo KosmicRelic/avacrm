@@ -1,4 +1,5 @@
 import { createContext, useState, useCallback, useMemo, useEffect, useContext } from "react";
+import PropTypes from "prop-types";
 import Sheets from "./Sheets/Sheets";
 import AppHeader from "./App Header/AppHeader";
 import FilterModal from "./Modal/FilterModal/FilterModal";
@@ -172,7 +173,7 @@ function App() {
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
             }}
-            setTempData={(newData) => {
+            setTemp  setTempData={(newData) => {
               if (isSheetModalEditMode) {
                 setSheets((prev) => ({
                   ...prev,
@@ -277,5 +278,9 @@ function App() {
     </div>
   );
 }
+
+App.propTypes = {
+  // No props are directly passed to App component in this case
+};
 
 export default App;

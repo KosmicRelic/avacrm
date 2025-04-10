@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 
 export const MainContext = createContext();
 
@@ -163,6 +164,10 @@ export const MainContextProvider = ({ children }) => {
       {children}
     </MainContext.Provider>
   );
+};
+
+MainContextProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default MainContextProvider;

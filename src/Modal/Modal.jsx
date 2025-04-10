@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import styles from "./Modal.module.css";
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
@@ -28,7 +29,7 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
                 ...sheet,
                 sheetName: tempData.sheetName,
                 headers: tempData.currentHeaders,
-                rows: tempData.rows || sheet.rows,
+                rows: tempData.rows ||  tempData.rows || sheet.rows,
                 pinnedHeaders: sheet.pinnedHeaders,
                 isActive: sheet.isActive,
               };
@@ -148,6 +149,20 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
       </div>
     </div>
   );
+};
+
+Modal.propTypes = {
+  children: PropTypes.node,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  showHandleBar: PropTypes.bool,
+  onSave: PropTypes.func,
+  initialData: PropTypes.object,
+  modalType: PropTypes.string.isRequired,
+};
+
+Modal.defaultProps = {
+  showHandleBar: true,
 };
 
 export default Modal;

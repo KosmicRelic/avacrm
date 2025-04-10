@@ -1,4 +1,5 @@
 import { useContext, useState, useCallback, useMemo } from "react";
+import PropTypes from "prop-types";
 import styles from "./CardsEditor.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
@@ -103,7 +104,6 @@ const CardsEditor = ({
       sheetName: selectedSheet,
       typeOfCards: template.name,
     };
-    console.log("Saving row:", newRow, "isEditing:", isEditing); // Debug log
     onSave(newRow, isEditing);
     onClose();
   }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData, isEditing, onClose]);
@@ -209,6 +209,18 @@ const CardsEditor = ({
       </div>
     </div>
   );
+};
+
+CardsEditor.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  initialRowData: PropTypes.object,
+  startInEditMode: PropTypes.bool,
+  preSelectedSheet: PropTypes.string,
+};
+
+CardsEditor.defaultProps = {
+  startInEditMode: false,
 };
 
 export default CardsEditor;

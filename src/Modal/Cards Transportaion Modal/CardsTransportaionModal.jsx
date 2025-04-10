@@ -1,4 +1,5 @@
 import { useContext, useCallback } from "react";
+import PropTypes from "prop-types";
 import styles from "./CardsTransportationModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
@@ -58,6 +59,16 @@ const CardsTransportationModal = ({ tempData, setTempData, onSave }) => {
       </div>
     </div>
   );
+};
+
+CardsTransportationModal.propTypes = {
+  tempData: PropTypes.shape({
+    action: PropTypes.oneOf(["move", "copy"]).isRequired,
+    selectedRowIds: PropTypes.arrayOf(PropTypes.string).isRequired,
+    onComplete: PropTypes.func,
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 export default CardsTransportationModal;

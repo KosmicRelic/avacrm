@@ -1,13 +1,14 @@
 import { useContext, useState, useCallback, useRef, useEffect } from "react";
+import PropTypes from "prop-types";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
 const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const { setSheets, isDarkTheme } = useContext(MainContext);
   const [orderedItems, setOrderedItems] = useState(() => {
-    return sheets.structure.map(item => ({
+    return sheets.structure.map((item) => ({
       ...item,
-      displayName: item.sheetName || item.folderName
+      displayName: item.sheetName || item.folderName,
     }));
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -16,7 +17,7 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const dragItemRef = useRef(null);
 
   useEffect(() => {
-    const newStructure = orderedItems.map(item => {
+    const newStructure = orderedItems.map((item) => {
       if (item.folderName) {
         return { folderName: item.folderName, sheets: item.sheets };
       }
@@ -24,7 +25,7 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
     });
     setTempData((prev) => ({
       ...prev,
-      newOrder: newStructure
+      newOrder: newStructure,
     }));
   }, [orderedItems, setTempData]);
 
@@ -35,18 +36,21 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
     dragItemRef.current.classList.add(styles.dragging);
   }, []);
 
-  const handleDragOver = useCallback((e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
+  const handleDragOver = useCallback(
+    (e, index) => {
+      e.preventDefault();
+      if (draggedIndex === null || draggedIndex === index) return;
 
-    setOrderedItems((prev) => {
-      const newItems = [...prev];
-      const [draggedItem] = newItems.splice(draggedIndex, 1);
-      newItems.splice(index, 0, draggedItem);
-      setDraggedIndex(index);
-      return newItems;
-    });
-  }, [draggedIndex]);
+      setOrderedItems((prev) => {
+        const newItems = [...prev];
+        const [draggedItem] = newItems.splice(draggedIndex, 1);
+        newItems.splice(index, 0, draggedItem);
+        setDraggedIndex(index);
+        return newItems;
+      });
+    },
+    [draggedIndex]
+  );
 
   const handleDragEnd = useCallback(() => {
     if (dragItemRef.current) {
@@ -66,25 +70,28 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
     }
   }, []);
 
-  const handleTouchMove = useCallback((e) => {
-    if (draggedIndex === null || touchStartY === null) return;
-    e.preventDefault();
+  const handleTouchMove = useCallback(
+    (e) => {
+      if (draggedIndex === null || touchStartY === null) return;
+      e.preventDefault();
 
-    const touchY = e.touches[0].clientY;
-    const itemHeight = 48;
-    const delta = Math.round((touchY - touchStartY) / itemHeight);
+      const touchY = e.touches[0].clientY;
+      const itemHeight = 48;
+      const delta = Math.round((touchY - touchStartY) / itemHeight);
 
-    const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
-    if (newIndex !== draggedIndex) {
-      setOrderedItems((prev) => {
-        const newItems = [...prev];
-        const [draggedItem] = newItems.splice(draggedIndex, 1);
-        newItems.splice(newIndex, 0, draggedItem);
-        setDraggedIndex(newIndex);
-        return newItems;
-      });
-    }
-  }, [draggedIndex, touchStartY, touchTargetIndex, orderedItems.length]);
+      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
+      if (newIndex !== draggedIndex) {
+        setOrderedItems((prev) => {
+          const newItems = [...prev];
+          const [draggedItem] = newItems.splice(draggedIndex, 1);
+          newItems.splice(newIndex, 0, draggedItem);
+          setDraggedIndex(newIndex);
+          return newItems;
+        });
+      }
+    },
+    [draggedIndex, touchStartY, touchTargetIndex, orderedItems.length]
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (dragItemRef.current) {
@@ -96,10 +103,12 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   }, []);
 
   useEffect(() => {
-    setOrderedItems(sheets.structure.map(item => ({
-      ...item,
-      displayName: item.sheetName || item.folderName
-    })));
+    setOrderedItems(
+      sheets.structure.map((item) => ({
+        ...item,
+        displayName: item.sheetName || item.folderName,
+      }))
+    );
   }, [sheets.structure]);
 
   return (
@@ -113,9 +122,7 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
           onDragOver={(e) => handleDragOver(e, index)}
         >
           <div className={styles.sheetRow}>
-            <span className={styles.sheetName}>
-              {item.displayName}
-            </span>
+            <span className={styles.sheetName}>{item.displayName}</span>
             <span
               className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
               draggable
@@ -132,6 +139,25 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
       ))}
     </div>
   );
+};
+
+SheetsModal.propTypes = {
+  sheets: PropTypes.shape({
+    structure: PropTypes.arrayOf(
+      PropTypes.oneOfType([
+        PropTypes.shape({ sheetName: PropTypes.string.isRequired }),
+        PropTypes.shape({
+          folderName: PropTypes.string.isRequired,
+          sheets: PropTypes.arrayOf(PropTypes.string).isRequired,
+        }),
+      ])
+    ).isRequired,
+  }).isRequired,
+  onSaveOrder: PropTypes.func.isRequired,
+  tempData: PropTypes.shape({
+    newOrder: PropTypes.array,
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
 };
 
 export default SheetsModal;

@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import PropTypes from "prop-types";
 import styles from "./RowComponent.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
@@ -34,6 +35,21 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow }) =
       ))}
     </div>
   );
+};
+
+RowComponent.propTypes = {
+  rowData: PropTypes.shape({
+    isAddNew: PropTypes.bool,
+    id: PropTypes.string,
+  }).isRequired,
+  headerNames: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onClick: PropTypes.func,
+  isSelected: PropTypes.bool,
+  onAddRow: PropTypes.func,
+};
+
+RowComponent.defaultProps = {
+  isSelected: false,
 };
 
 export default RowComponent;

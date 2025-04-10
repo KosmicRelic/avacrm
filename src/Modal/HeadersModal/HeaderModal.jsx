@@ -1,4 +1,5 @@
 import { useContext, useState, useCallback, useRef, useEffect } from "react";
+import PropTypes from "prop-types";
 import styles from "./HeadersModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
@@ -105,18 +106,21 @@ const HeadersModal = ({ tempData, setTempData }) => {
     [activeIndex, addHeader]
   );
 
-  const toggleEdit = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
-    if (index !== -1 && index !== null) {
-      const header = currentHeaders[index];
-      setNewHeaderKey(header.key);
-      setNewHeaderName(header.name);
-      setNewHeaderType(header.type || "text");
-      setNewHeaderOptions(header.options || []);
-    } else if (index === -1) {
-      resetForm();
-    }
-  }, [currentHeaders, resetForm]);
+  const toggleEdit = useCallback(
+    (index) => {
+      setActiveIndex((prev) => (prev === index ? null : index));
+      if (index !== -1 && index !== null) {
+        const header = currentHeaders[index];
+        setNewHeaderKey(header.key);
+        setNewHeaderName(header.name);
+        setNewHeaderType(header.type || "text");
+        setNewHeaderOptions(header.options || []);
+      } else if (index === -1) {
+        resetForm();
+      }
+    },
+    [currentHeaders, resetForm]
+  );
 
   const deleteHeader = useCallback(
     (index) => {
@@ -194,7 +198,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
                     placeholder="Add item"
                     className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
                   />
-                  <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <button
+                    onClick={addOption}
+                    className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
                     +
                   </button>
                 </div>
@@ -202,7 +209,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
                   {newHeaderOptions.map((option) => (
                     <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
                       <span>{option}</span>
-                      <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <button
+                        onClick={() => removeOption(option)}
+                        className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
                         ✕
                       </button>
                     </div>
@@ -238,10 +248,16 @@ const HeadersModal = ({ tempData, setTempData }) => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className={styles.editActionsButtons}>
-                  <button onClick={() => deleteHeader(index)} className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <button
+                    onClick={() => deleteHeader(index)}
+                    className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
                     Remove
                   </button>
-                  <button onClick={() => updateHeader(index)} className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <button
+                    onClick={() => updateHeader(index)}
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
                     Update
                   </button>
                 </div>
@@ -282,7 +298,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
                         placeholder="Add item"
                         className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
                       />
-                      <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <button
+                        onClick={addOption}
+                        className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
                         +
                       </button>
                     </div>
@@ -290,7 +309,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
                       {newHeaderOptions.map((option) => (
                         <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <span>{option}</span>
-                          <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <button
+                            onClick={() => removeOption(option)}
+                            className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
                             ✕
                           </button>
                         </div>
@@ -305,6 +327,20 @@ const HeadersModal = ({ tempData, setTempData }) => {
       </div>
     </div>
   );
+};
+
+HeadersModal.propTypes = {
+  tempData: PropTypes.shape({
+    currentHeaders: PropTypes.arrayOf(
+      PropTypes.shape({
+        key: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        type: PropTypes.string.isRequired,
+        options: PropTypes.arrayOf(PropTypes.string),
+      })
+    ),
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
 };
 
 export default HeadersModal;
