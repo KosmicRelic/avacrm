@@ -14,46 +14,52 @@ const SheetModal = ({
 }) => {
   const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || "");
-  const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || []);
+  const [currentHeaders, setCurrentHeaders] = useState(() => {
+    const uniqueHeaders = [];
+    const seenKeys = new Set();
+    (tempData.currentHeaders || []).forEach((header) => {
+      if (!seenKeys.has(header.key)) {
+        seenKeys.add(header.key);
+        uniqueHeaders.push(header);
+      } else {
+        console.warn(`Duplicate key "${header.key}" removed from initial currentHeaders`);
+      }
+    });
+    return uniqueHeaders;
+  });
   const [rows] = useState(tempData.rows || []);
   const [pinnedStates, setPinnedStates] = useState({});
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
-  const headerRefs = useRef(new Map()); // Track DOM elements by index
+  const headerRefs = useRef(new Map());
 
   useEffect(() => {
+    console.log("currentHeaders:", currentHeaders);
+    console.log("allHeaders:", allHeaders);
     setTempData((prev) => ({
       ...prev,
       sheetName,
       currentHeaders,
       rows,
     }));
-  }, [sheetName, currentHeaders, rows, setTempData]);
+  }, [sheetName, currentHeaders, rows, setTempData, allHeaders]);
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
-      const globalHeader = allHeaders.find((h) => h.key === header.key);
+      const globalHeader = allHeaders.find((h) => h.key === header.key); // Match by key directly
       return {
         ...header,
-        name: header.name || (globalHeader ? globalHeader.name : formatHeaderName(header.key)),
-        type: globalHeader ? globalHeader.type : header.type || "text",
+        name: header.name || (globalHeader ? globalHeader.name : header.key), // Prioritize header.name
+        type: header.type || (globalHeader ? globalHeader.type : "text"),
       };
     }), [currentHeaders, allHeaders]);
-
-  const availableHeaders = useMemo(() =>
-    allHeaders.filter((h) => !currentHeaders.some((ch) => ch.key === h.key)),
-    [allHeaders, currentHeaders]
-  );
-
-  const formatHeaderName = (key) => {
-    return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
-  };
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
-    e.target.classList.add(styles.dragging);
+    const element = headerRefs.current.get(index);
+    if (element) element.classList.add(styles.dragging);
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
@@ -151,13 +157,17 @@ const SheetModal = ({
   }, []);
 
   const addHeader = useCallback((headerKey) => {
-    if (!currentHeaders.some((h) => h.key === headerKey)) {
-      setCurrentHeaders((prev) => [
+    setCurrentHeaders((prev) => {
+      if (prev.some((h) => h.key === headerKey)) {
+        console.warn(`Duplicate header key "${headerKey}" ignored`);
+        return prev;
+      }
+      return [
         ...prev,
         { key: headerKey, visible: true, hidden: false },
-      ]);
-    }
-  }, [currentHeaders]);
+      ];
+    });
+  }, []);
 
   const handleSheetNameChange = useCallback((e) => {
     setSheetName(e.target.value);
@@ -181,17 +191,19 @@ const SheetModal = ({
         className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
       >
         <option value="">Add Column</option>
-        {availableHeaders.map((header) => (
-          <option key={header.key} value={header.key}>
-            {header.name} ({header.type})
-          </option>
-        ))}
+        {allHeaders
+          .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
+          .map((header, index) => (
+            <option key={`${header.key}-${index}`} value={header.key}>
+              {header.name} ({header.type})
+            </option>
+          ))}
       </select>
       <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {resolvedHeaders.map((header, index) => (
           <div
-            ref={(el) => headerRefs.current.set(index, el)} // Store ref for each header
-            key={`${header.key}-${index}`}
+            ref={(el) => headerRefs.current.set(index, el)}
+            key={header.key}
             className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""} ${
               isDarkTheme ? styles.darkTheme : ""
             }`}
