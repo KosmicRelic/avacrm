@@ -12,7 +12,7 @@ import Modal from "./Modal/Modal";
 import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
 import CardsTransportationModal from "./Modal/Cards Transportaion Modal/CardsTransportaionModal";
-import CardsTemplate from "./Modal/Cards Template/CardsTemplate"; // Adjusted path as per your import
+import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
 
 function App() {
   const { sheets, setSheets, cards, setCards, headers, setHeaders } = useContext(MainContext);
@@ -21,7 +21,7 @@ function App() {
   const headersModal = useModal();
   const sheetsModal = useModal();
   const transportModal = useModal();
-  const cardsTemplateModal = useModal(); // New modal hook for CardsTemplate
+  const cardsTemplateModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [filters, setFilters] = useState({});
   const [activeOption, setActiveOption] = useState("sheets");
@@ -34,9 +34,9 @@ function App() {
 
   const resolvedHeaders = useMemo(() => {
     return activeSheet?.headers.map((sheetHeader) => {
-      const header = headers.find((h) => Object.keys(h)[0] === sheetHeader.key);
+      const header = headers.find((h) => h.key === sheetHeader.key);
       return header
-        ? { key: sheetHeader.key, name: header[sheetHeader.key], type: header.type, visible: sheetHeader.visible, hidden: sheetHeader.hidden }
+        ? { key: sheetHeader.key, name: header.name, type: header.type, visible: sheetHeader.visible, hidden: sheetHeader.hidden }
         : { key: sheetHeader.key, name: sheetHeader.key, type: "text", visible: sheetHeader.visible, hidden: sheetHeader.hidden };
     }) || [];
   }, [activeSheet, headers]);
@@ -189,7 +189,7 @@ function App() {
           />
         );
       case "filter":
-        return <FilterModal headers={resolvedHeaders} rows={resolvedRows} />;
+        return <FilterModal headers={resolvedHeaders} rows={resolvedRows} onApply={setFilters} filters={filters} />;
       case "headers":
         return <HeadersModal />;
       case "sheets":
@@ -203,7 +203,7 @@ function App() {
           />
         );
       case "cardsTemplate":
-        return <CardsTemplate />; // Render CardsTemplate inside the modal
+        return <CardsTemplate />;
       default:
         return null;
     }
@@ -238,7 +238,6 @@ function App() {
             onOpenTransportModal={onOpenTransportModal}
           />
         )}
-        {/* Removed direct CardsTemplate rendering */}
         {activeModal && (
           <Modal
             title={
@@ -272,7 +271,7 @@ function App() {
           onClose={handleCloseProfileModal}
           onOpenHeadersModal={onManageHeaders}
           setActiveOption={setActiveOption}
-          onOpenCardsTemplateModal={onOpenCardsTemplateModal} // Pass new prop
+          onOpenCardsTemplateModal={onOpenCardsTemplateModal}
         />
       </div>
     </div>

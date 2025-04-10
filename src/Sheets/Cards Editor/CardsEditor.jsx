@@ -9,18 +9,18 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, headers, isDarkTheme } = useContext(MainContext); // Added headers
+  const { sheets, cardTemplates, headers, isDarkTheme } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? "editor" : "selection");
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || "");
 
-  // Initialize selectedCardType based on initialRowData.typeOfCards
+  // Ensure initialTemplate matches the name from cardTemplates
   const initialTemplate = initialRowData?.typeOfCards
-    ? cardTemplates.find((t) => t.typeOfCards === initialRowData.typeOfCards)
+    ? cardTemplates.find((t) => t.name === initialRowData.typeOfCards)
     : null;
   const [selectedCardType, setSelectedCardType] = useState(initialTemplate?.name || "");
-  const [formData, setFormData] = useState(initialRowData || {});
-  const [isEditing, setIsEditing] = useState(!!initialRowData);
+  const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
+  const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.id); // Require id for editing
 
   const sheetOptions = useMemo(() => {
     return sheets.allSheets.map((sheet) => sheet.sheetName);
@@ -31,18 +31,12 @@ const CardsEditor = ({
   }, [cardTemplates]);
 
   const selectedFields = useMemo(() => {
-    // Use initialRowData.typeOfCards directly if editing, fallback to selectedCardType
-    let template;
-    if (isEditing && initialRowData?.typeOfCards) {
-      template = cardTemplates.find((t) => t.typeOfCards === initialRowData.typeOfCards);
-    } else {
-      template = cardTemplates.find((t) => t.name === selectedCardType);
-    }
+    const template = cardTemplates.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
     if (!template || !template.keys) return [];
     return template.keys
       .filter((key) => key !== "id" && key !== "typeOfCards")
       .map((key) => {
-        const header = headers.find((h) => h.key === key); // Now headers is defined
+        const header = headers.find((h) => h.key === key);
         return {
           key,
           name: header?.name || key.charAt(0).toUpperCase() + key.slice(1),
@@ -63,12 +57,13 @@ const CardsEditor = ({
     const template = cardTemplates.find((t) => t.name === selectedCardType);
     setFormData((prev) => ({
       ...prev,
-      typeOfCards: template.typeOfCards,
+      sheetName: selectedSheet,
+      typeOfCards: template.name,
     }));
     setIsAnimating(true);
     setTimeout(() => {
       setView("editor");
-      if (!isEditing) setFormData({ typeOfCards: template.typeOfCards });
+      if (!isEditing) setFormData({ sheetName: selectedSheet, typeOfCards: template.name });
       setIsAnimating(false);
     }, 300);
   }, [selectedSheet, selectedCardType, isEditing, cardTemplates]);
@@ -82,6 +77,7 @@ const CardsEditor = ({
         setView("selection");
         setSelectedSheet(preSelectedSheet || "");
         setSelectedCardType("");
+        setFormData({});
         setIsAnimating(false);
       }
     }, 300);
@@ -96,18 +92,21 @@ const CardsEditor = ({
       alert("No sheet selected.");
       return;
     }
-    const template = cardTemplates.find((t) => t.name === selectedCardType || t.typeOfCards === initialRowData?.typeOfCards);
+    const template = cardTemplates.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
     if (!template) {
       alert("Invalid card type selected.");
       return;
     }
     const newRow = {
       ...formData,
+      id: isEditing && initialRowData?.id ? initialRowData.id : Date.now().toString(), // Ensure id persists
       sheetName: selectedSheet,
-      typeOfCards: template.typeOfCards,
+      typeOfCards: template.name,
     };
-    onSave(newRow);
-  }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData]);
+    console.log("Saving row:", newRow, "isEditing:", isEditing); // Debug log
+    onSave(newRow, isEditing);
+    onClose();
+  }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData, isEditing, onClose]);
 
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>

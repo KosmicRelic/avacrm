@@ -13,9 +13,10 @@ const CardsTemplate = () => {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const dragItemRef = useRef(null);
 
+  // Correctly map headers to { key, name, type }
   const availableHeaders = headers.map((h) => ({
-    key: Object.keys(h)[0],
-    name: Object.values(h)[0],
+    key: h.key,
+    name: h.name,
     type: h.type,
   }));
 
@@ -42,7 +43,9 @@ const CardsTemplate = () => {
   }, []);
 
   const convertKeysToSections = (keys) => {
-    return [{ name: "General", keys: keys || [] }];
+    // Ensure keys are strings and filter out invalid ones
+    const validKeys = (keys || []).filter((key) => availableHeaders.some((h) => h.key === key));
+    return [{ name: "General", keys: validKeys }];
   };
 
   const handleSaveTemplate = useCallback(() => {
@@ -64,7 +67,12 @@ const CardsTemplate = () => {
             : t
         );
       }
-      return [...prev, { name: templateName, keys: allKeys }];
+      // Ensure unique names for new templates
+      const existingNames = prev.map((t) => t.name);
+      const uniqueName = existingNames.includes(templateName)
+        ? `${templateName} (${Date.now()})`
+        : templateName;
+      return [...prev, { name: uniqueName, keys: allKeys }];
     });
     handleCloseEditor();
   }, [templateName, sections, selectedTemplate, setCardTemplates, handleCloseEditor]);
@@ -121,9 +129,9 @@ const CardsTemplate = () => {
 
     setSections((prev) => {
       const newSections = [...prev];
-      const section = newSections[sectionIndex];
+      const section = newSections[draggedIndex.sectionIndex];
       const [draggedItem] = section.keys.splice(draggedIndex.headerIndex, 1);
-      section.keys.splice(headerIndex, 0, draggedItem);
+      newSections[sectionIndex].keys.splice(headerIndex, 0, draggedItem);
       setDraggedIndex({ sectionIndex, headerIndex });
       return newSections;
     });
@@ -188,10 +196,14 @@ const CardsTemplate = () => {
                   />
                   <div className={styles.keyList}>
                     {section.keys.map((key, headerIndex) => {
-                      const header = availableHeaders.find((h) => h.key === key);
+                      const header = availableHeaders.find((h) => h.key === key) || {
+                        key,
+                        name: key,
+                        type: "text",
+                      }; // Fallback for missing headers
                       return (
                         <div
-                          key={header.key}
+                          key={`selected-${header.key}-${sectionIndex}-${headerIndex}`} // Unique key
                           className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""} ${
                             draggedIndex?.sectionIndex === sectionIndex &&
                             draggedIndex?.headerIndex === headerIndex
@@ -207,7 +219,7 @@ const CardsTemplate = () => {
                           <label className={styles.headerLabel}>
                             <input
                               type="checkbox"
-                              checked={section.keys.includes(header.key)}
+                              checked={true} // Always checked since it's in keys
                               onChange={() => toggleKeySelection(sectionIndex, header.key)}
                             />
                             {header.name} ({header.type})
@@ -219,14 +231,14 @@ const CardsTemplate = () => {
                       .filter((header) => !section.keys.includes(header.key))
                       .map((header) => (
                         <div
-                          key={header.key}
+                          key={`available-${header.key}-${sectionIndex}`} // Unique key
                           className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
                         >
                           <span className={styles.dragIcon}>☰</span>
                           <label className={styles.headerLabel}>
                             <input
                               type="checkbox"
-                              checked={section.keys.includes(header.key)}
+                              checked={false} // Not checked since it's available
                               onChange={() => toggleKeySelection(sectionIndex, header.key)}
                             />
                             {header.name} ({header.type})

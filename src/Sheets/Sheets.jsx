@@ -24,7 +24,7 @@ const SheetTemplate = ({
   onOpenSheetsModal,
   onOpenTransportModal,
 }) => {
-  const { isDarkTheme, setCards, cards } = useContext(MainContext); // Add cards for lookup
+  const { isDarkTheme, setCards, cards } = useContext(MainContext);
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -208,31 +208,38 @@ const SheetTemplate = ({
   }, []);
 
   const handleEditorSave = useCallback(
-    (updatedRow) => {
-      const isNewRow = !rows.some((r) => r === updatedRow.id);
-      const newId = updatedRow.id || `${Date.now()}`;
-      const newCardData = { ...updatedRow, id: newId };
-
-      if (isNewRow) {
+    (updatedRow, isEditing) => {
+      const rowId = updatedRow.id;
+      const newCardData = { ...updatedRow, id: rowId };
+      console.log("handleEditorSave - updatedRow:", updatedRow, "isEditing:", isEditing, "rows:", rows);
+  
+      // Double-check the active sheet's rows directly from sheets
+      const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
+      const sheetRows = activeSheet ? activeSheet.rows : [];
+      console.log("Active sheet rows:", sheetRows);
+  
+      if (!isEditing) {
+        console.log("Creating new card with ID:", rowId);
         setSheets((prev) => ({
           ...prev,
           allSheets: prev.allSheets.map((sheet) =>
             sheet.sheetName === updatedRow.sheetName
-              ? { ...sheet, rows: [...sheet.rows, newId] }
+              ? { ...sheet, rows: [...sheet.rows, rowId] }
               : sheet
           ),
         }));
         setCards((prev) => [...prev, newCardData]);
       } else {
-        onCardSave(newCardData);
+        console.log("Updating card with ID:", rowId);
         setCards((prev) =>
-          prev.map((card) => (card.id === newId ? newCardData : card))
+          prev.map((card) => (card.id === rowId ? newCardData : card))
         );
+        onCardSave(newCardData); // Notify parent of update
       }
       setSelectedRow(newCardData);
       setIsEditorOpen(false);
     },
-    [rows, setSheets, setCards, onCardSave]
+    [rows, setSheets, setCards, onCardSave, sheets.allSheets] // Added sheets.allSheets to dependencies
   );
 
   const handleCardDelete = useCallback(

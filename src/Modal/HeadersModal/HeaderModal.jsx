@@ -4,7 +4,7 @@ import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const HeadersModal = ({ tempData, setTempData }) => {
-  const { headers, isDarkTheme } = useContext(MainContext);
+  const { headers, setHeaders, isDarkTheme } = useContext(MainContext);
   const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || headers);
   const [newHeaderKey, setNewHeaderKey] = useState("");
   const [newHeaderName, setNewHeaderName] = useState("");
@@ -13,10 +13,6 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const editActionsRef = useRef(null);
-
-  useEffect(() => {
-    setCurrentHeaders(tempData.currentHeaders || headers);
-  }, [tempData.currentHeaders, headers]);
 
   useEffect(() => {
     setTempData((prev) => ({ ...prev, currentHeaders }));
@@ -39,10 +35,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
       }
 
       const keyConflict = existingHeaders.some(
-        (h, i) => Object.keys(h)[0].toLowerCase() === loweredKey && (!isUpdate || i !== index)
+        (h, i) => h.key.toLowerCase() === loweredKey && (!isUpdate || i !== index)
       );
       const nameConflict = existingHeaders.some(
-        (h, i) => Object.values(h)[0].toLowerCase() === loweredName && (!isUpdate || i !== index)
+        (h, i) => h.name.toLowerCase() === loweredName && (!isUpdate || i !== index)
       );
 
       if (keyConflict || nameConflict) {
@@ -60,18 +56,20 @@ const HeadersModal = ({ tempData, setTempData }) => {
     const trimmedKey = newHeaderKey.trim().replace(/\s+/g, "");
     const trimmedName = newHeaderName.trim();
     const newHeader = {
-      [trimmedKey]: trimmedName,
+      key: trimmedKey,
+      name: trimmedName,
       type: newHeaderType,
       ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
     };
     setCurrentHeaders((prev) => [...prev, newHeader]);
+    setHeaders((prev) => [...prev, newHeader]); // Update MainContext
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
     setNewHeaderOptions([]);
     setNewOption("");
     setActiveIndex(null);
-  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]);
+  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader, setHeaders]);
 
   const updateHeader = useCallback(
     (index) => {
@@ -80,14 +78,16 @@ const HeadersModal = ({ tempData, setTempData }) => {
       const trimmedKey = newHeaderKey.trim().replace(/\s+/g, "");
       const trimmedName = newHeaderName.trim();
       const updatedHeader = {
-        [trimmedKey]: trimmedName,
+        key: trimmedKey,
+        name: trimmedName,
         type: newHeaderType,
         ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
       };
       setCurrentHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
+      setHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h))); // Update MainContext
       setActiveIndex(null);
     },
-    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]
+    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader, setHeaders]
   );
 
   const resetForm = useCallback(() => {
@@ -109,9 +109,8 @@ const HeadersModal = ({ tempData, setTempData }) => {
     setActiveIndex((prev) => (prev === index ? null : index));
     if (index !== -1 && index !== null) {
       const header = currentHeaders[index];
-      const key = Object.keys(header)[0];
-      setNewHeaderKey(key);
-      setNewHeaderName(header[key]);
+      setNewHeaderKey(header.key);
+      setNewHeaderName(header.name);
       setNewHeaderType(header.type || "text");
       setNewHeaderOptions(header.options || []);
     } else if (index === -1) {
@@ -122,9 +121,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const deleteHeader = useCallback(
     (index) => {
       setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
+      setHeaders((prev) => prev.filter((_, i) => i !== index)); // Update MainContext
       setActiveIndex(null);
     },
-    []
+    [setHeaders]
   );
 
   const addOption = useCallback(() => {
@@ -219,94 +219,89 @@ const HeadersModal = ({ tempData, setTempData }) => {
         )}
       </div>
       <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {currentHeaders.map((header, index) => {
-          const key = Object.keys(header)[0];
-          const isActive = activeIndex === index;
-          const uniqueKey = `${key}-${index}`;
-          return (
-            <div
-              key={uniqueKey}
-              className={`${styles.headerItem} ${isActive ? styles.activeItem : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={() => toggleEdit(index)}
-            >
-              <div className={styles.headerRow}>
-                <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <span>{header[key]}</span>
-                  <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ""}`}>({header.type})</span>
-                </div>
+        {currentHeaders.map((header, index) => (
+          <div
+            key={`${header.key}-${index}`}
+            className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={() => toggleEdit(index)}
+          >
+            <div className={styles.headerRow}>
+              <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <span>{header.name}</span>
+                <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ""}`}>({header.type})</span>
               </div>
-              {isActive && (
-                <div
-                  className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  ref={editActionsRef}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className={styles.editActionsButtons}>
-                    <button onClick={() => deleteHeader(index)} className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      Remove
-                    </button>
-                    <button onClick={() => updateHeader(index)} className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      Update
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={newHeaderKey}
-                    onChange={(e) => setNewHeaderKey(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Key"
-                    className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  />
-                  <input
-                    type="text"
-                    value={newHeaderName}
-                    onChange={(e) => setNewHeaderName(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Name"
-                    className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  />
-                  <select
-                    value={newHeaderType}
-                    onChange={(e) => setNewHeaderType(e.target.value)}
-                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  >
-                    <option value="text">Text</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date</option>
-                    <option value="dropdown">Pop-up Menu</option>
-                  </select>
-                  {newHeaderType === "dropdown" && (
-                    <div className={styles.optionsSection}>
-                      <div className={styles.optionInputRow}>
-                        <input
-                          type="text"
-                          value={newOption}
-                          onChange={(e) => setNewOption(e.target.value)}
-                          onKeyPress={(e) => e.key === "Enter" && addOption()}
-                          placeholder="Add item"
-                          className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        />
-                        <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          +
-                        </button>
-                      </div>
-                      <div className={styles.optionsList}>
-                        {newHeaderOptions.map((option) => (
-                          <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            <span>{option}</span>
-                            <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          );
-        })}
+            {activeIndex === index && (
+              <div
+                className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
+                ref={editActionsRef}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.editActionsButtons}>
+                  <button onClick={() => deleteHeader(index)} className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    Remove
+                  </button>
+                  <button onClick={() => updateHeader(index)} className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    Update
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={newHeaderKey}
+                  onChange={(e) => setNewHeaderKey(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Key"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+                <input
+                  type="text"
+                  value={newHeaderName}
+                  onChange={(e) => setNewHeaderName(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Name"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+                <select
+                  value={newHeaderType}
+                  onChange={(e) => setNewHeaderType(e.target.value)}
+                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date</option>
+                  <option value="dropdown">Pop-up Menu</option>
+                </select>
+                {newHeaderType === "dropdown" && (
+                  <div className={styles.optionsSection}>
+                    <div className={styles.optionInputRow}>
+                      <input
+                        type="text"
+                        value={newOption}
+                        onChange={(e) => setNewOption(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addOption()}
+                        placeholder="Add item"
+                        className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                      <button onClick={addOption} className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        +
+                      </button>
+                    </div>
+                    <div className={styles.optionsList}>
+                      {newHeaderOptions.map((option) => (
+                        <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <span>{option}</span>
+                          <button onClick={() => removeOption(option)} className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

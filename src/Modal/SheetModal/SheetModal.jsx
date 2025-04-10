@@ -1,4 +1,5 @@
-import { useContext, useState, useCallback, useMemo, useEffect } from "react";
+import { useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import styles from "./SheetModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { FaEye, FaEyeSlash, FaThumbtack } from "react-icons/fa";
@@ -19,6 +20,7 @@ const SheetModal = ({
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
+  const headerRefs = useRef(new Map()); // Track DOM elements by index
 
   useEffect(() => {
     setTempData((prev) => ({
@@ -31,11 +33,22 @@ const SheetModal = ({
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
-      const globalHeader = allHeaders.find((h) => Object.keys(h)[0] === header.key);
-      return globalHeader
-        ? { ...header, name: globalHeader[header.key], type: globalHeader.type }
-        : { ...header, name: header.key, type: "text" };
+      const globalHeader = allHeaders.find((h) => h.key === header.key);
+      return {
+        ...header,
+        name: header.name || (globalHeader ? globalHeader.name : formatHeaderName(header.key)),
+        type: globalHeader ? globalHeader.type : header.type || "text",
+      };
     }), [currentHeaders, allHeaders]);
+
+  const availableHeaders = useMemo(() =>
+    allHeaders.filter((h) => !currentHeaders.some((ch) => ch.key === h.key)),
+    [allHeaders, currentHeaders]
+  );
+
+  const formatHeaderName = (key) => {
+    return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
+  };
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
@@ -49,7 +62,8 @@ const SheetModal = ({
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
-      e.target.closest(`.${styles.headerItem}`).classList.add(styles.dragging);
+      const element = headerRefs.current.get(index);
+      if (element) element.classList.add(styles.dragging);
     }
   }, []);
 
@@ -87,17 +101,18 @@ const SheetModal = ({
   }, [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]);
 
   const handleDragEnd = useCallback((e) => {
-    e.target.classList.remove(styles.dragging);
+    const element = headerRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
     setDraggedIndex(null);
-  }, []);
+  }, [draggedIndex]);
 
-  const handleTouchEnd = useCallback((e) => {
-    const target = e.target.closest(`.${styles.headerItem}`);
-    if (target) target.classList.remove(styles.dragging);
+  const handleTouchEnd = useCallback(() => {
+    const element = headerRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
     setDraggedIndex(null);
     setTouchStartY(null);
     setTouchTargetIndex(null);
-  }, []);
+  }, [draggedIndex]);
 
   const togglePin = useCallback((headerKey) => {
     setPinnedStates((prev) => ({
@@ -166,21 +181,17 @@ const SheetModal = ({
         className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
       >
         <option value="">Add Column</option>
-        {allHeaders
-          .filter((h) => !currentHeaders.some((ch) => ch.key === Object.keys(h)[0]))
-          .map((header) => {
-            const key = Object.keys(header)[0];
-            return (
-              <option key={key} value={key}>
-                {header[key]} ({header.type})
-              </option>
-            );
-          })}
+        {availableHeaders.map((header) => (
+          <option key={header.key} value={header.key}>
+            {header.name} ({header.type})
+          </option>
+        ))}
       </select>
       <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {resolvedHeaders.map((header, index) => (
           <div
-            key={header.key}
+            ref={(el) => headerRefs.current.set(index, el)} // Store ref for each header
+            key={`${header.key}-${index}`}
             className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""} ${
               isDarkTheme ? styles.darkTheme : ""
             }`}
@@ -236,6 +247,18 @@ const SheetModal = ({
       </div>
     </div>
   );
+};
+
+SheetModal.propTypes = {
+  isEditMode: PropTypes.bool,
+  tempData: PropTypes.shape({
+    sheetName: PropTypes.string,
+    currentHeaders: PropTypes.arrayOf(PropTypes.object),
+    rows: PropTypes.array,
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
+  sheets: PropTypes.array,
+  onPinToggle: PropTypes.func.isRequired,
 };
 
 export default SheetModal;

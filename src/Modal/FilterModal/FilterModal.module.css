@@ -232,13 +232,11 @@
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  padding: 10px 20px;
-  border-top: 1px solid #e0e0e0; /* Light mode */
+  padding: 10px 0px;
   transition: border-top 0.3s ease;
 }
 
 .modalActions.darkTheme {
-  border-top: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
 }
 
 .resetButton {
