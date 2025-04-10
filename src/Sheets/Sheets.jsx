@@ -205,7 +205,7 @@ const SheetTemplate = ({
       setIsEditorOpen(false);
       setSelectedRow(null);
       setIsClosing(false);
-    }, 300);
+    }, 300); // Match slide-out duration
   }, []);
 
   const handleEditorSave = useCallback(
@@ -602,42 +602,42 @@ const SheetTemplate = ({
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {TableContent}
-        {isMobile && isEditorOpen && (
-          <div
-            className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
-          >
-            <CardsEditor
-              key={selectedRow?.id || Date.now()}
-              onClose={handleEditorClose}
-              onSave={handleEditorSave}
-              initialRowData={selectedRow}
-              startInEditMode={!!selectedRow}
-              preSelectedSheet={activeSheetName}
-            />
-          </div>
-        )}
-      </div>
-      {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          {isEditorOpen ? (
-            <CardsEditor
-              key={selectedRow?.id || Date.now()}
-              onClose={handleEditorClose}
-              onSave={handleEditorSave}
-              initialRowData={selectedRow}
-              startInEditMode={!!selectedRow}
-              preSelectedSheet={activeSheetName}
-            />
-          ) : (
-            <div className={styles.placeholder}>
-              <p>Select a row to show its data</p>
-            </div>
-          )}
+    <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      {TableContent}
+      {isMobile && isEditorOpen && (
+        <div
+          className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
+        >
+          <CardsEditor
+            key={selectedRow?.id || Date.now()}
+            onClose={handleEditorClose}
+            onSave={handleEditorSave}
+            initialRowData={selectedRow}
+            startInEditMode={!!selectedRow}
+            preSelectedSheet={activeSheetName}
+          />
         </div>
       )}
     </div>
+    {!isMobile && (
+      <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        {isEditorOpen ? (
+          <CardsEditor
+            key={selectedRow?.id || Date.now()}
+            onClose={handleEditorClose}
+            onSave={handleEditorSave}
+            initialRowData={selectedRow}
+            startInEditMode={!!selectedRow}
+            preSelectedSheet={activeSheetName}
+          />
+        ) : (
+          <div className={styles.placeholder}>
+            <p>Select a row to show its data</p>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
   );
 };
 

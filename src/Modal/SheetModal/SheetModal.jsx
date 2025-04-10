@@ -35,8 +35,6 @@ const SheetModal = ({
   const headerRefs = useRef(new Map());
 
   useEffect(() => {
-    console.log("currentHeaders:", currentHeaders);
-    console.log("allHeaders:", allHeaders);
     setTempData((prev) => ({
       ...prev,
       sheetName,

@@ -141,13 +141,13 @@
 .inputField,
 .selectField {
   width: 100%;
-  padding: 12px 16px;
+  padding: 19.5px 16px;
   border: none;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode text */
-  background: rgba(0, 0, 0, 0.03); /* Light mode background */
+  background: rgba(243, 242, 248);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
   -webkit-appearance: none;
@@ -163,7 +163,6 @@
 .inputField:focus,
 .selectField:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.9); /* Light mode focus */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -175,7 +174,6 @@
 
 .selectField {
   padding-right: 32px;
-  background: rgba(0, 0, 0, 0.03) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Light mode */
 }
 
 .selectField.darkTheme {

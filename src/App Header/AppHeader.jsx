@@ -49,7 +49,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
             onClick={toggleTheme}
             aria-label="Toggle Theme"
           >
-            <CgDarkMode size={24} />
+            <CgDarkMode size={18} />
           </button>
         </div>
         {!isMobile && (

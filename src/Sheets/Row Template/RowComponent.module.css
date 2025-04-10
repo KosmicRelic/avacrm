@@ -1,6 +1,6 @@
 .bodyRow {
   display: flex;
-  background: rgba(255, 255, 255, 0.9); /* Restored original light mode */
+  background: rgba(245, 245, 247, 0.9); /* Restored original light mode */
   border-radius: 12px;
   transition: all 0.2s ease, background 0.3s ease, box-shadow 0.3s ease; /* Kept theme transitions */
   min-width: 100%;

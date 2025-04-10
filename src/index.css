@@ -1,6 +1,6 @@
 /* index.css */
 :root {
-  --background-color: rgb(255, 255, 255); /* Light theme default */
+  background: rgba(243, 242, 248);
   --text-color: rgb(29, 29, 31); /* Light theme text: dark gray */
 }
 

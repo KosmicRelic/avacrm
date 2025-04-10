@@ -54,7 +54,7 @@
   left: 100%; /* Start off-screen to the right */
   width: 400px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.95); /* Light mode: frosted glass */
+  background: rgba(243, 242, 248);
   backdrop-filter: blur(20px);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -156,7 +156,7 @@
   font-size: 15px;
   font-weight: 500;
   color: #6e6e73;
-  background: rgba(245, 245, 247, 0.9); /* Light mode button */
+  background: rgba(255, 255, 255); /* Light mode button */
   border: none;
   border-radius: 10px;
   cursor: pointer;

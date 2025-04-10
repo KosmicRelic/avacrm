@@ -34,12 +34,12 @@
 }
 
 .activeItem {
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255); /* Light mode */
   transition: background 0.3s ease;
 }
 
 .activeItem.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode: slightly lighter gray */
+  background: rgba(44, 44, 46); /* Dark mode: slightly lighter gray */
 }
 
 .filterRow {
@@ -102,7 +102,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode */
-  background: rgba(245, 245, 247, 0.9); /* Light mode */
+  background: rgba(243, 242, 248);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
@@ -116,7 +116,7 @@
 
 .filterSelect {
   padding-right: 28px;
-  background: rgba(245, 245, 247, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; /* Light mode */
+  background: rgba(243, 242, 248);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -134,7 +134,7 @@
 .filterSelect:focus,
 .filterSelectNoChevron:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(243, 242, 248);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -164,7 +164,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode */
-  background: #f5f5f7; /* Light mode */
+  background: rgba(243, 242, 248);
   box-sizing: border-box;
   transition: all 0.2s ease, border 0.3s ease, color 0.3s ease, background 0.3s ease;
 }

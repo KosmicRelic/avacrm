@@ -1,39 +1,38 @@
-import { useContext, useState, useCallback, useRef, useEffect } from "react";
+import { useContext, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { FaPlus } from "react-icons/fa";
+import { IoIosCheckmark } from "react-icons/io";
 
 const CardsTemplate = ({ tempData, setTempData }) => {
   const { headers, cardTemplates, setCardTemplates, isDarkTheme } = useContext(MainContext);
-  const [view, setView] = useState("list"); // "list" or "editor"
+  const [view, setView] = useState("list");
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templateName, setTemplateName] = useState("");
-  const [sections, setSections] = useState([{ name: "General", keys: [] }]); // Sections with names and keys
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const dragItemRef = useRef(null);
+  const [sections, setSections] = useState([{ name: "", keys: [] }]);
 
-  // Correctly map headers to { key, name, type }
   const availableHeaders = headers.map((h) => ({
     key: h.key,
     name: h.name,
     type: h.type,
   }));
 
-  const handleOpenEditor = useCallback(
-    (template = null) => {
+  const handleOpenEditor = useCallback((template = null) => {
+    try {
       setSelectedTemplate(template);
       setTemplateName(template ? template.name : "");
-      setSections(template ? convertKeysToSections(template.keys) : [{ name: "General", keys: [] }]);
+      setSections(template ? convertKeysToSections(template.keys) : [{ name: "", keys: [] }]);
       setIsAnimating(true);
       setTimeout(() => {
         setView("editor");
         setIsAnimating(false);
-      }, 300); // Match animation duration
-    },
-    []
-  );
+      }, 300);
+    } catch (error) {
+      console.error("Error in handleOpenEditor:", error);
+    }
+  }, []);
 
   const handleCloseEditor = useCallback(() => {
     setIsAnimating(true);
@@ -41,15 +40,14 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setView("list");
       setSelectedTemplate(null);
       setTemplateName("");
-      setSections([{ name: "General", keys: [] }]);
+      setSections([{ name: "", keys: [] }]);
       setIsAnimating(false);
-    }, 300); // Match animation duration
+    }, 300);
   }, []);
 
   const convertKeysToSections = (keys) => {
-    // Ensure keys are strings and filter out invalid ones
     const validKeys = (keys || []).filter((key) => availableHeaders.some((h) => h.key === key));
-    return [{ name: "General", keys: validKeys }];
+    return [{ name: "", keys: validKeys }];
   };
 
   const handleSaveTemplate = useCallback(() => {
@@ -69,7 +67,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           t.name === selectedTemplate.name ? { ...t, name: templateName, keys: allKeys } : t
         );
       }
-      // Ensure unique names for new templates
       const existingNames = prev.map((t) => t.name);
       const uniqueName = existingNames.includes(templateName)
         ? `${templateName} (${Date.now()})`
@@ -88,63 +85,26 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   }, [selectedTemplate, setCardTemplates, handleCloseEditor]);
 
   const toggleKeySelection = useCallback((sectionIndex, key) => {
-    setSections((prev) =>
-      prev.map((section, idx) =>
-        idx === sectionIndex
-          ? {
-              ...section,
-              keys: section.keys.includes(key) ? section.keys.filter((k) => k !== key) : [...section.keys, key],
-            }
-          : section
-      )
-    );
+    setSections((prev) => {
+      const newSections = [...prev];
+      const section = { ...newSections[sectionIndex] };
+      const isSelected = section.keys.includes(key);
+      section.keys = isSelected
+        ? section.keys.filter((k) => k !== key)
+        : [...section.keys, key];
+      newSections[sectionIndex] = section;
+      return newSections;
+    });
   }, []);
 
   const addSection = useCallback(() => {
-    setSections((prev) => [...prev, { name: `Section ${prev.length + 1}`, keys: [] }]);
+    setSections((prev) => [...prev, { name: "", keys: [] }]);
   }, []);
 
   const updateSectionName = useCallback((index, newName) => {
     setSections((prev) =>
-      prev.map((section, idx) =>
-        idx === index ? { ...section, name: newName.trim() || `Section ${idx + 1}` } : section
-      )
+      prev.map((section, idx) => (idx === index ? { ...section, name: newName } : section))
     );
-  }, []);
-
-  const handleDragStart = useCallback((e, sectionIndex, headerIndex) => {
-    setDraggedIndex({ sectionIndex, headerIndex });
-    dragItemRef.current = e.target.closest(`.${styles.keyItem}`);
-    dragItemRef.current.classList.add(styles.dragging);
-    e.dataTransfer.effectAllowed = "move";
-  }, []);
-
-  const handleDragOver = useCallback(
-    (e, sectionIndex, headerIndex) => {
-      e.preventDefault();
-      if (
-        draggedIndex === null ||
-        (draggedIndex.sectionIndex === sectionIndex && draggedIndex.headerIndex === headerIndex)
-      )
-        return;
-
-      setSections((prev) => {
-        const newSections = [...prev];
-        const section = newSections[draggedIndex.sectionIndex];
-        const [draggedItem] = section.keys.splice(draggedIndex.headerIndex, 1);
-        newSections[sectionIndex].keys.splice(headerIndex, 0, draggedItem);
-        setDraggedIndex({ sectionIndex, headerIndex });
-        return newSections;
-      });
-    },
-    [draggedIndex]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    if (dragItemRef.current) {
-      dragItemRef.current.classList.remove(styles.dragging);
-    }
-    setDraggedIndex(null);
   }, []);
 
   return (
@@ -177,9 +137,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               isAnimating ? styles.slideOutRight : styles.slideInRight
             }`}
           >
-            <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              {selectedTemplate ? "Edit Card Template" : "New Card Template"}
-            </h2>
+            {!selectedTemplate && (
+              <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                New Card Template
+              </h2>
+            )}
             <input
               type="text"
               value={templateName}
@@ -195,7 +157,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                     value={section.name}
                     onChange={(e) => updateSectionName(sectionIndex, e.target.value)}
                     className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    placeholder="Section Name"
+                    placeholder={`Section ${sectionIndex + 1}`}
                   />
                   <div className={styles.keyList}>
                     {section.keys.map((key, headerIndex) => {
@@ -203,49 +165,76 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         key,
                         name: key,
                         type: "text",
-                      }; // Fallback for missing headers
+                      };
                       return (
                         <div
-                          key={`selected-${header.key}-${sectionIndex}-${headerIndex}`} // Unique key
-                          className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""} ${
-                            draggedIndex?.sectionIndex === sectionIndex &&
-                            draggedIndex?.headerIndex === headerIndex
-                              ? styles.dragging
-                              : ""
-                          }`}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, sectionIndex, headerIndex)}
-                          onDragOver={(e) => handleDragOver(e, sectionIndex, headerIndex)}
-                          onDragEnd={handleDragEnd}
+                          key={`selected-${header.key}-${sectionIndex}-${headerIndex}`}
+                          className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
                         >
-                          <span className={styles.dragIcon}>☰</span>
-                          <label className={styles.headerLabel}>
-                            <input
-                              type="checkbox"
-                              checked={true} // Always checked since it's in keys
-                              onChange={() => toggleKeySelection(sectionIndex, header.key)}
-                            />
-                            {header.name} ({header.type})
-                          </label>
+                          <div
+                            className={styles.headerContent}
+                            onClick={() => toggleKeySelection(sectionIndex, header.key)}
+                          >
+                            <span
+                              className={`${styles.customCheckbox} ${
+                                section.keys.includes(header.key) ? styles.checked : ""
+                              } ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <IoIosCheckmark
+                                style={{
+                                  color: section.keys.includes(header.key)
+                                    ? "#ffffff"
+                                    : "transparent",
+                                }}
+                                size={18}
+                              />
+                            </span>
+                            <span className={styles.headerName}>{header.name}</span>
+                            <span className={styles.headerType}>({header.type})</span>
+                          </div>
+                          <span
+                            className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
+                            ☰
+                          </span>
                         </div>
                       );
                     })}
                     {availableHeaders
-                      .filter((header) => !section.keys.includes(header.key))
-                      .map((header) => (
+                      .filter(
+                        (header) => !sections.some((sec) => sec.keys.includes(header.key))
+                      )
+                      .map((header, headerIndex) => (
                         <div
-                          key={`available-${header.key}-${sectionIndex}`} // Unique key
+                          key={`available-${header.key}-${sectionIndex}-${headerIndex}`}
                           className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
                         >
-                          <span className={styles.dragIcon}>☰</span>
-                          <label className={styles.headerLabel}>
-                            <input
-                              type="checkbox"
-                              checked={false} // Not checked since it's available
-                              onChange={() => toggleKeySelection(sectionIndex, header.key)}
-                            />
-                            {header.name} ({header.type})
-                          </label>
+                          <div
+                            className={styles.headerContent}
+                            onClick={() => toggleKeySelection(sectionIndex, header.key)}
+                          >
+                            <span
+                              className={`${styles.customCheckbox} ${
+                                section.keys.includes(header.key) ? styles.checked : ""
+                              } ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <IoIosCheckmark
+                                style={{
+                                  color: section.keys.includes(header.key)
+                                    ? "#ffffff"
+                                    : "transparent",
+                                }}
+                                size={18}
+                              />
+                            </span>
+                            <span className={styles.headerName}>{header.name}</span>
+                            <span className={styles.headerType}>({header.type})</span>
+                          </div>
+                          <span
+                            className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
+                            ☰
+                          </span>
                         </div>
                       ))}
                   </div>
@@ -255,7 +244,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                 className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={addSection}
               >
-                + Add Section
+                Add Section
               </button>
             </div>
             <div className={styles.modalButtons}>
@@ -288,8 +277,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
 };
 
 CardsTemplate.propTypes = {
-  tempData: PropTypes.object, // Not used directly, but required for Modal compatibility
-  setTempData: PropTypes.func, // Not used directly, but required for Modal compatibility
+  tempData: PropTypes.object,
+  setTempData: PropTypes.func,
 };
 
 export default CardsTemplate;
