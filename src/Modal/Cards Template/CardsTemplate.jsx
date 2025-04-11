@@ -32,6 +32,7 @@ const CardsTemplate = ({ onSave }) => {
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [prevStep, setPrevStep] = useState(null);
+  const [hideAfterAnimation, setHideAfterAnimation] = useState(null);
   const keyRefs = useRef(new Map());
   const hasInitialized = useRef(false);
 
@@ -86,8 +87,9 @@ const CardsTemplate = ({ onSave }) => {
       return updatedTemplates.filter((t) => !tempData.some((td) => td.deleteTemplate === t.name));
     });
     setTempData(cleanedTempData);
+    setCurrentSectionIndex(null);
     onSave();
-  }, [tempData, setCardTemplates, setTempData, onSave, currentStep, cardTemplates]);
+  }, [tempData, setCardTemplates, setTempData, onSave, currentStep, cardTemplates, setCurrentSectionIndex]);
 
   const handleCreateCard = useCallback(() => {
     if (selectedTemplateIndex === null || !tempData[selectedTemplateIndex].name.trim()) {
@@ -120,10 +122,7 @@ const CardsTemplate = ({ onSave }) => {
       newTemp[selectedTemplateIndex] = { ...rest, isEditing: false, originalName: rest.name, deleteTemplate: null };
       return newTemp;
     });
-
-    setPrevStep(currentStep);
-    goToStep(2);
-  }, [tempData, setTempData, selectedTemplateIndex, cardTemplates, setCardTemplates, goToStep, currentStep]);
+  }, [tempData, setTempData, selectedTemplateIndex, cardTemplates, setCardTemplates]);
 
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => !prev);
@@ -229,7 +228,7 @@ const CardsTemplate = ({ onSave }) => {
         newTemp[selectedTemplateIndex] = currentTemplate;
         return newTemp;
       });
-      setTimeout(() => setDraggedIndex(index), 0); // Defer to avoid render conflicts
+      setTimeout(() => setDraggedIndex(index), 0);
     },
     [draggedIndex, draggedSectionIndex, selectedTemplateIndex, setTempData]
   );
@@ -473,7 +472,8 @@ const CardsTemplate = ({ onSave }) => {
   const getAnimationClass = useCallback(
     (step) => {
       if (prevStep === null) return "";
-      const isForward = step > prevStep;
+      const isForward = currentStep > prevStep;
+      
       if (step === currentStep) {
         return isForward ? styles.slideInRight : styles.slideInLeft;
       }
@@ -485,159 +485,211 @@ const CardsTemplate = ({ onSave }) => {
     [currentStep, prevStep]
   );
 
+  // Handle animation completion
+  useEffect(() => {
+    let timer;
+    if (prevStep !== null && prevStep !== currentStep) {
+      // Ensure previous step remains visible during animation
+      setHideAfterAnimation(null);
+      timer = setTimeout(() => {
+        setHideAfterAnimation(prevStep);
+      }, 300); // Match animation duration
+    } else {
+      setHideAfterAnimation(null);
+    }
+    return () => clearTimeout(timer);
+  }, [currentStep, prevStep]);
+
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3].map((step) => (
-          <div
-            key={step}
-            className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
-              step === currentStep || step === prevStep ? getAnimationClass(step) : styles.hidden
-            }`}
-            style={{ display: step === currentStep || step === prevStep ? "block" : "none" }}
-          >
-            {step === 1 && (
-              <>
-                <button
-                  className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={() => handleOpenEditor()}
-                >
-                  <FaPlus /> Add New Card Template
-                </button>
-                <div className={styles.templateList}>
-                  {cardTemplates.map((template) => (
-                    <button
-                      key={template.name}
-                      className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleOpenEditor(template)}
-                    >
-                      {template.name}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {step === 2 && selectedTemplateIndex !== null && (
-              <>
-                <input
-                  type="text"
-                  value={tempData[selectedTemplateIndex].name}
-                  onChange={(e) => {
-                    setTempData((prev) => {
-                      const newTemp = [...prev];
-                      newTemp[selectedTemplateIndex] = {
-                        ...newTemp[selectedTemplateIndex],
-                        name: e.target.value,
-                        typeOfCards: e.target.value,
-                      };
-                      return newTemp;
-                    });
-                  }}
-                  placeholder="Template Name"
-                  className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
-                {tempData[selectedTemplateIndex].originalName === null && (
+        {[1, 2, 3].map((step) => {
+          const animationClass = getAnimationClass(step);
+          const shouldHide = step !== currentStep && step !== prevStep && hideAfterAnimation !== step;
+          
+          return (
+            <div
+              key={step}
+              className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
+                animationClass && !shouldHide ? animationClass : shouldHide ? styles.hidden : ""
+              }`}
+              style={{
+                display: shouldHide ? "none" : "block",
+              }}
+            >
+              {step === 1 && (
+                <>
                   <button
-                    className={`${styles.createButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={handleCreateCard}
+                    className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => handleOpenEditor()}
                   >
-                    Create Card
+                    <FaPlus /> Add New Card Template
                   </button>
-                )}
-                {tempData[selectedTemplateIndex].originalName !== null && (
-                  <>
-                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      Sections
-                    </h3>
-                    <div className={styles.templateList}>
-                      {tempData[selectedTemplateIndex].sections.map((section, index) => (
-                        <div className={styles.sectionItem} key={index}>
+                  <div className={styles.templateList}>
+                    {cardTemplates.map((template) => (
+                      <button
+                        key={template.name}
+                        className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => handleOpenEditor(template)}
+                      >
+                        {template.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === 2 && selectedTemplateIndex !== null && tempData[selectedTemplateIndex] && (
+                <>
+                  <input
+                    type="text"
+                    value={tempData[selectedTemplateIndex].name}
+                    onChange={(e) => {
+                      setTempData((prev) => {
+                        const newTemp = [...prev];
+                        newTemp[selectedTemplateIndex] = {
+                          ...newTemp[selectedTemplateIndex],
+                          name: e.target.value,
+                          typeOfCards: e.target.value,
+                        };
+                        return newTemp;
+                      });
+                    }}
+                    placeholder="Template Name"
+                    className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                  {tempData[selectedTemplateIndex].originalName === null && (
+                    <button
+                      className={`${styles.createButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={handleCreateCard}
+                    >
+                      Create Card
+                    </button>
+                  )}
+                  {tempData[selectedTemplateIndex].originalName !== null && (
+                    <>
+                      <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        Sections
+                      </h3>
+                      <div className={styles.templateList}>
+                        {tempData[selectedTemplateIndex].sections.map((section, index) => (
+                          <div className={styles.sectionItem} key={index}>
+                            {editMode && (
+                              <button
+                                className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                onClick={() => removeSection(index)}
+                              >
+                                <BsDashCircle />
+                              </button>
+                            )}
+                            <button
+                              className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              onClick={() => !editMode && handleEditSection(index)}
+                            >
+                              {section.name}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={addSection}
+                      >
+                        Add Section
+                      </button>
+                      {editMode && (
+                        <button
+                          className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          onClick={handleDeleteTemplate}
+                        >
+                          Delete Template
+                        </button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {step === 3 && selectedTemplateIndex !== null && currentSectionIndex !== null && tempData[selectedTemplateIndex]?.sections[currentSectionIndex] && (
+                <>
+                  <input
+                    type="text"
+                    value={tempData[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
+                    onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
+                    className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    placeholder="Section Name"
+                  />
+                  <div className={styles.searchContainer}>
+                    <FaSearch className={styles.searchIcon} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search headers by name, type, or key"
+                      className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                  </div>
+                  <div className={styles.section}>
+                    {tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
+                      const header = availableHeaders.find((h) => h.key === key) || {
+                        key,
+                        name: key,
+                        type: "text",
+                      };
+                      return (
+                        <div
+                          ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
+                          key={index}
+                          className={`${styles.keyItem} ${
+                            draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
+                          } ${isDarkTheme ? styles.darkTheme : ""}`}
+                          draggable={!editMode}
+                          onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
+                          onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
+                          onDragEnd={() => !editMode && handleDragEnd()}
+                          onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
+                          onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
+                          onTouchEnd={() => !editMode && handleTouchEnd()}
+                        >
                           {editMode && (
                             <button
                               className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              onClick={() => removeSection(index)}
+                              onClick={() => handleDeleteKey(currentSectionIndex, header.key)}
                             >
                               <BsDashCircle />
                             </button>
                           )}
-                          <button
-                            className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            onClick={() => !editMode && handleEditSection(index)}
+                          <div
+                            className={styles.headerContent}
+                            onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
                           >
-                            {section.name}
-                          </button>
+                            <span
+                              className={`${styles.customCheckbox} ${
+                                tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                                  ? styles.checked
+                                  : ""
+                              } ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <IoIosCheckmark
+                                style={{
+                                  color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                                    ? "#ffffff"
+                                    : "transparent",
+                                }}
+                                size={18}
+                              />
+                            </span>
+                            <span className={styles.headerName}>{header.name}</span>
+                            <span className={styles.headerType}>({header.type})</span>
+                          </div>
+                          {!editMode && (
+                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                    <button
-                      className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={addSection}
-                    >
-                      Add Section
-                    </button>
-                    {editMode && (
-                      <button
-                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={handleDeleteTemplate}
-                      >
-                        Delete Template
-                      </button>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-
-            {step === 3 && selectedTemplateIndex !== null && currentSectionIndex !== null && (
-              <>
-                <input
-                  type="text"
-                  value={tempData[selectedTemplateIndex].sections[currentSectionIndex].name}
-                  onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
-                  className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  placeholder="Section Name"
-                />
-                <div className={styles.searchContainer}>
-                  <FaSearch className={styles.searchIcon} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search headers by name, type, or key"
-                    className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  />
-                </div>
-                <div className={styles.section}>
-                  {tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
-                    const header = availableHeaders.find((h) => h.key === key) || {
-                      key,
-                      name: key,
-                      type: "text",
-                    };
-                    return (
-                      <div
-                        ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
-                        key={index}
-                        className={`${styles.keyItem} ${
-                          draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
-                        } ${isDarkTheme ? styles.darkTheme : ""}`}
-                        draggable={!editMode}
-                        onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
-                        onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
-                        onDragEnd={() => !editMode && handleDragEnd()}
-                        onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
-                        onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
-                        onTouchEnd={() => !editMode && handleTouchEnd()}
-                      >
-                        {editMode && (
-                          <button
-                            className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            onClick={() => handleDeleteKey(currentSectionIndex, header.key)}
-                          >
-                            <BsDashCircle />
-                          </button>
-                        )}
+                      );
+                    })}
+                    {filteredHeaders.map((header, index) => (
+                      <div key={index} className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <div
                           className={styles.headerContent}
                           onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
@@ -665,43 +717,13 @@ const CardsTemplate = ({ onSave }) => {
                           <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
                         )}
                       </div>
-                    );
-                  })}
-                  {filteredHeaders.map((header, index) => (
-                    <div key={index} className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      <div
-                        className={styles.headerContent}
-                        onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                      >
-                        <span
-                          className={`${styles.customCheckbox} ${
-                            tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                              ? styles.checked
-                              : ""
-                          } ${isDarkTheme ? styles.darkTheme : ""}`}
-                        >
-                          <IoIosCheckmark
-                            style={{
-                              color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                                ? "#ffffff"
-                                : "transparent",
-                            }}
-                            size={18}
-                          />
-                        </span>
-                        <span className={styles.headerName}>{header.name}</span>
-                        <span className={styles.headerType}>({header.type})</span>
-                      </div>
-                      {!editMode && (
-                        <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -250,7 +250,7 @@ export const MainContextProvider = ({ children }) => {
       followUpDate: "2025-04-19",
     },
     {
-      id: " лично100016",
+      id: "100016",
       typeOfCards: "Leads",
       name: "Aris Liakos",
       phone: "6922667788",

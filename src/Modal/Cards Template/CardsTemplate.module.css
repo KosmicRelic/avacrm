@@ -2,7 +2,7 @@
   background: transparent;
   transition: background 0.3s ease;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -16,6 +16,7 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .view {
@@ -27,9 +28,15 @@
   position: absolute;
   top: 0;
   left: 0;
-  padding: 16px;
-  min-height: 100%;
+  height: 100%;
+  overflow-y: auto;
 }
+
+.view.darkTheme {
+  background: #1c1c1e;
+}
+
+/* Rest of the CSS remains unchanged */
 
 .view.darkTheme {
   background: #1c1c1e;
@@ -205,7 +212,7 @@
   flex-direction: column;
 }
 
-.sectionInput {
+.searchInput, .sectionInput {
   width: 100%;
   padding: 13.5px 16px;
   border: none;
@@ -219,10 +226,14 @@
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
-  margin-bottom: 16px;
+  outline: none;
 }
 
-.sectionInput.darkTheme {
+.searchInput{
+  padding-left: 46px;
+}
+
+.searchInput.darkTheme, .sectionInput.darkTheme {
   color: #ffffff;
   background: #2c2c2e;
 }
@@ -449,7 +460,8 @@
 
 .searchContainer {
   position: relative;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin: 16px 0;
 }
 
 .searchIcon {
@@ -458,19 +470,6 @@
   top: 50%;
   transform: translateY(-50%);
   color: #999;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 8px 8px 8px 30px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.searchInput.darkTheme {
-  background: #333;
-  color: #fff;
-  border-color: #555;
 }
 
 .sectionTitle {
