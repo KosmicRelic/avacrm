@@ -5,7 +5,7 @@ import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const HeadersModal = ({ tempData, setTempData }) => {
-  const { headers, setHeaders, isDarkTheme } = useContext(MainContext);
+  const { headers, setHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || headers);
   const [newHeaderKey, setNewHeaderKey] = useState("");
   const [newHeaderName, setNewHeaderName] = useState("");
@@ -14,6 +14,30 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const editActionsRef = useRef(null);
+  const hasInitialized = useRef(false); // Add ref to track initialization
+
+  // Register modal title only once on mount
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: () => "Manage Headers",
+            rightButtons: () => [],
+          },
+        ],
+      });
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false, // Explicitly set to false for clarity
+        title: "Manage Headers",
+        backButtonTitle: "",
+      });
+      goToStep(1);
+      hasInitialized.current = true; // Mark as initialized
+    }
+  }, [registerModalSteps, setModalConfig, goToStep]); // Dependencies are stable context functions
 
   useEffect(() => {
     setTempData((prev) => ({ ...prev, currentHeaders }));
@@ -63,7 +87,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
       ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
     };
     setCurrentHeaders((prev) => [...prev, newHeader]);
-    setHeaders((prev) => [...prev, newHeader]); // Update MainContext
+    setHeaders((prev) => [...prev, newHeader]);
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
@@ -85,7 +109,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
         ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
       };
       setCurrentHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
-      setHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h))); // Update MainContext
+      setHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
       setActiveIndex(null);
     },
     [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader, setHeaders]
@@ -125,7 +149,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const deleteHeader = useCallback(
     (index) => {
       setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
-      setHeaders((prev) => prev.filter((_, i) => i !== index)); // Update MainContext
+      setHeaders((prev) => prev.filter((_, i) => i !== index));
       setActiveIndex(null);
     },
     [setHeaders]

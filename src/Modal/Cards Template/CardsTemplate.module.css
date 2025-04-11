@@ -2,9 +2,8 @@
   background: transparent;
   transition: background 0.3s ease;
   width: 100%;
-  height: 100%;
+  height: auto;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .templateWrapper.darkTheme {
@@ -19,12 +18,11 @@
 
 .view {
   width: 100%;
-  height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
   background: #f2f2f7;
   border-radius: 16px;
   transition: background 0.3s ease;
+  position: relative;
 }
 
 .view.darkTheme {
@@ -68,12 +66,10 @@
   background: #ffffff;
   border: none;
   color: #007aff;
-  font-size: 1px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   flex: 0 0 auto;
-  font-weight: 600;
-  font-size: 14px;
   letter-spacing: 0.02em;
   transition: background 0.2s ease, color 0.3s ease;
   display: flex;
@@ -98,7 +94,6 @@
 }
 
 .templateList {
-  margin-bottom: 24px;
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff00;
@@ -106,14 +101,15 @@
 }
 
 .templateList.darkTheme {
+
 }
 
 .templateButton {
   width: 100%;
-  padding: 19px 16px;
+  padding: 13.5px 16px;
   background: rgba(255, 255, 255, 0.95);
   border: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   text-align: left;
   cursor: pointer;
   transition: background 0.2s ease, color 0.3s ease;
@@ -121,7 +117,7 @@
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode default */
+  color: #1d1d1f;
 }
 
 .templateButton.darkTheme {
@@ -148,6 +144,7 @@
   color: #000000;
   margin: 0 0 16px 0;
   transition: color 0.3s ease;
+  text-align: center;
 }
 
 .modalTitle.darkTheme {
@@ -156,7 +153,7 @@
 
 .input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 13.5px 16px;
   border: none;
   border-radius: 12px;
   background: #ffffff;
@@ -165,8 +162,7 @@
   box-sizing: border-box;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode default */
-  transition: color 0.3s ease; /* Smooth theme transition */
+  color: #1d1d1f;
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
@@ -181,9 +177,6 @@
   outline: none;
 }
 
-.input.darkTheme:focus {
-}
-
 .sections {
   margin-top: 8px;
   display: flex;
@@ -194,24 +187,23 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .sectionInput {
   width: 100%;
-  padding: 12px 16px;
+  padding: 13.5px 16px;
   border: none;
   border-radius: 12px;
   background: #ffffff;
   transition: all 0.3s ease;
   box-sizing: border-box;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode default */
+  color: #1d1d1f;
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
+  margin-bottom: 16px;
 }
 
 .sectionInput.darkTheme {
@@ -223,9 +215,6 @@
   outline: none;
 }
 
-.sectionInput.darkTheme:focus {
-}
-
 .sectionInput::placeholder {
   color: #8e8e93;
 }
@@ -234,27 +223,13 @@
   color: #8e8e93;
 }
 
-.keyList {
-  border-radius: 12px;
-  overflow: hidden;
-  background: transparent;
-  transition: background 0.3s ease;
-}
-
-.keyList.darkTheme {
-  background: transparent;
-}
-
 .keyItem {
-  padding: 12px 16px;
+  padding: 6px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
-  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  transition: background 0.2s ease, transform 0.3s ease, opacity 0.2s ease;
   cursor: default;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -265,8 +240,15 @@
   background: rgba(44, 44, 46, 0.95);
 }
 
-.keyItem:last-child {
+.section .keyItem:first-child {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.section .keyItem:last-child {
   border-bottom: none;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .keyItem:hover {
@@ -281,7 +263,7 @@
   background: rgba(0, 122, 255, 0.1);
   opacity: 0.7;
   transform: scale(1.02);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
 }
 
@@ -306,7 +288,6 @@
   justify-content: center;
   align-items: center;
   transition: all 0.2s ease;
-  overflow: hidden;
 }
 
 .customCheckbox.darkTheme {
@@ -324,12 +305,10 @@
 }
 
 .headerName {
-  flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode default */
-  transition: color 0.3s ease; /* Smooth theme transition */
+  color: #1d1d1f;
 }
 
 .keyItem.darkTheme .headerName {
@@ -340,7 +319,6 @@
   font-size: 17px;
   font-weight: 400;
   color: #8e8e93;
-  transition: color 0.3s ease;
 }
 
 .keyItem.darkTheme .headerType {
@@ -353,10 +331,6 @@
   cursor: grab;
   padding: 4px;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  transition: color 0.2s ease;
 }
 
 .dragIcon.darkTheme {
@@ -368,29 +342,36 @@
 }
 
 .addSectionButton {
-  background: transparent;
+  padding: 13.5px 16px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: #ffffff;
   border: none;
   color: #007aff;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 12px 16px;
   cursor: pointer;
-  text-align: center;
-  transition: color 0.2s ease, background 0.2s ease;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .addSectionButton.darkTheme {
+  background: #2c2c2e;
   color: #0a84ff;
-  background: transparent;
 }
 
 .addSectionButton:hover {
-  color: #005bb5;
   background: #f5f5f5;
 }
 
 .addSectionButton.darkTheme:hover {
-  color: #096dd9;
   background: #3a3a3c;
 }
 
@@ -403,13 +384,13 @@
 
 .cancelButton,
 .saveButton,
-.deleteButton {
+.nextButton {
   font-size: 17px;
   font-weight: 600;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease, color 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .cancelButton {
@@ -419,7 +400,6 @@
 
 .cancelButton.darkTheme {
   color: #0a84ff;
-  background: transparent;
 }
 
 .cancelButton:hover {
@@ -433,6 +413,7 @@
 .saveButton {
   background: #007aff;
   color: #ffffff;
+  padding: 8px 16px;
 }
 
 .saveButton.darkTheme {
@@ -447,20 +428,148 @@
   background: #096dd9;
 }
 
+.backButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.backButton.darkTheme {
+  color: #0a84ff;
+}
+
+.editButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  padding-bottom: 20px;
+}
+
+.editButton.darkTheme {
+  color: #0a84ff;
+}
+
+.sectionItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1px;
+  position: relative;
+}
+
+.removeButton {
+  background: #ff3b30;
+  color: white;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  padding: 0;
+}
+
+.removeButton.darkTheme {
+  background: #ff453a;
+}
+
+.removeButton:hover {
+  background: #cc2e26;
+}
+
+.removeButton.darkTheme:hover {
+  background: #d83a34;
+}
+
 .deleteButton {
+  width: 100%;
+  padding: 13.5px 16px;
   background: transparent;
-  color: #ff3b30;
+  border: 0;
+  /* border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.3s ease;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #ff453a;
 }
 
 .deleteButton.darkTheme {
-  color: #ff453a;
-  background: transparent;
+  background: rgba(44, 44, 46, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
-.deleteButton:hover {
-  background: #f5f5f5;
+.nextButton {
+  background: #007aff;
+  color: white;
+  padding: 8px 16px;
 }
 
-.deleteButton.darkTheme:hover {
-  background: #3a3a3c;
+.nextButton.darkTheme {
+  background: #0a84ff;
+}
+
+.nextButton:hover {
+  background: #005bb5;
+}
+
+.nextButton.darkTheme:hover {
+  background: #096dd9;
+}
+
+.searchContainer {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 8px 8px 30px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.searchInput.darkTheme {
+  background: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+.sectionTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #8e8e93;
+  margin: 16px 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sectionTitle.darkTheme {
+  color: #8e8e93;
 }

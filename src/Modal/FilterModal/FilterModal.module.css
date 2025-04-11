@@ -11,7 +11,7 @@
 }
 
 .filterItem {
-  padding: 18.5px 16px;
+  padding: 12.5px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
@@ -96,7 +96,7 @@
 .filterSelectNoChevron {
   width: auto;
   flex: 1;
-  padding: 12px 16px;
+  padding: 13.5px 16px;
   border: none;
   border-radius: 10px;
   font-size: 14px;

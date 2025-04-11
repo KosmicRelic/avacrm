@@ -1,11 +1,12 @@
-import { useContext, useCallback } from "react";
+import { useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTransportationModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
 const CardsTransportationModal = ({ tempData, setTempData, onSave }) => {
-  const { sheets, setSheets, isDarkTheme } = useContext(MainContext);
-  const { action, selectedRowIds, onComplete } = tempData; // onComplete is optional
+  const { sheets, setSheets, isDarkTheme, registerModalSteps, goToStep } = useContext(MainContext);
+  const { action, selectedRowIds, onComplete } = tempData;
+  const hasInitialized = useRef(false);
 
   const handleSheetSelect = useCallback(
     (targetSheetName) => {
@@ -19,14 +20,12 @@ const CardsTransportationModal = ({ tempData, setTempData, onSave }) => {
         const sourceSheet = newSheets.allSheets[sourceSheetIndex];
         const targetSheet = newSheets.allSheets[targetSheetIndex];
 
-        // Add IDs to target sheet, avoiding duplicates
         const newTargetRows = [
           ...targetSheet.rows,
           ...selectedRowIds.filter((id) => !targetSheet.rows.includes(id)),
         ];
         newSheets.allSheets[targetSheetIndex] = { ...targetSheet, rows: newTargetRows };
 
-        // Remove IDs from source sheet if moving
         if (action === "move") {
           newSheets.allSheets[sourceSheetIndex] = {
             ...sourceSheet,
@@ -36,15 +35,31 @@ const CardsTransportationModal = ({ tempData, setTempData, onSave }) => {
 
         return newSheets;
       });
-      if (onComplete) onComplete(); // Call only if defined
-      onSave(); // Close the modal
+      if (onComplete) onComplete();
+      onSave();
     },
     [action, selectedRowIds, setSheets, onSave, onComplete]
   );
 
+  // Register modal steps
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: () => action === "move" ? "Move to Sheet" : "Copy to Sheet",
+            rightButtons: () => [{ label: "Done", onClick: onSave }],
+          },
+        ],
+        data: { action, selectedRowIds },
+      });
+      goToStep(1);
+      hasInitialized.current = true;
+    }
+  }, [registerModalSteps, goToStep, action, onSave]);
+
   return (
     <div className={`${styles.transportModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <h3>{action === "move" ? "Move to Sheet" : "Copy to Sheet"}</h3>
       <div className={styles.sheetList}>
         {sheets.allSheets.map((sheet) => (
           <button

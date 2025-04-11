@@ -4,7 +4,7 @@ import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
 const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
-  const { setSheets, isDarkTheme } = useContext(MainContext);
+  const { setSheets, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     return sheets.structure.map((item) => ({
       ...item,
@@ -15,6 +15,30 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const dragItemRef = useRef(null);
+  const hasInitialized = useRef(false); // Add ref to track initialization
+
+  // Register modal title only once on mount
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: () => "Manage Sheets",
+            rightButtons: () => [],
+          },
+        ],
+      });
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: "Manage Sheets",
+        backButtonTitle: "",
+      });
+      goToStep(1);
+      hasInitialized.current = true; // Mark as initialized
+    }
+  }, [registerModalSteps, setModalConfig, goToStep]);
 
   useEffect(() => {
     const newStructure = orderedItems.map((item) => {

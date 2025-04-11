@@ -8,7 +8,7 @@
 }
 
 .createHeader {
-  padding: 19.5px 16px;
+  padding: 13.5px 16px;
   margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.95); /* Light mode */
@@ -49,7 +49,7 @@
 }
 
 .headerItem {
-  padding: 19px 16px;
+  padding: 13px 16px;
   background: rgba(255, 255, 255, 0.95); /* Light mode */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
   transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
@@ -141,7 +141,7 @@
 .inputField,
 .selectField {
   width: 100%;
-  padding: 19.5px 16px;
+  padding: 13.5px 16px;
   border: none;
   border-radius: 12px;
   font-size: 14px;

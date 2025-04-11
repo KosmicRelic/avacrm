@@ -3,18 +3,19 @@ import PropTypes from "prop-types";
 import styles from "./Modal.module.css";
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
+import { FaChevronLeft } from "react-icons/fa";
 
-const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initialData, modalType }) => {
-  const { setSheets, setHeaders, isDarkTheme } = useContext(MainContext);
+const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, modalType, rightButton }) => {
+  const { setSheets, setHeaders, isDarkTheme, modalConfig, goBack, showBackButton } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
   const [tempData, setTempData] = useState(initialData || {});
   const modalRef = useRef(null);
 
   const handleClose = () => {
     setIsClosing(true);
-    const timeoutDuration = window.innerWidth <= 767 ? 300 : 200; // Match mobile (0.3s) or desktop (0.2s)
+    const timeoutDuration = window.innerWidth <= 767 ? 300 : 200;
     setTimeout(() => {
-      setIsClosing(false); // Reset after animation
+      setIsClosing(false);
       onClose();
     }, timeoutDuration);
   };
@@ -29,7 +30,7 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
                 ...sheet,
                 sheetName: tempData.sheetName,
                 headers: tempData.currentHeaders,
-                rows: tempData.rows ||  tempData.rows || sheet.rows,
+                rows: tempData.rows || sheet.rows,
                 pinnedHeaders: sheet.pinnedHeaders,
                 isActive: sheet.isActive,
               };
@@ -85,7 +86,8 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
         }));
         break;
       case "transport":
-        // No explicit save action here; handled by CardsTransportationModal
+        break;
+      case "cardsTemplate":
         break;
       default:
         break;
@@ -130,17 +132,34 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
         {showHandleBar && window.innerWidth <= 767 && (
           <div className={`${styles.handleBar} ${isDarkTheme ? styles.darkTheme : ""}`} />
         )}
-        {title && (
+        {(modalConfig.showTitle || showBackButton || modalConfig.showDoneButton || rightButton) && (
           <div className={styles.modalHeader}>
-            <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              {title}
-            </h2>
-            {modalType !== "transport" && (
+            {showBackButton && (
+              <button
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={goBack}
+              >
+                <span className={styles.chevron}><FaChevronLeft /></span> {modalConfig.backButtonTitle}
+              </button>
+            )}
+            {modalConfig.showTitle && (
+              <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                {modalConfig.title}
+              </h2>
+            )}
+            {modalConfig.showDoneButton && modalType !== "transport" && !rightButton ? (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSaveAndClose}
               >
                 Done
+              </button>
+            ) : rightButton && (
+              <button
+                className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={rightButton.onClick}
+              >
+                {rightButton.label}
               </button>
             )}
           </div>
@@ -154,11 +173,14 @@ const Modal = ({ children, onClose, title, showHandleBar = true, onSave, initial
 Modal.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
-  title: PropTypes.string,
   showHandleBar: PropTypes.bool,
   onSave: PropTypes.func,
   initialData: PropTypes.object,
   modalType: PropTypes.string.isRequired,
+  rightButton: PropTypes.shape({
+    label: PropTypes.string,
+    onClick: PropTypes.func,
+  }),
 };
 
 Modal.defaultProps = {

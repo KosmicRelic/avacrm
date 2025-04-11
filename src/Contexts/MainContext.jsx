@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useRef } from "react";
+import { createContext, useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 
 export const MainContext = createContext();
@@ -135,6 +135,79 @@ export const MainContextProvider = ({ children }) => {
     },
   ]);
 
+  const [tempData, setTempData] = useState(cardTemplates);
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+
+  const [modalConfig, setModalConfig] = useState({
+    showTitle: true,
+    showDoneButton: true,
+    title: "Card Templates",
+    backButtonTitle: "",
+  });
+  const [modalSteps, setModalSteps] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showBackButton, setShowBackButton] = useState(false);
+
+  const getStepTitle = useCallback((stepIndex, args) => {
+    const step = modalSteps[stepIndex];
+    return typeof step?.title === "function" ? step.title(args) : step?.title || "";
+  }, [modalSteps]);
+
+  const registerModalSteps = useCallback((stepsConfig) => {
+    setModalSteps(stepsConfig.steps);
+    setCurrentStep(1);
+    setShowBackButton(false);
+    setModalConfig({
+      showTitle: true,
+      showDoneButton: true,
+      title: getStepTitle(0, { tempData, selectedTemplateIndex, currentSectionIndex, editMode }),
+      backButtonTitle: "",
+    });
+  }, [tempData, selectedTemplateIndex, currentSectionIndex, editMode, getStepTitle]);
+
+  const goToStep = useCallback((step) => {
+    if (step < 1 || step > modalSteps.length) return;
+  
+    const currentStepIndex = step - 1;
+    const previousStepIndex = step - 2;
+    const newTitle = getStepTitle(currentStepIndex, { tempData, selectedTemplateIndex, currentSectionIndex, editMode });
+    const previousStepTitle = previousStepIndex >= 0
+      ? getStepTitle(previousStepIndex, { tempData, selectedTemplateIndex, currentSectionIndex, editMode })
+      : "";
+  
+    setCurrentStep(step);
+    setShowBackButton(step > 1);
+    setModalConfig({
+      showTitle: true,
+      showDoneButton: step === 1,
+      title: newTitle,
+      backButtonTitle: previousStepTitle,
+    });
+  }, [modalSteps, tempData, selectedTemplateIndex, currentSectionIndex, editMode, getStepTitle]);
+  
+  const goBack = useCallback(() => {
+    if (currentStep <= 1) return;
+  
+    const newStep = currentStep - 1;
+    const currentStepIndex = newStep - 1;
+    const previousStepIndex = newStep - 2;
+    const newTitle = getStepTitle(currentStepIndex, { tempData, selectedTemplateIndex, currentSectionIndex, editMode });
+    const previousStepTitle = previousStepIndex >= 0
+      ? getStepTitle(previousStepIndex, { tempData, selectedTemplateIndex, currentSectionIndex, editMode })
+      : "";
+  
+    setCurrentStep(newStep);
+    setShowBackButton(newStep > 1);
+    setModalConfig({
+      showTitle: true,
+      showDoneButton: newStep === 1,
+      title: newTitle,
+      backButtonTitle: previousStepTitle,
+    });
+  }, [currentStep, modalSteps, tempData, selectedTemplateIndex, currentSectionIndex, editMode, getStepTitle]);
+
   useEffect(() => {
     themeRef.current = isDarkTheme ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", themeRef.current);
@@ -159,6 +232,22 @@ export const MainContextProvider = ({ children }) => {
         themeRef,
         cardTemplates,
         setCardTemplates,
+        tempData,
+        setTempData,
+        selectedTemplateIndex,
+        setSelectedTemplateIndex,
+        currentSectionIndex,
+        setCurrentSectionIndex,
+        editMode,
+        setEditMode,
+        modalConfig,
+        setModalConfig,
+        modalSteps,
+        currentStep,
+        showBackButton,
+        registerModalSteps,
+        goToStep,
+        goBack,
       }}
     >
       {children}

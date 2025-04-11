@@ -5,7 +5,7 @@ import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tempData, setTempData }) => {
-  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
+  const { headers: allHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
       const initial = {};
@@ -26,6 +26,30 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
+  const hasInitialized = useRef(false); // Add ref to track initialization
+
+  // Register modal title only once on mount
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: () => "Filters",
+            rightButtons: () => [],
+          },
+        ],
+      });
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: "Filters",
+        backButtonTitle: "",
+      });
+      goToStep(1);
+      hasInitialized.current = true; // Mark as initialized
+    }
+  }, [registerModalSteps, setModalConfig, goToStep]);
 
   // Sync filterValues with tempData.filterValues
   useEffect(() => {
@@ -86,7 +110,7 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
         })
       );
       onApply(cleanedFilters);
-      setTempData({ filterValues: cleanedFilters }); // Sync with tempData
+      setTempData({ filterValues: cleanedFilters });
     },
     [numberRangeMode, onApply, setTempData]
   );

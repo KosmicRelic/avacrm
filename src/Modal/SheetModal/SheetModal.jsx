@@ -12,7 +12,7 @@ const SheetModal = ({
   sheets = [],
   onPinToggle,
 }) => {
-  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
+  const { headers: allHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || "");
   const [currentHeaders, setCurrentHeaders] = useState(() => {
     const uniqueHeaders = [];
@@ -33,6 +33,30 @@ const SheetModal = ({
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const headerRefs = useRef(new Map());
+  const hasInitialized = useRef(false); // Add ref to track initialization
+
+  // Register modal title only once on mount
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: () => (isEditMode ? "Edit Sheet" : "Create Sheet"),
+            rightButtons: () => [],
+          },
+        ],
+      });
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: isEditMode ? "Edit Sheet" : "Create Sheet",
+        backButtonTitle: "",
+      });
+      goToStep(1);
+      hasInitialized.current = true; // Mark as initialized
+    }
+  }, [registerModalSteps, setModalConfig, goToStep, isEditMode]);
 
   useEffect(() => {
     setTempData((prev) => ({
@@ -45,10 +69,10 @@ const SheetModal = ({
 
   const resolvedHeaders = useMemo(() =>
     currentHeaders.map((header) => {
-      const globalHeader = allHeaders.find((h) => h.key === header.key); // Match by key directly
+      const globalHeader = allHeaders.find((h) => h.key === header.key);
       return {
         ...header,
-        name: header.name || (globalHeader ? globalHeader.name : header.key), // Prioritize header.name
+        name: header.name || (globalHeader ? globalHeader.name : header.key),
         type: header.type || (globalHeader ? globalHeader.type : "text"),
       };
     }), [currentHeaders, allHeaders]);

@@ -16,7 +16,22 @@ import CardsTransportationModal from "./Modal/Cards Transportaion Modal/CardsTra
 import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
 
 function App() {
-  const { sheets, setSheets, cards, setCards, headers, setHeaders } = useContext(MainContext);
+  const {
+    sheets,
+    setSheets,
+    cards,
+    setCards,
+    headers,
+    setHeaders,
+    setModalConfig,
+    cardTemplates,
+    currentStep,
+    editMode,
+    setEditMode,
+    registerModalSteps,
+    goToStep,
+  } = useContext(MainContext);
+
   const sheetModal = useModal();
   const filterModal = useModal();
   const headersModal = useModal();
@@ -45,6 +60,19 @@ function App() {
   const resolvedRows = useMemo(() => {
     return activeSheet?.rows.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
   }, [activeSheet, cards]);
+
+  // Reset modal state before opening a new modal
+  const resetModalState = useCallback(() => {
+    registerModalSteps({ steps: [] }); // Clear previous steps
+    setModalConfig({
+      showTitle: false,
+      showDoneButton: false,
+      showBackButton: false,
+      title: "",
+      backButtonTitle: "",
+    }); // Reset config to default
+    goToStep(1); // Reset to step 1
+  }, [registerModalSteps, setModalConfig, goToStep]);
 
   const handlePinToggle = useCallback(
     (headerKey) => {
@@ -104,53 +132,77 @@ function App() {
     [activeSheetName, setCards, setSheets]
   );
 
-  const handleSaveOrder = useCallback((newOrder) => {
-    setSheets((prev) => ({
-      ...prev,
-      structure: newOrder,
-    }));
-  }, [setSheets]);
+  const handleSaveOrder = useCallback(
+    (newOrder) => {
+      setSheets((prev) => ({
+        ...prev,
+        structure: newOrder,
+      }));
+    },
+    [setSheets]
+  );
 
   const onEditSheet = useCallback(() => {
+    resetModalState(); // Reset state before opening
     setIsSheetModalEditMode(true);
     setActiveModal({ type: "sheet", data: { isEditMode: true } });
     sheetModal.open();
-  }, [sheetModal]);
+  }, [sheetModal, resetModalState]);
 
   const onFilter = useCallback(() => {
+    resetModalState(); // Reset state before opening
     setActiveModal({ type: "filter" });
     filterModal.open();
-  }, [filterModal]);
+  }, [filterModal, resetModalState]);
 
   const onManageHeaders = useCallback(() => {
+    resetModalState(); // Reset state before opening
     setActiveModal({ type: "headers" });
     headersModal.open();
-  }, [headersModal]);
+  }, [headersModal, resetModalState]);
 
   const onOpenSheetsModal = useCallback(() => {
+    resetModalState(); // Reset state before opening
     setActiveModal({ type: "sheets" });
     sheetsModal.open();
-  }, [sheetsModal]);
+  }, [sheetsModal, resetModalState]);
 
-  const onOpenTransportModal = useCallback((action, selectedRowIds, onComplete) => {
-    setActiveModal({ type: "transport", data: { action, selectedRowIds, onComplete } });
-    transportModal.open();
-  }, [transportModal]);
+  const onOpenTransportModal = useCallback(
+    (action, selectedRowIds, onComplete) => {
+      resetModalState(); // Reset state before opening
+      setActiveModal({ type: "transport", data: { action, selectedRowIds, onComplete } });
+      transportModal.open();
+    },
+    [transportModal, resetModalState]
+  );
 
   const onOpenCardsTemplateModal = useCallback(() => {
+    resetModalState(); // Reset state before opening
     setActiveModal({ type: "cardsTemplate" });
     cardsTemplateModal.open();
-  }, [cardsTemplateModal]);
+  }, [cardsTemplateModal, resetModalState]);
 
   const handleModalClose = useCallback(() => {
     setActiveModal(null);
+    resetModalState(); // Reset state on close
+    setEditMode(false);
     sheetModal.close();
     filterModal.close();
     headersModal.close();
     sheetsModal.close();
     transportModal.close();
     cardsTemplateModal.close();
-  }, [sheetModal, filterModal, headersModal, sheetsModal, transportModal, cardsTemplateModal]);
+  }, [
+    sheetModal,
+    filterModal,
+    headersModal,
+    sheetsModal,
+    transportModal,
+    cardsTemplateModal,
+    setModalConfig,
+    setEditMode,
+    resetModalState,
+  ]);
 
   const handleOpenProfileModal = useCallback(() => {
     setIsProfileModalOpen(true);
@@ -173,7 +225,7 @@ function App() {
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
             }}
-            setTemp  setTempData={(newData) => {
+            setTempData={(newData) => {
               if (isSheetModalEditMode) {
                 setSheets((prev) => ({
                   ...prev,
@@ -190,11 +242,32 @@ function App() {
           />
         );
       case "filter":
-        return <FilterModal headers={resolvedHeaders} rows={resolvedRows} onApply={setFilters} filters={filters} />;
+        return (
+          <FilterModal
+            headers={resolvedHeaders}
+            rows={resolvedRows}
+            onApply={setFilters}
+            filters={filters}
+            tempData={{ filterValues: filters }}
+            setTempData={(newData) => setFilters(newData.filterValues)}
+          />
+        );
       case "headers":
-        return <HeadersModal />;
+        return (
+          <HeadersModal
+            tempData={{ currentHeaders: headers }}
+            setTempData={(newData) => setHeaders(newData.currentHeaders)}
+          />
+        );
       case "sheets":
-        return <SheetsModal sheets={sheets} onSaveOrder={handleSaveOrder} />;
+        return (
+          <SheetsModal
+            sheets={sheets}
+            onSaveOrder={handleSaveOrder}
+            tempData={{ newOrder: sheets.structure }}
+            setTempData={(newData) => handleSaveOrder(newData.newOrder)}
+          />
+        );
       case "transport":
         return (
           <CardsTransportationModal
@@ -204,7 +277,7 @@ function App() {
           />
         );
       case "cardsTemplate":
-        return <CardsTemplate />;
+        return <CardsTemplate onSave={handleModalClose} />;
       default:
         return null;
     }
@@ -241,28 +314,44 @@ function App() {
         )}
         {activeModal && (
           <Modal
-            title={
-              activeModal.type === "sheet" ? (isSheetModalEditMode ? "Edit Sheet" : "New Sheet") :
-              activeModal.type === "filter" ? "Filters" :
-              activeModal.type === "headers" ? "Manage Columns" :
-              activeModal.type === "sheets" ? "Manage Sheets" :
-              activeModal.type === "transport" ? (activeModal.data.action === "move" ? "Move Cards" : "Copy Cards") :
-              activeModal.type === "cardsTemplate" ? "Card Templates" : ""
-            }
             onClose={handleModalClose}
-            onSave={activeModal.type === "transport" ? handleModalClose : setFilters}
+            onSave={
+              activeModal.type === "filter"
+                ? setFilters
+                : activeModal.type === "sheets"
+                ? handleSaveOrder
+                : activeModal.type === "sheet" || activeModal.type === "cardsTemplate"
+                ? handleModalClose
+                : () => {}
+            }
             initialData={
-              activeModal.type === "sheet" ? {
-                sheetName: isSheetModalEditMode ? activeSheetName : "",
-                currentHeaders: resolvedHeaders,
-                rows: activeSheet?.rows || [],
-              } :
-              activeModal.type === "filter" ? { filterValues: filters } :
-              activeModal.type === "headers" ? { currentHeaders: headers } :
-              activeModal.type === "sheets" ? { newOrder: sheets.structure } :
-              activeModal.type === "transport" ? activeModal.data : {}
+              activeModal.type === "sheet"
+                ? {
+                    sheetName: isSheetModalEditMode ? activeSheetName : "",
+                    currentHeaders: resolvedHeaders,
+                    rows: activeSheet?.rows || [],
+                  }
+                : activeModal.type === "filter"
+                ? { filterValues: filters }
+                : activeModal.type === "headers"
+                ? { currentHeaders: headers }
+                : activeModal.type === "sheets"
+                ? { newOrder: sheets.structure }
+                : activeModal.type === "transport"
+                ? activeModal.data
+                : activeModal.type === "cardsTemplate"
+                ? cardTemplates
+                : {}
             }
             modalType={activeModal.type}
+            rightButton={
+              activeModal.type === "cardsTemplate" && currentStep === 2
+                ? {
+                    label: editMode ? "Done" : "Edit",
+                    onClick: () => setEditMode(!editMode),
+                  }
+                : null
+            }
           >
             {renderModalContent()}
           </Modal>
@@ -279,8 +368,6 @@ function App() {
   );
 }
 
-App.propTypes = {
-  // No props are directly passed to App component in this case
-};
+App.propTypes = {};
 
 export default App;

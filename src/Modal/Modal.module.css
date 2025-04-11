@@ -4,39 +4,39 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4); /* Light mode: semi-transparent gray */
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease-out forwards; /* Desktop fade-in: 0.2s */
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
 .modalOverlay.darkTheme {
-  background: rgba(0, 0, 0, 0.6); /* Dark mode: darker overlay */
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .modalOverlay.closing {
-  animation: fadeOut 0.2s ease-in forwards; /* Desktop fade-out: 0.2s */
+  animation: fadeOut 0.2s ease-in forwards;
 }
 
 @media (max-width: 767px) {
   .modalOverlay {
     align-items: flex-end;
-    animation: fadeInMobile 0.3s ease-out forwards; /* Mobile fade-in: 0.3s, light mode */
+    animation: fadeInMobile 0.3s ease-out forwards;
   }
 
   .modalOverlay.darkTheme {
-    animation: fadeInMobileDark 0.3s ease-out forwards; /* Mobile fade-in: 0.3s, dark mode */
+    animation: fadeInMobileDark 0.3s ease-out forwards;
   }
 
   .modalOverlay.closing {
-    animation: fadeOutMobile 0.3s ease-in forwards; /* Mobile fade-out: 0.3s, light mode */
+    animation: fadeOutMobile 0.3s ease-in forwards;
   }
 
   .modalOverlay.darkTheme.closing {
-    animation: fadeOutMobileDark 0.3s ease-in forwards; /* Mobile fade-out: 0.3s, dark mode */
+    animation: fadeOutMobileDark 0.3s ease-in forwards;
   }
 }
 
@@ -52,21 +52,21 @@
 
 @keyframes fadeInMobile {
   from { background: rgba(0, 0, 0, 0); }
-  to { background: rgba(0, 0, 0, 0.4); } /* Light mode */
+  to { background: rgba(0, 0, 0, 0.4); }
 }
 
 @keyframes fadeInMobileDark {
   from { background: rgba(0, 0, 0, 0); }
-  to { background: rgba(0, 0, 0, 0.6); } /* Dark mode */
+  to { background: rgba(0, 0, 0, 0.6); }
 }
 
 @keyframes fadeOutMobile {
-  from { background: rgba(0, 0, 0, 0.4); } /* Light mode */
+  from { background: rgba(0, 0, 0, 0.4); }
   to { background: rgba(0, 0, 0, 0); }
 }
 
 @keyframes fadeOutMobileDark {
-  from { background: rgba(0, 0, 0, 0.6); } /* Dark mode */
+  from { background: rgba(0, 0, 0, 0.6); }
   to { background: rgba(0, 0, 0, 0); }
 }
 
@@ -89,7 +89,7 @@
 }
 
 .modalContent.darkTheme {
-  background: rgba(28, 28, 30, 0.95); /* Dark mode: iOS deep gray-black */
+  background: rgba(28, 28, 30, 0.95);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -123,56 +123,99 @@
 
 .modalHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center; /* Center the title by default */
   margin-bottom: 20px;
+  padding: 0;
+  position: relative;
+  width: 100%;
+  min-height: 44px; /* Standard height for iOS navigation bars */
 }
 
 .modalTitle {
-  font-size: 20px;
+  font-size: 17px; /* iOS standard title size */
   font-weight: 600;
-  color: #1d1d1f; /* Light mode: dark text */
+  color: #1d1d1f;
   margin: 0;
   transition: color 0.3s ease;
+  text-align: center;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: absolute; /* Center it absolutely */
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 60%; /* Prevent overlap with buttons */
 }
 
 .modalTitle.darkTheme {
-  color: #ffffff; /* Dark mode: white text */
+  color: #ffffff;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 400;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease;
+  position: absolute;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  max-width: 40%; /* Prevent overlap with title */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backButton.darkTheme {
+  color: #0a84ff;
+}
+
+.chevron {
+  margin-right: 4px;
+  font-size: 14px; /* Slightly smaller for balance */
 }
 
 .doneButton {
   background: none;
   border: none;
-  color: #007aff; /* Light mode: iOS blue */
+  color: #007aff;
   font-size: 17px;
   font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
   transition: all 0.2s ease, color 0.3s ease;
+  position: absolute;
+  right: 10px;
 }
 
 .doneButton.darkTheme {
-  color: #0a84ff; /* Dark mode: vibrant iOS blue */
+  color: #0a84ff;
 }
 
 .doneButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+  background: rgba(0, 122, 255, 0.1);
   border-radius: 12px;
 }
 
 .doneButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .handleBar {
   width: 40px;
   height: 5px;
-  background-color: rgba(0, 0, 0, 0.2); /* Light mode: subtle gray */
+  background-color: rgba(0, 0, 0, 0.2);
   border-radius: 2.5px;
   margin: 0 auto 10px;
   transition: background 0.3s ease;
 }
 
 .handleBar.darkTheme {
-  background-color: rgba(255, 255, 255, 0.3); /* Dark mode: subtle white */
+  background-color: rgba(255, 255, 255, 0.3);
 }
