@@ -5,7 +5,7 @@ import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import { FaChevronLeft } from "react-icons/fa";
 
-const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, modalType, rightButton }) => {
+const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton }) => {
   const { setSheets, setHeaders, isDarkTheme, modalConfig, goToStep, currentStep, goBack } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
   const [tempData, setTempData] = useState(initialData || {});
@@ -131,9 +131,6 @@ const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, m
         }`}
         ref={modalRef}
       >
-        {showHandleBar && window.innerWidth <= 767 && (
-          <div className={`${styles.handleBar} ${isDarkTheme ? styles.darkTheme : ""}`} />
-        )}
         {(modalConfig.showTitle || modalConfig.showBackButton || modalConfig.showDoneButton || rightButton) && (
           <div className={styles.modalHeader}>
             {modalConfig.showBackButton && (
@@ -175,7 +172,6 @@ const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, m
 Modal.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
-  showHandleBar: PropTypes.bool,
   onSave: PropTypes.func,
   initialData: PropTypes.object,
   modalType: PropTypes.string.isRequired,
@@ -186,7 +182,6 @@ Modal.propTypes = {
 };
 
 Modal.defaultProps = {
-  showHandleBar: true,
 };
 
 export default Modal;

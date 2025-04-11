@@ -129,7 +129,7 @@
   padding: 0;
   position: relative;
   width: 100%;
-  min-height: 44px; /* Standard height for iOS navigation bars */
+  min-height: 44px;
 }
 
 .modalTitle {
@@ -147,6 +147,7 @@
   left: 50%;
   transform: translateX(-50%);
   max-width: 60%; /* Prevent overlap with buttons */
+  top: 0;
 }
 
 .modalTitle.darkTheme {
@@ -163,9 +164,11 @@
   cursor: pointer;
   transition: all 0.2s ease, color 0.3s ease;
   position: absolute;
-  left: 10px;
+  top: 0px;
+  left: 0px;
   display: flex;
   align-items: center;
+  justify-content: center;
   max-width: 40%; /* Prevent overlap with title */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -187,35 +190,14 @@
   color: #007aff;
   font-size: 17px;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 0;
   cursor: pointer;
   transition: all 0.2s ease, color 0.3s ease;
   position: absolute;
-  right: 10px;
+  right: 0px;
+  top: 0;
 }
 
 .doneButton.darkTheme {
   color: #0a84ff;
-}
-
-.doneButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-  border-radius: 12px;
-}
-
-.doneButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2);
-}
-
-.handleBar {
-  width: 40px;
-  height: 5px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 2.5px;
-  margin: 0 auto 10px;
-  transition: background 0.3s ease;
-}
-
-.handleBar.darkTheme {
-  background-color: rgba(255, 255, 255, 0.3);
 }
