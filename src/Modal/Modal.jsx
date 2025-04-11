@@ -6,12 +6,13 @@ import { MainContext } from "../Contexts/MainContext";
 import { FaChevronLeft } from "react-icons/fa";
 
 const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, modalType, rightButton }) => {
-  const { setSheets, setHeaders, isDarkTheme, modalConfig, goBack, showBackButton } = useContext(MainContext);
+  const { setSheets, setHeaders, isDarkTheme, modalConfig, goToStep, currentStep, goBack } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
   const [tempData, setTempData] = useState(initialData || {});
   const modalRef = useRef(null);
 
   const handleClose = () => {
+    if (currentStep !== 1) return; // Prevent closing if not on step 1
     setIsClosing(true);
     const timeoutDuration = window.innerWidth <= 767 ? 300 : 200;
     setTimeout(() => {
@@ -21,6 +22,7 @@ const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, m
   };
 
   const handleSaveAndClose = () => {
+    if (currentStep !== 1) return; // Prevent saving/closing if not on step 1
     switch (modalType) {
       case "sheet":
         setSheets((prevSheets) => {
@@ -132,12 +134,12 @@ const Modal = ({ children, onClose, showHandleBar = true, onSave, initialData, m
         {showHandleBar && window.innerWidth <= 767 && (
           <div className={`${styles.handleBar} ${isDarkTheme ? styles.darkTheme : ""}`} />
         )}
-        {(modalConfig.showTitle || showBackButton || modalConfig.showDoneButton || rightButton) && (
+        {(modalConfig.showTitle || modalConfig.showBackButton || modalConfig.showDoneButton || rightButton) && (
           <div className={styles.modalHeader}>
-            {showBackButton && (
+            {modalConfig.showBackButton && (
               <button
                 className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={goBack}
+                onClick={goBack} // Use goBack instead of goToStep directly
               >
                 <span className={styles.chevron}><FaChevronLeft /></span> {modalConfig.backButtonTitle}
               </button>

@@ -31,6 +31,7 @@ const CardsTemplate = ({ onSave }) => {
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [prevStep, setPrevStep] = useState(null);
   const keyRefs = useRef(new Map());
   const hasInitialized = useRef(false);
 
@@ -41,10 +42,36 @@ const CardsTemplate = ({ onSave }) => {
   }));
 
   const handleSave = useCallback(() => {
-    const cleanedTempData = tempData.map((template) => {
-      const { isEditing, originalName, deleteTemplate, ...rest } = template;
-      return rest;
-    }).filter((template) => !template.deleteTemplate);
+    if (currentStep !== 1) return;
+    const cleanedTempData = tempData
+      .map((template) => {
+        const { isEditing, originalName, deleteTemplate, ...rest } = template;
+        return rest;
+      })
+      .filter((template) => !template.deleteTemplate);
+
+    const existingNames = cardTemplates.map((t) => t.name.toLowerCase());
+    const tempNames = cleanedTempData.map((t) => t.name.toLowerCase());
+    const hasDuplicate = tempNames.some(
+      (name, index) =>
+        (existingNames.includes(name) &&
+          !cardTemplates.some((t) => t.name.toLowerCase() === tempData[index]?.originalName?.toLowerCase())) ||
+        tempNames.indexOf(name) !== index
+    );
+
+    if (hasDuplicate) {
+      alert("Duplicate template names are not allowed (case-insensitive). Please use unique names.");
+      return;
+    }
+
+    for (const template of cleanedTempData) {
+      const sectionNames = template.sections.map((s) => s.name.toLowerCase());
+      const hasDuplicateSections = sectionNames.some((name, idx) => sectionNames.indexOf(name) !== idx);
+      if (hasDuplicateSections) {
+        alert(`Duplicate section names found in template "${template.name}" (case-insensitive). Please use unique section names.`);
+        return;
+      }
+    }
 
     setCardTemplates((prev) => {
       const updatedTemplates = [...prev];
@@ -60,7 +87,43 @@ const CardsTemplate = ({ onSave }) => {
     });
     setTempData(cleanedTempData);
     onSave();
-  }, [tempData, setCardTemplates, setTempData, onSave]);
+  }, [tempData, setCardTemplates, setTempData, onSave, currentStep, cardTemplates]);
+
+  const handleCreateCard = useCallback(() => {
+    if (selectedTemplateIndex === null || !tempData[selectedTemplateIndex].name.trim()) {
+      alert("Please enter a non-empty template name before creating.");
+      return;
+    }
+
+    const currentTemplate = tempData[selectedTemplateIndex];
+    const { isEditing, originalName, deleteTemplate, ...rest } = currentTemplate;
+
+    const existingNames = cardTemplates.map((t) => t.name.toLowerCase());
+    if (existingNames.includes(rest.name.toLowerCase()) && rest.name !== originalName) {
+      alert("A template with this name already exists (case-insensitive). Please use a unique name.");
+      return;
+    }
+
+    setCardTemplates((prev) => {
+      const updatedTemplates = [...prev];
+      const index = updatedTemplates.findIndex((t) => t.name === originalName);
+      if (index >= 0) {
+        updatedTemplates[index] = { ...rest, keys: rest.sections.flatMap((s) => s.keys) };
+      } else {
+        updatedTemplates.push({ ...rest, keys: rest.sections.flatMap((s) => s.keys) });
+      }
+      return updatedTemplates;
+    });
+
+    setTempData((prev) => {
+      const newTemp = [...prev];
+      newTemp[selectedTemplateIndex] = { ...rest, isEditing: false, originalName: rest.name, deleteTemplate: null };
+      return newTemp;
+    });
+
+    setPrevStep(currentStep);
+    goToStep(2);
+  }, [tempData, setTempData, selectedTemplateIndex, cardTemplates, setCardTemplates, goToStep, currentStep]);
 
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => !prev);
@@ -68,6 +131,8 @@ const CardsTemplate = ({ onSave }) => {
 
   useEffect(() => {
     if (!hasInitialized.current) {
+      hasInitialized.current = true;
+
       const steps = [
         {
           title: () => "Card Templates",
@@ -75,56 +140,57 @@ const CardsTemplate = ({ onSave }) => {
         },
         {
           title: ({ tempData, selectedTemplateIndex }) =>
-            tempData[selectedTemplateIndex]?.name || "New Template",
+            selectedTemplateIndex !== null && tempData[selectedTemplateIndex]
+              ? tempData[selectedTemplateIndex].name || "New Template"
+              : "New Template",
           rightButtons: ({ editMode }) => [
             { label: editMode ? "Done" : "Edit", onClick: toggleEditMode },
           ],
         },
         {
           title: ({ tempData, selectedTemplateIndex, currentSectionIndex }) =>
-            tempData[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+            selectedTemplateIndex !== null &&
+            currentSectionIndex !== null &&
+            tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
+              ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+              : "Section",
           rightButtons: () => [],
         },
       ];
 
-      // Register steps and set initial modal config
-      registerModalSteps({ steps });
-      setModalConfig({
-        showTitle: true,
-        showDoneButton: true,
-        title: steps[0].title(),
-        backButtonTitle: "",
-      });
-      goToStep(1);
-      hasInitialized.current = true;
+      setTimeout(() => {
+        registerModalSteps({ steps });
+        setModalConfig({
+          showTitle: true,
+          showDoneButton: true,
+          showBackButton: false,
+          title: "Card Templates",
+          backButtonTitle: "",
+        });
+        goToStep(1);
+
+        if (!tempData.length) {
+          setTempData(
+            cardTemplates.map((t) => ({
+              ...t,
+              isEditing: false,
+              originalName: t.name,
+              deleteTemplate: null,
+            }))
+          );
+        }
+      }, 0);
     }
-  }, [registerModalSteps, goToStep, handleSave, toggleEditMode, setModalConfig]);
-
-  // Refresh modal config when step or context changes
-  useEffect(() => {
-    const steps = [
-      {
-        title: () => "Card Templates",
-      },
-      {
-        title: () => tempData[selectedTemplateIndex]?.name || "New Template",
-      },
-      {
-        title: () =>
-          tempData[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-      },
-    ];
-
-    const currentStepIndex = currentStep - 1;
-    const previousStepIndex = currentStep - 2;
-
-    setModalConfig({
-      showTitle: true,
-      showDoneButton: currentStep === 1,
-      title: steps[currentStepIndex]?.title() || "",
-      backButtonTitle: previousStepIndex >= 0 ? steps[previousStepIndex].title() : "",
-    });
-  }, [currentStep, tempData, selectedTemplateIndex, currentSectionIndex, setModalConfig]);
+  }, [
+    registerModalSteps,
+    goToStep,
+    handleSave,
+    toggleEditMode,
+    setModalConfig,
+    tempData,
+    setTempData,
+    cardTemplates,
+  ]);
 
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
@@ -163,7 +229,7 @@ const CardsTemplate = ({ onSave }) => {
         newTemp[selectedTemplateIndex] = currentTemplate;
         return newTemp;
       });
-      setTimeout(() => setDraggedIndex(index), 0);
+      setTimeout(() => setDraggedIndex(index), 0); // Defer to avoid render conflicts
     },
     [draggedIndex, draggedSectionIndex, selectedTemplateIndex, setTempData]
   );
@@ -233,58 +299,76 @@ const CardsTemplate = ({ onSave }) => {
     (template = null) => {
       setTempData((prev) => {
         if (!template) {
-          const newTemp = [...prev, {
-            name: "",
-            typeOfCards: "",
-            sections: [],
-            isEditing: false,
-            originalName: null,
-            deleteTemplate: null,
-          }];
+          const newTemp = [
+            ...prev,
+            {
+              name: "",
+              typeOfCards: "",
+              sections: [],
+              isEditing: true,
+              originalName: null,
+              deleteTemplate: null,
+            },
+          ];
           setSelectedTemplateIndex(newTemp.length - 1);
+          setPrevStep(currentStep);
           goToStep(2);
           return newTemp;
         }
         const existingIndex = prev.findIndex((t) => t.originalName === template.name);
         if (existingIndex >= 0) {
           setSelectedTemplateIndex(existingIndex);
+          setPrevStep(currentStep);
           goToStep(2);
           return prev;
         }
-        const newTemp = [...prev, {
-          name: template.name || "",
-          typeOfCards: template.typeOfCards || template.name || "",
-          sections: Array.isArray(template.sections) ? [...template.sections] : [],
-          isEditing: true,
-          originalName: template.name || null,
-          deleteTemplate: null,
-        }];
+        const newTemp = [
+          ...prev,
+          {
+            name: template.name || "",
+            typeOfCards: template.typeOfCards || template.name || "",
+            sections: Array.isArray(template.sections) ? [...template.sections] : [],
+            isEditing: true,
+            originalName: template.name || null,
+            deleteTemplate: null,
+          },
+        ];
         setSelectedTemplateIndex(newTemp.length - 1);
+        setPrevStep(currentStep);
         goToStep(2);
         return newTemp;
       });
     },
-    [setTempData, setSelectedTemplateIndex, goToStep]
+    [setTempData, setSelectedTemplateIndex, goToStep, currentStep]
   );
 
   const addSection = useCallback(() => {
     setTempData((prev) => {
       const newTemp = [...prev];
       const currentTemplate = { ...newTemp[selectedTemplateIndex] };
+      const newSectionName = `Section ${currentTemplate.sections.length + 1}`;
+      if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.toLowerCase())) {
+        alert(`Section name "${newSectionName}" already exists (case-insensitive). Please use a unique name.`);
+        return prev;
+      }
       currentTemplate.sections = [
         ...currentTemplate.sections,
-        { name: `Section ${currentTemplate.sections.length + 1}`, keys: [] },
+        { name: newSectionName, keys: [] },
       ];
       newTemp[selectedTemplateIndex] = currentTemplate;
-      goToStep(2);
       return newTemp;
     });
-  }, [selectedTemplateIndex, setTempData, goToStep]);
+  }, [selectedTemplateIndex, setTempData]);
 
   const updateSectionName = useCallback(
     (index, newName) => {
       setTempData((prev) => {
         const newTemp = [...prev];
+        const currentTemplate = { ...newTemp[selectedTemplateIndex] };
+        if (currentTemplate.sections.some((s, i) => i !== index && s.name.toLowerCase() === newName.toLowerCase())) {
+          alert(`Section name "${newName}" already exists in this template (case-insensitive). Please use a unique name.`);
+          return prev;
+        }
         newTemp[selectedTemplateIndex].sections[index].name = newName;
         return newTemp;
       });
@@ -311,9 +395,10 @@ const CardsTemplate = ({ onSave }) => {
   const handleEditSection = useCallback(
     (index) => {
       setCurrentSectionIndex(index);
+      setPrevStep(currentStep);
       goToStep(3);
     },
-    [setCurrentSectionIndex, goToStep]
+    [setCurrentSectionIndex, goToStep, currentStep]
   );
 
   const toggleKeySelection = useCallback(
@@ -380,204 +465,244 @@ const CardsTemplate = ({ onSave }) => {
         return newTemp;
       });
       handleSave();
+      setPrevStep(currentStep);
       goToStep(1);
     }
-  }, [selectedTemplateIndex, tempData, setTempData, handleSave, goToStep]);
+  }, [selectedTemplateIndex, tempData, setTempData, handleSave, goToStep, currentStep]);
+
+  const getAnimationClass = useCallback(
+    (step) => {
+      if (prevStep === null) return "";
+      const isForward = step > prevStep;
+      if (step === currentStep) {
+        return isForward ? styles.slideInRight : styles.slideInLeft;
+      }
+      if (step === prevStep) {
+        return isForward ? styles.slideOutLeft : styles.slideOutRight;
+      }
+      return "";
+    },
+    [currentStep, prevStep]
+  );
 
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      {currentStep === 1 && (
-        <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <button
-            className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={() => handleOpenEditor()}
+      <div className={styles.viewContainer}>
+        {[1, 2, 3].map((step) => (
+          <div
+            key={step}
+            className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
+              step === currentStep || step === prevStep ? getAnimationClass(step) : styles.hidden
+            }`}
+            style={{ display: step === currentStep || step === prevStep ? "block" : "none" }}
           >
-            <FaPlus /> Add New Card Template
-          </button>
-          <div className={styles.templateList}>
-            {cardTemplates.map((template) => (
-              <button
-                key={template.name}
-                className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={() => handleOpenEditor(template)}
-              >
-                {template.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+            {step === 1 && (
+              <>
+                <button
+                  className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={() => handleOpenEditor()}
+                >
+                  <FaPlus /> Add New Card Template
+                </button>
+                <div className={styles.templateList}>
+                  {cardTemplates.map((template) => (
+                    <button
+                      key={template.name}
+                      className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={() => handleOpenEditor(template)}
+                    >
+                      {template.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
-      {currentStep === 2 && selectedTemplateIndex !== null && (
-        <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <input
-            type="text"
-            value={tempData[selectedTemplateIndex].name}
-            onChange={(e) => {
-              setTempData((prev) => {
-                const newTemp = [...prev];
-                newTemp[selectedTemplateIndex] = {
-                  ...newTemp[selectedTemplateIndex],
-                  name: e.target.value,
-                  typeOfCards: e.target.value,
-                };
-                return newTemp;
-              });
-            }}
-            placeholder="Template Name"
-            className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-          />
-          <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            Sections
-          </h3>
-          <div className={styles.templateList}>
-            {tempData[selectedTemplateIndex].sections.map((section, index) => (
-              <div className={styles.sectionItem} key={index}>
-                {editMode && (
+            {step === 2 && selectedTemplateIndex !== null && (
+              <>
+                <input
+                  type="text"
+                  value={tempData[selectedTemplateIndex].name}
+                  onChange={(e) => {
+                    setTempData((prev) => {
+                      const newTemp = [...prev];
+                      newTemp[selectedTemplateIndex] = {
+                        ...newTemp[selectedTemplateIndex],
+                        name: e.target.value,
+                        typeOfCards: e.target.value,
+                      };
+                      return newTemp;
+                    });
+                  }}
+                  placeholder="Template Name"
+                  className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+                {tempData[selectedTemplateIndex].originalName === null && (
                   <button
-                    className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={() => removeSection(index)}
+                    className={`${styles.createButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={handleCreateCard}
                   >
-                    <BsDashCircle />
+                    Create Card
                   </button>
                 )}
-                <button
-                  className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={() => !editMode && handleEditSection(index)}
-                >
-                  {section.name}
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={addSection}
-          >
-            Add Section
-          </button>
-          {editMode && (
-            <button
-              className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleDeleteTemplate}
-            >
-              Delete Template
-            </button>
-          )}
-        </div>
-      )}
-
-      {currentStep === 3 && selectedTemplateIndex !== null && currentSectionIndex !== null && (
-        <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <input
-            type="text"
-            value={tempData[selectedTemplateIndex].sections[currentSectionIndex].name}
-            onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
-            className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-            placeholder="Section Name"
-          />
-          <div className={styles.searchContainer}>
-            <FaSearch className={styles.searchIcon} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search headers by name, type, or key"
-              className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-            />
-          </div>
-          <div className={styles.section}>
-            {tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
-              const header = availableHeaders.find((h) => h.key === key) || {
-                key,
-                name: key,
-                type: "text",
-              };
-              return (
-                <div
-                  ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
-                  key={index}
-                  className={`${styles.keyItem} ${
-                    draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
-                  } ${isDarkTheme ? styles.darkTheme : ""}`}
-                  draggable={!editMode}
-                  onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
-                  onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
-                  onDragEnd={() => !editMode && handleDragEnd()}
-                  onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
-                  onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
-                  onTouchEnd={() => !editMode && handleTouchEnd()}
-                >
-                  {editMode && (
+                {tempData[selectedTemplateIndex].originalName !== null && (
+                  <>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      Sections
+                    </h3>
+                    <div className={styles.templateList}>
+                      {tempData[selectedTemplateIndex].sections.map((section, index) => (
+                        <div className={styles.sectionItem} key={index}>
+                          {editMode && (
+                            <button
+                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              onClick={() => removeSection(index)}
+                            >
+                              <BsDashCircle />
+                            </button>
+                          )}
+                          <button
+                            className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onClick={() => !editMode && handleEditSection(index)}
+                          >
+                            {section.name}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                     <button
-                      className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleDeleteKey(currentSectionIndex, header.key)}
+                      className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={addSection}
                     >
-                      <BsDashCircle />
+                      Add Section
                     </button>
-                  )}
-                  <div
-                    className={styles.headerContent}
-                    onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                  >
-                    <span
-                      className={`${styles.customCheckbox} ${
-                        tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                          ? styles.checked
-                          : ""
-                      } ${isDarkTheme ? styles.darkTheme : ""}`}
-                    >
-                      <IoIosCheckmark
-                        style={{
-                          color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                            ? "#ffffff"
-                            : "transparent",
-                        }}
-                        size={18}
-                      />
-                    </span>
-                    <span className={styles.headerName}>{header.name}</span>
-                    <span className={styles.headerType}>({header.type})</span>
-                  </div>
-                  {!editMode && (
-                    <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
-                  )}
-                </div>
-              );
-            })}
-            {filteredHeaders.map((header, index) => (
-              <div key={index} className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <div
-                  className={styles.headerContent}
-                  onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                >
-                  <span
-                    className={`${styles.customCheckbox} ${
-                      tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                        ? styles.checked
-                        : ""
-                    } ${isDarkTheme ? styles.darkTheme : ""}`}
-                  >
-                    <IoIosCheckmark
-                      style={{
-                        color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                          ? "#ffffff"
-                          : "transparent",
-                      }}
-                      size={18}
-                    />
-                  </span>
-                  <span className={styles.headerName}>{header.name}</span>
-                  <span className={styles.headerType}>({header.type})</span>
-                </div>
-                {!editMode && (
-                  <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                    {editMode && (
+                      <button
+                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={handleDeleteTemplate}
+                      >
+                        Delete Template
+                      </button>
+                    )}
+                  </>
                 )}
-              </div>
-            ))}
+              </>
+            )}
+
+            {step === 3 && selectedTemplateIndex !== null && currentSectionIndex !== null && (
+              <>
+                <input
+                  type="text"
+                  value={tempData[selectedTemplateIndex].sections[currentSectionIndex].name}
+                  onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
+                  className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  placeholder="Section Name"
+                />
+                <div className={styles.searchContainer}>
+                  <FaSearch className={styles.searchIcon} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search headers by name, type, or key"
+                    className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                </div>
+                <div className={styles.section}>
+                  {tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
+                    const header = availableHeaders.find((h) => h.key === key) || {
+                      key,
+                      name: key,
+                      type: "text",
+                    };
+                    return (
+                      <div
+                        ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
+                        key={index}
+                        className={`${styles.keyItem} ${
+                          draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
+                        } ${isDarkTheme ? styles.darkTheme : ""}`}
+                        draggable={!editMode}
+                        onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
+                        onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
+                        onDragEnd={() => !editMode && handleDragEnd()}
+                        onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
+                        onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
+                        onTouchEnd={() => !editMode && handleTouchEnd()}
+                      >
+                        {editMode && (
+                          <button
+                            className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onClick={() => handleDeleteKey(currentSectionIndex, header.key)}
+                          >
+                            <BsDashCircle />
+                          </button>
+                        )}
+                        <div
+                          className={styles.headerContent}
+                          onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
+                        >
+                          <span
+                            className={`${styles.customCheckbox} ${
+                              tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                                ? styles.checked
+                                : ""
+                            } ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
+                            <IoIosCheckmark
+                              style={{
+                                color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                                  ? "#ffffff"
+                                  : "transparent",
+                              }}
+                              size={18}
+                            />
+                          </span>
+                          <span className={styles.headerName}>{header.name}</span>
+                          <span className={styles.headerType}>({header.type})</span>
+                        </div>
+                        {!editMode && (
+                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filteredHeaders.map((header, index) => (
+                    <div key={index} className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div
+                        className={styles.headerContent}
+                        onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
+                      >
+                        <span
+                          className={`${styles.customCheckbox} ${
+                            tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                              ? styles.checked
+                              : ""
+                          } ${isDarkTheme ? styles.darkTheme : ""}`}
+                        >
+                          <IoIosCheckmark
+                            style={{
+                              color: tempData[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
+                                ? "#ffffff"
+                                : "transparent",
+                            }}
+                            size={18}
+                          />
+                        </span>
+                        <span className={styles.headerName}>{header.name}</span>
+                        <span className={styles.headerType}>({header.type})</span>
+                      </div>
+                      {!editMode && (
+                        <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };

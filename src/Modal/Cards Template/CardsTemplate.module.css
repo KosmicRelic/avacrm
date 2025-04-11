@@ -2,8 +2,9 @@
   background: transparent;
   transition: background 0.3s ease;
   width: 100%;
-  height: auto;
+  height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .templateWrapper.darkTheme {
@@ -14,6 +15,7 @@
   position: relative;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
 }
 
 .view {
@@ -22,15 +24,31 @@
   background: #f2f2f7;
   border-radius: 16px;
   transition: background 0.3s ease;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 16px;
+  min-height: 100%;
 }
 
 .view.darkTheme {
   background: #1c1c1e;
 }
 
+.hidden {
+  display: none;
+}
+
 .slideInRight {
   animation: slideInRight 0.3s ease-out forwards;
+}
+
+.slideOutLeft {
+  animation: slideOutLeft 0.3s ease-out forwards;
+}
+
+.slideInLeft {
+  animation: slideInLeft 0.3s ease-out forwards;
 }
 
 .slideOutRight {
@@ -40,6 +58,28 @@
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
     opacity: 0;
   }
   to {
@@ -100,10 +140,6 @@
   transition: background 0.3s ease;
 }
 
-.templateList.darkTheme {
-
-}
-
 .templateButton {
   width: 100%;
   padding: 13.5px 16px;
@@ -138,19 +174,6 @@
   background: #3a3a3c;
 }
 
-.modalTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #000000;
-  margin: 0 0 16px 0;
-  transition: color 0.3s ease;
-  text-align: center;
-}
-
-.modalTitle.darkTheme {
-  color: #ffffff;
-}
-
 .input {
   width: 100%;
   padding: 13.5px 16px;
@@ -175,13 +198,6 @@
 
 .input:focus {
   outline: none;
-}
-
-.sections {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .section {
@@ -375,91 +391,6 @@
   background: #3a3a3c;
 }
 
-.modalButtons {
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
-.cancelButton,
-.saveButton,
-.nextButton {
-  font-size: 17px;
-  font-weight: 600;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelButton {
-  background: transparent;
-  color: #007aff;
-}
-
-.cancelButton.darkTheme {
-  color: #0a84ff;
-}
-
-.cancelButton:hover {
-  background: #f5f5f5;
-}
-
-.cancelButton.darkTheme:hover {
-  background: #3a3a3c;
-}
-
-.saveButton {
-  background: #007aff;
-  color: #ffffff;
-  padding: 8px 16px;
-}
-
-.saveButton.darkTheme {
-  background: #0a84ff;
-}
-
-.saveButton:hover {
-  background: #005bb5;
-}
-
-.saveButton.darkTheme:hover {
-  background: #096dd9;
-}
-
-.backButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 16px;
-}
-
-.backButton.darkTheme {
-  color: #0a84ff;
-}
-
-.editButton {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 17px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  padding-bottom: 20px;
-}
-
-.editButton.darkTheme {
-  color: #0a84ff;
-}
-
 .sectionItem {
   display: flex;
   align-items: center;
@@ -500,7 +431,6 @@
   padding: 13.5px 16px;
   background: transparent;
   border: 0;
-  /* border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
   text-align: center;
   cursor: pointer;
   transition: background 0.2s ease, color 0.3s ease;
@@ -515,24 +445,6 @@
   background: rgba(44, 44, 46, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
-}
-
-.nextButton {
-  background: #007aff;
-  color: white;
-  padding: 8px 16px;
-}
-
-.nextButton.darkTheme {
-  background: #0a84ff;
-}
-
-.nextButton:hover {
-  background: #005bb5;
-}
-
-.nextButton.darkTheme:hover {
-  background: #096dd9;
 }
 
 .searchContainer {
@@ -572,4 +484,73 @@
 
 .sectionTitle.darkTheme {
   color: #8e8e93;
+}
+
+.createButton {
+  padding: 13.5px 16px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: none;
+  color: #007aff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.createButton:hover {
+  background: #f5f5f5;
+}
+
+.darkTheme .createButton {
+  background: #2c2c2e;
+  color: #0a84ff;
+}
+
+.darkTheme .createButton:hover {
+  background: #3a3a3c;
+}
+
+/* Add this to the end of CardsTemplate.module.css */
+.backButton {
+  padding: 13.5px 16px;
+  margin-top: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: none;
+  color: #007aff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.backButton.darkTheme {
+  background: #2c2c2e;
+  color: #0a84ff;
+}
+
+.backButton:hover {
+  background: #f5f5f5;
+}
+
+.backButton.darkTheme:hover {
+  background: #3a3a3c;
 }
