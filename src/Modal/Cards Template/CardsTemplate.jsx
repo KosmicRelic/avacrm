@@ -191,6 +191,28 @@ const CardsTemplate = ({ onSave }) => {
     cardTemplates,
   ]);
 
+  // Update title with deferred setModalConfig to avoid render-time updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setModalConfig((prev) => ({
+        ...prev,
+        title:
+          currentStep === 1
+            ? "Card Templates"
+            : currentStep === 2 && selectedTemplateIndex !== null && tempData[selectedTemplateIndex]
+            ? tempData[selectedTemplateIndex].name || "New Template"
+            : currentStep === 3 &&
+              selectedTemplateIndex !== null &&
+              currentSectionIndex !== null &&
+              tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
+            ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+            : prev.title,
+      }));
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, tempData, setModalConfig]);
+
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
     setDraggedSectionIndex(sectionIndex);
@@ -473,7 +495,7 @@ const CardsTemplate = ({ onSave }) => {
     (step) => {
       if (prevStep === null) return "";
       const isForward = currentStep > prevStep;
-      
+
       if (step === currentStep) {
         return isForward ? styles.slideInRight : styles.slideInLeft;
       }
@@ -485,15 +507,13 @@ const CardsTemplate = ({ onSave }) => {
     [currentStep, prevStep]
   );
 
-  // Handle animation completion
   useEffect(() => {
     let timer;
     if (prevStep !== null && prevStep !== currentStep) {
-      // Ensure previous step remains visible during animation
       setHideAfterAnimation(null);
       timer = setTimeout(() => {
         setHideAfterAnimation(prevStep);
-      }, 300); // Match animation duration
+      }, 300);
     } else {
       setHideAfterAnimation(null);
     }
@@ -506,7 +526,7 @@ const CardsTemplate = ({ onSave }) => {
         {[1, 2, 3].map((step) => {
           const animationClass = getAnimationClass(step);
           const shouldHide = step !== currentStep && step !== prevStep && hideAfterAnimation !== step;
-          
+
           return (
             <div
               key={step}
