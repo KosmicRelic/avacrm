@@ -17,16 +17,15 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const editActionsRef = useRef(null);
   const hasInitialized = useRef(false);
-  const hasUpdatedHeaders = useRef(false);
+  const prevHeadersRef = useRef(currentHeaders);
 
-  // Sync currentHeaders to tempData when headers are updated
+  // Sync currentHeaders to tempData only when headers change
   useEffect(() => {
-    if (hasUpdatedHeaders.current) {
-      setTempData(() => ({
-        currentHeaders,
-      }));
-      // console.log("Synced tempData with currentHeaders:", currentHeaders);
-      hasUpdatedHeaders.current = false;
+    // Deep comparison to avoid unnecessary updates
+    const headersChanged = JSON.stringify(currentHeaders) !== JSON.stringify(prevHeadersRef.current);
+    if (headersChanged) {
+      setTempData({ currentHeaders: currentHeaders.map((h) => ({ ...h })) });
+      prevHeadersRef.current = currentHeaders;
     }
   }, [currentHeaders, setTempData]);
 
@@ -94,14 +93,12 @@ const HeadersModal = ({ tempData, setTempData }) => {
       key: trimmedKey,
       name: trimmedName,
       type: newHeaderType,
-      ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
+      ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
     };
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev, newHeader];
-      // console.log("addHeader: newHeaders", newHeaders);
       return newHeaders;
     });
-    hasUpdatedHeaders.current = true;
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
@@ -120,14 +117,12 @@ const HeadersModal = ({ tempData, setTempData }) => {
         key: trimmedKey,
         name: trimmedName,
         type: newHeaderType,
-        ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
+        ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
       };
       setCurrentHeaders((prev) => {
         const newHeaders = prev.map((h, i) => (i === index ? updatedHeader : h));
-        // console.log("updateHeader: newHeaders", newHeaders);
         return newHeaders;
       });
-      hasUpdatedHeaders.current = true;
       setActiveIndex(null);
     },
     [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]
@@ -137,10 +132,8 @@ const HeadersModal = ({ tempData, setTempData }) => {
     (index) => {
       setCurrentHeaders((prev) => {
         const newHeaders = prev.filter((_, i) => i !== index);
-        // console.log("deleteHeader: newHeaders", newHeaders);
         return newHeaders;
       });
-      hasUpdatedHeaders.current = true;
       setActiveIndex(null);
     },
     []

@@ -1,4 +1,3 @@
-// MainContext.js
 import { createContext, useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 
@@ -360,18 +359,18 @@ export const MainContextProvider = ({ children }) => {
       options: ["High", "Medium", "Low"],
     },
   ]);
-  
+
   const [cardTemplates, setCardTemplates] = useState([
     {
       name: "Leads",
       typeOfCards: "Leads",
       sections: [
         {
-          name: "Contact Information", // Changed from title to name
+          name: "Contact Information",
           keys: ["id", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
         },
         {
-          name: "Sales Process", // Changed from title to name
+          name: "Sales Process",
           keys: [],
         },
       ],
@@ -381,7 +380,7 @@ export const MainContextProvider = ({ children }) => {
       typeOfCards: "Business",
       sections: [
         {
-          name: "Business Details", // Changed from title to name
+          name: "Business Details",
           keys: ["id", "fullName", "address", "status"],
         },
       ],

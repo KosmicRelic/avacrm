@@ -113,7 +113,7 @@ function App() {
 
   const onManageHeaders = useCallback(() => {
     resetModalState();
-    setActiveModal({ type: "headers", data: { currentHeaders: headers || [] } });
+    setActiveModal({ type: "headers", data: { currentHeaders: [...headers] } });
     headersModal.open();
   }, [headersModal, resetModalState, headers]);
 
@@ -209,7 +209,7 @@ function App() {
       case "headers":
         return (
           <HeadersModal
-            tempData={activeModal.data || { currentHeaders: headers || [] }}
+            tempData={activeModal.data || { currentHeaders: [...headers] }}
             setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
           />
         );
@@ -279,7 +279,12 @@ function App() {
             onClose={handleModalClose}
             onSave={
               activeModal.type === "headers"
-                ? () => setHeaders(activeModal.data?.currentHeaders || headers || [])
+                ? () => {
+                    if (activeModal.data?.currentHeaders) {
+                      setHeaders([...activeModal.data.currentHeaders]); // Deep copy
+                    }
+                    setActiveModal(null);
+                  }
                 : activeModal.type === "sheet"
                 ? () => {
                     handleSaveSheet(
@@ -288,6 +293,7 @@ function App() {
                       activeSheet?.pinnedHeaders || [],
                       isSheetModalEditMode
                     );
+                    setActiveModal(null);
                   }
                 : activeModal.type === "sheets"
                 ? () => {
@@ -295,6 +301,7 @@ function App() {
                       ...prev,
                       structure: activeModal.data?.newOrder || prev.structure,
                     }));
+                    setActiveModal(null);
                   }
                 : activeModal.type === "filter"
                 ? () => {
@@ -306,8 +313,12 @@ function App() {
                           : sheet
                       ),
                     }));
+                    setActiveModal(null);
                   }
-                : () => handleModalClose
+                : () => {
+                    handleModalClose();
+                    setActiveModal(null);
+                  }
             }
             initialData={
               activeModal.type === "sheet"
@@ -319,7 +330,7 @@ function App() {
                 : activeModal.type === "filter"
                 ? activeModal.data || { filterValues: activeSheet?.filters || {} }
                 : activeModal.type === "headers"
-                ? activeModal.data || { currentHeaders: headers || [] }
+                ? activeModal.data || { currentHeaders: [...headers] }
                 : activeModal.type === "sheets"
                 ? activeModal.data || { newOrder: sheets?.structure || [] }
                 : activeModal.type === "transport"
