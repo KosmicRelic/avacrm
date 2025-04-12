@@ -5,7 +5,7 @@ import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import { FaChevronLeft } from "react-icons/fa";
 
-const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton }) => {
+const Modal = ({ children, onClose, onSave, modalType, rightButton }) => {
   const { isDarkTheme, modalConfig, goToStep, currentStep, goBack } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
@@ -17,13 +17,16 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
     setTimeout(() => {
       setIsClosing(false);
       onClose();
+      if (modalType !== "transport" && onSave) {
+        onSave(); // Trigger save on close (except transport)
+      }
     }, timeoutDuration);
   };
 
   const handleSaveAndClose = () => {
     if (currentStep !== 1) return;
-    if (modalType !== "transport") {
-      onSave();
+    if (onSave) {
+      onSave(); // Trigger save on Done click
     }
     handleClose();
   };
@@ -31,16 +34,12 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        if (modalType === "transport") {
-          handleClose();
-        } else {
-          handleSaveAndClose();
-        }
+        handleClose();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [modalType, handleSaveAndClose, handleClose]);
+  }, [handleClose]);
 
   return (
     <div
@@ -69,14 +68,15 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
                 {modalConfig.title}
               </h2>
             )}
-            {modalConfig.showDoneButton && !rightButton && modalType !== "transport" ? (
+            {modalConfig.showDoneButton && !rightButton && (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSaveAndClose}
               >
                 Done
               </button>
-            ) : rightButton && (
+            )}
+            {rightButton && (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={rightButton.onClick}
@@ -95,8 +95,7 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
 Modal.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
-  onSave: PropTypes.func,
-  initialData: PropTypes.object,
+  onSave: PropTypes.func, // Optional save callback
   modalType: PropTypes.string.isRequired,
   rightButton: PropTypes.shape({
     label: PropTypes.string,
@@ -104,6 +103,9 @@ Modal.propTypes = {
   }),
 };
 
-Modal.defaultProps = {};
+Modal.defaultProps = {
+  onSave: null,
+  rightButton: null,
+};
 
 export default Modal;

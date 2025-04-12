@@ -17,31 +17,36 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
 
   const handleSheetUpdate = useCallback(
     (sheetNameOrObj, headerObjects, pinnedHeaders, shouldSave = false, isEditMode) => {
-      const trimmedName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
+      const sheetName = typeof sheetNameOrObj === "string" ? sheetNameOrObj : sheetNameOrObj.sheetName;
       const sheetStructure = sheets.structure || sheets;
       const existingSheetNames = Array.isArray(sheetStructure)
         ? sheetStructure.map((item) => item.sheetName || item.folderName)
         : [];
-      const isDuplicate = isEditMode
-        ? trimmedName !== activeSheetName && existingSheetNames.includes(trimmedName)
-        : existingSheetNames.includes(trimmedName);
 
       if (shouldSave) {
+        // Validate sheet name
+        if (!sheetName || !sheetName.trim()) {
+          alert("Sheet name cannot be empty.");
+          return;
+        }
+
+        // Check for duplicates (case-insensitive)
+        const isDuplicate = isEditMode
+          ? existingSheetNames.some(
+              (name) => name.toLowerCase() === sheetName.toLowerCase() && name !== activeSheetName
+            )
+          : existingSheetNames.some((name) => name.toLowerCase() === sheetName.toLowerCase());
+
         if (isDuplicate) {
-          alert("A sheet or folder with this name already exists.");
+          alert("A sheet or folder with this name already exists (case-insensitive).");
           return;
         }
-        if (!trimmedName) {
-          alert("Please provide a sheet name.");
-          return;
-        }
+
         if (headerObjects.length === 0) {
           alert("Please select at least one header.");
           return;
         }
       }
-
-      if (isDuplicate && !shouldSave) return;
 
       setSheets((prevSheets) => {
         if (isEditMode) {
@@ -49,31 +54,31 @@ const useSheets = (sheets, setSheets, activeSheetName) => {
             ...prevSheets,
             allSheets: prevSheets.allSheets.map((sheet) =>
               sheet.sheetName === activeSheetName
-                ? { ...sheet, sheetName: trimmedName, headers: headerObjects, pinnedHeaders, isActive: true }
+                ? { ...sheet, sheetName, headers: headerObjects, pinnedHeaders, isActive: true }
                 : { ...sheet, isActive: false }
             ),
             structure: prevSheets.structure.map((item) =>
               item.sheetName === activeSheetName
-                ? { sheetName: trimmedName }
+                ? { sheetName }
                 : item.folderName
-                ? { ...item, sheets: item.sheets.map((s) => (s === activeSheetName ? trimmedName : s)) }
+                ? { ...item, sheets: item.sheets.map((s) => (s === activeSheetName ? sheetName : s)) }
                 : item
             ),
           };
-        } else if (trimmedName) {
+        } else if (sheetName) {
           return {
             ...prevSheets,
             allSheets: [
               ...prevSheets.allSheets.map((sheet) => ({ ...sheet, isActive: false })),
-              { 
-                sheetName: trimmedName, 
-                headers: headerObjects.map((h, i) => ({ ...h, order: i, locked: h.locked || false })), 
-                pinnedHeaders: pinnedHeaders || [], 
-                rows: [], 
-                isActive: true 
+              {
+                sheetName,
+                headers: headerObjects.map((h, i) => ({ ...h, order: i, locked: h.locked || false })),
+                pinnedHeaders: pinnedHeaders || [],
+                rows: [],
+                isActive: true,
               },
             ],
-            structure: [...prevSheets.structure, { sheetName: trimmedName }],
+            structure: [...prevSheets.structure, { sheetName }],
           };
         }
         return prevSheets;

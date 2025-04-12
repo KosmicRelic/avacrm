@@ -4,7 +4,7 @@ import styles from "./HeadersModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const HeadersModal = ({ tempData, setTempData }) => {
+const HeadersModal = ({ tempData, setTempData, onSave }) => {
   const { headers = [], isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [currentHeaders, setCurrentHeaders] = useState(() =>
     (tempData.currentHeaders || headers).map((h) => ({ ...h }))
@@ -19,12 +19,11 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const hasInitialized = useRef(false);
   const prevHeadersRef = useRef(currentHeaders);
 
-  // Sync currentHeaders to tempData only when headers change
+  // Sync currentHeaders to tempData
   useEffect(() => {
-    // Deep comparison to avoid unnecessary updates
     const headersChanged = JSON.stringify(currentHeaders) !== JSON.stringify(prevHeadersRef.current);
     if (headersChanged) {
-      setTempData({ currentHeaders: currentHeaders.map((h) => ({ ...h })) });
+      setTempData({ currentHeaders });
       prevHeadersRef.current = currentHeaders;
     }
   }, [currentHeaders, setTempData]);
@@ -63,7 +62,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
         alert("Column key and name must be non-empty.");
         return false;
       }
-      if (/\s/.test(key)) {
+      if (/\s/.test(trimmedKey)) {
         alert("Key must be a single word with no spaces.");
         return false;
       }
@@ -76,7 +75,9 @@ const HeadersModal = ({ tempData, setTempData }) => {
       );
 
       if (keyConflict || nameConflict) {
-        alert(`A column with the ${keyConflict ? "key" : "name"} "${keyConflict ? trimmedKey : trimmedName}" already exists.`);
+        alert(
+          `A column with the ${keyConflict ? "key" : "name"} "${keyConflict ? trimmedKey : trimmedName}" already exists.`
+        );
         return false;
       }
       return true;
@@ -95,10 +96,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
       type: newHeaderType,
       ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
     };
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev, newHeader];
-      return newHeaders;
-    });
+    setCurrentHeaders((prev) => [...prev, newHeader]);
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
@@ -119,21 +117,16 @@ const HeadersModal = ({ tempData, setTempData }) => {
         type: newHeaderType,
         ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
       };
-      setCurrentHeaders((prev) => {
-        const newHeaders = prev.map((h, i) => (i === index ? updatedHeader : h));
-        return newHeaders;
-      });
+      setCurrentHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
       setActiveIndex(null);
+      resetForm();
     },
     [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]
   );
 
   const deleteHeader = useCallback(
     (index) => {
-      setCurrentHeaders((prev) => {
-        const newHeaders = prev.filter((_, i) => i !== index);
-        return newHeaders;
-      });
+      setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
       setActiveIndex(null);
     },
     []
@@ -188,7 +181,9 @@ const HeadersModal = ({ tempData, setTempData }) => {
   return (
     <div className={`${styles.headersModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div
-        className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+        className={`${styles.createHeader} ${activeIndex === -1 ? styles.activeItem : ""} ${
+          isDarkTheme ? styles.darkTheme : ""
+        }`}
         onClick={() => toggleEdit(-1)}
       >
         <div className={styles.headerRow}>
@@ -273,7 +268,9 @@ const HeadersModal = ({ tempData, setTempData }) => {
         {currentHeaders.map((header, index) => (
           <div
             key={`${header.key}-${index}`}
-            className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+            className={`${styles.headerItem} ${activeIndex === index ? styles.activeItem : ""} ${
+              isDarkTheme ? styles.darkTheme : ""
+            }`}
             onClick={() => toggleEdit(index)}
           >
             <div className={styles.headerRow}>
@@ -382,6 +379,7 @@ HeadersModal.propTypes = {
     ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 export default HeadersModal;

@@ -59,12 +59,9 @@ const SheetModal = ({
     }
   }, [registerModalSteps, setModalConfig, goToStep, isEditMode]);
 
-  // Memoize headers to prevent reference changes
-  const stableHeaders = useMemo(() => currentHeaders, [currentHeaders]);
-
-  // Sync tempData only when necessary
+  // Sync tempData
   useEffect(() => {
-    const newTempData = { sheetName, currentHeaders: stableHeaders, rows };
+    const newTempData = { sheetName, currentHeaders, rows };
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
@@ -72,17 +69,20 @@ const SheetModal = ({
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, stableHeaders, rows, setTempData, tempData]);
+  }, [sheetName, currentHeaders, rows, setTempData, tempData]);
 
-  const resolvedHeaders = useMemo(() =>
-    stableHeaders.map((header) => {
-      const globalHeader = allHeaders.find((h) => h.key === header.key);
-      return {
-        ...header,
-        name: header.name || (globalHeader ? globalHeader.name : header.key),
-        type: header.type || (globalHeader ? globalHeader.type : "text"),
-      };
-    }), [stableHeaders, allHeaders]);
+  const resolvedHeaders = useMemo(
+    () =>
+      currentHeaders.map((header) => {
+        const globalHeader = allHeaders.find((h) => h.key === header.key);
+        return {
+          ...header,
+          name: header.name || (globalHeader ? globalHeader.name : header.key),
+          type: header.type || (globalHeader ? globalHeader.type : "text"),
+        };
+      }),
+    [currentHeaders, allHeaders]
+  );
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
@@ -102,38 +102,44 @@ const SheetModal = ({
     }
   }, []);
 
-  const handleDragOver = useCallback((e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
+  const handleDragOver = useCallback(
+    (e, index) => {
+      e.preventDefault();
+      if (draggedIndex === null || draggedIndex === index) return;
 
-    setCurrentHeaders((prev) => {
-      const newHeaders = [...prev];
-      const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-      newHeaders.splice(index, 0, draggedItem);
-      setDraggedIndex(index);
-      return newHeaders;
-    });
-  }, [draggedIndex]);
-
-  const handleTouchMove = useCallback((e, index) => {
-    if (draggedIndex === null || touchStartY === null) return;
-    e.preventDefault();
-
-    const touchY = e.touches[0].clientY;
-    const itemHeight = 48;
-    const delta = Math.round((touchY - touchStartY) / itemHeight);
-
-    const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
-    if (newIndex !== draggedIndex) {
       setCurrentHeaders((prev) => {
         const newHeaders = [...prev];
         const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-        newHeaders.splice(newIndex, 0, draggedItem);
-        setDraggedIndex(newIndex);
+        newHeaders.splice(index, 0, draggedItem);
+        setDraggedIndex(index);
         return newHeaders;
       });
-    }
-  }, [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]);
+    },
+    [draggedIndex]
+  );
+
+  const handleTouchMove = useCallback(
+    (e, index) => {
+      if (draggedIndex === null || touchStartY === null) return;
+      e.preventDefault();
+
+      const touchY = e.touches[0].clientY;
+      const itemHeight = 48;
+      const delta = Math.round((touchY - touchStartY) / itemHeight);
+
+      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
+      if (newIndex !== draggedIndex) {
+        setCurrentHeaders((prev) => {
+          const newHeaders = [...prev];
+          const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+          newHeaders.splice(newIndex, 0, draggedItem);
+          setDraggedIndex(newIndex);
+          return newHeaders;
+        });
+      }
+    },
+    [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]
+  );
 
   const handleDragEnd = useCallback(() => {
     const element = headerRefs.current.get(draggedIndex);
@@ -149,13 +155,16 @@ const SheetModal = ({
     setTouchTargetIndex(null);
   }, [draggedIndex]);
 
-  const togglePin = useCallback((headerKey) => {
-    setPinnedStates((prev) => ({
-      ...prev,
-      [headerKey]: !prev[headerKey],
-    }));
-    onPinToggle(headerKey);
-  }, [onPinToggle]);
+  const togglePin = useCallback(
+    (headerKey) => {
+      setPinnedStates((prev) => ({
+        ...prev,
+        [headerKey]: !prev[headerKey],
+      }));
+      onPinToggle(headerKey);
+    },
+    [onPinToggle]
+  );
 
   const toggleVisible = useCallback((index) => {
     setCurrentHeaders((prev) => {
@@ -199,7 +208,7 @@ const SheetModal = ({
   }, []);
 
   const handleSheetNameChange = useCallback((e) => {
-    setSheetName(e.target.value.trim());
+    setSheetName(e.target.value); // Allow spaces, no trimming
   }, []);
 
   return (

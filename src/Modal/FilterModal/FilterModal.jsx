@@ -4,25 +4,25 @@ import styles from "./FilterModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tempData, setTempData }) => {
+const FilterModal = ({ headers, rows, tempData, setTempData, onSave }) => {
   const { headers: allHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
       const initial = {};
-      Object.entries(initialFilters).forEach(([key, filter]) => {
+      Object.entries(tempData.filterValues || {}).forEach(([key, filter]) => {
         if (filter.start || filter.end) initial[key] = true;
       });
       return initial;
-    }, [initialFilters])
+    }, [tempData.filterValues])
   );
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
       const initial = {};
-      Object.entries(initialFilters).forEach(([key, filter]) => {
+      Object.entries(tempData.filterValues || {}).forEach(([key, filter]) => {
         if (filter.start || filter.end) initial[key] = true;
       });
       return initial;
-    }, [initialFilters])
+    }, [tempData.filterValues])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
@@ -51,14 +51,14 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
     }
   }, [registerModalSteps, setModalConfig, goToStep]);
 
-  // Sync tempData with initialFilters if not set
+  // Initialize tempData
   useEffect(() => {
     if (!tempData.filterValues) {
-      setTempData({ filterValues: { ...initialFilters } });
+      setTempData({ filterValues: {} });
     }
-  }, [tempData, setTempData, initialFilters]);
+  }, [tempData, setTempData]);
 
-  const filterValues = tempData.filterValues || initialFilters;
+  const filterValues = tempData.filterValues || {};
 
   const visibleHeaders = useMemo(
     () =>
@@ -88,44 +88,44 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
     [allHeaders]
   );
 
-// In FilterModal.js
-const updateTempFilters = useCallback(
-  (newFilters) => {
-    setTempData({ filterValues: { ...newFilters } });
-  },
-  [setTempData]
-);
+  const updateTempFilters = useCallback(
+    (newFilters) => {
+      setTempData({ filterValues: { ...newFilters } });
+    },
+    [setTempData]
+  );
 
-const applyFilters = useCallback(
-  (filters) => {
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).map(([key, filter]) => {
-        if (numberRangeMode[key]) {
-          return [
-            key,
-            {
-              start: filter.start ? Number(filter.start) : undefined,
-              end: filter.end ? Number(filter.end) : undefined,
-              sortOrder: filter.sortOrder || undefined,
-            },
-          ];
-        } else if (filter.order && filter.value) {
-          return [
-            key,
-            {
-              order: filter.order,
-              value: filter.type === "number" ? Number(filter.value) : filter.value,
-              sortOrder: filter.sortOrder || undefined,
-            },
-          ];
-        }
-        return [key, filter];
-      })
-    );
-    updateTempFilters(cleanedFilters);
-  },
-  [numberRangeMode, updateTempFilters]
-);
+  const applyFilters = useCallback(
+    (filters) => {
+      const cleanedFilters = Object.fromEntries(
+        Object.entries(filters).map(([key, filter]) => {
+          if (numberRangeMode[key]) {
+            return [
+              key,
+              {
+                start: filter.start ? Number(filter.start) : undefined,
+                end: filter.end ? Number(filter.end) : undefined,
+                sortOrder: filter.sortOrder || undefined,
+              },
+            ];
+          } else if (filter.order && filter.value) {
+            return [
+              key,
+              {
+                order: filter.order,
+                value: filter.type === "number" ? Number(filter.value) : filter.value,
+                sortOrder: filter.sortOrder || undefined,
+              },
+            ];
+          }
+          return [key, filter];
+        })
+      );
+      updateTempFilters(cleanedFilters);
+    },
+    [numberRangeMode, updateTempFilters]
+  );
+
   const handleFilterChange = useCallback(
     (headerKey, value, type = "default") => {
       const newFilter = { ...filterValues[headerKey], [type]: value };
@@ -449,16 +449,11 @@ FilterModal.propTypes = {
     })
   ).isRequired,
   rows: PropTypes.array.isRequired,
-  onApply: PropTypes.func.isRequired,
-  filters: PropTypes.object,
   tempData: PropTypes.shape({
     filterValues: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-};
-
-FilterModal.defaultProps = {
-  filters: {},
+  onSave: PropTypes.func.isRequired,
 };
 
 export default FilterModal;
