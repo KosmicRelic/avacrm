@@ -364,12 +364,25 @@ export const MainContextProvider = ({ children }) => {
     {
       name: "Leads",
       typeOfCards: "Leads",
-      keys: ["id", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
+      sections: [
+        {
+          title: "Contact Information",
+          keys: ["id", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
+        },{
+          title: "Sales Process",
+          keys: [],
+        },
+      ],
     },
     {
       name: "Business",
       typeOfCards: "Business",
-      keys: ["id", "fullName", "address", "status"],
+      sections: [
+        {
+          title: "Business Details",
+          keys: ["id", "fullName", "address", "status"],
+        },
+      ],
     },
   ]);
 

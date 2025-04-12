@@ -12,7 +12,7 @@ const CardsEditor = ({
 }) => {
   const { sheets, cardTemplates, headers, isDarkTheme } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? "editor" : "selection");
-  const [isVisible, setIsVisible] = useState(true); // Start visible immediately
+  const [isVisible, setIsVisible] = useState(true);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || "");
   const initialTemplate = initialRowData?.typeOfCards
     ? cardTemplates.find((t) => t.name === initialRowData.typeOfCards)
@@ -29,24 +29,27 @@ const CardsEditor = ({
     return cardTemplates.map((template) => template.name);
   }, [cardTemplates]);
 
-  const selectedFields = useMemo(() => {
+  const selectedSections = useMemo(() => {
     const template = cardTemplates.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
-    if (!template || !template.keys) return [];
-    return template.keys
-      .filter((key) => key !== "id" && key !== "typeOfCards")
-      .map((key) => {
-        const header = headers.find((h) => h.key === key);
-        return {
-          key,
-          name: header?.name || key.charAt(0).toUpperCase() + key.slice(1),
-          type: header?.type || "text",
-        };
-      });
+    if (!template || !template.sections) return [];
+    return template.sections.map((section) => ({
+      title: section.title,
+      fields: section.keys
+        .filter((key) => key !== "id" && key !== "typeOfCards")
+        .map((key) => {
+          const header = headers.find((h) => h.key === key);
+          return {
+            key,
+            name: header?.name || key.charAt(0).toUpperCase() + key.slice(1),
+            type: header?.type || "text",
+            options: header?.options || [],
+          };
+        }),
+    }));
   }, [selectedCardType, cardTemplates, headers, isEditing, initialRowData]);
 
-  // Remove the delayed animation trigger
   useEffect(() => {
-    setIsVisible(true); // Always visible when mounted
+    setIsVisible(true);
   }, []);
 
   const handleSelectionNext = useCallback(() => {
@@ -74,12 +77,12 @@ const CardsEditor = ({
         setSelectedCardType("");
         setFormData({});
       }
-    }, 300); // Match slide-out duration
+    }, 300);
   }, [isEditing, onClose, preSelectedSheet]);
 
   const handleCloseSelection = useCallback(() => {
     setIsVisible(false);
-    setTimeout(onClose, 300); // Match slide-out duration
+    setTimeout(onClose, 300);
   }, [onClose]);
 
   const handleInputChange = useCallback((key, value) => {
@@ -106,7 +109,7 @@ const CardsEditor = ({
     setTimeout(() => {
       onSave(newRow, isEditing);
       onClose();
-    }, 300); // Match slide-out duration
+    }, 300);
   }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData, isEditing, onClose]);
 
   return (
@@ -182,38 +185,51 @@ const CardsEditor = ({
               </div>
             </div>
             <div className={styles.fieldList}>
-              {selectedFields.length > 0 ? (
-                selectedFields.map((field) => (
-                  <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {field.name}
-                    </span>
-                    {field.type === "dropdown" ? (
-                      <select
-                        value={formData[field.key] || ""}
-                        onChange={(e) => handleInputChange(field.key, e.target.value)}
-                        className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      >
-                        <option value="">Select {field.name}</option>
-                        {headers.find((h) => h.key === field.key)?.options?.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+              {selectedSections.length > 0 ? (
+                selectedSections.map((section, sectionIndex) => (
+                  <div key={section.title} className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      {section.title}
+                    </h3>
+                    {section.fields.length > 0 ? (
+                      section.fields.map((field) => (
+                        <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {field.name}
+                          </span>
+                          {field.type === "dropdown" ? (
+                            <select
+                              value={formData[field.key] || ""}
+                              onChange={(e) => handleInputChange(field.key, e.target.value)}
+                              className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Select {field.name}</option>
+                              {field.options.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                              value={formData[field.key] || ""}
+                              onChange={(e) => handleInputChange(field.key, e.target.value)}
+                              className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              placeholder={`Enter ${field.name}`}
+                            />
+                          )}
+                        </div>
+                      ))
                     ) : (
-                      <input
-                        type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
-                        value={formData[field.key] || ""}
-                        onChange={(e) => handleInputChange(field.key, e.target.value)}
-                        className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        placeholder={`Enter ${field.name}`}
-                      />
+                      <p className={`${styles.emptySection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        No fields defined for this section.
+                      </p>
                     )}
                   </div>
                 ))
               ) : (
-                <p>No fields defined for this card type.</p>
+                <p>No sections defined for this card type.</p>
               )}
             </div>
           </div>
