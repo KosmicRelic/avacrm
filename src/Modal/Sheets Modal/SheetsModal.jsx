@@ -1,12 +1,13 @@
-import { useContext, useState, useCallback, useRef, useEffect } from "react";
+import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 
-const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
-  const { setSheets, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
+const SheetsModal = ({ sheets, tempData, setTempData, onSave }) => {
+  const { isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [orderedItems, setOrderedItems] = useState(() => {
-    return sheets.structure.map((item) => ({
+    const structure = sheets?.structure || [];
+    return structure.map((item) => ({
       ...item,
       displayName: item.sheetName || item.folderName,
     }));
@@ -15,9 +16,9 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const dragItemRef = useRef(null);
-  const hasInitialized = useRef(false); // Add ref to track initialization
+  const hasInitialized = useRef(false);
 
-  // Register modal title only once on mount
+  // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
@@ -36,28 +37,51 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
         backButtonTitle: "",
       });
       goToStep(1);
-      hasInitialized.current = true; // Mark as initialized
+      hasInitialized.current = true;
     }
   }, [registerModalSteps, setModalConfig, goToStep]);
 
+  // Sync orderedItems only on sheets.structure change, not during drags
   useEffect(() => {
-    const newStructure = orderedItems.map((item) => {
+    if (draggedIndex !== null) return; // Skip sync during drag
+    const structure = sheets?.structure || [];
+    const newItems = structure.map((item) => ({
+      ...item,
+      displayName: item.sheetName || item.folderName,
+    }));
+    if (JSON.stringify(newItems) !== JSON.stringify(orderedItems)) {
+      setOrderedItems(newItems);
+    }
+  }, [sheets?.structure, orderedItems]);
+
+  // Stabilize orderedItems for tempData
+  const stableOrderedItems = useMemo(() => orderedItems, [orderedItems]);
+
+  // Update tempData on orderedItems change
+  useEffect(() => {
+    const newStructure = stableOrderedItems.map((item) => {
       if (item.folderName) {
         return { folderName: item.folderName, sheets: item.sheets };
       }
       return { sheetName: item.sheetName };
     });
-    setTempData((prev) => ({
-      ...prev,
-      newOrder: newStructure,
-    }));
-  }, [orderedItems, setTempData]);
+    const newTempData = { newOrder: newStructure };
+    const currentTempData = tempData.newOrder || [];
+    // Compare without displayName
+    const newStr = JSON.stringify(newStructure);
+    const currStr = JSON.stringify(currentTempData);
+    if (newStr !== currStr) {
+      setTempData(newTempData);
+    }
+  }, [stableOrderedItems, setTempData, tempData]);
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
     dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
     e.dataTransfer.effectAllowed = "move";
-    dragItemRef.current.classList.add(styles.dragging);
+    if (dragItemRef.current) {
+      dragItemRef.current.classList.add(styles.dragging);
+    }
   }, []);
 
   const handleDragOver = useCallback(
@@ -79,6 +103,7 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const handleDragEnd = useCallback(() => {
     if (dragItemRef.current) {
       dragItemRef.current.classList.remove(styles.dragging);
+      dragItemRef.current = null;
     }
     setDraggedIndex(null);
   }, []);
@@ -90,7 +115,9 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
       dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
-      dragItemRef.current.classList.add(styles.dragging);
+      if (dragItemRef.current) {
+        dragItemRef.current.classList.add(styles.dragging);
+      }
     }
   }, []);
 
@@ -120,20 +147,12 @@ const SheetsModal = ({ sheets, onSaveOrder, tempData, setTempData }) => {
   const handleTouchEnd = useCallback(() => {
     if (dragItemRef.current) {
       dragItemRef.current.classList.remove(styles.dragging);
+      dragItemRef.current = null;
     }
     setDraggedIndex(null);
     setTouchStartY(null);
     setTouchTargetIndex(null);
   }, []);
-
-  useEffect(() => {
-    setOrderedItems(
-      sheets.structure.map((item) => ({
-        ...item,
-        displayName: item.sheetName || item.folderName,
-      }))
-    );
-  }, [sheets.structure]);
 
   return (
     <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -175,13 +194,13 @@ SheetsModal.propTypes = {
           sheets: PropTypes.arrayOf(PropTypes.string).isRequired,
         }),
       ])
-    ).isRequired,
+    ),
   }).isRequired,
-  onSaveOrder: PropTypes.func.isRequired,
   tempData: PropTypes.shape({
     newOrder: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 export default SheetsModal;

@@ -11,6 +11,7 @@ const SheetModal = ({
   setTempData,
   sheets = [],
   onPinToggle,
+  onSave,
 }) => {
   const { headers: allHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || "");
@@ -20,7 +21,7 @@ const SheetModal = ({
     (tempData.currentHeaders || []).forEach((header) => {
       if (!seenKeys.has(header.key)) {
         seenKeys.add(header.key);
-        uniqueHeaders.push(header);
+        uniqueHeaders.push({ ...header });
       } else {
         console.warn(`Duplicate key "${header.key}" removed from initial currentHeaders`);
       }
@@ -33,9 +34,9 @@ const SheetModal = ({
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const headerRefs = useRef(new Map());
-  const hasInitialized = useRef(false); // Add ref to track initialization
+  const hasInitialized = useRef(false);
 
-  // Register modal title only once on mount
+  // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
@@ -54,28 +55,34 @@ const SheetModal = ({
         backButtonTitle: "",
       });
       goToStep(1);
-      hasInitialized.current = true; // Mark as initialized
+      hasInitialized.current = true;
     }
   }, [registerModalSteps, setModalConfig, goToStep, isEditMode]);
 
+  // Memoize headers to prevent reference changes
+  const stableHeaders = useMemo(() => currentHeaders, [currentHeaders]);
+
+  // Sync tempData only when necessary
   useEffect(() => {
-    setTempData((prev) => ({
-      ...prev,
-      sheetName,
-      currentHeaders,
-      rows,
-    }));
-  }, [sheetName, currentHeaders, rows, setTempData, allHeaders]);
+    const newTempData = { sheetName, currentHeaders: stableHeaders, rows };
+    if (
+      newTempData.sheetName !== tempData.sheetName ||
+      JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
+      JSON.stringify(newTempData.rows) !== JSON.stringify(tempData.rows)
+    ) {
+      setTempData(newTempData);
+    }
+  }, [sheetName, stableHeaders, rows, setTempData, tempData]);
 
   const resolvedHeaders = useMemo(() =>
-    currentHeaders.map((header) => {
+    stableHeaders.map((header) => {
       const globalHeader = allHeaders.find((h) => h.key === header.key);
       return {
         ...header,
         name: header.name || (globalHeader ? globalHeader.name : header.key),
         type: header.type || (globalHeader ? globalHeader.type : "text"),
       };
-    }), [currentHeaders, allHeaders]);
+    }), [stableHeaders, allHeaders]);
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
@@ -128,7 +135,7 @@ const SheetModal = ({
     }
   }, [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]);
 
-  const handleDragEnd = useCallback((e) => {
+  const handleDragEnd = useCallback(() => {
     const element = headerRefs.current.get(draggedIndex);
     if (element) element.classList.remove(styles.dragging);
     setDraggedIndex(null);
@@ -192,7 +199,7 @@ const SheetModal = ({
   }, []);
 
   const handleSheetNameChange = useCallback((e) => {
-    setSheetName(e.target.value);
+    setSheetName(e.target.value.trim());
   }, []);
 
   return (
@@ -293,6 +300,7 @@ SheetModal.propTypes = {
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.array,
   onPinToggle: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 export default SheetModal;

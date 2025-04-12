@@ -5,8 +5,10 @@ import { MainContext } from "../../Contexts/MainContext";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const HeadersModal = ({ tempData, setTempData }) => {
-  const { headers, setHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
-  const [currentHeaders, setCurrentHeaders] = useState(tempData.currentHeaders || headers);
+  const { headers = [], isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
+  const [currentHeaders, setCurrentHeaders] = useState(() =>
+    (tempData.currentHeaders || headers).map((h) => ({ ...h }))
+  );
   const [newHeaderKey, setNewHeaderKey] = useState("");
   const [newHeaderName, setNewHeaderName] = useState("");
   const [newHeaderType, setNewHeaderType] = useState("text");
@@ -14,9 +16,21 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const editActionsRef = useRef(null);
-  const hasInitialized = useRef(false); // Add ref to track initialization
+  const hasInitialized = useRef(false);
+  const hasUpdatedHeaders = useRef(false);
 
-  // Register modal title only once on mount
+  // Sync currentHeaders to tempData when headers are updated
+  useEffect(() => {
+    if (hasUpdatedHeaders.current) {
+      setTempData(() => ({
+        currentHeaders,
+      }));
+      // console.log("Synced tempData with currentHeaders:", currentHeaders);
+      hasUpdatedHeaders.current = false;
+    }
+  }, [currentHeaders, setTempData]);
+
+  // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
@@ -30,18 +44,14 @@ const HeadersModal = ({ tempData, setTempData }) => {
       setModalConfig({
         showTitle: true,
         showDoneButton: true,
-        showBackButton: false, // Explicitly set to false for clarity
+        showBackButton: false,
         title: "Manage Headers",
         backButtonTitle: "",
       });
       goToStep(1);
-      hasInitialized.current = true; // Mark as initialized
+      hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, goToStep]); // Dependencies are stable context functions
-
-  useEffect(() => {
-    setTempData((prev) => ({ ...prev, currentHeaders }));
-  }, [currentHeaders, setTempData]);
+  }, [registerModalSteps, setModalConfig, goToStep]);
 
   const validateHeader = useCallback(
     (key, name, existingHeaders, isUpdate = false, index = null) => {
@@ -86,15 +96,19 @@ const HeadersModal = ({ tempData, setTempData }) => {
       type: newHeaderType,
       ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
     };
-    setCurrentHeaders((prev) => [...prev, newHeader]);
-    setHeaders((prev) => [...prev, newHeader]);
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev, newHeader];
+      // console.log("addHeader: newHeaders", newHeaders);
+      return newHeaders;
+    });
+    hasUpdatedHeaders.current = true;
     setNewHeaderKey("");
     setNewHeaderName("");
     setNewHeaderType("text");
     setNewHeaderOptions([]);
     setNewOption("");
     setActiveIndex(null);
-  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader, setHeaders]);
+  }, [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]);
 
   const updateHeader = useCallback(
     (index) => {
@@ -108,11 +122,28 @@ const HeadersModal = ({ tempData, setTempData }) => {
         type: newHeaderType,
         ...(newHeaderType === "dropdown" && { options: newHeaderOptions }),
       };
-      setCurrentHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
-      setHeaders((prev) => prev.map((h, i) => (i === index ? updatedHeader : h)));
+      setCurrentHeaders((prev) => {
+        const newHeaders = prev.map((h, i) => (i === index ? updatedHeader : h));
+        // console.log("updateHeader: newHeaders", newHeaders);
+        return newHeaders;
+      });
+      hasUpdatedHeaders.current = true;
       setActiveIndex(null);
     },
-    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader, setHeaders]
+    [newHeaderKey, newHeaderName, newHeaderType, newHeaderOptions, currentHeaders, validateHeader]
+  );
+
+  const deleteHeader = useCallback(
+    (index) => {
+      setCurrentHeaders((prev) => {
+        const newHeaders = prev.filter((_, i) => i !== index);
+        // console.log("deleteHeader: newHeaders", newHeaders);
+        return newHeaders;
+      });
+      hasUpdatedHeaders.current = true;
+      setActiveIndex(null);
+    },
+    []
   );
 
   const resetForm = useCallback(() => {
@@ -125,7 +156,9 @@ const HeadersModal = ({ tempData, setTempData }) => {
 
   const handleKeyPress = useCallback(
     (e) => {
-      if (e.key === "Enter" && activeIndex === -1) addHeader();
+      if (e.key === "Enter" && activeIndex === -1) {
+        addHeader();
+      }
     },
     [activeIndex, addHeader]
   );
@@ -144,15 +177,6 @@ const HeadersModal = ({ tempData, setTempData }) => {
       }
     },
     [currentHeaders, resetForm]
-  );
-
-  const deleteHeader = useCallback(
-    (index) => {
-      setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
-      setHeaders((prev) => prev.filter((_, i) => i !== index));
-      setActiveIndex(null);
-    },
-    [setHeaders]
   );
 
   const addOption = useCallback(() => {

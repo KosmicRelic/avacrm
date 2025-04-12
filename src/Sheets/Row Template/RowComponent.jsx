@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./RowComponent.module.css";
 import { MainContext } from "../../Contexts/MainContext";

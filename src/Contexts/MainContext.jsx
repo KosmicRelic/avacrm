@@ -1,3 +1,4 @@
+// MainContext.js
 import { createContext, useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 
@@ -359,7 +360,7 @@ export const MainContextProvider = ({ children }) => {
       options: ["High", "Medium", "Low"],
     },
   ]);
-
+  
   const [cardTemplates, setCardTemplates] = useState([
     {
       name: "Leads",
@@ -447,7 +448,6 @@ export const MainContextProvider = ({ children }) => {
             })
           : "";
 
-      // Defer state updates to avoid render-time conflicts
       setTimeout(() => {
         setCurrentStep(step);
         setModalConfig({

@@ -12,7 +12,6 @@ import { MainContext } from "../Contexts/MainContext";
 const SheetTemplate = ({
   headers,
   rows,
-  filters = {},
   sheets,
   setSheets,
   activeSheetName,
@@ -26,6 +25,11 @@ const SheetTemplate = ({
   onOpenTransportModal,
 }) => {
   const { isDarkTheme, setCards, cards } = useContext(MainContext);
+
+  // Retrieve filters from active sheet
+  const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
+  const filters = activeSheet?.filters || {};
+
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -156,15 +160,34 @@ const SheetTemplate = ({
 
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];
-    for (const [headerKey, filter] of Object.entries(filters)) {
-      const header = headers.find((h) => h.key === headerKey);
-      if (header && filter.sortOrder && header.type === "number") {
-        sorted.sort((a, b) => {
-          const aValue = Number(a[headerKey] || 0);
-          const bValue = Number(b[headerKey] || 0);
-          return filter.sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
-        });
-      }
+    const sortCriteria = Object.entries(filters)
+      .filter(([_, filter]) => filter.sortOrder)
+      .map(([headerKey, filter]) => ({
+        key: headerKey,
+        sortOrder: filter.sortOrder,
+        type: headers.find((h) => h.key === headerKey)?.type || "text",
+      }));
+
+    if (sortCriteria.length > 0) {
+      sorted.sort((a, b) => {
+        for (const { key, sortOrder, type } of sortCriteria) {
+          let aValue = a[key];
+          let bValue = b[key];
+          if (type === "number") {
+            aValue = Number(aValue) || 0;
+            bValue = Number(bValue) || 0;
+          } else if (type === "date") {
+            aValue = aValue ? new Date(aValue).getTime() : 0;
+            bValue = bValue ? new Date(bValue).getTime() : 0;
+          } else {
+            aValue = String(aValue || "").toLowerCase();
+            bValue = String(bValue || "").toLowerCase();
+          }
+          if (aValue < bValue) return sortOrder === "ascending" ? -1 : 1;
+          if (aValue > bValue) return sortOrder === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
     }
     return sorted;
   }, [filteredRows, filters, headers]);
@@ -212,11 +235,11 @@ const SheetTemplate = ({
     (updatedRow, isEditing) => {
       const rowId = updatedRow.id;
       const newCardData = { ...updatedRow, id: rowId };
-  
+
       // Double-check the active sheet's rows directly from sheets
       const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
       const sheetRows = activeSheet ? activeSheet.rows : [];
-  
+
       if (!isEditing) {
         setSheets((prev) => ({
           ...prev,
@@ -280,6 +303,7 @@ const SheetTemplate = ({
         headers: selectedHeaders.map((key) => ({ key, visible: true, hidden: false })),
         pinnedHeaders: [],
         rows: [],
+        filters: {}, // Initialize filters for new sheet
         isActive: true,
       };
       return {
@@ -602,42 +626,42 @@ const SheetTemplate = ({
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
-    <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      {TableContent}
-      {isMobile && isEditorOpen && (
-        <div
-          className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
-        >
-          <CardsEditor
-            key={selectedRow?.id || Date.now()}
-            onClose={handleEditorClose}
-            onSave={handleEditorSave}
-            initialRowData={selectedRow}
-            startInEditMode={!!selectedRow}
-            preSelectedSheet={activeSheetName}
-          />
-        </div>
-      )}
-    </div>
-    {!isMobile && (
-      <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {isEditorOpen ? (
-          <CardsEditor
-            key={selectedRow?.id || Date.now()}
-            onClose={handleEditorClose}
-            onSave={handleEditorSave}
-            initialRowData={selectedRow}
-            startInEditMode={!!selectedRow}
-            preSelectedSheet={activeSheetName}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <p>Select a row to show its data</p>
+      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        {TableContent}
+        {isMobile && isEditorOpen && (
+          <div
+            className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
+          >
+            <CardsEditor
+              key={selectedRow?.id || Date.now()}
+              onClose={handleEditorClose}
+              onSave={handleEditorSave}
+              initialRowData={selectedRow}
+              startInEditMode={!!selectedRow}
+              preSelectedSheet={activeSheetName}
+            />
           </div>
         )}
       </div>
-    )}
-  </div>
+      {!isMobile && (
+        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          {isEditorOpen ? (
+            <CardsEditor
+              key={selectedRow?.id || Date.now()}
+              onClose={handleEditorClose}
+              onSave={handleEditorSave}
+              initialRowData={selectedRow}
+              startInEditMode={!!selectedRow}
+              preSelectedSheet={activeSheetName}
+            />
+          ) : (
+            <div className={styles.placeholder}>
+              <p>Select a row to show its data</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -652,7 +676,6 @@ SheetTemplate.propTypes = {
     })
   ).isRequired,
   rows: PropTypes.array.isRequired,
-  filters: PropTypes.object,
   sheets: PropTypes.shape({
     allSheets: PropTypes.array.isRequired,
     structure: PropTypes.array.isRequired,
@@ -667,10 +690,6 @@ SheetTemplate.propTypes = {
   onCardDelete: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,
   onOpenTransportModal: PropTypes.func.isRequired,
-};
-
-SheetTemplate.defaultProps = {
-  filters: {},
 };
 
 export default SheetTemplate;

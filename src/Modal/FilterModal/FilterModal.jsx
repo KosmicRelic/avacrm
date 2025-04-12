@@ -26,9 +26,9 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
-  const hasInitialized = useRef(false); // Add ref to track initialization
+  const hasInitialized = useRef(false);
 
-  // Register modal title only once on mount
+  // Initialize modal steps and config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
@@ -47,29 +47,34 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
         backButtonTitle: "",
       });
       goToStep(1);
-      hasInitialized.current = true; // Mark as initialized
+      hasInitialized.current = true;
     }
   }, [registerModalSteps, setModalConfig, goToStep]);
 
-  // Sync filterValues with tempData.filterValues
+  // Sync tempData with initialFilters if not set
   useEffect(() => {
     if (!tempData.filterValues) {
-      setTempData({ filterValues: initialFilters });
+      setTempData({ filterValues: { ...initialFilters } });
     }
   }, [tempData, setTempData, initialFilters]);
 
   const filterValues = tempData.filterValues || initialFilters;
 
-  const visibleHeaders = useMemo(() =>
-    headers.filter((header) => !header.hidden).map((header) => {
-      const globalHeader = allHeaders.find((h) => h.key === header.key);
-      return {
-        ...header,
-        name: globalHeader ? globalHeader.name : formatHeaderName(header.key),
-        type: globalHeader ? globalHeader.type : header.type || "text",
-        options: globalHeader?.options || [],
-      };
-    }), [headers, allHeaders]);
+  const visibleHeaders = useMemo(
+    () =>
+      headers
+        .filter((header) => !header.hidden)
+        .map((header) => {
+          const globalHeader = allHeaders.find((h) => h.key === header.key);
+          return {
+            ...header,
+            name: globalHeader ? globalHeader.name : formatHeaderName(header.key),
+            type: globalHeader ? globalHeader.type : header.type || "text",
+            options: globalHeader?.options || [],
+          };
+        }),
+    [headers, allHeaders]
+  );
 
   const formatHeaderName = (key) => {
     return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
@@ -83,38 +88,44 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
     [allHeaders]
   );
 
-  const applyFilters = useCallback(
-    (filters) => {
-      const cleanedFilters = Object.fromEntries(
-        Object.entries(filters).map(([key, filter]) => {
-          if (numberRangeMode[key]) {
-            return [
-              key,
-              {
-                start: filter.start ? Number(filter.start) : undefined,
-                end: filter.end ? Number(filter.end) : undefined,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          } else if (filter.order && filter.value) {
-            return [
-              key,
-              {
-                order: filter.order,
-                value: filter.type === "number" ? Number(filter.value) : filter.value,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          }
-          return [key, filter];
-        })
-      );
-      onApply(cleanedFilters);
-      setTempData({ filterValues: cleanedFilters });
-    },
-    [numberRangeMode, onApply, setTempData]
-  );
+// In FilterModal.js
+const updateTempFilters = useCallback(
+  (newFilters) => {
+    setTempData({ filterValues: { ...newFilters } });
+  },
+  [setTempData]
+);
 
+const applyFilters = useCallback(
+  (filters) => {
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filters).map(([key, filter]) => {
+        if (numberRangeMode[key]) {
+          return [
+            key,
+            {
+              start: filter.start ? Number(filter.start) : undefined,
+              end: filter.end ? Number(filter.end) : undefined,
+              sortOrder: filter.sortOrder || undefined,
+            },
+          ];
+        } else if (filter.order && filter.value) {
+          return [
+            key,
+            {
+              order: filter.order,
+              value: filter.type === "number" ? Number(filter.value) : filter.value,
+              sortOrder: filter.sortOrder || undefined,
+            },
+          ];
+        }
+        return [key, filter];
+      })
+    );
+    updateTempFilters(cleanedFilters);
+  },
+  [numberRangeMode, updateTempFilters]
+);
   const handleFilterChange = useCallback(
     (headerKey, value, type = "default") => {
       const newFilter = { ...filterValues[headerKey], [type]: value };
@@ -232,7 +243,9 @@ const FilterModal = ({ headers, rows, onApply, filters: initialFilters = {}, tem
         {visibleHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
+            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ""} ${
+              isDarkTheme ? styles.darkTheme : ""
+            }`}
             onClick={() => toggleFilter(index)}
           >
             <div className={styles.filterRow}>

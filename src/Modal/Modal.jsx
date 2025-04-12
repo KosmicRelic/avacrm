@@ -6,13 +6,12 @@ import { MainContext } from "../Contexts/MainContext";
 import { FaChevronLeft } from "react-icons/fa";
 
 const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton }) => {
-  const { setSheets, setHeaders, isDarkTheme, modalConfig, goToStep, currentStep, goBack } = useContext(MainContext);
+  const { isDarkTheme, modalConfig, goToStep, currentStep, goBack } = useContext(MainContext);
   const [isClosing, setIsClosing] = useState(false);
-  const [tempData, setTempData] = useState(initialData || {});
   const modalRef = useRef(null);
 
   const handleClose = () => {
-    if (currentStep !== 1) return; // Prevent closing if not on step 1
+    if (currentStep !== 1) return;
     setIsClosing(true);
     const timeoutDuration = window.innerWidth <= 767 ? 300 : 200;
     setTimeout(() => {
@@ -22,77 +21,9 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
   };
 
   const handleSaveAndClose = () => {
-    if (currentStep !== 1) return; // Prevent saving/closing if not on step 1
-    switch (modalType) {
-      case "sheet":
-        setSheets((prevSheets) => {
-          const updatedSheets = prevSheets.allSheets.map((sheet) => {
-            if (sheet.sheetName === initialData.sheetName) {
-              return {
-                ...sheet,
-                sheetName: tempData.sheetName,
-                headers: tempData.currentHeaders,
-                rows: tempData.rows || sheet.rows,
-                pinnedHeaders: sheet.pinnedHeaders,
-                isActive: sheet.isActive,
-              };
-            }
-            return sheet;
-          });
-
-          if (!updatedSheets.some((sheet) => sheet.sheetName === tempData.sheetName)) {
-            updatedSheets.push({
-              sheetName: tempData.sheetName,
-              headers: tempData.currentHeaders,
-              rows: tempData.rows || [],
-              pinnedHeaders: [],
-              isActive: true,
-            });
-            return {
-              ...prevSheets,
-              allSheets: updatedSheets.map((sheet) => ({
-                ...sheet,
-                isActive: sheet.sheetName === tempData.sheetName,
-              })),
-              structure: prevSheets.structure
-                .map((item) =>
-                  item.sheetName === initialData.sheetName ? { sheetName: tempData.sheetName } : item
-                )
-                .concat(
-                  !prevSheets.structure.some((item) => item.sheetName === tempData.sheetName)
-                    ? [{ sheetName: tempData.sheetName }]
-                    : []
-                ),
-            };
-          }
-
-          return {
-            ...prevSheets,
-            allSheets: updatedSheets,
-            structure: prevSheets.structure.map((item) =>
-              item.sheetName === initialData.sheetName ? { sheetName: tempData.sheetName } : item
-            ),
-          };
-        });
-        break;
-      case "filter":
-        onSave(tempData.filterValues);
-        break;
-      case "headers":
-        setHeaders(tempData.currentHeaders);
-        break;
-      case "sheets":
-        setSheets((prevSheets) => ({
-          ...prevSheets,
-          structure: tempData.newOrder,
-        }));
-        break;
-      case "transport":
-        break;
-      case "cardsTemplate":
-        break;
-      default:
-        break;
+    if (currentStep !== 1) return;
+    if (modalType !== "transport") {
+      onSave();
     }
     handleClose();
   };
@@ -100,24 +31,16 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        if (modalType !== "transport") {
-          handleSaveAndClose();
-        } else {
+        if (modalType === "transport") {
           handleClose();
+        } else {
+          handleSaveAndClose();
         }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [tempData, handleSaveAndClose, modalType]);
-
-  const enhancedChildren = React.Children.map(children, (child) =>
-    React.cloneElement(child, {
-      tempData,
-      setTempData,
-      onSave: modalType === "transport" ? handleClose : handleSaveAndClose,
-    })
-  );
+  }, [modalType, handleSaveAndClose, handleClose]);
 
   return (
     <div
@@ -136,7 +59,7 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
             {modalConfig.showBackButton && (
               <button
                 className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={goBack} // Use goBack instead of goToStep directly
+                onClick={goBack}
               >
                 <span className={styles.chevron}><FaChevronLeft /></span> {modalConfig.backButtonTitle}
               </button>
@@ -146,7 +69,7 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
                 {modalConfig.title}
               </h2>
             )}
-            {modalConfig.showDoneButton && modalType !== "transport" && !rightButton ? (
+            {modalConfig.showDoneButton && !rightButton && modalType !== "transport" ? (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSaveAndClose}
@@ -163,7 +86,7 @@ const Modal = ({ children, onClose, onSave, initialData, modalType, rightButton 
             )}
           </div>
         )}
-        {enhancedChildren}
+        {children}
       </div>
     </div>
   );
@@ -181,7 +104,6 @@ Modal.propTypes = {
   }),
 };
 
-Modal.defaultProps = {
-};
+Modal.defaultProps = {};
 
 export default Modal;
