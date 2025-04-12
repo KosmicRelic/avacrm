@@ -366,10 +366,11 @@ export const MainContextProvider = ({ children }) => {
       typeOfCards: "Leads",
       sections: [
         {
-          title: "Contact Information",
+          name: "Contact Information", // Changed from title to name
           keys: ["id", "name", "phone", "email", "leadScore", "nextActions", "followUpDate"],
-        },{
-          title: "Sales Process",
+        },
+        {
+          name: "Sales Process", // Changed from title to name
           keys: [],
         },
       ],
@@ -379,7 +380,7 @@ export const MainContextProvider = ({ children }) => {
       typeOfCards: "Business",
       sections: [
         {
-          title: "Business Details",
+          name: "Business Details", // Changed from title to name
           keys: ["id", "fullName", "address", "status"],
         },
       ],
