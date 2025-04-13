@@ -12,7 +12,6 @@ const SheetModal = ({
  setTempData,
  sheets = [],
  onPinToggle,
- onSave,
 }) => {
  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
@@ -311,7 +310,6 @@ SheetModal.propTypes = {
  setTempData: PropTypes.func.isRequired,
  sheets: PropTypes.array,
  onPinToggle: PropTypes.func.isRequired,
- onSave: PropTypes.func.isRequired,
 };
 
 export default SheetModal;

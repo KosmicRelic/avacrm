@@ -26,13 +26,6 @@ const Modal = ({ children, onClose, onSave, modalType }) => {
     }, timeoutDuration);
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave();
-      handleClose({ fromSave: true });
-    }
-  };
-
   useEffect(() => {
     // Enable click-outside after a short delay to prevent immediate closure
     const timer = setTimeout(() => {
@@ -105,18 +98,10 @@ const Modal = ({ children, onClose, onSave, modalType }) => {
                   {modalConfig.rightButton.label}
                 </button>
               )}
-              {modalConfig.onSave && (
-                <button
-                  className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={handleSave}
-                >
-                  Save
-                </button>
-              )}
               {modalConfig.showDoneButton && !modalConfig.rightButton && !modalConfig.onSave && (
                 <button
                   className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={modalType === "sheet" ? handleSave : () => handleClose()}
+                  onClick={() => handleClose()}
                 >
                   Done
                 </button>
