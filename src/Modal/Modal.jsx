@@ -10,25 +10,17 @@ const Modal = ({ children, onClose, onSave, modalType, rightButton }) => {
   const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
 
-  const handleClose = () => {
+  const handleClose = (options = {}) => {
     if (currentStep !== 1) return;
     setIsClosing(true);
     const timeoutDuration = window.innerWidth <= 767 ? 300 : 200;
     setTimeout(() => {
       setIsClosing(false);
-      onClose();
-      if (modalType !== "transport" && onSave) {
-        onSave(); // Trigger save on close (except transport)
+      onClose({ animationComplete: true, ...options });
+      if (modalType !== "transport" && onSave && !options.fromSave) {
+        onSave();
       }
     }, timeoutDuration);
-  };
-
-  const handleSaveAndClose = () => {
-    if (currentStep !== 1) return;
-    if (onSave) {
-      onSave(); // Trigger save on Done click
-    }
-    handleClose();
   };
 
   useEffect(() => {
@@ -71,7 +63,7 @@ const Modal = ({ children, onClose, onSave, modalType, rightButton }) => {
             {modalConfig.showDoneButton && !rightButton && (
               <button
                 className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={handleSaveAndClose}
+                onClick={() => handleClose()} // Changed to handleClose
               >
                 Done
               </button>
@@ -95,7 +87,7 @@ const Modal = ({ children, onClose, onSave, modalType, rightButton }) => {
 Modal.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
-  onSave: PropTypes.func, // Optional save callback
+  onSave: PropTypes.func,
   modalType: PropTypes.string.isRequired,
   rightButton: PropTypes.shape({
     label: PropTypes.string,
