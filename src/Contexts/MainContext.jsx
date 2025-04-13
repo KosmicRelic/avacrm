@@ -1,4 +1,3 @@
-// src/Contexts/MainContext.jsx
 import { createContext, useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import CardsTemplate from "../Modal/Cards Template/CardsTemplate";
@@ -104,7 +103,7 @@ export const MainContextProvider = ({ children }) => {
     {
       id: "100001",
       typeOfCards: "Leads",
-      name: "Periklis Papadopoulos",
+      name: "Periklispapadopoulos",
       phone: "6986600023",
       email: "periklis@example.com",
       leadScore: "80",
@@ -404,7 +403,7 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  useEffect(()=>{console.log(CardsTemplate)},[CardsTemplate])
+  // useEffect(()=>{console.log(CardsTemplate)},[CardsTemplate])
 
   return (
     <MainContext.Provider

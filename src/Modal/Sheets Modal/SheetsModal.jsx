@@ -2,9 +2,11 @@ import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "r
 import PropTypes from "prop-types";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
+import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 
 const SheetsModal = ({ sheets, tempData, setTempData, onSave }) => {
-  const { isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
+  const { isDarkTheme } = useContext(MainContext);
+  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     const structure = sheets?.structure || [];
     return structure.map((item) => ({
@@ -24,8 +26,8 @@ const SheetsModal = ({ sheets, tempData, setTempData, onSave }) => {
       registerModalSteps({
         steps: [
           {
-            title: () => "Manage Sheets",
-            rightButtons: () => [],
+            title: "Manage Sheets",
+            rightButton: null, // Use default Done button
           },
         ],
       });
@@ -35,11 +37,11 @@ const SheetsModal = ({ sheets, tempData, setTempData, onSave }) => {
         showBackButton: false,
         title: "Manage Sheets",
         backButtonTitle: "",
+        rightButton: null,
       });
-      goToStep(1);
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, goToStep]);
+  }, [registerModalSteps, setModalConfig]);
 
   // Sync orderedItems only on sheets.structure change, not during drags
   useEffect(() => {

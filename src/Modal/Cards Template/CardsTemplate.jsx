@@ -1,4 +1,3 @@
-// src/Modal/CardsTemplate/CardsTemplate.jsx
 import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
@@ -45,6 +44,11 @@ const CardsTemplate = ({ onSave }) => {
     setEditMode((prev) => !prev);
   }, [setEditMode]);
 
+  const handleSave = useCallback(() => {
+    setCardTemplates(tempData);
+    if (onSave) onSave(tempData);
+  }, [tempData, setCardTemplates, onSave]);
+
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
@@ -52,7 +56,7 @@ const CardsTemplate = ({ onSave }) => {
       const steps = [
         {
           title: () => "Card Templates",
-          rightButton: null,
+          rightButton: { label: "Done", onClick: handleSave },
         },
         {
           title: ({ tempData, selectedTemplateIndex }) =>
@@ -84,7 +88,7 @@ const CardsTemplate = ({ onSave }) => {
         showBackButton: false,
         title: "Card Templates",
         backButtonTitle: "",
-        rightButton: null,
+        rightButton: { label: "Done", onClick: handleSave },
       });
 
       // Initialize tempData if invalid or empty
@@ -117,6 +121,7 @@ const CardsTemplate = ({ onSave }) => {
     currentSectionIndex,
     editMode,
     toggleEditMode,
+    handleSave,
   ]);
 
   useEffect(() => {
@@ -134,11 +139,13 @@ const CardsTemplate = ({ onSave }) => {
           ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
           : prev.title,
       rightButton:
-        currentStep === 2
+        currentStep === 1
+          ? { label: "Done", onClick: handleSave }
+          : currentStep === 2
           ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
           : null,
     }));
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, tempData, editMode, setModalConfig, toggleEditMode]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, tempData, editMode, setModalConfig, toggleEditMode, handleSave]);
 
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
@@ -411,15 +418,6 @@ const CardsTemplate = ({ onSave }) => {
       goToStep(1, { tempData, editMode });
     }
   }, [selectedTemplateIndex, tempData, setTempData, setSelectedTemplateIndex, goToStep, editMode]);
-
-  useEffect(() => {
-    return () => {
-      if (currentStep === 1 && Array.isArray(tempData) && tempData !== cardTemplates) {
-        setCardTemplates(tempData);
-        if (onSave) onSave();
-      }
-    };
-  }, [tempData, cardTemplates, setCardTemplates, onSave, currentStep]);
 
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>

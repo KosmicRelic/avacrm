@@ -1,4 +1,3 @@
-// src/Contexts/ModalNavigator.jsx
 import { createContext, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 
@@ -43,14 +42,14 @@ export const ModalNavigatorProvider = ({ children }) => {
   const goToStep = useCallback(
     (step, args = {}) => {
       if (step < 1 || step > modalSteps.length) return;
-  
+
       const currentStepIndex = step - 1;
       const previousStepIndex = step - 2;
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
       const rightButton = modalSteps[currentStepIndex]?.rightButton || null;
-  
+
       setCurrentStep(step);
       setModalConfig({
         showTitle: true,
@@ -63,6 +62,7 @@ export const ModalNavigatorProvider = ({ children }) => {
     },
     [modalSteps, getStepTitle]
   );
+
   const goBack = useCallback(
     (args = {}) => {
       if (currentStep <= 1) return;

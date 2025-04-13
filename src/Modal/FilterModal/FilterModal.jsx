@@ -2,10 +2,12 @@ import { useContext, useState, useCallback, useMemo, useRef, useEffect } from "r
 import PropTypes from "prop-types";
 import styles from "./FilterModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
+import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const FilterModal = ({ headers, rows, tempData, setTempData, onSave }) => {
-  const { headers: allHeaders, isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
+  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
+  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
       const initial = {};
@@ -28,14 +30,14 @@ const FilterModal = ({ headers, rows, tempData, setTempData, onSave }) => {
   const filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
 
-  // Initialize modal steps and config
+  // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
         steps: [
           {
-            title: () => "Filters",
-            rightButtons: () => [],
+            title: "Filters",
+            rightButton: null, // Use default Done button
           },
         ],
       });
@@ -45,11 +47,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData, onSave }) => {
         showBackButton: false,
         title: "Filters",
         backButtonTitle: "",
+        rightButton: null,
       });
-      goToStep(1);
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, goToStep]);
+  }, [registerModalSteps, setModalConfig]);
 
   // Initialize tempData
   useEffect(() => {

@@ -2,10 +2,12 @@ import { useContext, useState, useCallback, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./HeadersModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
+import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import useClickOutside from "../Hooks/UseClickOutside";
 
 const HeadersModal = ({ tempData, setTempData, onSave }) => {
-  const { headers = [], isDarkTheme, registerModalSteps, setModalConfig, goToStep } = useContext(MainContext);
+  const { headers = [], isDarkTheme } = useContext(MainContext);
+  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [currentHeaders, setCurrentHeaders] = useState(() =>
     (tempData.currentHeaders || headers).map((h) => ({ ...h }))
   );
@@ -19,23 +21,14 @@ const HeadersModal = ({ tempData, setTempData, onSave }) => {
   const hasInitialized = useRef(false);
   const prevHeadersRef = useRef(currentHeaders);
 
-  // Sync currentHeaders to tempData
-  useEffect(() => {
-    const headersChanged = JSON.stringify(currentHeaders) !== JSON.stringify(prevHeadersRef.current);
-    if (headersChanged) {
-      setTempData({ currentHeaders });
-      prevHeadersRef.current = currentHeaders;
-    }
-  }, [currentHeaders, setTempData]);
-
   // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
         steps: [
           {
-            title: () => "Manage Headers",
-            rightButtons: () => [],
+            title: "Manage Headers",
+            rightButton: null, // Use default Done button
           },
         ],
       });
@@ -45,11 +38,20 @@ const HeadersModal = ({ tempData, setTempData, onSave }) => {
         showBackButton: false,
         title: "Manage Headers",
         backButtonTitle: "",
+        rightButton: null,
       });
-      goToStep(1);
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, goToStep]);
+  }, [registerModalSteps, setModalConfig]);
+
+  // Sync currentHeaders to tempData
+  useEffect(() => {
+    const headersChanged = JSON.stringify(currentHeaders) !== JSON.stringify(prevHeadersRef.current);
+    if (headersChanged) {
+      setTempData({ currentHeaders });
+      prevHeadersRef.current = currentHeaders;
+    }
+  }, [currentHeaders, setTempData]);
 
   const validateHeader = useCallback(
     (key, name, existingHeaders, isUpdate = false, index = null) => {
