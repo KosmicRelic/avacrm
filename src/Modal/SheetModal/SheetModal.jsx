@@ -13,7 +13,7 @@ const SheetModal = ({
   sheets = [],
   onPinToggle,
   onDeleteSheet,
-  onClose, // Prop from Modal
+  onClose,
 }) => {
   const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
@@ -39,6 +39,9 @@ const SheetModal = ({
   const headerRefs = useRef(new Map());
   const hasInitialized = useRef(false);
 
+  // Find sheet ID
+  const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.id;
+
   // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
@@ -46,7 +49,7 @@ const SheetModal = ({
         steps: [
           {
             title: isEditMode ? "Edit Sheet" : "Create Sheet",
-            rightButton: null, // Use default Done button
+            rightButton: null,
           },
         ],
       });
@@ -211,7 +214,7 @@ const SheetModal = ({
   }, []);
 
   const handleSheetNameChange = useCallback((e) => {
-    setSheetName(e.target.value); // Allow spaces, no trimming
+    setSheetName(e.target.value);
   }, []);
 
   return (
@@ -298,14 +301,14 @@ const SheetModal = ({
           </div>
         ))}
       </div>
-      {isEditMode && (
+      {isEditMode && sheetId !== "primarySheet" && (
         <div className={styles.deleteButtonContainer}>
           <button
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete the sheet "${sheetName}"? This action cannot be undone.`)) {
                 onDeleteSheet(sheetName);
                 if (onClose) {
-                  onClose({ fromDelete: true }); // Pass flag to skip onSave if needed
+                  onClose({ fromDelete: true });
                 } else {
                   console.warn("onClose not available to close modal");
                 }
@@ -330,13 +333,15 @@ SheetModal.propTypes = {
     rows: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  sheets: PropTypes.array,
+  sheets: PropTypes.object,
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
   onClose: PropTypes.func,
 };
 
 SheetModal.defaultProps = {
+  isEditMode: false,
+  sheets: { allSheets: [] },
   onClose: null,
 };
 

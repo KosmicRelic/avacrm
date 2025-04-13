@@ -82,43 +82,6 @@ function App() {
     [activeSheetName, setSheets]
   );
 
-  const handleDeleteSheet = useCallback(
-    (sheetName) => {
-      setSheets((prev) => {
-        const updatedAllSheets = prev.allSheets.filter((sheet) => sheet.sheetName !== sheetName);
-        const updatedStructure = prev.structure
-          .map((item) => {
-            if (item.sheetName === sheetName) {
-              return null;
-            }
-            if (item.folderName) {
-              return {
-                ...item,
-                sheets: item.sheets.filter((s) => s !== sheetName),
-              };
-            }
-            return item;
-          })
-          .filter((item) => item !== null)
-          .filter((item) => !item.folderName || item.sheets.length > 0);
-        let newActiveSheet = updatedAllSheets[0]?.sheetName;
-        if (updatedStructure.length > 0) {
-          const firstItem = updatedStructure[0];
-          newActiveSheet = firstItem.sheetName || updatedStructure[0].sheets?.[0];
-        }
-        return {
-          ...prev,
-          allSheets: updatedAllSheets.map((sheet) => ({
-            ...sheet,
-            isActive: sheet.sheetName === newActiveSheet,
-          })),
-          structure: updatedStructure,
-        };
-      });
-    },
-    [setSheets]
-  );
-
   const handleModalSave = useCallback(
     (modalType, data) => {
       switch (modalType) {
@@ -287,8 +250,6 @@ function App() {
             setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
             sheets={sheets}
             onPinToggle={handlePinToggle}
-            onDeleteSheet={handleDeleteSheet}
-            onClose={handleModalClose} // Pass onClose
           />
         );
       case "filter":

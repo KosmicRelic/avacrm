@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import CardsTemplate from "../Modal/Cards Template/CardsTemplate";
 
 export const MainContext = createContext();
 
@@ -16,6 +15,7 @@ export const MainContextProvider = ({ children }) => {
   const [sheets, setSheets] = useState({
     allSheets: [
       {
+        id: "primarySheet",
         sheetName: "All Cards",
         headers: [
           { key: "id", visible: true, hidden: false },
@@ -42,6 +42,7 @@ export const MainContextProvider = ({ children }) => {
         isActive: true,
       },
       {
+        id: "sheet2",
         sheetName: "Business Partners",
         headers: [
           { key: "id", visible: true, hidden: false },
@@ -54,6 +55,7 @@ export const MainContextProvider = ({ children }) => {
         isActive: false,
       },
       {
+        id: "sheet3",
         sheetName: "Vendors",
         headers: [
           { key: "id", visible: true, hidden: false },
@@ -65,6 +67,7 @@ export const MainContextProvider = ({ children }) => {
         isActive: false,
       },
       {
+        id: "sheet4",
         sheetName: "Tasks",
         headers: [
           { key: "id", visible: true, hidden: false },
@@ -91,7 +94,7 @@ export const MainContextProvider = ({ children }) => {
     {
       id: "100001",
       typeOfCards: "Leads",
-      name: "Periklis papadopoulos",
+      name: "Periklis Papadopoulos",
       phone: "6986600023",
       email: "periklis@example.com",
       leadScore: "80",
@@ -260,6 +263,18 @@ export const MainContextProvider = ({ children }) => {
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
+
+  // Sync "All Cards" sheet rows with all card IDs
+  useEffect(() => {
+    setSheets((prev) => ({
+      ...prev,
+      allSheets: prev.allSheets.map((sheet) =>
+        sheet.id === "primarySheet"
+          ? { ...sheet, rows: cards.map((card) => card.id) }
+          : sheet
+      ),
+    }));
+  }, [cards]);
 
   useEffect(() => {
     themeRef.current = isDarkTheme ? "dark" : "light";

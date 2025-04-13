@@ -26,9 +26,10 @@ const SheetTemplate = ({
 }) => {
   const { isDarkTheme, setCards, cards } = useContext(MainContext);
 
-  // Retrieve filters from active sheet
+  // Retrieve filters and sheet ID from active sheet
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const filters = activeSheet?.filters || {};
+  const isPrimarySheet = activeSheet?.id === "primarySheet";
 
   const scrollContainerRef = useRef(null);
   const modalRef = useRef(null);
@@ -228,7 +229,7 @@ const SheetTemplate = ({
       setIsEditorOpen(false);
       setSelectedRow(null);
       setIsClosing(false);
-    }, 300); // Match slide-out duration
+    }, 300);
   }, []);
 
   const handleEditorSave = useCallback(
@@ -254,7 +255,7 @@ const SheetTemplate = ({
         setCards((prev) =>
           prev.map((card) => (card.id === rowId ? newCardData : card))
         );
-        onCardSave(newCardData); // Notify parent of update
+        onCardSave(newCardData);
       }
       setSelectedRow(newCardData);
       setIsEditorOpen(false);
@@ -298,12 +299,14 @@ const SheetTemplate = ({
       return;
     }
     setSheets((prevSheets) => {
+      const newSheetId = `sheet${prevSheets.allSheets.length + 1}`;
       const newSheet = {
+        id: newSheetId,
         sheetName: newSheetName,
         headers: selectedHeaders.map((key) => ({ key, visible: true, hidden: false })),
         pinnedHeaders: [],
         rows: [],
-        filters: {}, // Initialize filters for new sheet
+        filters: {},
         isActive: true,
       };
       return {
@@ -368,7 +371,7 @@ const SheetTemplate = ({
   const handleRowSelect = useCallback(
     (rowData) => {
       if (isSelectMode) {
-        const rowId = rowData.id || rowData; // Handle both ID and full object
+        const rowId = rowData.id || rowData;
         setSelectedRowIds((prev) =>
           prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
         );
@@ -381,12 +384,16 @@ const SheetTemplate = ({
 
   const handleMoveOrCopy = useCallback(
     (action) => {
+      if (action === "move" && isPrimarySheet) {
+        alert("Cards cannot be moved from the primary sheet 'All Cards'.");
+        return;
+      }
       onOpenTransportModal(action, selectedRowIds, () => {
         setIsSelectMode(false);
         setSelectedRowIds([]);
       });
     },
-    [selectedRowIds, onOpenTransportModal]
+    [selectedRowIds, onOpenTransportModal, isPrimarySheet]
   );
 
   const handleDeleteSelected = useCallback(() => {
@@ -403,6 +410,10 @@ const SheetTemplate = ({
   }, [selectedRowIds, setCards, setSheets]);
 
   const handleRemoveSelected = useCallback(() => {
+    if (isPrimarySheet) {
+      alert("Cards cannot be removed from the primary sheet 'All Cards'.");
+      return;
+    }
     setSheets((prev) => ({
       ...prev,
       allSheets: prev.allSheets.map((sheet) =>
@@ -413,7 +424,7 @@ const SheetTemplate = ({
     }));
     setSelectedRowIds([]);
     setIsSelectMode(false);
-  }, [selectedRowIds, activeSheetName, setSheets]);
+  }, [selectedRowIds, activeSheetName, setSheets, isPrimarySheet]);
 
   const TableContent = (
     <div className={styles.tableContent}>
@@ -458,12 +469,14 @@ const SheetTemplate = ({
               </button>
               {selectedRowIds.length > 0 && (
                 <>
-                  <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={() => handleMoveOrCopy("move")}
-                  >
-                    Move
-                  </button>
+                  {!isPrimarySheet && (
+                    <button
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={() => handleMoveOrCopy("move")}
+                    >
+                      Move
+                    </button>
+                  )}
                   <button
                     className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={() => handleMoveOrCopy("copy")}
@@ -480,16 +493,18 @@ const SheetTemplate = ({
                   >
                     Delete
                   </button>
-                  <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
-                        handleRemoveSelected();
-                      }
-                    }}
-                  >
-                    Remove
-                  </button>
+                  {!isPrimarySheet && (
+                    <button
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
+                          handleRemoveSelected();
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </>
               )}
             </>
