@@ -1,5 +1,7 @@
-import { createContext, useState, useEffect, useRef, useCallback } from "react";
+// src/Contexts/MainContext.jsx
+import { createContext, useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
+import CardsTemplate from "../Modal/Cards Template/CardsTemplate";
 
 export const MainContext = createContext();
 
@@ -392,80 +394,6 @@ export const MainContextProvider = ({ children }) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  const [modalConfig, setModalConfig] = useState({
-    showTitle: true,
-    showDoneButton: true,
-    showBackButton: false,
-    title: "Card Templates",
-    backButtonTitle: "",
-  });
-  const [modalSteps, setModalSteps] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  const getStepTitle = useCallback(
-    (stepIndex, args) => {
-      const step = modalSteps[stepIndex];
-      return typeof step?.title === "function" ? step.title(args) : step?.title || "";
-    },
-    [modalSteps]
-  );
-
-  const registerModalSteps = useCallback(
-    (stepsConfig) => {
-      setModalSteps(stepsConfig.steps);
-      setCurrentStep(1);
-      setModalConfig({
-        showTitle: true,
-        showDoneButton: true,
-        showBackButton: false,
-        title: getStepTitle(0, { tempData, selectedTemplateIndex, currentSectionIndex, editMode }),
-        backButtonTitle: "",
-      });
-    },
-    [tempData, selectedTemplateIndex, currentSectionIndex, editMode, getStepTitle]
-  );
-
-  const goToStep = useCallback(
-    (step) => {
-      if (step < 1 || step > modalSteps.length) return;
-
-      const currentStepIndex = step - 1;
-      const previousStepIndex = step - 2;
-      const newTitle = getStepTitle(currentStepIndex, {
-        tempData,
-        selectedTemplateIndex,
-        currentSectionIndex,
-        editMode,
-      });
-      const previousStepTitle =
-        previousStepIndex >= 0
-          ? getStepTitle(previousStepIndex, {
-              tempData,
-              selectedTemplateIndex,
-              currentSectionIndex,
-              editMode,
-            })
-          : "";
-
-      setTimeout(() => {
-        setCurrentStep(step);
-        setModalConfig({
-          showTitle: true,
-          showDoneButton: step === 1,
-          showBackButton: step > 1,
-          title: newTitle,
-          backButtonTitle: previousStepTitle,
-        });
-      }, 0);
-    },
-    [modalSteps, tempData, selectedTemplateIndex, currentSectionIndex, editMode, getStepTitle]
-  );
-
-  const goBack = useCallback(() => {
-    if (currentStep <= 1) return;
-    goToStep(currentStep - 1);
-  }, [currentStep, goToStep]);
-
   useEffect(() => {
     themeRef.current = isDarkTheme ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", themeRef.current);
@@ -475,6 +403,8 @@ export const MainContextProvider = ({ children }) => {
       localStorage.setItem("theme", themeRef.current);
     }
   }, [isDarkTheme]);
+
+  useEffect(()=>{console.log(CardsTemplate)},[CardsTemplate])
 
   return (
     <MainContext.Provider
@@ -498,13 +428,6 @@ export const MainContextProvider = ({ children }) => {
         setCurrentSectionIndex,
         editMode,
         setEditMode,
-        modalConfig,
-        setModalConfig,
-        modalSteps,
-        currentStep,
-        registerModalSteps,
-        goToStep,
-        goBack,
       }}
     >
       {children}

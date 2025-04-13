@@ -1,19 +1,19 @@
+// src/Modal/CardsTemplate/CardsTemplate.jsx
 import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
+import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { IoIosCheckmark } from "react-icons/io";
 import { BsDashCircle } from "react-icons/bs";
 
-const CardsTemplate = () => {
+const CardsTemplate = ({ onSave }) => {
   const {
     headers,
     cardTemplates,
+    setCardTemplates,
     isDarkTheme,
-    registerModalSteps,
-    goToStep,
-    currentStep,
     tempData,
     setTempData,
     selectedTemplateIndex,
@@ -22,8 +22,10 @@ const CardsTemplate = () => {
     setCurrentSectionIndex,
     editMode,
     setEditMode,
-    setModalConfig,
   } = useContext(MainContext);
+
+  const { registerModalSteps, goToStep, currentStep, modalConfig, setModalConfig } =
+    useContext(ModalNavigatorContext);
 
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [draggedSectionIndex, setDraggedSectionIndex] = useState(null);
@@ -50,81 +52,93 @@ const CardsTemplate = () => {
       const steps = [
         {
           title: () => "Card Templates",
-          rightButtons: () => [],
+          rightButton: null,
         },
         {
           title: ({ tempData, selectedTemplateIndex }) =>
-            selectedTemplateIndex !== null && tempData[selectedTemplateIndex]
+            selectedTemplateIndex !== null && tempData && tempData[selectedTemplateIndex]
               ? tempData[selectedTemplateIndex].name || "New Template"
               : "New Template",
-          rightButtons: ({ editMode }) => [
-            { label: editMode ? "Done" : "Edit", onClick: toggleEditMode },
-          ],
+          rightButton: { label: editMode ? "Done" : "Edit", onClick: toggleEditMode },
         },
         {
           title: ({ tempData, selectedTemplateIndex, currentSectionIndex }) =>
             selectedTemplateIndex !== null &&
             currentSectionIndex !== null &&
+            tempData &&
             tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
               ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
               : "Section",
-          rightButtons: () => [],
+          rightButton: null,
         },
       ];
 
-      setTimeout(() => {
-        registerModalSteps({ steps });
-        setModalConfig({
-          showTitle: true,
-          showDoneButton: false,
-          showBackButton: false,
-          title: "Card Templates",
-          backButtonTitle: "",
-        });
-        goToStep(1);
+      registerModalSteps({
+        steps,
+        args: { tempData, selectedTemplateIndex, currentSectionIndex, editMode },
+      });
 
-        if (!tempData.length) {
-          setTempData(
-            cardTemplates.map((t) => ({
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: "Card Templates",
+        backButtonTitle: "",
+        rightButton: null,
+      });
+
+      // Initialize tempData if invalid or empty
+      if (!Array.isArray(tempData) || !tempData.length) {
+        const initialData = Array.isArray(cardTemplates)
+          ? cardTemplates.map((t) => ({
               ...t,
+              sections: Array.isArray(t.sections)
+                ? t.sections.map((s) => ({
+                    ...s,
+                    name: s.name || s.title || "Unnamed Section",
+                    keys: Array.isArray(s.keys) ? s.keys : [],
+                  }))
+                : [],
               isEditing: false,
-              originalName: t.name,
+              originalName: t.name || "",
               deleteTemplate: null,
             }))
-          );
-        }
-      }, 0);
+          : [];
+        setTempData(initialData);
+      }
     }
   }, [
     registerModalSteps,
-    goToStep,
     setModalConfig,
     tempData,
     setTempData,
     cardTemplates,
+    selectedTemplateIndex,
+    currentSectionIndex,
+    editMode,
     toggleEditMode,
   ]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setModalConfig((prev) => ({
-        ...prev,
-        title:
-          currentStep === 1
-            ? "Card Templates"
-            : currentStep === 2 && selectedTemplateIndex !== null && tempData[selectedTemplateIndex]
-            ? tempData[selectedTemplateIndex].name || "New Template"
-            : currentStep === 3 &&
-              selectedTemplateIndex !== null &&
-              currentSectionIndex !== null &&
-              tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
-            ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
-            : prev.title,
-      }));
-    }, 0);
+    if (!Array.isArray(tempData) || selectedTemplateIndex === null) return;
 
-    return () => clearTimeout(timer);
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, tempData, setModalConfig]);
+    setModalConfig((prev) => ({
+      ...prev,
+      title:
+        currentStep === 1
+          ? "Card Templates"
+          : currentStep === 2 && tempData[selectedTemplateIndex]
+          ? tempData[selectedTemplateIndex].name || "New Template"
+          : currentStep === 3 &&
+            tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
+          ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+          : prev.title,
+      rightButton:
+        currentStep === 2
+          ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
+          : null,
+    }));
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, tempData, editMode, setModalConfig, toggleEditMode]);
 
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
@@ -231,46 +245,38 @@ const CardsTemplate = () => {
 
   const handleOpenEditor = useCallback(
     (template = null) => {
-      setTempData((prev) => {
-        if (!template) {
-          const newTemp = [
-            ...prev,
-            {
-              name: "",
-              typeOfCards: "",
-              sections: [],
-              isEditing: true,
-              originalName: null,
-              deleteTemplate: null,
-            },
-          ];
-          setSelectedTemplateIndex(newTemp.length - 1);
-          goToStep(2);
-          return newTemp;
-        }
-        const existingIndex = prev.findIndex((t) => t.originalName === template.name);
+      if (template) {
+        const existingIndex = tempData.findIndex((t) => t.name === template.name && t.originalName === template.originalName);
         if (existingIndex >= 0) {
           setSelectedTemplateIndex(existingIndex);
-          goToStep(2);
-          return prev;
+          setTimeout(() => {
+            goToStep(2, { tempData, selectedTemplateIndex: existingIndex, editMode });
+          }, 0);
+          return;
         }
-        const newTemp = [
-          ...prev,
-          {
-            name: template.name || "",
-            typeOfCards: template.typeOfCards || template.name || "",
-            sections: Array.isArray(template.sections) ? [...template.sections] : [],
-            isEditing: true,
-            originalName: template.name || null,
-            deleteTemplate: null,
-          },
-        ];
-        setSelectedTemplateIndex(newTemp.length - 1);
-        goToStep(2);
+      }
+
+      // Create new template
+      const newTemplate = {
+        name: "",
+        typeOfCards: "",
+        sections: [],
+        isEditing: true,
+        originalName: null,
+        deleteTemplate: null,
+      };
+
+      setTempData((prev) => {
+        const newTemp = [...prev, newTemplate];
+        const newIndex = newTemp.length - 1;
+        setSelectedTemplateIndex(newIndex);
+        setTimeout(() => {
+          goToStep(2, { tempData: newTemp, selectedTemplateIndex: newIndex, editMode });
+        }, 0);
         return newTemp;
       });
     },
-    [setTempData, setSelectedTemplateIndex, goToStep]
+    [setTempData, setSelectedTemplateIndex, goToStep, tempData, editMode]
   );
 
   const addSection = useCallback(() => {
@@ -283,7 +289,7 @@ const CardsTemplate = () => {
           (s) => s && s.name && s.name.toLowerCase() === newSectionName.toLowerCase()
         )
       ) {
-        alert(`Section name "${newSectionName}" already exists (case-insensitive). Please use a unique name.`);
+        alert(`Section name "${newSectionName}" already exists. Please use a unique name.`);
         return prev;
       }
       currentTemplate.sections = [
@@ -294,7 +300,7 @@ const CardsTemplate = () => {
       return newTemp;
     });
   }, [selectedTemplateIndex, setTempData]);
-  
+
   const updateSectionName = useCallback(
     (index, newName) => {
       setTempData((prev) => {
@@ -305,7 +311,7 @@ const CardsTemplate = () => {
             (s, i) => i !== index && s && s.name && s.name.toLowerCase() === newName.toLowerCase()
           )
         ) {
-          alert(`Section name "${newName}" already exists in this template (case-insensitive). Please use a unique name.`);
+          alert(`Section name "${newName}" already exists. Please use a unique name.`);
           return prev;
         }
         newTemp[selectedTemplateIndex].sections[index].name = newName;
@@ -314,74 +320,6 @@ const CardsTemplate = () => {
     },
     [selectedTemplateIndex, setTempData]
   );
-  
-  // Update useEffect for tempData initialization
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-  
-      const steps = [
-        {
-          title: () => "Card Templates",
-          rightButtons: () => [],
-        },
-        {
-          title: ({ tempData, selectedTemplateIndex }) =>
-            selectedTemplateIndex !== null && tempData[selectedTemplateIndex]
-              ? tempData[selectedTemplateIndex].name || "New Template"
-              : "New Template",
-          rightButtons: ({ editMode }) => [
-            { label: editMode ? "Done" : "Edit", onClick: toggleEditMode },
-          ],
-        },
-        {
-          title: ({ tempData, selectedTemplateIndex, currentSectionIndex }) =>
-            selectedTemplateIndex !== null &&
-            currentSectionIndex !== null &&
-            tempData[selectedTemplateIndex]?.sections[currentSectionIndex]
-              ? tempData[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
-              : "Section",
-          rightButtons: () => [],
-        },
-      ];
-  
-      setTimeout(() => {
-        registerModalSteps({ steps });
-        setModalConfig({
-          showTitle: true,
-          showDoneButton: false,
-          showBackButton: false,
-          title: "Card Templates",
-          backButtonTitle: "",
-        });
-        goToStep(1);
-  
-        if (!tempData.length) {
-          setTempData(
-            cardTemplates.map((t) => ({
-              ...t,
-              sections: t.sections.map((s) => ({
-                ...s,
-                name: s.name || s.title || "Unnamed Section",
-                keys: s.keys || [],
-              })),
-              isEditing: false,
-              originalName: t.name,
-              deleteTemplate: null,
-            }))
-          );
-        }
-      }, 0);
-    }
-  }, [
-    registerModalSteps,
-    goToStep,
-    setModalConfig,
-    tempData,
-    setTempData,
-    cardTemplates,
-    toggleEditMode,
-  ]);
 
   const removeSection = useCallback(
     (index) => {
@@ -402,9 +340,9 @@ const CardsTemplate = () => {
   const handleEditSection = useCallback(
     (index) => {
       setCurrentSectionIndex(index);
-      goToStep(3);
+      goToStep(3, { tempData, selectedTemplateIndex, currentSectionIndex: index, editMode });
     },
-    [setCurrentSectionIndex, goToStep]
+    [setCurrentSectionIndex, goToStep, tempData, selectedTemplateIndex, editMode]
   );
 
   const toggleKeySelection = useCallback(
@@ -470,9 +408,18 @@ const CardsTemplate = () => {
         return newTemp;
       });
       setSelectedTemplateIndex(null);
-      goToStep(1);
+      goToStep(1, { tempData, editMode });
     }
-  }, [selectedTemplateIndex, tempData, setTempData, setSelectedTemplateIndex, goToStep]);
+  }, [selectedTemplateIndex, tempData, setTempData, setSelectedTemplateIndex, goToStep, editMode]);
+
+  useEffect(() => {
+    return () => {
+      if (currentStep === 1 && Array.isArray(tempData) && tempData !== cardTemplates) {
+        setCardTemplates(tempData);
+        if (onSave) onSave();
+      }
+    };
+  }, [tempData, cardTemplates, setCardTemplates, onSave, currentStep]);
 
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -496,24 +443,28 @@ const CardsTemplate = () => {
                   <FaPlus /> Add New Card Template
                 </button>
                 <div className={styles.templateList}>
-                  {cardTemplates.map((template) => (
-                    <button
-                      key={template.name}
-                      className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleOpenEditor(template)}
-                    >
-                      {template.name}
-                    </button>
-                  ))}
+                  {Array.isArray(tempData) ? (
+                    tempData.map((template, index) => (
+                      <button
+                        key={index}
+                        className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => handleOpenEditor(template)}
+                      >
+                        {template.name || "Unnamed Template"}
+                      </button>
+                    ))
+                  ) : (
+                    <div>No templates available</div>
+                  )}
                 </div>
               </>
             )}
 
-            {step === 2 && selectedTemplateIndex !== null && tempData[selectedTemplateIndex] && (
+            {step === 2 && selectedTemplateIndex !== null && Array.isArray(tempData) && tempData[selectedTemplateIndex] && (
               <>
                 <input
                   type="text"
-                  value={tempData[selectedTemplateIndex].name}
+                  value={tempData[selectedTemplateIndex].name || ""}
                   onChange={(e) => {
                     setTempData((prev) => {
                       const newTemp = [...prev];
@@ -546,7 +497,7 @@ const CardsTemplate = () => {
                         className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                         onClick={() => !editMode && handleEditSection(index)}
                       >
-                        {section.title || section.name}
+                        {section.name}
                       </button>
                     </div>
                   ))}
@@ -568,7 +519,11 @@ const CardsTemplate = () => {
               </>
             )}
 
-            {step === 3 && selectedTemplateIndex !== null && currentSectionIndex !== null && tempData[selectedTemplateIndex]?.sections[currentSectionIndex] && (
+            {step === 3 &&
+              selectedTemplateIndex !== null &&
+              currentSectionIndex !== null &&
+              Array.isArray(tempData) &&
+              tempData[selectedTemplateIndex]?.sections[currentSectionIndex] && (
               <>
                 <input
                   type="text"
@@ -686,6 +641,8 @@ const CardsTemplate = () => {
   );
 };
 
-CardsTemplate.propTypes = {};
+CardsTemplate.propTypes = {
+  onSave: PropTypes.func,
+};
 
 export default CardsTemplate;
