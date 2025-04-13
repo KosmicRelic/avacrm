@@ -103,7 +103,7 @@ export const MainContextProvider = ({ children }) => {
     {
       id: "100001",
       typeOfCards: "Leads",
-      name: "Periklispapadopoulos",
+      name: "Periklis papadopoulos",
       phone: "6986600023",
       email: "periklis@example.com",
       leadScore: "80",

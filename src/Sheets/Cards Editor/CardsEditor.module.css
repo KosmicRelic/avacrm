@@ -3,153 +3,235 @@
   box-sizing: border-box;
   height: 100%;
   overflow: hidden;
-  background: rgba(243, 242, 248, 1); /* Always opaque */
+  background: rgba(243, 242, 248, 1);
   transform: translateX(100%); /* Start off-screen */
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Only transform */
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Slide animation */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
 }
 
 .editorWrapper.active {
-  transform: translateX(0); /* Slide in */
+  transform: translateX(0);
 }
 
 .editorWrapper.darkTheme {
   background: rgba(28, 28, 30, 0.95);
 }
- 
- .viewContainer {
+
+.viewContainer {
   position: relative;
   width: 100%;
   height: 100%;
- }
- 
- .view {
+  overflow: hidden;
+}
+
+.view {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
   background: rgba(255, 255, 255, 1);
-  backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
- }
- 
- .view.darkTheme {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.view.darkTheme {
   background: rgba(28, 28, 30, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
- }
- 
- .modalTitle {
+}
+
+.navBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.navBar.darkTheme {
+  background: rgba(28, 28, 30, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.backButton.darkTheme svg path {
+  stroke: #0a84ff;
+}
+
+.navTitle {
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 16px 0;
-  padding: 16px 20px 0;
- }
- 
- .modalTitle.darkTheme {
-  color: #f5f5f7;
- }
- 
- .sheetSelect {
-  width: 100%;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  color: #1d1d1f;
-  background: rgba(243, 242, 248)
-  url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  no-repeat right 16px center;
-  transition: all 0.2s ease;
-  -webkit-appearance: none;
-  appearance: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
- }
- 
- .sheetSelect.darkTheme {
-  color: #f5f5f7;
-  background: rgba(44, 44, 46, 0.9)
-  url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a1a1a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  no-repeat right 16px center;
- }
- 
- .sheetSelect:focus {
-  outline: none;
-  background: rgba(243, 242, 248);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
- }
- 
- .sheetSelect.darkTheme:focus {
-  background: rgba(58, 58, 60, 1);
-  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5);
- }
- 
- .cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  position: sticky;
-  top: 0;
-  background: inherit;
-  z-index: 10;
- }
- 
- .cardHeader.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
- }
- 
- .headerButtons {
-  display: flex;
-  gap: 10px;
- }
- 
- .fieldList {
+  margin: 0;
   flex: 1;
+  text-align: center;
+}
+
+.navTitle.darkTheme {
+  color: #f5f5f7;
+}
+
+.navButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.deleteButton {
+  padding: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: #ff2d55;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.deleteButton.darkTheme {
+  color: #ff3b30;
+}
+
+.deleteButton:hover {
+  background: rgba(255, 45, 85, 0.1);
+}
+
+.deleteButton.darkTheme:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
+.contentWrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-  overflow-y: auto;
- }
- 
- .fieldItem {
+  gap: 0px;
+}
+
+.sectionWrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.sectionButton {
+  width: 100%;
+  padding: 16px 14px;
+  margin-bottom: 24px;
+  border: none;
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(243, 242, 248, 1);
+  box-sizing: border-box;
+  transition: background 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.sectionButton.darkTheme {
+  color: #f5f5f7;
+  background: rgba(44, 44, 46, 0.9);
+}
+
+.sectionButton:hover {
+  background: rgba(229, 228, 234, 1);
+}
+
+.sectionButton.darkTheme:hover {
+  background: rgba(58, 58, 60, 1);
+}
+
+.sectionButton.active .chevron {
+  transform: rotate(180deg);
+}
+
+.sectionTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.sectionContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.sectionContent.expanded {
+  max-height: 1000px;
+}
+
+.sectionContent.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+}
+
+.fieldItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
- }
- 
- .fieldItem.darkTheme {
+}
+
+.fieldItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
- }
- 
- .fieldLabel {
+}
+
+.fieldLabel {
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 13px;
   font-weight: 600;
   color: #6e6e73;
   text-transform: uppercase;
   flex: 0 0 35%;
- }
- 
- .fieldLabel.darkTheme {
+}
+
+.fieldLabel.darkTheme {
   color: #a1a1a6;
- }
- 
- .fieldInput {
+}
+
+.fieldInput {
   width: 65%;
-  padding: 10px 14px;
+  padding: 13px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 15px;
   font-weight: 400;
@@ -158,126 +240,185 @@
   box-sizing: border-box;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
- }
- 
- .fieldInput.darkTheme {
+  outline: none;
+}
+
+.fieldInput.darkTheme {
   color: #f5f5f7;
   background: rgba(44, 44, 46, 0.9);
- }
- 
- .fieldInput:focus {
+}
+
+.fieldInput:focus {
   outline: none;
   background: rgba(243, 242, 248, 1);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
- }
- 
- .fieldInput.darkTheme:focus {
+}
+
+.fieldInput.darkTheme:focus {
   background: rgba(58, 58, 60, 1);
   box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5);
- }
- 
- .fieldInput[type="number"]::-webkit-inner-spin-button,
- .fieldInput[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
+}
+
+.fieldInput[type="number"]::-webkit-inner-spin-button,
+.fieldInput[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
   margin: 0;
- }
- 
- .fieldInput[type="number"] {
-  -moz-appearance: textfield;
- }
- 
- .fieldSelect {
+}
+
+.fieldInput[type="number"] {
+  appearance: textfield;
+}
+
+.fieldSelect {
   width: 65%;
   padding: 10px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 15px;
   font-weight: 400;
   color: #1d1d1f;
   background: rgba(243, 242, 248, 1)
-  url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  no-repeat right 14px center;
+    url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 14px center;
   box-sizing: border-box;
   transition: all 0.2s ease;
-  -webkit-appearance: none;
   appearance: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
- }
- 
- .fieldSelect.darkTheme {
-  background: rgba(243, 242, 248, 1);
+}
+
+.fieldSelect.darkTheme {
+  color: #f5f5f7;
   background: rgba(44, 44, 46, 0.9)
-  url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a1a1a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  no-repeat right 14px center;
- }
- 
- .fieldSelect:focus {
+    url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a1a1a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 14px center;
+}
+
+.fieldSelect:focus {
   outline: none;
   background: rgba(243, 242, 248, 1);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
- }
- 
- .fieldSelect.darkTheme:focus {
+}
+
+.fieldSelect.darkTheme:focus {
   background: rgba(58, 58, 60, 1);
   box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5);
- }
- 
- .modalButtons {
+}
+
+.modalTitle {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px 0;
+  padding: 16px 20px 0;
+}
+
+.modalTitle.darkTheme {
+  color: #f5f5f7;
+}
+
+.sheetSelect {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(243, 242, 248)
+    url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 16px center;
+  transition: all 0.2s ease;
+  appearance: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sheetSelect.darkTheme {
+  color: #f5f5f7;
+  background: rgba(44, 44, 46, 0.9)
+    url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a1a1a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 16px center;
+}
+
+.sheetSelect:focus {
+  outline: none;
+  background: rgba(243, 242, 248);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
+}
+
+.sheetSelect.darkTheme:focus {
+  background: rgba(58, 58, 60, 1);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5);
+}
+
+.modalButtons {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   padding: 16px 20px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   background: inherit;
- }
- 
- .modalButtons.darkTheme {
+}
+
+.modalButtons.darkTheme {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
- }
- 
- .cancelButton,
- .saveButton {
+}
+
+.cancelButton,
+.saveButton {
   padding: 8px 16px;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 15px;
   font-weight: 600;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease;
- }
- 
- .cancelButton {
+}
+
+.cancelButton {
   color: #007aff;
   background: transparent;
- }
- 
- .cancelButton.darkTheme {
+}
+
+.cancelButton.darkTheme {
   color: #0a84ff;
- }
- 
- .cancelButton:hover {
+}
+
+.cancelButton:hover {
   background: rgba(0, 122, 255, 0.1);
- }
- 
- .cancelButton.darkTheme:hover {
+}
+
+.cancelButton.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
- }
- 
- .saveButton {
+}
+
+.saveButton {
   color: #fff;
   background: #007aff;
- }
- 
- .saveButton.darkTheme {
+}
+
+.saveButton.darkTheme {
   background: #0a84ff;
- }
- 
- .saveButton:hover {
+}
+
+.saveButton:hover {
   background: #0066d6;
- }
- 
- .saveButton.darkTheme:hover {
+}
+
+.saveButton.darkTheme:hover {
   background: #0073e6;
- }
+}
+
+.emptySection {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  color: #6e6e73;
+  padding: 16px 20px;
+}
+
+.emptySection.darkTheme {
+  color: #a1a1a6;
+}

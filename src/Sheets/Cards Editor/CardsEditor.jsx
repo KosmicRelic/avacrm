@@ -10,7 +10,7 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, headers, isDarkTheme } = useContext(MainContext);
+  const { sheets, cardTemplates, headers, isDarkTheme, deleteCard } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? "editor" : "selection");
   const [isVisible, setIsVisible] = useState(true);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || "");
@@ -20,20 +20,16 @@ const CardsEditor = ({
   const [selectedCardType, setSelectedCardType] = useState(initialTemplate?.name || "");
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
   const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.id);
+  const [openSections, setOpenSections] = useState([]);
 
-  const sheetOptions = useMemo(() => {
-    return sheets?.allSheets?.map((sheet) => sheet.sheetName) || [];
-  }, [sheets]);
-
-  const cardTypeOptions = useMemo(() => {
-    return cardTemplates?.map((template) => template.name) || [];
-  }, [cardTemplates]);
+  const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
+  const cardTypeOptions = useMemo(() => cardTemplates?.map((template) => template.name) || [], [cardTemplates]);
 
   const selectedSections = useMemo(() => {
     const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
     if (!template || !template.sections) return [];
     return template.sections.map((section) => ({
-      name: section.name, // Changed from title to name
+      name: section.name,
       fields: section.keys
         .filter((key) => key !== "id" && key !== "typeOfCards")
         .map((key) => {
@@ -49,8 +45,11 @@ const CardsEditor = ({
   }, [selectedCardType, cardTemplates, headers, isEditing, initialRowData]);
 
   useEffect(() => {
+    if (view === "editor" && selectedSections.length > 0 && openSections.length === 0) {
+      setOpenSections([selectedSections[0].name]);
+    }
     setIsVisible(true);
-  }, []);
+  }, [view, selectedSections]);
 
   const handleSelectionNext = useCallback(() => {
     if (!selectedSheet) {
@@ -70,23 +69,11 @@ const CardsEditor = ({
     setView("editor");
   }, [selectedSheet, selectedCardType, cardTemplates]);
 
-  const handleCloseEditor = useCallback(() => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
-      if (isEditing) {
-        onClose();
-      } else {
-        setView("selection");
-        setSelectedSheet(preSelectedSheet || "");
-        setSelectedCardType("");
-        setFormData({});
-      }
+      onClose();
     }, 300);
-  }, [isEditing, onClose, preSelectedSheet]);
-
-  const handleCloseSelection = useCallback(() => {
-    setIsVisible(false);
-    setTimeout(onClose, 300);
   }, [onClose]);
 
   const handleInputChange = useCallback((key, value) => {
@@ -103,6 +90,13 @@ const CardsEditor = ({
       alert("Invalid card type selected.");
       return;
     }
+    const hasData = Object.keys(formData).some(
+      (key) => key !== "sheetName" && key !== "typeOfCards" && formData[key] && formData[key].toString().trim() !== ""
+    );
+    if (!isEditing && !hasData) {
+      alert("Please fill in at least one field to create a card.");
+      return;
+    }
     const newRow = {
       ...formData,
       id: isEditing && initialRowData?.id ? initialRowData.id : Date.now().toString(),
@@ -115,6 +109,28 @@ const CardsEditor = ({
       onClose();
     }, 300);
   }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData, isEditing, onClose]);
+
+  const handleDelete = useCallback(() => {
+    if (!isEditing || !initialRowData?.id) {
+      alert("No card to delete.");
+      return;
+    }
+    if (window.confirm("Are you sure you want to delete this card?")) {
+      setIsVisible(false);
+      setTimeout(() => {
+        deleteCard(initialRowData.id);
+        onClose();
+      }, 300);
+    }
+  }, [isEditing, initialRowData, deleteCard, onClose]);
+
+  const toggleSection = useCallback((sectionName) => {
+    setOpenSections((prev) =>
+      prev.includes(sectionName)
+        ? prev.filter((name) => name !== sectionName)
+        : [...prev, sectionName]
+    );
+  }, []);
 
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ""} ${isVisible ? styles.active : ""}`}>
@@ -156,7 +172,7 @@ const CardsEditor = ({
             <div className={styles.modalButtons}>
               <button
                 className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={handleCloseSelection}
+                onClick={handleClose}
               >
                 Cancel
               </button>
@@ -171,76 +187,129 @@ const CardsEditor = ({
         )}
         {view === "editor" && (
           <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <div className={`${styles.cardHeader} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                {isEditing ? `Edit Card for ${selectedSheet}` : `New ${selectedCardType} Card for ${selectedSheet}`}
-              </h2>
-              <div className={styles.headerButtons}>
-                <button
-                  className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={handleCloseEditor}
+            <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              <button
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleClose}
+                aria-label="Back"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  {isEditing ? "Close" : "Back"}
-                </button>
-                <button
-                  className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={handleSave}
-                >
-                  Save
-                </button>
-              </div>
+                  <path
+                    d="M10 12L6 8L10 4"
+                    stroke={isDarkTheme ? "#0a84ff" : "#007aff"}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                {isEditing ? "Edit Card" : "New Card"}
+              </h1>
+              <button
+                className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleSave}
+              >
+                Save
+              </button>
             </div>
-            <div className={styles.fieldList}>
+            <div className={styles.contentWrapper}>
               {selectedSections.length > 0 ? (
-                selectedSections.map((section, sectionIndex) => (
-                  <div
-                    key={`${section.name}-${sectionIndex}`} // Changed to use section.name
-                    className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  >
-                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {section.name} {/* Changed to use section.name */}
-                    </h3>
-                    {section.fields.length > 0 ? (
-                      section.fields.map((field) => (
-                        <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {field.name}
-                          </span>
-                          {field.type === "dropdown" ? (
-                            <select
-                              value={formData[field.key] || ""}
-                              onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              aria-label={`Select ${field.name}`}
-                            >
-                              <option value="">Select {field.name}</option>
-                              {field.options.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
-                              value={formData[field.key] || ""}
-                              onChange={(e) => handleInputChange(field.key, e.target.value)}
-                              className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              placeholder={`Enter ${field.name}`}
-                              aria-label={`Enter ${field.name}`}
-                            />
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <p className={`${styles.emptySection} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        No fields defined for this section.
-                      </p>
-                    )}
+                selectedSections.map((section, index) => (
+                  <div key={`${section.name}-${index}`} className={styles.sectionWrapper}>
+                    <button
+                      className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ""} ${
+                        openSections.includes(section.name) ? styles.active : ""
+                      }`}
+                      onClick={() => toggleSection(section.name)}
+                      aria-expanded={openSections.includes(section.name)}
+                      aria-controls={`section-content-${index}`}
+                    >
+                      <span className={styles.sectionTitle}>{section.name}</span>
+                      <svg
+                        className={styles.chevron}
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M2 4L6 8L10 4"
+                          stroke={isDarkTheme ? "#a1a1a6" : "#6e6e73"}
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <div
+                      id={`section-content-${index}`}
+                      className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ""} ${
+                        openSections.includes(section.name) ? styles.expanded : ""
+                      }`}
+                    >
+                      {section.fields.length > 0 ? (
+                        section.fields.map((field) => (
+                          <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {field.name}
+                            </span>
+                            {field.type === "dropdown" ? (
+                              <select
+                                value={formData[field.key] || ""}
+                                onChange={(e) => handleInputChange(field.key, e.target.value)}
+                                className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                aria-label={`Select ${field.name}`}
+                              >
+                                <option value="">Select {field.name}</option>
+                                {field.options.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                                value={formData[field.key] || ""}
+                                onChange={(e) => handleInputChange(field.key, e.target.value)}
+                                className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                placeholder={`Enter ${field.name}`}
+                                aria-label={`Enter ${field.name}`}
+                              />
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className={`${styles.emptySection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          No fields defined for this section.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (
-                <p>No sections defined for this card type.</p>
+                <p className={`${styles.emptySection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  No sections defined for this card type.
+                </p>
+              )}
+              {isEditing && (
+                <div className={styles.deleteButtonWrapper}>
+                  <button
+                    className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={handleDelete}
+                    aria-label="Delete card"
+                  >
+                    Delete Card
+                  </button>
+                </div>
               )}
             </div>
           </div>
