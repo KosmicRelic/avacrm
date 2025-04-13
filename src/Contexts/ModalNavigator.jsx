@@ -10,7 +10,7 @@ export const ModalNavigatorProvider = ({ children }) => {
     showBackButton: false,
     title: "",
     backButtonTitle: "",
-    rightButton: null,
+    rightButtons: [],
   });
   const [modalSteps, setModalSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
@@ -23,20 +23,33 @@ export const ModalNavigatorProvider = ({ children }) => {
     [modalSteps]
   );
 
+  const getStepButtons = useCallback(
+    (stepIndex) => {
+      const step = modalSteps[stepIndex];
+      const buttons = Array.isArray(step?.rightButtons) ? step.rightButtons : [];
+      console.log("Step buttons for index", stepIndex, ":", buttons);
+      return buttons;
+    },
+    [modalSteps]
+  );
+
   const registerModalSteps = useCallback(
     (stepsConfig) => {
+      console.log("Registering modal steps:", stepsConfig);
       setModalSteps(stepsConfig.steps);
       setCurrentStep(1);
-      setModalConfig({
+      const newConfig = {
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
         title: getStepTitle(0, stepsConfig.args || {}),
         backButtonTitle: "",
-        rightButton: stepsConfig.steps[0]?.rightButton || null,
-      });
+        rightButtons: getStepButtons(0),
+      };
+      setModalConfig(newConfig);
+      console.log("Updated modalConfig:", newConfig);
     },
-    [getStepTitle]
+    [getStepTitle, getStepButtons]
   );
 
   const goToStep = useCallback(
@@ -48,19 +61,21 @@ export const ModalNavigatorProvider = ({ children }) => {
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
-      const rightButton = modalSteps[currentStepIndex]?.rightButton || null;
+      const rightButtons = getStepButtons(currentStepIndex);
 
-      setCurrentStep(step);
-      setModalConfig({
+      const newConfig = {
         showTitle: true,
         showDoneButton: step === 1,
         showBackButton: step > 1,
         title: newTitle,
         backButtonTitle: previousStepTitle,
-        rightButton,
-      });
+        rightButtons,
+      };
+      setModalConfig(newConfig);
+      setCurrentStep(step);
+      console.log("Go to step", step, "with config:", newConfig);
     },
-    [modalSteps, getStepTitle]
+    [modalSteps, getStepTitle, getStepButtons]
   );
 
   const goBack = useCallback(
