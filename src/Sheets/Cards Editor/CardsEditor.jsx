@@ -15,29 +15,29 @@ const CardsEditor = ({
   const [isVisible, setIsVisible] = useState(true);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || "");
   const initialTemplate = initialRowData?.typeOfCards
-    ? cardTemplates.find((t) => t.name === initialRowData.typeOfCards)
+    ? cardTemplates?.find((t) => t.name === initialRowData.typeOfCards)
     : null;
   const [selectedCardType, setSelectedCardType] = useState(initialTemplate?.name || "");
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
   const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.id);
 
   const sheetOptions = useMemo(() => {
-    return sheets.allSheets.map((sheet) => sheet.sheetName);
+    return sheets?.allSheets?.map((sheet) => sheet.sheetName) || [];
   }, [sheets]);
 
   const cardTypeOptions = useMemo(() => {
-    return cardTemplates.map((template) => template.name);
+    return cardTemplates?.map((template) => template.name) || [];
   }, [cardTemplates]);
 
   const selectedSections = useMemo(() => {
-    const template = cardTemplates.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
+    const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
     if (!template || !template.sections) return [];
     return template.sections.map((section) => ({
-      title: section.title,
+      name: section.name, // Changed from title to name
       fields: section.keys
         .filter((key) => key !== "id" && key !== "typeOfCards")
         .map((key) => {
-          const header = headers.find((h) => h.key === key);
+          const header = headers?.find((h) => h.key === key);
           return {
             key,
             name: header?.name || key.charAt(0).toUpperCase() + key.slice(1),
@@ -61,7 +61,11 @@ const CardsEditor = ({
       alert("Please select a card type.");
       return;
     }
-    const template = cardTemplates.find((t) => t.name === selectedCardType);
+    const template = cardTemplates?.find((t) => t.name === selectedCardType);
+    if (!template) {
+      alert("Invalid card type selected.");
+      return;
+    }
     setFormData({ sheetName: selectedSheet, typeOfCards: template.name });
     setView("editor");
   }, [selectedSheet, selectedCardType, cardTemplates]);
@@ -94,7 +98,7 @@ const CardsEditor = ({
       alert("No sheet selected.");
       return;
     }
-    const template = cardTemplates.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
+    const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
     if (!template) {
       alert("Invalid card type selected.");
       return;
@@ -124,6 +128,7 @@ const CardsEditor = ({
               value={selectedSheet}
               onChange={(e) => setSelectedSheet(e.target.value)}
               className={`${styles.sheetSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+              aria-label="Select a sheet"
             >
               <option value="">Select a sheet</option>
               {sheetOptions.map((sheetName) => (
@@ -139,6 +144,7 @@ const CardsEditor = ({
               value={selectedCardType}
               onChange={(e) => setSelectedCardType(e.target.value)}
               className={`${styles.sheetSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+              aria-label="Select a card type"
             >
               <option value="">Select a card type</option>
               {cardTypeOptions.map((type) => (
@@ -187,9 +193,12 @@ const CardsEditor = ({
             <div className={styles.fieldList}>
               {selectedSections.length > 0 ? (
                 selectedSections.map((section, sectionIndex) => (
-                  <div key={section.title} className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <div
+                    key={`${section.name}-${sectionIndex}`} // Changed to use section.name
+                    className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
                     <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {section.title}
+                      {section.name} {/* Changed to use section.name */}
                     </h3>
                     {section.fields.length > 0 ? (
                       section.fields.map((field) => (
@@ -202,6 +211,7 @@ const CardsEditor = ({
                               value={formData[field.key] || ""}
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              aria-label={`Select ${field.name}`}
                             >
                               <option value="">Select {field.name}</option>
                               {field.options.map((option) => (
@@ -217,6 +227,7 @@ const CardsEditor = ({
                               onChange={(e) => handleInputChange(field.key, e.target.value)}
                               className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                               placeholder={`Enter ${field.name}`}
+                              aria-label={`Enter ${field.name}`}
                             />
                           )}
                         </div>

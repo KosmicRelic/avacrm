@@ -5,7 +5,7 @@ import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const HeadersModal = ({ tempData, setTempData, onSave }) => {
+const HeadersModal = ({ tempData, setTempData }) => {
   const { headers = [], isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [currentHeaders, setCurrentHeaders] = useState(() =>
@@ -381,7 +381,6 @@ HeadersModal.propTypes = {
     ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
 };
 
 export default HeadersModal;

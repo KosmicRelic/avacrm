@@ -403,8 +403,6 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  useEffect(()=>{console.log("hmm")},[cardTemplates])
-
   return (
     <MainContext.Provider
       value={{

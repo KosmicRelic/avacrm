@@ -4,7 +4,7 @@ import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 
-const SheetsModal = ({ sheets, tempData, setTempData, onSave }) => {
+const SheetsModal = ({ sheets, tempData, setTempData }) => {
   const { isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
@@ -202,7 +202,6 @@ SheetsModal.propTypes = {
     newOrder: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
 };
 
 export default SheetsModal;

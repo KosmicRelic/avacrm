@@ -5,7 +5,7 @@ import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import useClickOutside from "../Hooks/UseClickOutside";
 
-const FilterModal = ({ headers, rows, tempData, setTempData, onSave }) => {
+const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [dateRangeMode, setDateRangeMode] = useState(
@@ -455,7 +455,6 @@ FilterModal.propTypes = {
     filterValues: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
 };
 
 export default FilterModal;
