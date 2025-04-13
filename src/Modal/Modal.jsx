@@ -32,7 +32,6 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
       alert("Please select a sheet.");
       return;
     }
-    console.log("handleTransportSave with selectedSheet:", selectedSheet);
     setSheets((prevSheets) => {
       const newSheets = { ...prevSheets, allSheets: [...prevSheets.allSheets] };
       const sourceSheetIndex = newSheets.allSheets.findIndex((s) => s.isActive);
@@ -60,16 +59,13 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
         };
       }
 
-      console.log("Updated sheets:", newSheets);
       return newSheets;
     });
 
     if (tempData.onComplete) {
-      console.log("Calling onComplete");
       tempData.onComplete();
     }
     if (onSave) {
-      console.log("Calling onSave");
       onSave();
     }
   };
@@ -98,7 +94,6 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
   }, [currentStep, isClickOutsideEnabled, handleClose]);
 
   if (modalType === "transport" && tempData) {
-    console.log("Rendering transport modal with tempData:", tempData);
     return (
       <div
         className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""} ${
@@ -132,7 +127,6 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
                   selectedSheet === sheet.sheetName ? styles.selected : ""
                 }`}
                 onClick={() => {
-                  console.log("Selected sheet:", sheet.sheetName);
                   setSelectedSheet(sheet.sheetName);
                 }}
                 disabled={sheet.isActive}
@@ -149,8 +143,6 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
   if (!modalConfig) {
     return null;
   }
-
-  console.log("Modal rendering with config:", modalConfig);
 
   return (
     <div
@@ -192,7 +184,6 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
                     key={index}
                     className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={() => {
-                      console.log("Right button clicked:", button.label);
                       button.onClick();
                     }}
                   >

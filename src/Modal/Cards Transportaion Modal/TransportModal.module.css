@@ -1,0 +1,61 @@
+/* Existing styles from your Modal.module.css remain unchanged */
+
+.sheetList {
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.03); /* Light mode */
+    transition: background 0.3s ease;
+  }
+  
+  .sheetList.darkTheme {
+    background: rgba(28, 28, 30, 0.95); /* Dark mode */
+  }
+  
+  .sheetItem {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
+    background: rgba(255, 255, 255, 0.95); /* Light mode */
+    transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    position: relative;
+  }
+  
+  .sheetItem.darkTheme {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
+    background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  }
+  
+  .sheetItem.lastChild {
+    border-bottom: none;
+  }
+  
+  .sheetItem:hover {
+    background: rgba(245, 245, 247, 0.9); /* Light mode */
+  }
+  
+  .sheetItem.darkTheme:hover {
+    background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  }
+  
+  .sheetRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .sheetName {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6e6e73; /* Light mode */
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+  }
+  
+  .sheetList.darkTheme .sheetName {
+    color: #ffffff; /* Dark mode: white for sheet names */
+  }

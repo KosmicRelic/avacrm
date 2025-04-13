@@ -12,8 +12,8 @@ import useSheets from "./Modal/Hooks/UseSheets";
 import Modal from "./Modal/Modal";
 import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
-import CardsTransportationModal from "./Modal/Cards Transportaion Modal/CardsTransportaionModal";
 import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
+import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
 
 function App() {
   const {
@@ -273,7 +273,7 @@ function App() {
 
   const renderModalContent = () => {
     if (!activeModal) return null;
-
+  
     switch (activeModal.type) {
       case "sheet":
         return (
@@ -284,11 +284,13 @@ function App() {
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
             }}
-            setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
             sheets={sheets}
             onPinToggle={handlePinToggle}
             onDeleteSheet={handleDeleteSheet}
-            onClose={handleModalClose} // Pass onClose
+            onClose={handleModalClose}
           />
         );
       case "filter":
@@ -297,14 +299,18 @@ function App() {
             headers={resolvedHeaders}
             rows={resolvedRows}
             tempData={activeModal.data || { filterValues: activeSheet?.filters || {} }}
-            setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
           />
         );
       case "headers":
         return (
           <HeadersModal
             tempData={activeModal.data || { currentHeaders: [...headers] }}
-            setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
           />
         );
       case "sheets":
@@ -312,21 +318,27 @@ function App() {
           <SheetsModal
             sheets={sheets || { structure: [] }}
             tempData={activeModal.data || { newOrder: sheets?.structure || [] }}
-            setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
           />
         );
       case "transport":
         return (
-          <CardsTransportationModal
-            tempData={activeModal.data}
-            setTempData={(data) => setActiveModal((prev) => ({ ...prev, data }))}
+          <TransportModal
+            tempData={
+              activeModal.data || { action: "copy", selectedRowIds: [], onComplete: null }
+            }
+            onClose={handleModalClose}
           />
         );
       case "cardsTemplate":
         return (
           <CardsTemplate
             tempData={activeModal.data || { currentCardTemplates: [...cardTemplates] }}
-            setTempData={(newData) => setActiveModal((prev) => ({ ...prev, data: newData }))}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
           />
         );
       default:
@@ -371,6 +383,16 @@ function App() {
             {renderModalContent()}
           </Modal>
         )}
+        {activeModal && activeModal.type !== "transport" && (
+          <Modal
+            onClose={handleModalClose}
+            onSave={() => handleModalSave(activeModal.type, activeModal.data)}
+            modalType={activeModal.type}
+          >
+            {renderModalContent()}
+          </Modal>
+        )}
+        {activeModal && activeModal.type === "transport" && renderModalContent()}
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
