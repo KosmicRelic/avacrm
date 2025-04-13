@@ -388,7 +388,7 @@ export const MainContextProvider = ({ children }) => {
     },
   ]);
 
-  const [tempData, setTempData] = useState(cardTemplates);
+  const [tempData, setTempData] = useState(null);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -403,7 +403,7 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  // useEffect(()=>{console.log(CardsTemplate)},[CardsTemplate])
+  useEffect(()=>{console.log("hmm")},[cardTemplates])
 
   return (
     <MainContext.Provider
