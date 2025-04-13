@@ -233,3 +233,29 @@
 .buttonSpacer {
   width: 1em;
 }
+
+.buttonSpacer {
+  width: 1em;
+}
+
+.deleteButtonContainer {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.deleteSheetButton {
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ff3b30; /* Apple-style red for destructive action */
+  background-color: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.deleteSheetButton.darkTheme {
+  color: #ff453a;
+}

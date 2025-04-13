@@ -26,7 +26,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       registerModalSteps({
         steps: [
           {
-            title: "Manage Sheets",
+            title: "Reorder Sheets",
             rightButton: null, // Use default Done button
           },
         ],
@@ -35,7 +35,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: "Manage Sheets",
+        title: "Reorder Sheets",
         backButtonTitle: "",
         rightButton: null,
       });

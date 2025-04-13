@@ -20,7 +20,8 @@ const Modal = ({ children, onClose, onSave, modalType }) => {
     setTimeout(() => {
       setIsClosing(false);
       onClose({ animationComplete: true, ...options });
-      if (modalType !== "transport" && onSave && !options.fromSave) {
+      // Skip onSave for deletions to avoid redundant save
+      if (modalType !== "transport" && onSave && !options.fromSave && !options.fromDelete) {
         onSave();
       }
     }, timeoutDuration);

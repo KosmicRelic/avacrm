@@ -16,7 +16,7 @@
 }
 
 .tableContainer {
-  width: 65%;
+  width: 70%;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
   border-radius: 12px;
@@ -44,7 +44,7 @@
 }
 
 .cardDetailsContainer {
-  width: 35%;
+  width: 30%;
   height: 100%;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
@@ -808,6 +808,20 @@
   animation: jiggle 0.2s infinite;
 }
 
+.buttonGroup{
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  max-width: 800px;
+  overflow-x: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
 @keyframes jiggle {
   0% { transform: rotate(0deg); }
   25% { transform: rotate(2deg); }
@@ -865,5 +879,9 @@
     right: 10px;
     width: 90%;
     max-width: 320px;
+  }
+
+  .buttonGroup{
+    max-width: 300px;
   }
 }

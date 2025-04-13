@@ -389,50 +389,35 @@ const SheetTemplate = ({
     [selectedRowIds, onOpenTransportModal]
   );
 
+  const handleDeleteSelected = useCallback(() => {
+    setCards((prev) => prev.filter((card) => !selectedRowIds.includes(card.id)));
+    setSheets((prev) => ({
+      ...prev,
+      allSheets: prev.allSheets.map((sheet) => ({
+        ...sheet,
+        rows: sheet.rows.filter((id) => !selectedRowIds.includes(id)),
+      })),
+    }));
+    setSelectedRowIds([]);
+    setIsSelectMode(false);
+  }, [selectedRowIds, setCards, setSheets]);
+
+  const handleRemoveSelected = useCallback(() => {
+    setSheets((prev) => ({
+      ...prev,
+      allSheets: prev.allSheets.map((sheet) =>
+        sheet.sheetName === activeSheetName
+          ? { ...sheet, rows: sheet.rows.filter((id) => !selectedRowIds.includes(id)) }
+          : sheet
+      ),
+    }));
+    setSelectedRowIds([]);
+    setIsSelectMode(false);
+  }, [selectedRowIds, activeSheetName, setSheets]);
+
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {!isSelectMode ? (
-          <>
-            <button
-              className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleSelectToggle}
-            >
-              Select
-            </button>
-            <button
-              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={onFilter}
-            >
-              <MdFilterAlt size={20} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleSelectToggle}
-            >
-              Cancel
-            </button>
-            {selectedRowIds.length > 0 && (
-              <>
-                <button
-                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={() => handleMoveOrCopy("move")}
-                >
-                  Move
-                </button>
-                <button
-                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={() => handleMoveOrCopy("copy")}
-                >
-                  Copy
-                </button>
-              </>
-            )}
-          </>
-        )}
         <div className={styles.searchContainer}>
           <input
             type="text"
@@ -447,9 +432,69 @@ const SheetTemplate = ({
             </button>
           )}
         </div>
-        <button className={styles.editHeaderButton} onClick={onEditSheet}>
-          Edit
-        </button>
+        <div className={styles.buttonGroup}>
+          {!isSelectMode ? (
+            <>
+              <button
+                className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={onFilter}
+              >
+                <MdFilterAlt size={20} />
+              </button>
+              <button
+                className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleSelectToggle}
+              >
+                Select
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleSelectToggle}
+              >
+                Cancel
+              </button>
+              {selectedRowIds.length > 0 && (
+                <>
+                  <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => handleMoveOrCopy("move")}
+                  >
+                    Move
+                  </button>
+                  <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => handleMoveOrCopy("copy")}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete the selected cards? This action cannot be undone.")) {
+                        handleDeleteSelected();
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
+                        handleRemoveSelected();
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
       <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -482,6 +527,9 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
+        <button className={styles.editHeaderButton} onClick={onEditSheet}>
+          Edit
+        </button>
         <button
           className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
           onClick={onOpenSheetsModal}
