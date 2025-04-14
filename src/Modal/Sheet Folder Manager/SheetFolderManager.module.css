@@ -32,11 +32,11 @@
   width: 100%;
   height: 44px; /* Fixed height */
   margin: 0 auto 20px auto;
-  background: rgb(229, 229, 234); /* Light mode: gray */
+  background: rgb(229, 229, 234);
   border-radius: 12px;
   position: relative;
-  z-index: 10; /* Above Modal bg */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle depth */
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .toggleContainer.darkTheme {
@@ -56,7 +56,7 @@
   z-index: 12; /* Above toggleBackground */
   transition: color 0.3s ease;
   height: 100%; /* Ensure button fills container height */
-  line-height: 36px; /* Adjusted for 4px padding */
+  line-height: 36px;
 }
 
 .toggleButton.darkTheme {
@@ -75,7 +75,7 @@
   position: absolute;
   top: 4px;
   bottom: 4px;
-  width: calc(50% - 4px); /* Match button width minus padding */
+  width: calc(50% - 2px); /* Match button width minus padding */
   background: rgba(255, 255, 255, 0.95); /* Light mode selected */
   border-radius: 10px;
   transition: left 0.3s ease;
@@ -87,11 +87,11 @@
 }
 
 .sheetActive {
-  left: 4px; /* Align with left button */
+  left: 4px; /* Align with left padding */
 }
 
 .folderActive {
-  left: calc(50% + 2px); /* Align with right button */
+  left: calc(50% - 2px); /* Adjusted to center under right button */
 }
 
 /* Content container - ensure it grows to fit */
@@ -176,6 +176,14 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
+.headerItem.selected {
+  background: rgba(0, 122, 255, 0.1); /* Light mode: subtle blue */
+}
+
+.headerItem.selected.darkTheme {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode: subtle blue */
+}
+
 .headerItem:first-child {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
@@ -233,49 +241,47 @@
   color: #8e8e93; /* Dark mode */
 }
 
-/* Checkbox styles - aligned with HeadersModal aesthetic */
 .customCheckbox {
-  width: 18px; /* Slightly larger for visibility */
-  height: 18px;
-  border: 2px solid #6e6e73; /* Light mode border */
-  border-radius: 6px; /* Softer corners */
-  background: transparent;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #6e6e73; /* Light mode border, matches HeadersModal headerType */
+  border-radius: 50%; /* Circular checkbox */
+  margin-right: 8px;
   flex-shrink: 0;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  background: transparent;
+  transition: all 0.2s ease, border-color 0.3s ease, background 0.3s ease;
+  cursor: pointer;
 }
 
 .customCheckbox.darkTheme {
-  border-color: #8e8e93; /* Dark mode border */
-}
-
-.customCheckbox:hover {
-  transform: scale(1.05); /* Subtle hover effect */
+  border-color: #8e8e93; /* Dark mode border, matches HeadersModal headerType.darkTheme */
 }
 
 .customCheckbox.checked {
-  background: #007aff; /* Light mode checked */
+  background: #007aff; /* Light mode checked, matches HeadersModal actionButton */
   border-color: #007aff;
-}
-
-.customCheckbox.checked.darkTheme {
-  background: #0a84ff; /* Dark mode checked */
-  border-color: #0a84ff;
+  position: relative;
 }
 
 .customCheckbox.checked::after {
   content: "";
   position: absolute;
-  width: 6px;
-  height: 10px;
-  border: solid #ffffff; /* White checkmark */
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-  top: 2px;
-  left: 5px;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 5px;
+  border: solid #ffffff;
+  border-width: 0 0 2px 2px;
+  transform: translate(-50%, -65%) rotate(-45deg);
+}
+
+.customCheckbox.checked.darkTheme {
+  background: #0a84ff; /* Dark mode checked, matches HeadersModal actionButton.darkTheme */
+  border-color: #0a84ff;
+}
+
+.customCheckbox:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover, matches HeadersModal actionButton hover */
 }
 
 .customCheckbox.checked.darkTheme::after {
@@ -293,4 +299,16 @@
 
 .noItems.darkTheme {
   color: #8e8e93; /* Dark mode */
+}
+
+/* Error message */
+.error {
+  color: #ff3b30; /* Red for errors */
+  font-size: 14px;
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.error.darkTheme {
+  color: #ff453a; /* Slightly lighter red for dark mode */
 }

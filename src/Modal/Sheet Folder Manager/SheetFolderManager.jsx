@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useRef, useEffect } from "react";
+import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./SheetFolderManager.module.css";
 import { MainContext } from "../../Contexts/MainContext";
@@ -23,38 +23,80 @@ const SheetFolderManager = ({
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedHeaders, setSelectedHeaders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState("");
   const hasInitialized = useRef(false);
+  const handlersRef = useRef({ addType: "sheet", handleSheetSaveClick: () => {}, handleFolderSaveClick: () => {} });
 
-  // Define callbacks first to ensure they're initialized
+  // Define callbacks
   const handleSheetSaveClick = useCallback(() => {
-    if (!newSheetName.trim()) {
-      alert("Please provide a sheet name.");
+    const trimmedName = newSheetName.trim();
+    if (!trimmedName) {
+      setError("Please provide a sheet name.");
       return;
     }
-    const sheetId = `sheet_${Date.now()}`; // Generate timestamp-based ID
-    console.log("SheetFolderManager - Saving sheet:", { id: sheetId, newSheetName, selectedHeaders });
-    handleSheetSave(newSheetName, selectedHeaders, sheetId); // Pass ID to handleSheetSave
+
+    // Check for duplicate sheet name (case-insensitive)
+    const sheetExists = sheets.allSheets.some(
+      (sheet) => sheet.sheetName.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (sheetExists) {
+      alert(`A sheet named "${trimmedName}" already exists. Please choose a different name.`);
+      return;
+    }
+
+    setError("");
+    const sheetId = `sheet_${Date.now()}`;
+    console.log("Saving sheet:", { id: sheetId, newSheetName: trimmedName, selectedHeaders });
+    handleSheetSave(trimmedName, selectedHeaders, sheetId);
     setNewSheetName("");
     setSelectedHeaders([]);
     setSearchQuery("");
     handleClose();
-  }, [newSheetName, selectedHeaders, handleSheetSave, handleClose]);
+  }, [newSheetName, selectedHeaders, sheets.allSheets, handleSheetSave, handleClose]);
 
   const handleFolderSaveClick = useCallback(() => {
-    if (!newFolderName.trim()) {
-      alert("Please provide a folder name.");
+    const trimmedName = newFolderName.trim();
+    if (!trimmedName) {
+      setError("Please provide a folder name.");
       return;
     }
-    console.log("SheetFolderManager - Saving folder:", { newFolderName, selectedSheets });
-    handleFolderSave(newFolderName, selectedSheets);
+
+    // Check for duplicate folder name (case-insensitive)
+    const folderExists = sheets.structure.some(
+      (item) => item.folderName && item.folderName.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (folderExists) {
+      alert(`A folder named "${trimmedName}" already exists. Please choose a different name.`);
+      return;
+    }
+
+    if (selectedSheets.includes("primarySheet")) {
+      setError("The primary sheet cannot be added to a folder.");
+      return;
+    }
+
+    setError("");
+    console.log("Saving folder:", { newFolderName: trimmedName, selectedSheets });
+    handleFolderSave(trimmedName, selectedSheets);
     setNewFolderName("");
     setSelectedSheets([]);
+    setSearchQuery("");
     handleClose();
-  }, [newFolderName, selectedSheets, handleFolderSave, handleClose]);
+  }, [newFolderName, selectedSheets, sheets.structure, handleFolderSave, handleClose]);
+
+  // Update handlers ref
+  useEffect(() => {
+    handlersRef.current = {
+      addType,
+      handleSheetSaveClick,
+      handleFolderSaveClick,
+    };
+  }, [addType, handleSheetSaveClick, handleFolderSaveClick]);
 
   // Initialize modal steps and config
   useEffect(() => {
     if (!hasInitialized.current) {
+      console.log("Setting modal config, addType:", addType);
       registerModalSteps({
         steps: [
           {
@@ -72,6 +114,8 @@ const SheetFolderManager = ({
         leftButton: {
           label: "Create",
           onClick: () => {
+            const { addType, handleSheetSaveClick, handleFolderSaveClick } = handlersRef.current;
+            console.log("Modal Create button clicked, addType:", addType);
             if (addType === "sheet") {
               handleSheetSaveClick();
             } else {
@@ -79,27 +123,11 @@ const SheetFolderManager = ({
             }
           },
         },
+        onBackdropClick: handleClose,
       });
       hasInitialized.current = true;
     }
-  }, [setModalConfig, registerModalSteps, addType]); // Removed handleSheetSaveClick, handleFolderSaveClick from dependencies
-
-  // Update leftButton handler when addType changes
-  // useEffect(() => {
-  //   setModalConfig((prev) => ({
-  //     ...prev,
-  //     leftButton: {
-  //       label: "Create",
-  //       onClick: () => {
-  //         if (addType === "sheet") {
-  //           handleSheetSaveClick();
-  //         } else {
-  //           handleFolderSaveClick();
-  //         }
-  //       },
-  //     },
-  //   }));
-  // }, [addType, setModalConfig, handleSheetSaveClick, handleFolderSaveClick]);
+  }, [setModalConfig, registerModalSteps, handleClose]);
 
   const handleToggleType = useCallback(() => {
     setAddType((prev) => (prev === "sheet" ? "folder" : "sheet"));
@@ -108,7 +136,9 @@ const SheetFolderManager = ({
     setSelectedSheets([]);
     setSelectedHeaders([]);
     setSearchQuery("");
-  }, []);
+    setError("");
+    console.log("Toggled to:", addType === "sheet" ? "folder" : "sheet");
+  }, [addType]);
 
   const toggleSheetSelection = useCallback((sheetName) => {
     setSelectedSheets((prev) =>
@@ -128,23 +158,21 @@ const SheetFolderManager = ({
     type: h.type || "text",
   }));
 
-  // Filter unselected headers based on search query
-  const filteredHeaders = availableHeaders.filter(
-    (header) =>
-      !selectedHeaders.includes(header.key) &&
-      header.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredHeaders = availableHeaders.filter((header) =>
+    header.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const folderSheets = sheets.structure
     .filter((item) => item.folderName)
     .flatMap((folder) => folder.sheets);
   const availableSheets = sheets.allSheets
-    .filter((sheet) => !folderSheets.includes(sheet.sheetName))
+    .filter((sheet) => !folderSheets.includes(sheet.sheetName) && sheet.sheetName !== "primarySheet")
     .map((sheet) => sheet.sheetName);
 
   return (
     <div className={`${styles.managerWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={`${styles.scrollContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        {error && <div className={styles.error}>{error}</div>}
         <div className={`${styles.toggleContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <div
             className={`${styles.toggleButton} ${addType === "sheet" ? styles.activeToggle : ""} ${
@@ -171,13 +199,21 @@ const SheetFolderManager = ({
         <div className={`${styles.contentContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {addType === "sheet" && (
             <>
-              <input
-                type="text"
-                value={newSheetName}
-                onChange={(e) => setNewSheetName(e.target.value)}
-                placeholder="Sheet Name"
-                className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-              />
+              <div className={styles.inputWrapper}>
+                <input
+                  key="sheet-input"
+                  type="text"
+                  value={newSheetName}
+                  onChange={(e) => {
+                    console.log("Sheet input changed:", e.target.value);
+                    setNewSheetName(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter Sheet Name"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  autoFocus
+                />
+              </div>
               <div>
                 <h3 className={`${styles.headerSectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
                   Add Headers
@@ -188,7 +224,7 @@ const SheetFolderManager = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Headers"
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  style={{ marginBottom: "16px" }} /* Separate section */
+                  style={{ marginBottom: "16px" }}
                 />
               </div>
               <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -196,7 +232,9 @@ const SheetFolderManager = ({
                   filteredHeaders.map((header) => (
                     <div
                       key={header.key}
-                      className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      className={`${styles.headerItem} ${
+                        selectedHeaders.includes(header.key) ? styles.selected : ""
+                      } ${isDarkTheme ? styles.darkTheme : ""}`}
                       onClick={() => toggleHeaderSelection(header.key)}
                     >
                       <div className={styles.headerRow}>
@@ -216,7 +254,7 @@ const SheetFolderManager = ({
                   ))
                 ) : (
                   <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    No unselected headers found.
+                    No headers found.
                   </div>
                 )}
               </div>
@@ -224,13 +262,21 @@ const SheetFolderManager = ({
           )}
           {addType === "folder" && (
             <>
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Folder Name"
-                className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-              />
+              <div className={styles.inputWrapper}>
+                <input
+                  key="folder-input"
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => {
+                    console.log("Folder input changed:", e.target.value);
+                    setNewFolderName(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter Folder Name"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  autoFocus
+                />
+              </div>
               <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
                 {availableSheets.length > 0 ? (
                   availableSheets.map((sheetName) => (
