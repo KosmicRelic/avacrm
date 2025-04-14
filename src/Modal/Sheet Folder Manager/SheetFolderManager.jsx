@@ -85,21 +85,21 @@ const SheetFolderManager = ({
   }, [setModalConfig, registerModalSteps, addType]); // Removed handleSheetSaveClick, handleFolderSaveClick from dependencies
 
   // Update leftButton handler when addType changes
-  useEffect(() => {
-    setModalConfig((prev) => ({
-      ...prev,
-      leftButton: {
-        label: "Create",
-        onClick: () => {
-          if (addType === "sheet") {
-            handleSheetSaveClick();
-          } else {
-            handleFolderSaveClick();
-          }
-        },
-      },
-    }));
-  }, [addType, setModalConfig, handleSheetSaveClick, handleFolderSaveClick]);
+  // useEffect(() => {
+  //   setModalConfig((prev) => ({
+  //     ...prev,
+  //     leftButton: {
+  //       label: "Create",
+  //       onClick: () => {
+  //         if (addType === "sheet") {
+  //           handleSheetSaveClick();
+  //         } else {
+  //           handleFolderSaveClick();
+  //         }
+  //       },
+  //     },
+  //   }));
+  // }, [addType, setModalConfig, handleSheetSaveClick, handleFolderSaveClick]);
 
   const handleToggleType = useCallback(() => {
     setAddType((prev) => (prev === "sheet" ? "folder" : "sheet"));

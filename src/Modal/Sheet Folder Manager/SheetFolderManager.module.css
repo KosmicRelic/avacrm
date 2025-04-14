@@ -17,9 +17,9 @@
   display: flex;
   flex-direction: column;
   flex: 1; /* Take remaining space */
-  padding: 16px;
   padding-top: 0;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .scrollContainer.darkTheme {
@@ -31,10 +31,9 @@
   display: flex;
   width: 100%;
   height: 44px; /* Fixed height */
-  margin: 0 auto 20px auto; /* Center horizontally */
+  margin: 0 auto 20px auto;
   background: rgb(229, 229, 234); /* Light mode: gray */
   border-radius: 12px;
-  padding: 4px;
   position: relative;
   z-index: 10; /* Above Modal bg */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle depth */
