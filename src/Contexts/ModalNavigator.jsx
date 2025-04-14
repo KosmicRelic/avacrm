@@ -27,7 +27,6 @@ export const ModalNavigatorProvider = ({ children }) => {
     (stepIndex) => {
       const step = modalSteps[stepIndex];
       const buttons = Array.isArray(step?.rightButtons) ? step.rightButtons : [];
-      console.log("Step buttons for index", stepIndex, ":", buttons);
       return buttons;
     },
     [modalSteps]
@@ -35,7 +34,6 @@ export const ModalNavigatorProvider = ({ children }) => {
 
   const registerModalSteps = useCallback(
     (stepsConfig) => {
-      console.log("Registering modal steps:", stepsConfig);
       setModalSteps(stepsConfig.steps);
       setCurrentStep(1);
       const newConfig = {
@@ -47,7 +45,6 @@ export const ModalNavigatorProvider = ({ children }) => {
         rightButtons: getStepButtons(0),
       };
       setModalConfig(newConfig);
-      console.log("Updated modalConfig:", newConfig);
     },
     [getStepTitle, getStepButtons]
   );
@@ -73,7 +70,6 @@ export const ModalNavigatorProvider = ({ children }) => {
       };
       setModalConfig(newConfig);
       setCurrentStep(step);
-      console.log("Go to step", step, "with config:", newConfig);
     },
     [modalSteps, getStepTitle, getStepButtons]
   );

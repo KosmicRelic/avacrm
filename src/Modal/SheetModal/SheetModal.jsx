@@ -13,7 +13,7 @@ const SheetModal = ({
   sheets = [],
   onPinToggle,
   onDeleteSheet,
-  onClose,
+  handleClose, // Changed from onClose
 }) => {
   const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
@@ -307,11 +307,7 @@ const SheetModal = ({
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete the sheet "${sheetName}"? This action cannot be undone.`)) {
                 onDeleteSheet(sheetName);
-                if (onClose) {
-                  onClose({ fromDelete: true });
-                } else {
-                  console.warn("onClose not available to close modal");
-                }
+                handleClose({ fromDelete: true }); // Changed from onClose
               }
             }}
             className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -336,13 +332,13 @@ SheetModal.propTypes = {
   sheets: PropTypes.object,
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
-  onClose: PropTypes.func,
+  handleClose: PropTypes.func, // Changed from onClose
 };
 
 SheetModal.defaultProps = {
   isEditMode: false,
   sheets: { allSheets: [] },
-  onClose: null,
+  handleClose: null, // Changed from onClose
 };
 
 export default SheetModal;

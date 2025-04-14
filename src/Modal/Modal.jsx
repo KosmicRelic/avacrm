@@ -15,7 +15,11 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
   const [selectedSheet, setSelectedSheet] = useState("");
 
   const handleClose = (options = {}) => {
-    if (currentStep !== 1) return;
+    if (currentStep !== 1) {
+      // Optional: Log for debugging
+      // console.log(`handleClose blocked: currentStep is ${currentStep}`);
+      return;
+    }
     setIsClosing(true);
     const timeoutDuration = window.innerWidth <= 767 ? 300 : 200;
     setTimeout(() => {
@@ -65,12 +69,11 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
     if (tempData.onComplete) {
       tempData.onComplete();
     }
-    if (onSave) {
-      onSave();
-    }
+    handleClose({ fromSave: true });
   };
 
   useEffect(() => {
+    // Enable click-outside after a short delay to prevent immediate closure
     const timer = setTimeout(() => {
       setIsClickOutsideEnabled(true);
     }, 100);
@@ -164,7 +167,13 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
             {modalConfig.showBackButton && (
               <button
                 className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={goBack}
+                onClick={() => {
+                  if (currentStep === 1) {
+                    handleClose();
+                  } else {
+                    goBack();
+                  }
+                }}
               >
                 <span className={styles.chevron}>
                   <FaChevronLeft />
@@ -184,7 +193,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
                     key={index}
                     className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={() => {
-                      button.onClick();
+                      button.onClick(handleClose);
                     }}
                   >
                     {button.label}
@@ -203,7 +212,9 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
             </div>
           </div>
         )}
-        {children}
+        {React.Children.map(children, (child) =>
+          React.cloneElement(child, { handleClose })
+        )}
       </div>
     </div>
   );

@@ -158,6 +158,7 @@ function App() {
           }
           break;
         case "transport":
+          // Handled by TransportModal's handleSheetSelect
           break;
         case "cardsTemplate":
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
@@ -171,12 +172,6 @@ function App() {
       setEditMode(false);
       setSelectedTemplateIndex(null);
       setCurrentSectionIndex(null);
-      sheetModal.close();
-      filterModal.close();
-      headersModal.close();
-      sheetsModal.close();
-      transportModal.close();
-      cardsTemplateModal.close();
     },
     [
       setHeaders,
@@ -189,12 +184,6 @@ function App() {
       setEditMode,
       setSelectedTemplateIndex,
       setCurrentSectionIndex,
-      sheetModal,
-      filterModal,
-      headersModal,
-      sheetsModal,
-      transportModal,
-      cardsTemplateModal,
     ]
   );
 
@@ -240,28 +229,31 @@ function App() {
     cardsTemplateModal.open();
   }, [cardsTemplateModal, setEditMode, cardTemplates]);
 
-  const handleModalClose = useCallback(() => {
-    setActiveModal(null);
-    setEditMode(false);
-    setSelectedTemplateIndex(null);
-    setCurrentSectionIndex(null);
-    sheetModal.close();
-    filterModal.close();
-    headersModal.close();
-    sheetsModal.close();
-    transportModal.close();
-    cardsTemplateModal.close();
-  }, [
-    setEditMode,
-    setSelectedTemplateIndex,
-    setCurrentSectionIndex,
-    sheetModal,
-    filterModal,
-    headersModal,
-    sheetsModal,
-    transportModal,
-    cardsTemplateModal,
-  ]);
+  const handleModalClose = useCallback(
+    (options = {}) => {
+      setActiveModal(null);
+      setEditMode(false);
+      setSelectedTemplateIndex(null);
+      setCurrentSectionIndex(null);
+      sheetModal.close();
+      filterModal.close();
+      headersModal.close();
+      sheetsModal.close();
+      transportModal.close();
+      cardsTemplateModal.close();
+    },
+    [
+      setEditMode,
+      setSelectedTemplateIndex,
+      setCurrentSectionIndex,
+      sheetModal,
+      filterModal,
+      headersModal,
+      sheetsModal,
+      transportModal,
+      cardsTemplateModal,
+    ]
+  );
 
   const handleOpenProfileModal = useCallback(() => {
     setIsProfileModalOpen(true);
@@ -272,8 +264,9 @@ function App() {
   }, []);
 
   const renderModalContent = () => {
-    if (!activeModal) return null;
-  
+    if (!activeModal) {
+      return null;
+    }
     switch (activeModal.type) {
       case "sheet":
         return (
@@ -290,7 +283,7 @@ function App() {
             sheets={sheets}
             onPinToggle={handlePinToggle}
             onDeleteSheet={handleDeleteSheet}
-            onClose={handleModalClose}
+            handleClose={handleModalClose}
           />
         );
       case "filter":
@@ -302,6 +295,7 @@ function App() {
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
             }
+            handleClose={handleModalClose}
           />
         );
       case "headers":
@@ -311,6 +305,7 @@ function App() {
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
             }
+            handleClose={handleModalClose}
           />
         );
       case "sheets":
@@ -321,6 +316,7 @@ function App() {
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
             }
+            handleClose={handleModalClose}
           />
         );
       case "transport":
@@ -329,7 +325,7 @@ function App() {
             tempData={
               activeModal.data || { action: "copy", selectedRowIds: [], onComplete: null }
             }
-            onClose={handleModalClose}
+            handleClose={handleModalClose}
           />
         );
       case "cardsTemplate":
@@ -339,9 +335,11 @@ function App() {
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
             }
+            handleClose={handleModalClose}
           />
         );
       default:
+        console.warn("Unknown modal type in renderModalContent:", activeModal.type);
         return null;
     }
   };
@@ -379,20 +377,11 @@ function App() {
             onClose={handleModalClose}
             onSave={() => handleModalSave(activeModal.type, activeModal.data)}
             modalType={activeModal.type}
+            tempData={activeModal.data}
           >
             {renderModalContent()}
           </Modal>
         )}
-        {activeModal && activeModal.type !== "transport" && (
-          <Modal
-            onClose={handleModalClose}
-            onSave={() => handleModalSave(activeModal.type, activeModal.data)}
-            modalType={activeModal.type}
-          >
-            {renderModalContent()}
-          </Modal>
-        )}
-        {activeModal && activeModal.type === "transport" && renderModalContent()}
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
