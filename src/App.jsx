@@ -157,9 +157,6 @@ function App() {
             }));
           }
           break;
-        case "transport":
-          // Handled by TransportModal's handleSheetSelect
-          break;
         case "cardsTemplate":
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
             setCardTemplates([...data.currentCardTemplates]);
@@ -375,7 +372,11 @@ function App() {
         {activeModal && (
           <Modal
             onClose={handleModalClose}
-            onSave={() => handleModalSave(activeModal.type, activeModal.data)}
+            onSave={
+              activeModal.type !== "transport"
+                ? () => handleModalSave(activeModal.type, activeModal.data)
+                : undefined
+            }
             modalType={activeModal.type}
             tempData={activeModal.data}
           >

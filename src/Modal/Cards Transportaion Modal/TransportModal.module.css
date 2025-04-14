@@ -13,7 +13,7 @@
   }
   
   .sheetItem {
-    padding: 8px 16px;
+    padding: 13px 16px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
     background: rgba(255, 255, 255, 0.95); /* Light mode */
     transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;

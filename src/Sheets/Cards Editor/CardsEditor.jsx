@@ -10,9 +10,8 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, headers, isDarkTheme, deleteCard } = useContext(MainContext);
+  const { sheets, setSheets, cardTemplates, headers, isDarkTheme, deleteCard, cards, setCards } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? "editor" : "selection");
-  const [isVisible, setIsVisible] = useState(true);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || "");
   const initialTemplate = initialRowData?.typeOfCards
     ? cardTemplates?.find((t) => t.name === initialRowData.typeOfCards)
@@ -48,7 +47,6 @@ const CardsEditor = ({
     if (view === "editor" && selectedSections.length > 0 && openSections.length === 0) {
       setOpenSections([selectedSections[0].name]);
     }
-    setIsVisible(true);
   }, [view, selectedSections]);
 
   const handleSelectionNext = useCallback(() => {
@@ -70,10 +68,7 @@ const CardsEditor = ({
   }, [selectedSheet, selectedCardType, cardTemplates]);
 
   const handleClose = useCallback(() => {
-    setIsVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
+    onClose();
   }, [onClose]);
 
   const handleInputChange = useCallback((key, value) => {
@@ -103,11 +98,8 @@ const CardsEditor = ({
       sheetName: selectedSheet,
       typeOfCards: template.name,
     };
-    setIsVisible(false);
-    setTimeout(() => {
-      onSave(newRow, isEditing);
-      onClose();
-    }, 300);
+    onSave(newRow, isEditing);
+    onClose();
   }, [formData, selectedSheet, selectedCardType, onSave, cardTemplates, initialRowData, isEditing, onClose]);
 
   const handleDelete = useCallback(() => {
@@ -115,14 +107,41 @@ const CardsEditor = ({
       alert("No card to delete.");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this card?")) {
-      setIsVisible(false);
-      setTimeout(() => {
-        deleteCard(initialRowData.id);
-        onClose();
-      }, 300);
+    if (window.confirm("Are you sure you want to delete this card? This action will remove it from all sheets.")) {
+      setCards((prev) => prev.filter((card) => card.id !== initialRowData.id));
+      setSheets((prev) => ({
+        ...prev,
+        allSheets: prev.allSheets.map((sheet) => ({
+          ...sheet,
+          rows: sheet.rows.filter((id) => id !== initialRowData.id),
+        })),
+      }));
+      onClose();
     }
-  }, [isEditing, initialRowData, deleteCard, onClose]);
+  }, [isEditing, initialRowData, setCards, setSheets, onClose]);
+
+  const handleRemove = useCallback(() => {
+    if (!isEditing || !initialRowData?.id || !selectedSheet) {
+      alert("No card or sheet selected to remove.");
+      return;
+    }
+    const currentSheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
+    if (currentSheet?.id === "primarySheet") {
+      alert("Cannot remove a card from the primary sheet. Use Delete to remove it entirely.");
+      return;
+    }
+    if (window.confirm(`Are you sure you want to remove this card from "${selectedSheet}"? It will remain in other sheets.`)) {
+      setSheets((prev) => ({
+        ...prev,
+        allSheets: prev.allSheets.map((sheet) =>
+          sheet.sheetName === selectedSheet
+            ? { ...sheet, rows: sheet.rows.filter((id) => id !== initialRowData.id) }
+            : sheet
+        ),
+      }));
+      onClose();
+    }
+  }, [isEditing, initialRowData, selectedSheet, sheets, setSheets, onClose]);
 
   const toggleSection = useCallback((sectionName) => {
     setOpenSections((prev) =>
@@ -133,7 +152,7 @@ const CardsEditor = ({
   }, []);
 
   return (
-    <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ""} ${isVisible ? styles.active : ""}`}>
+    <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
         {view === "selection" && (
           <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -241,7 +260,7 @@ const CardsEditor = ({
                         xmlns="http://www.w3.org/2000/svg"
                       >
                         <path
-                          d="M2 4L6 8L10 4"
+                          d={openSections.includes(section.name) ? "M2 8L6 4L10 8" : "M2 4L6 8L10 4"}
                           stroke={isDarkTheme ? "#a1a1a6" : "#6e6e73"}
                           strokeWidth="1.5"
                           strokeLinecap="round"
@@ -302,6 +321,13 @@ const CardsEditor = ({
               )}
               {isEditing && (
                 <div className={styles.deleteButtonWrapper}>
+                  <button
+                    className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={handleRemove}
+                    aria-label="Remove card from sheet"
+                  >
+                    Remove from Sheet
+                  </button>
                   <button
                     className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={handleDelete}

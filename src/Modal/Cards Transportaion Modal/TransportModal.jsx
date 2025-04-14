@@ -4,7 +4,7 @@ import styles from "./TransportModal.module.css"; // Extended with new styles be
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 
-const TransportModal = ({ tempData, onClose }) => {
+const TransportModal = ({ tempData, handleClose }) => {
   const { sheets, setSheets, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -75,12 +75,13 @@ const TransportModal = ({ tempData, onClose }) => {
     }
 
     // Close the modal
-    onClose();
+    handleClose();
   };
 
   // Filter out the active sheet from the list
-  const availableSheets = sheets.allSheets.filter((sheet) => !sheet.isActive);
-
+  const availableSheets = sheets.allSheets.filter(
+    (sheet) => !sheet.isActive && sheet.id !== "primarySheet"
+  );
   return (
     <div
       className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -145,7 +146,7 @@ TransportModal.propTypes = {
     selectedRowIds: PropTypes.arrayOf(PropTypes.string).isRequired,
     onComplete: PropTypes.func,
   }).isRequired,
-  onClose: PropTypes.func.isRequired,
+  handleClose: PropTypes.func.isRequired,
 };
 
 export default TransportModal;

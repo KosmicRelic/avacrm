@@ -10,7 +10,7 @@ export const ModalNavigatorProvider = ({ children }) => {
     showBackButton: false,
     title: "",
     backButtonTitle: "",
-    rightButtons: [],
+    rightButton: null,
   });
   const [modalSteps, setModalSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
@@ -23,11 +23,10 @@ export const ModalNavigatorProvider = ({ children }) => {
     [modalSteps]
   );
 
-  const getStepButtons = useCallback(
+  const getStepButton = useCallback(
     (stepIndex) => {
       const step = modalSteps[stepIndex];
-      const buttons = Array.isArray(step?.rightButtons) ? step.rightButtons : [];
-      return buttons;
+      return step?.rightButton || null;
     },
     [modalSteps]
   );
@@ -42,11 +41,11 @@ export const ModalNavigatorProvider = ({ children }) => {
         showBackButton: false,
         title: getStepTitle(0, stepsConfig.args || {}),
         backButtonTitle: "",
-        rightButtons: getStepButtons(0),
+        rightButton: getStepButton(0),
       };
       setModalConfig(newConfig);
     },
-    [getStepTitle, getStepButtons]
+    [getStepTitle, getStepButton]
   );
 
   const goToStep = useCallback(
@@ -58,7 +57,7 @@ export const ModalNavigatorProvider = ({ children }) => {
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
-      const rightButtons = getStepButtons(currentStepIndex);
+      const rightButton = getStepButton(currentStepIndex);
 
       const newConfig = {
         showTitle: true,
@@ -66,12 +65,12 @@ export const ModalNavigatorProvider = ({ children }) => {
         showBackButton: step > 1,
         title: newTitle,
         backButtonTitle: previousStepTitle,
-        rightButtons,
+        rightButton,
       };
       setModalConfig(newConfig);
       setCurrentStep(step);
     },
-    [modalSteps, getStepTitle, getStepButtons]
+    [modalSteps, getStepTitle, getStepButton]
   );
 
   const goBack = useCallback(

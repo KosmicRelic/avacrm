@@ -22,6 +22,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [newTemplateName, setNewTemplateName] = useState("");
   const keyRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
@@ -42,14 +43,17 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       const steps = [
         {
           title: "Card Templates",
-          rightButton: null, // Use default Done button
+          rightButton: null,
         },
         {
           title: () =>
             selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
               ? currentCardTemplates[selectedTemplateIndex].name || "New Template"
               : "New Template",
-          rightButton: { label: editMode ? "Done" : "Edit", onClick: toggleEditMode },
+          rightButton: () =>
+            selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
+              ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
+              : null,
         },
         {
           title: () =>
@@ -74,7 +78,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     }
   }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates]);
 
-  // Update modal config based on step
+  // Update modal config based on step and state changes
   useEffect(() => {
     setModalConfig((prev) => ({
       ...prev,
@@ -87,7 +91,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           ? currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
           : prev.title,
       rightButton:
-        currentStep === 2
+        currentStep === 2 && currentCardTemplates[selectedTemplateIndex]
           ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
           : null,
       showDoneButton: currentStep === 1,
@@ -208,26 +212,64 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         const existingIndex = currentCardTemplates.findIndex((t) => t.name === template.name);
         if (existingIndex >= 0) {
           setSelectedTemplateIndex(existingIndex);
+          setEditMode(false);
           goToStep(2);
           return;
         }
       }
 
-      const newTemplate = {
-        name: "",
-        typeOfCards: "",
-        sections: [],
-      };
+      setSelectedTemplateIndex(currentCardTemplates.length);
+      setNewTemplateName("");
+      setEditMode(false);
+      goToStep(2);
+    },
+    [currentCardTemplates, goToStep]
+  );
 
+  const confirmNewTemplate = useCallback(() => {
+    if (!newTemplateName.trim()) {
+      alert("Please enter a template name.");
+      return;
+    }
+    if (currentCardTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
+      alert("A template with this name already exists. Please choose a unique name.");
+      return;
+    }
+
+    const newTemplate = {
+      name: newTemplateName.trim(),
+      typeOfCards: newTemplateName.trim(),
+      sections: [],
+    };
+
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev, newTemplate];
+      setSelectedTemplateIndex(newTemplates.length - 1);
+      setEditMode(false);
+      return newTemplates;
+    });
+  }, [newTemplateName, currentCardTemplates]);
+
+  const updateTemplateName = useCallback(
+    (newName) => {
       setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev, newTemplate];
-        const newIndex = newTemplates.length - 1;
-        setSelectedTemplateIndex(newIndex);
-        goToStep(2);
+        const newTemplates = [...prev];
+        if (
+          newName.trim() &&
+          newTemplates.some((t, i) => i !== selectedTemplateIndex && t.name.toLowerCase() === newName.trim().toLowerCase())
+        ) {
+          alert("A template with this name already exists. Please choose a unique name.");
+          return prev;
+        }
+        newTemplates[selectedTemplateIndex] = {
+          ...newTemplates[selectedTemplateIndex],
+          name: newName.trim(),
+          typeOfCards: newName.trim(),
+        };
         return newTemplates;
       });
     },
-    [currentCardTemplates, goToStep]
+    [selectedTemplateIndex]
   );
 
   const addSection = useCallback(() => {
@@ -351,6 +393,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setCurrentCardTemplates((prev) => {
         const newTemplates = prev.filter((_, i) => i !== selectedTemplateIndex);
         setSelectedTemplateIndex(null);
+        setEditMode(false);
         goToStep(1);
         return newTemplates;
       });
@@ -392,61 +435,72 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               </>
             )}
 
-            {step === 2 && selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] && (
+            {step === 2 && selectedTemplateIndex !== null && (
               <>
-                <input
-                  type="text"
-                  value={currentCardTemplates[selectedTemplateIndex].name || ""}
-                  onChange={(e) => {
-                    setCurrentCardTemplates((prev) => {
-                      const newTemplates = [...prev];
-                      newTemplates[selectedTemplateIndex] = {
-                        ...newTemplates[selectedTemplateIndex],
-                        name: e.target.value,
-                        typeOfCards: e.target.value,
-                      };
-                      return newTemplates;
-                    });
-                  }}
-                  placeholder="Template Name"
-                  className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
-                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Sections
-                </h3>
-                <div className={styles.templateList}>
-                  {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
-                    <div className={styles.sectionItem} key={index}>
-                      {editMode && (
-                        <button
-                          className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          onClick={() => removeSection(index)}
-                        >
-                          <BsDashCircle />
-                        </button>
-                      )}
-                      <button
-                        className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={() => !editMode && handleEditSection(index)}
-                      >
-                        {section.name}
-                      </button>
+                {currentCardTemplates[selectedTemplateIndex] ? (
+                  <>
+                    <input
+                      type="text"
+                      value={currentCardTemplates[selectedTemplateIndex].name || ""}
+                      onChange={(e) => updateTemplateName(e.target.value)}
+                      placeholder="Template Name"
+                      className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      disabled={!editMode}
+                    />
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      Sections
+                    </h3>
+                    <div className={styles.templateList}>
+                      {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
+                        <div className={styles.sectionItem} key={index}>
+                          {editMode && (
+                            <button
+                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              onClick={() => removeSection(index)}
+                            >
+                              <BsDashCircle />
+                            </button>
+                          )}
+                          <button
+                            className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onClick={() => !editMode && handleEditSection(index)}
+                          >
+                            {section.name}
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <button
-                  className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={addSection}
-                >
-                  Add Section
-                </button>
-                {editMode && (
-                  <button
-                    className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={handleDeleteTemplate}
-                  >
-                    Delete Template
-                  </button>
+                    <button
+                      className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={addSection}
+                    >
+                      Add Section
+                    </button>
+                    {editMode && (
+                      <button
+                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={handleDeleteTemplate}
+                      >
+                        Delete Template
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      placeholder="Template Name"
+                      className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                    <button
+                      className={`${styles.confirmButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={confirmNewTemplate}
+                    >
+                      Create Template
+                    </button>
+                  </>
                 )}
               </>
             )}

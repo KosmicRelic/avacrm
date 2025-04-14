@@ -13,7 +13,7 @@ const SheetModal = ({
   sheets = [],
   onPinToggle,
   onDeleteSheet,
-  handleClose, // Changed from onClose
+  handleClose,
 }) => {
   const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
@@ -213,9 +213,16 @@ const SheetModal = ({
     });
   }, []);
 
-  const handleSheetNameChange = useCallback((e) => {
-    setSheetName(e.target.value);
-  }, []);
+  const handleSheetNameChange = useCallback(
+    (e) => {
+      // Prevent renaming for primarySheet
+      if (sheetId === "primarySheet") {
+        return;
+      }
+      setSheetName(e.target.value);
+    },
+    [sheetId]
+  );
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -225,6 +232,7 @@ const SheetModal = ({
         onChange={handleSheetNameChange}
         placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
         className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+        disabled={sheetId === "primarySheet"} // Disable input for primarySheet
       />
       <select
         onChange={(e) => {
@@ -307,7 +315,7 @@ const SheetModal = ({
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete the sheet "${sheetName}"? This action cannot be undone.`)) {
                 onDeleteSheet(sheetName);
-                handleClose({ fromDelete: true }); // Changed from onClose
+                handleClose({ fromDelete: true });
               }
             }}
             className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -332,13 +340,13 @@ SheetModal.propTypes = {
   sheets: PropTypes.object,
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
-  handleClose: PropTypes.func, // Changed from onClose
+  handleClose: PropTypes.func,
 };
 
 SheetModal.defaultProps = {
   isEditMode: false,
   sheets: { allSheets: [] },
-  handleClose: null, // Changed from onClose
+  handleClose: null,
 };
 
 export default SheetModal;

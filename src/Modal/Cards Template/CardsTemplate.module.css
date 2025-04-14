@@ -124,6 +124,7 @@
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
+  text-align: center;
  }
  
  .input.darkTheme {
@@ -474,3 +475,30 @@
  .backButton.darkTheme:hover {
   background: #3a3a3c;
  }
+
+ .confirmButton {
+  padding: 8px 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.confirmButton.darkTheme {
+  background: #0a84ff;
+}
+
+.confirmButton:hover {
+  background: #0066d6;
+}
+
+.confirmButton.darkTheme:hover {
+  background: #0073e6;
+}

@@ -9,9 +9,9 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     const structure = sheets?.structure || [];
-    return structure.map((item) => ({
+    return structure.map((item, index) => ({
       ...item,
-      displayName: item.sheetName || item.folderName,
+      displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
     }));
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -27,7 +27,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
         steps: [
           {
             title: "Reorder Sheets",
-            rightButton: null, // Use default Done button
+            rightButton: null,
           },
         ],
       });
@@ -45,16 +45,16 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
 
   // Sync orderedItems only on sheets.structure change, not during drags
   useEffect(() => {
-    if (draggedIndex !== null) return; // Skip sync during drag
+    if (draggedIndex !== null) return;
     const structure = sheets?.structure || [];
-    const newItems = structure.map((item) => ({
+    const newItems = structure.map((item, index) => ({
       ...item,
-      displayName: item.sheetName || item.folderName,
+      displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
     }));
     if (JSON.stringify(newItems) !== JSON.stringify(orderedItems)) {
       setOrderedItems(newItems);
     }
-  }, [sheets?.structure, orderedItems]);
+  }, [sheets?.structure, orderedItems, draggedIndex]);
 
   // Stabilize orderedItems for tempData
   const stableOrderedItems = useMemo(() => orderedItems, [orderedItems]);
@@ -69,7 +69,6 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     });
     const newTempData = { newOrder: newStructure };
     const currentTempData = tempData.newOrder || [];
-    // Compare without displayName
     const newStr = JSON.stringify(newStructure);
     const currStr = JSON.stringify(currentTempData);
     if (newStr !== currStr) {
@@ -78,6 +77,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
   }, [stableOrderedItems, setTempData, tempData]);
 
   const handleDragStart = useCallback((e, index) => {
+    if (index === 0) return;
     setDraggedIndex(index);
     dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
     e.dataTransfer.effectAllowed = "move";
@@ -89,7 +89,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
   const handleDragOver = useCallback(
     (e, index) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedIndex === index) return;
+      if (draggedIndex === null || draggedIndex === index || draggedIndex === 0 || index === 0) return;
 
       setOrderedItems((prev) => {
         const newItems = [...prev];
@@ -111,6 +111,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
+    if (index === 0) return;
     if (e.target.classList.contains(styles.dragIcon)) {
       e.preventDefault();
       setDraggedIndex(index);
@@ -132,7 +133,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       const itemHeight = 48;
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
-      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
+      const newIndex = Math.max(1, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
       if (newIndex !== draggedIndex) {
         setOrderedItems((prev) => {
           const newItems = [...prev];
@@ -168,17 +169,19 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
         >
           <div className={styles.sheetRow}>
             <span className={styles.sheetName}>{item.displayName}</span>
-            <span
-              className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              onTouchStart={(e) => handleTouchStart(e, index)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              ☰
-            </span>
+            {index !== 0 && (
+              <span
+                className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnd={handleDragEnd}
+                onTouchStart={(e) => handleTouchStart(e, index)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                ☰
+              </span>
+            )}
           </div>
         </div>
       ))}
