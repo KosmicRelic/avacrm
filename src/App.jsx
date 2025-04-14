@@ -13,6 +13,7 @@ import Modal from "./Modal/Modal";
 import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
 import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
+import SheetFolderManager from "./Modal/Sheet Folder Manager/SheetFolderManager";
 import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
   const sheetsModal = useModal();
   const transportModal = useModal();
   const cardsTemplateModal = useModal();
+  const sheetFolderModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState("sheets");
   const [activeModal, setActiveModal] = useState(null);
@@ -115,6 +117,55 @@ function App() {
           structure: updatedStructure,
         };
       });
+    },
+    [setSheets]
+  );
+
+  const handleSheetSave = useCallback(
+    (newSheetName, selectedHeaders) => {
+      setSheets((prevSheets) => {
+        const newSheetId = `sheet${prevSheets.allSheets.length + 1}`;
+        const newSheet = {
+          id: newSheetId,
+          sheetName: newSheetName,
+          headers: selectedHeaders.map((key) => ({
+            key,
+            visible: true,
+            hidden: false,
+          })),
+          pinnedHeaders: [],
+          rows: [],
+          filters: {},
+          isActive: true,
+        };
+        return {
+          allSheets: [
+            ...prevSheets.allSheets.map((sheet) => ({
+              ...sheet,
+              isActive: false,
+            })),
+            newSheet,
+          ],
+          structure: [...prevSheets.structure, { sheetName: newSheetName }],
+        };
+      });
+      handleSheetChange(newSheetName);
+    },
+    [setSheets, handleSheetChange]
+  );
+
+  const handleFolderSave = useCallback(
+    (newFolderName, selectedSheets) => {
+      setSheets((prevSheets) => ({
+        ...prevSheets,
+        structure: [
+          ...prevSheets.structure,
+          {
+            folderName: newFolderName,
+            sheets: selectedSheets,
+          },
+        ],
+      }));
     },
     [setSheets]
   );
@@ -226,6 +277,19 @@ function App() {
     cardsTemplateModal.open();
   }, [cardsTemplateModal, setEditMode, cardTemplates]);
 
+  const onOpenSheetFolderModal = useCallback(() => {
+    setActiveModal({
+      type: "sheetFolder",
+      data: {
+        sheets,
+        headers,
+        handleSheetSave,
+        handleFolderSave,
+      },
+    });
+    sheetFolderModal.open();
+  }, [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]);
+
   const handleModalClose = useCallback(
     (options = {}) => {
       setActiveModal(null);
@@ -238,6 +302,7 @@ function App() {
       sheetsModal.close();
       transportModal.close();
       cardsTemplateModal.close();
+      sheetFolderModal.close();
     },
     [
       setEditMode,
@@ -249,6 +314,7 @@ function App() {
       sheetsModal,
       transportModal,
       cardsTemplateModal,
+      sheetFolderModal,
     ]
   );
 
@@ -335,6 +401,22 @@ function App() {
             handleClose={handleModalClose}
           />
         );
+      case "sheetFolder":
+        return (
+          <SheetFolderManager
+            tempData={activeModal.data || { sheets }}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
+            sheets={sheets}
+            setSheets={setSheets}
+            headers={headers}
+            onSheetChange={handleSheetChange}
+            handleSheetSave={handleSheetSave}
+            handleFolderSave={handleFolderSave}
+            handleClose={handleModalClose}
+          />
+        );
       default:
         console.warn("Unknown modal type in renderModalContent:", activeModal.type);
         return null;
@@ -367,13 +449,14 @@ function App() {
             onCardDelete={() => {}}
             onOpenSheetsModal={onOpenSheetsModal}
             onOpenTransportModal={onOpenTransportModal}
+            onOpenSheetFolderModal={onOpenSheetFolderModal}
           />
         )}
         {activeModal && (
           <Modal
             onClose={handleModalClose}
             onSave={
-              activeModal.type !== "transport"
+              activeModal.type !== "transport" && activeModal.type !== "sheetFolder"
                 ? () => handleModalSave(activeModal.type, activeModal.data)
                 : undefined
             }

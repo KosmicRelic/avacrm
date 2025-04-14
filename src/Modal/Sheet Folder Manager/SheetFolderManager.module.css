@@ -1,0 +1,264 @@
+.managerWrapper {
+  background: transparent;
+  padding: 0px 16px 16px 16px; /* Extra top padding for Modal's Done button */
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.managerWrapper.darkTheme {
+  background: transparent;
+}
+
+.toggleContainer {
+  display: flex;
+  width: 200px;
+  height: 36px;
+  margin: 0 auto 20px auto; /* Center horizontally */
+  background: rgb(229, 229, 234); /* Light mode: gray */
+  border-radius: 12px;
+  padding: 4px;
+  position: relative;
+  z-index: 10; /* Above Modal bg */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle depth */
+}
+
+.toggleContainer.darkTheme {
+  background: rgb(44, 44, 46); /* Dark mode: gray */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.toggleButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d1d1f; /* Light mode text */
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 12; /* Above toggleBackground */
+  transition: color 0.3s ease;
+}
+
+.toggleButton.darkTheme {
+  color: #ffffff; /* Dark mode text */
+}
+
+.toggleBackground {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc(50% - 4px); /* Match button width minus padding */
+  background: rgba(255, 255, 255, 0.95); /* Light mode selected */
+  border-radius: 10px;
+  transition: left 0.3s ease;
+  z-index: 11; /* Below toggleButton */
+}
+
+.toggleBackground.darkTheme {
+  background: rgba(58, 58, 60, 0.95); /* Dark mode selected */
+}
+
+.sheetActive {
+  left: 4px; /* Align with left button */
+}
+
+.folderActive {
+  left: calc(50% + 2px); /* Align with right button */
+}
+
+.contentContainer {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.contentContainer.darkTheme {
+  /* No additional dark theme styles needed */
+}
+
+.inputField {
+  width: 100%;
+  padding: 13.5px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f; /* Light mode text */
+  background: #ffffff; /* Light mode: white */
+  box-sizing: border-box;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.inputField.darkTheme {
+  color: #ffffff; /* Dark mode text */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode: matches cards */
+}
+
+.inputField:focus {
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inputField.darkTheme:focus {
+  background: rgba(44, 44, 46, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.headerList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.headerList.darkTheme {
+  background: transparent;
+}
+
+.headerItem {
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  transition: background 0.2s ease, border-bottom 0.3s ease;
+  cursor: pointer;
+}
+
+.headerItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+}
+
+.headerItem:last-child {
+  border-bottom: none;
+}
+
+.headerItem:hover {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.headerItem.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerNameType {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.headerNameType span {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #1d1d1f; /* Light mode default */
+  transition: color 0.3s ease;
+}
+
+.headerNameType.darkTheme span {
+  color: #ffffff; /* Dark mode override */
+}
+
+.headerType {
+  color: #6e6e73; /* Light mode */
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.headerType.darkTheme {
+  color: #8e8e93; /* Dark mode */
+}
+
+.customCheckbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #6e6e73; /* Light mode border */
+  border-radius: 50%;
+  background: transparent;
+  position: relative;
+  transition: background 0.2s ease, border-color 0.3s ease;
+}
+
+.customCheckbox.darkTheme {
+  border-color: #8e8e93; /* Dark mode border */
+}
+
+.customCheckbox.checked {
+  background: #007aff; /* Light mode checked */
+  border-color: #007aff;
+}
+
+.customCheckbox.checked.darkTheme {
+  background: #0a84ff; /* Dark mode checked */
+  border-color: #0a84ff;
+}
+
+.customCheckbox.checked::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff; /* White checkmark */
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.customCheckbox.checked.darkTheme::after {
+  border-color: #ffffff; /* White checkmark in dark mode */
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.actionButton {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #007aff; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 13.5px 16px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+  text-align: center;
+}
+
+.actionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
+}
+
+.actionButton:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
+}
+
+.noItems {
+  padding: 13px 16px;
+  color: #6e6e73; /* Light mode */
+  font-size: 14px;
+  text-align: center;
+}
+
+.noItems.darkTheme {
+  color: #8e8e93; /* Dark mode */
+}

@@ -43,25 +43,23 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     }
   }, [registerModalSteps, setModalConfig]);
 
-  // Sync orderedItems only on sheets.structure change, not during drags
+  // Sync orderedItems only when sheets.structure changes and no drag is in progress
   useEffect(() => {
-    if (draggedIndex !== null) return;
+    if (draggedIndex !== null) return; // Skip update during drag
     const structure = sheets?.structure || [];
     const newItems = structure.map((item, index) => ({
       ...item,
       displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
     }));
+    // Only update if the structure has actually changed
     if (JSON.stringify(newItems) !== JSON.stringify(orderedItems)) {
       setOrderedItems(newItems);
     }
-  }, [sheets?.structure, orderedItems, draggedIndex]);
-
-  // Stabilize orderedItems for tempData
-  const stableOrderedItems = useMemo(() => orderedItems, [orderedItems]);
+  }, [sheets?.structure, orderedItems]);
 
   // Update tempData on orderedItems change
   useEffect(() => {
-    const newStructure = stableOrderedItems.map((item) => {
+    const newStructure = orderedItems.map((item) => {
       if (item.folderName) {
         return { folderName: item.folderName, sheets: item.sheets };
       }
@@ -69,33 +67,29 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     });
     const newTempData = { newOrder: newStructure };
     const currentTempData = tempData.newOrder || [];
-    const newStr = JSON.stringify(newStructure);
-    const currStr = JSON.stringify(currentTempData);
-    if (newStr !== currStr) {
+    if (JSON.stringify(newStructure) !== JSON.stringify(currentTempData)) {
       setTempData(newTempData);
     }
-  }, [stableOrderedItems, setTempData, tempData]);
+  }, [orderedItems, setTempData, tempData]);
 
   const handleDragStart = useCallback((e, index) => {
-    if (index === 0) return;
+    if (index === 0) return; // Prevent dragging primary sheet
     setDraggedIndex(index);
     dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
     e.dataTransfer.effectAllowed = "move";
-    if (dragItemRef.current) {
-      dragItemRef.current.classList.add(styles.dragging);
-    }
+    dragItemRef.current?.classList.add(styles.dragging);
   }, []);
 
   const handleDragOver = useCallback(
     (e, index) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedIndex === index || draggedIndex === 0 || index === 0) return;
+      if (draggedIndex === null || draggedIndex === index || index === 0 || draggedIndex === 0) return;
 
       setOrderedItems((prev) => {
         const newItems = [...prev];
         const [draggedItem] = newItems.splice(draggedIndex, 1);
         newItems.splice(index, 0, draggedItem);
-        setDraggedIndex(index);
+        setDraggedIndex(index); // Update draggedIndex to new position
         return newItems;
       });
     },
@@ -107,20 +101,18 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       dragItemRef.current.classList.remove(styles.dragging);
       dragItemRef.current = null;
     }
-    setDraggedIndex(null);
+    setDraggedIndex(null); // Reset drag state
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
-    if (index === 0) return;
+    if (index === 0) return; // Prevent dragging primary sheet
     if (e.target.classList.contains(styles.dragIcon)) {
       e.preventDefault();
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
       dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
-      if (dragItemRef.current) {
-        dragItemRef.current.classList.add(styles.dragging);
-      }
+      dragItemRef.current?.classList.add(styles.dragging);
     }
   }, []);
 
@@ -130,7 +122,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       e.preventDefault();
 
       const touchY = e.touches[0].clientY;
-      const itemHeight = 48;
+      const itemHeight = 48; // Adjust if your item height differs
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
       const newIndex = Math.max(1, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
@@ -142,6 +134,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
           setDraggedIndex(newIndex);
           return newItems;
         });
+        setTouchTargetIndex(newIndex); // Update touch target
       }
     },
     [draggedIndex, touchStartY, touchTargetIndex, orderedItems.length]
