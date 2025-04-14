@@ -6,9 +6,11 @@
   min-width: 100%;
   width: max-content;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Restored original light mode */
-  margin: 8px 16px;
+  margin: 8px 0px;
   cursor: pointer;
   animation: rowAppear 0.3s ease-out forwards; /* Kept appearance animation */
+  position: relative;
+  left: 1em;
 }
 
 .bodyRow.darkTheme {
@@ -92,9 +94,6 @@
     width: 120px;
     font-size: 13px;
     font-weight: 550;
-  }
-  .bodyRow {
-    margin: 8px 16px;
   }
 }
 

@@ -143,6 +143,7 @@
   color: #1d1d1f; /* Light mode text */
   padding: 8px 0; /* Vertical padding for spacing */
   margin: 0; /* Reset default margins */
+  text-align: center;
 }
 
 .headerSectionTitle.darkTheme {

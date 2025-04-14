@@ -445,7 +445,7 @@ const SheetTemplate = ({
         </button>
         {sheets.structure.map((item, index) =>
           item.folderName ? (
-            <div key={item.folderName} className={styles.folderContainer}>
+            <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
               <button
                 className={`${styles.tabButton} ${
                   openFolder === item.folderName ? styles.activeFolder : ""
@@ -459,7 +459,7 @@ const SheetTemplate = ({
                   <span className={styles.folderSheets}>
                     {" > "}
                     {item.sheets.map((sheetName, idx) => (
-                      <span key={sheetName}>
+                      <span key={`inline-sheet-${sheetName}-${idx}`}>
                         <span
                           className={`${styles.inlineSheet} ${
                             sheetName === activeSheetName ? styles.activeInlineSheet : ""
@@ -483,7 +483,7 @@ const SheetTemplate = ({
             </div>
           ) : (
             !folderSheets.includes(item.sheetName) && (
-              <div key={item.sheetName} className={styles.sheetContainer}>
+              <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
                 <button
                   className={`${styles.tabButton} ${
                     item.sheetName === activeSheetName ? styles.activeTab : ""

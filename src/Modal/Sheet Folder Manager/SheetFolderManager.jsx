@@ -46,7 +46,6 @@ const SheetFolderManager = ({
 
     setError("");
     const sheetId = `sheet_${Date.now()}`;
-    console.log("Saving sheet:", { id: sheetId, newSheetName: trimmedName, selectedHeaders });
     handleSheetSave(trimmedName, selectedHeaders, sheetId);
     setNewSheetName("");
     setSelectedHeaders([]);
@@ -76,7 +75,6 @@ const SheetFolderManager = ({
     }
 
     setError("");
-    console.log("Saving folder:", { newFolderName: trimmedName, selectedSheets });
     handleFolderSave(trimmedName, selectedSheets);
     setNewFolderName("");
     setSelectedSheets([]);
@@ -96,7 +94,6 @@ const SheetFolderManager = ({
   // Initialize modal steps and config
   useEffect(() => {
     if (!hasInitialized.current) {
-      console.log("Setting modal config, addType:", addType);
       registerModalSteps({
         steps: [
           {
@@ -115,7 +112,6 @@ const SheetFolderManager = ({
           label: "Create",
           onClick: () => {
             const { addType, handleSheetSaveClick, handleFolderSaveClick } = handlersRef.current;
-            console.log("Modal Create button clicked, addType:", addType);
             if (addType === "sheet") {
               handleSheetSaveClick();
             } else {
@@ -137,7 +133,6 @@ const SheetFolderManager = ({
     setSelectedHeaders([]);
     setSearchQuery("");
     setError("");
-    console.log("Toggled to:", addType === "sheet" ? "folder" : "sheet");
   }, [addType]);
 
   const toggleSheetSelection = useCallback((sheetName) => {
@@ -205,13 +200,11 @@ const SheetFolderManager = ({
                   type="text"
                   value={newSheetName}
                   onChange={(e) => {
-                    console.log("Sheet input changed:", e.target.value);
                     setNewSheetName(e.target.value);
                     setError("");
                   }}
                   placeholder="Enter Sheet Name"
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  autoFocus
                 />
               </div>
               <div>
@@ -268,13 +261,11 @@ const SheetFolderManager = ({
                   type="text"
                   value={newFolderName}
                   onChange={(e) => {
-                    console.log("Folder input changed:", e.target.value);
                     setNewFolderName(e.target.value);
                     setError("");
                   }}
                   placeholder="Enter Folder Name"
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  autoFocus
                 />
               </div>
               <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
