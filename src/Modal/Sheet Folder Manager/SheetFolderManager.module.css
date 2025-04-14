@@ -1,6 +1,6 @@
+/* Manager wrapper - ensure full height */
 .managerWrapper {
   background: transparent;
-  padding: 0px 16px 16px 16px; /* Extra top padding for Modal's Done button */
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -12,10 +12,25 @@
   background: transparent;
 }
 
+/* Scrollable container - remove scrolling, make full height */
+.scrollContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Take remaining space */
+  padding: 16px;
+  padding-top: 0;
+  box-sizing: border-box;
+}
+
+.scrollContainer.darkTheme {
+  background: transparent;
+}
+
+/* Toggle container - fixed height */
 .toggleContainer {
   display: flex;
-  width: 200px;
-  height: 36px;
+  width: 100%;
+  height: 44px; /* Fixed height */
   margin: 0 auto 20px auto; /* Center horizontally */
   background: rgb(229, 229, 234); /* Light mode: gray */
   border-radius: 12px;
@@ -41,10 +56,20 @@
   cursor: pointer;
   z-index: 12; /* Above toggleBackground */
   transition: color 0.3s ease;
+  height: 100%; /* Ensure button fills container height */
+  line-height: 36px; /* Adjusted for 4px padding */
 }
 
 .toggleButton.darkTheme {
   color: #ffffff; /* Dark mode text */
+}
+
+.toggleButton.activeToggle {
+  color: #007aff; /* Highlight active toggle */
+}
+
+.toggleButton.activeToggle.darkTheme {
+  color: #0a84ff;
 }
 
 .toggleBackground {
@@ -70,27 +95,31 @@
   left: calc(50% + 2px); /* Align with right button */
 }
 
+/* Content container - ensure it grows to fit */
 .contentContainer {
-  flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1; /* Allow it to take remaining space */
 }
 
 .contentContainer.darkTheme {
   /* No additional dark theme styles needed */
 }
 
+/* Input field */
 .inputField {
   width: 100%;
-  padding: 13.5px 16px;
+  padding: 12px 16px;
   border: none;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
+  line-height: 20px; /* Match checkbox height */
   color: #1d1d1f; /* Light mode text */
   background: #ffffff; /* Light mode: white */
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
-  margin-bottom: 20px;
 }
 
 .inputField.darkTheme {
@@ -108,11 +137,24 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Header section title */
+.headerSectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f; /* Light mode text */
+  padding: 8px 0; /* Vertical padding for spacing */
+  margin: 0; /* Reset default margins */
+}
+
+.headerSectionTitle.darkTheme {
+  color: #ffffff; /* Dark mode text */
+}
+
+/* Header list */
 .headerList {
-  margin-bottom: 20px;
-  border-radius: 10px;
-  overflow: hidden;
+  border-radius: 12px; /* Match item border-radius for overflow */
   background: transparent;
+  overflow: hidden; /* Ensure rounded corners are visible */
 }
 
 .headerList.darkTheme {
@@ -120,11 +162,14 @@
 }
 
 .headerItem {
-  padding: 13px 16px;
+  padding: 9px 16px;
   background: rgba(255, 255, 255, 0.95); /* Light mode */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
-  transition: background 0.2s ease, border-bottom 0.3s ease;
+  transition: background 0.2s ease;
   cursor: pointer;
+  min-height: 25px; /* Consistent height */
+  display: flex;
+  align-items: center;
 }
 
 .headerItem.darkTheme {
@@ -132,8 +177,15 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
+.headerItem:first-child {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
 .headerItem:last-child {
   border-bottom: none;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .headerItem:hover {
@@ -146,8 +198,9 @@
 
 .headerRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  width: 100%;
+  min-height: 20px; /* Match checkbox */
 }
 
 .headerNameType {
@@ -163,7 +216,7 @@
   font-size: 14px;
   letter-spacing: 0.02em;
   color: #1d1d1f; /* Light mode default */
-  transition: color 0.3s ease;
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
 .headerNameType.darkTheme span {
@@ -173,6 +226,7 @@
 .headerType {
   color: #6e6e73; /* Light mode */
   font-size: 14px;
+  line-height: 20px; /* Match checkbox */
   transition: color 0.3s ease;
 }
 
@@ -180,18 +234,27 @@
   color: #8e8e93; /* Dark mode */
 }
 
+/* Checkbox styles - aligned with HeadersModal aesthetic */
 .customCheckbox {
-  width: 16px;
-  height: 16px;
+  width: 18px; /* Slightly larger for visibility */
+  height: 18px;
   border: 2px solid #6e6e73; /* Light mode border */
-  border-radius: 50%;
+  border-radius: 6px; /* Softer corners */
   background: transparent;
   position: relative;
-  transition: background 0.2s ease, border-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .customCheckbox.darkTheme {
   border-color: #8e8e93; /* Dark mode border */
+}
+
+.customCheckbox:hover {
+  transform: scale(1.05); /* Subtle hover effect */
 }
 
 .customCheckbox.checked {
@@ -207,55 +270,25 @@
 .customCheckbox.checked::after {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 4px;
-  width: 5px;
-  height: 9px;
+  width: 6px;
+  height: 10px;
   border: solid #ffffff; /* White checkmark */
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+  top: 2px;
+  left: 5px;
 }
 
 .customCheckbox.checked.darkTheme::after {
   border-color: #ffffff; /* White checkmark in dark mode */
 }
 
-.actionButtons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
-.actionButton {
-  width: 100%;
-  background: none;
-  border: none;
-  color: #007aff; /* Light mode */
-  font-size: 14px;
-  font-weight: 500;
-  padding: 13.5px 16px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease;
-  text-align: center;
-}
-
-.actionButton.darkTheme {
-  color: #0a84ff; /* Dark mode */
-}
-
-.actionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-}
-
-.actionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-}
-
+/* No items message */
 .noItems {
   padding: 13px 16px;
   color: #6e6e73; /* Light mode */
   font-size: 14px;
+  line-height: 20px;
   text-align: center;
 }
 

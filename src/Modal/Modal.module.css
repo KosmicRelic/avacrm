@@ -201,3 +201,21 @@
 .doneButton.darkTheme {
   color: #0a84ff;
 }
+
+.leftButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.leftButton.darkTheme {
+  color: #0a84ff;
+}

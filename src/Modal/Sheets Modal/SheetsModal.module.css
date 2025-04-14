@@ -11,7 +11,7 @@
 }
 
 .sheetItem {
-  padding: 8px 16px;
+  padding: 4.5px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
   background: rgba(255, 255, 255, 0.95); /* Light mode */
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease; /* Added theme transition */
@@ -56,14 +56,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 34px;
 }
 
 .sheetName {
+  flex: 0 0 auto;
+  font-weight: 600;
   font-size: 14px;
-  font-weight: 500;
-  color: #6e6e73; /* Light mode */
-  text-transform: uppercase;
-  transition: color 0.3s ease; /* Added theme transition */
+  letter-spacing: 0.02em;
+  color: #1d1d1f; /* Light mode default */
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
 /* Specific fix for dark theme sheet names */

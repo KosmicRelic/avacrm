@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from "../Contexts/ModalNavigator";
 import { FaChevronLeft } from "react-icons/fa";
 import { MainContext } from "../Contexts/MainContext";
 
-const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
+const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonClick }) => {
   const { isDarkTheme } = useContext(MainContext);
   const { modalConfig, goBack, currentStep } = useContext(ModalNavigatorContext);
   const [isClosing, setIsClosing] = useState(false);
@@ -70,8 +70,27 @@ const Modal = ({ children, onClose, onSave, modalType, tempData }) => {
         {(modalConfig.showTitle ||
           modalConfig.showBackButton ||
           modalConfig.showDoneButton ||
-          modalConfig.rightButton) && (
+          modalConfig.rightButton ||
+          modalConfig.leftButton ||
+          onLeftButtonClick) && (
           <div className={styles.modalHeader}>
+            {modalConfig.leftButton ? (
+              <button
+                className={`${styles.leftButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={modalConfig.leftButton.onClick}
+              >
+                {modalConfig.leftButton.label}
+              </button>
+            ) : (
+              onLeftButtonClick && (
+                <button
+                  className={`${styles.leftButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={onLeftButtonClick}
+                >
+                  Create
+                </button>
+              )
+            )}
             {modalConfig.showBackButton && (
               <button
                 className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -129,11 +148,13 @@ Modal.propTypes = {
   onSave: PropTypes.func,
   modalType: PropTypes.string.isRequired,
   tempData: PropTypes.object,
+  onLeftButtonClick: PropTypes.func,
 };
 
 Modal.defaultProps = {
   onSave: null,
   tempData: null,
+  onLeftButtonClick: null,
 };
 
 export default Modal;

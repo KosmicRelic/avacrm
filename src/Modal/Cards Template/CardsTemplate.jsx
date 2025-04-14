@@ -470,12 +470,14 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         </div>
                       ))}
                     </div>
-                    <button
-                      className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={addSection}
-                    >
-                      Add Section
-                    </button>
+                    {!editMode && (
+                      <button
+                        className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={addSection}
+                      >
+                        Add Section
+                      </button>
+                    )}
                     {editMode && (
                       <button
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
