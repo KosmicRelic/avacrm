@@ -12,8 +12,6 @@ const ProfileModal = ({
   setActiveOption,
   onOpenCardsTemplateModal,
   onOpenSheetsModal,
-  onOpenSheetFolderModal,
-  onOpenFolderOperationsModal,
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -90,23 +88,6 @@ const ProfileModal = ({
           >
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
-          </button>
-        </div>
-        <div className={styles.section}>
-          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Sheets</h3>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleSheetFolderClick}
-          >
-            <FaFolder size={16} style={{ marginRight: "8px" }} />
-            Create Sheets & Folders
-          </button>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleSheetsOrderClick}
-          >
-            <CgArrowsExchangeAlt size={16} style={{ marginRight: "8px" }} />
-            Re-order Sheet Tabs
           </button>
         </div>
       </div>

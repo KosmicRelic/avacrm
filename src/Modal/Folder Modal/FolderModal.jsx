@@ -5,30 +5,61 @@ import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { IoIosCheckmark } from "react-icons/io";
 
-const FolderModal = ({ folderName, onSheetSelect, handleClose }) => {
-  const { sheets, setSheets, isDarkTheme } = useContext(MainContext);
-  const { registerModalSteps, setModalConfig, currentStep } = useContext(ModalNavigatorContext);
+const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTempData }) => {
+  const { sheets, isDarkTheme } = useContext(MainContext);
+  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedSheets, setSelectedSheets] = useState([]);
+  const [selectedSheets, setSelectedSheets] = useState(tempData?.selectedSheets || []);
+  const [displayedSheets, setDisplayedSheets] = useState([]);
   const hasInitialized = useRef(false);
 
-  // Find the folder's sheets from the structure
   const folder = sheets.structure.find((item) => item.folderName === folderName);
   const folderSheets = folder ? folder.sheets : [];
 
-  // Initialize modal configuration
+  // Initialize displayedSheets with all folder sheets
+  useEffect(() => {
+    setDisplayedSheets(folderSheets);
+  }, [folderSheets]);
+
+  console.log("FolderModal rendering", { folderName, folderSheets, structure: sheets.structure });
+
+  const handleRemoveSheets = useCallback(() => {
+    if (selectedSheets.length === 0) {
+      setIsEditMode(false);
+      setSelectedSheets([]);
+      setTempData({});
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to remove the following sheet${selectedSheets.length > 1 ? "s" : ""}: ${selectedSheets.join(", ")}?`;
+    if (window.confirm(confirmMessage)) {
+      const newTempData = {
+        selectedSheets,
+        action: "removeSheets",
+        folderName,
+      };
+      setTempData(newTempData);
+      // Update displayedSheets to exclude removed sheets
+      setDisplayedSheets((prev) => prev.filter((sheet) => !selectedSheets.includes(sheet)));
+      setIsEditMode(false);
+      setSelectedSheets([]);
+    }
+  }, [selectedSheets, folderName, setTempData]);
+
   useEffect(() => {
     if (!hasInitialized.current) {
       const editButton = {
         label: "Edit",
-        onClick: () => setIsEditMode(true),
+        onClick: () => {
+          setIsEditMode(true);
+        },
       };
 
       registerModalSteps({
         steps: [
           {
             title: folderName,
-            rightButton: null, // Default Done button
+            rightButton: null,
             leftButton: editButton,
           },
         ],
@@ -47,7 +78,6 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose }) => {
     }
   }, [folderName, registerModalSteps, setModalConfig]);
 
-  // Update modal config when edit mode changes
   useEffect(() => {
     if (isEditMode) {
       setModalConfig((prev) => ({
@@ -58,12 +88,15 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose }) => {
           onClick: () => {
             setIsEditMode(false);
             setSelectedSheets([]);
+            setTempData({});
+            // Reset displayedSheets to original folderSheets
+            setDisplayedSheets(folderSheets);
           },
         },
         rightButton: {
           label: "Remove",
           onClick: handleRemoveSheets,
-          isActive: selectedSheets.length > 0, // Pass active state
+          isActive: selectedSheets.length > 0,
         },
       }));
     } else {
@@ -73,75 +106,38 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose }) => {
         rightButton: null,
         leftButton: {
           label: "Edit",
-          onClick: () => setIsEditMode(true),
+          onClick: () => {
+            setIsEditMode(true);
+          },
         },
       }));
     }
-  }, [isEditMode, selectedSheets, setModalConfig]);
+  }, [isEditMode, selectedSheets, setModalConfig, handleRemoveSheets, folderSheets]);
 
-  // Handle sheet selection for removal
   const toggleSheetSelection = useCallback(
     (sheetName) => {
-      setSelectedSheets((prev) =>
-        prev.includes(sheetName)
+      setSelectedSheets((prev) => {
+        const newSelected = prev.includes(sheetName)
           ? prev.filter((name) => name !== sheetName)
-          : [...prev, sheetName]
-      );
+          : [...prev, sheetName];
+        const newTempData = { ...tempData, selectedSheets: newSelected };
+        setTempData(newTempData);
+        return newSelected;
+      });
     },
-    []
+    [setTempData, tempData]
   );
 
-  // Handle sheet removal with confirmation
-  const handleRemoveSheets = useCallback(() => {
-    if (selectedSheets.length === 0) {
-      setIsEditMode(false);
-      setSelectedSheets([]);
-      return;
-    }
-
-    const confirmMessage = `Are you sure you want to remove the following sheet${selectedSheets.length > 1 ? "s" : ""}: ${selectedSheets.join(", ")}?`;
-    if (window.confirm(confirmMessage)) {
-      setSheets((prev) => {
-        // Remove sheets from folder and add to root
-        const folderSheets = folder?.sheets || [];
-        const remainingSheets = folderSheets.filter((sheet) => !selectedSheets.includes(sheet));
-        const removedSheets = folderSheets.filter((sheet) => selectedSheets.includes(sheet));
-
-        return {
-          ...prev,
-          structure: [
-            ...prev.structure.filter((item) => item.folderName !== folderName),
-            { folderName, sheets: remainingSheets },
-            ...removedSheets.map((sheetName) => ({ sheetName })),
-          ].filter((item) => !item.folderName || item.sheets.length > 0), // Remove empty folders
-        };
-      });
-      setIsEditMode(false);
-      setSelectedSheets([]);
-    }
-  }, [selectedSheets, folderName, folder, setSheets]);
-
-  // Handle folder deletion and transfer sheets to root
   const handleDeleteFolder = useCallback(() => {
     if (window.confirm(`Are you sure you want to delete the folder "${folderName}"?`)) {
-      setSheets((prev) => {
-        // Filter out the folder and add its sheets to the root
-        const folderSheets = folder?.sheets || [];
-        const newStructure = [
-          ...prev.structure.filter((item) => item.folderName !== folderName),
-          ...folderSheets.map((sheetName) => ({ sheetName })),
-        ];
-
-        return {
-          ...prev,
-          structure: newStructure,
-        };
-      });
-      handleClose();
+      const newTempData = {
+        folderName,
+        action: "deleteFolder",
+      };
+      handleClose({ fromDelete: true, tempData: newTempData });
     }
-  }, [folderName, folder, setSheets, handleClose]);
+  }, [folderName, handleClose]);
 
-  // Handle sheet click
   const handleSheetClick = useCallback(
     (sheetName) => {
       if (isEditMode) {
@@ -157,12 +153,12 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose }) => {
   return (
     <div className={`${styles.folderModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.sheetList}>
-        {folderSheets.length === 0 ? (
+        {displayedSheets.length === 0 ? (
           <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
             No sheets in this folder
           </div>
         ) : (
-          folderSheets.map((sheetName, index) => (
+          displayedSheets.map((sheetName, index) => (
             <div
               key={`${sheetName}-${index}`}
               className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -205,6 +201,12 @@ FolderModal.propTypes = {
   folderName: PropTypes.string.isRequired,
   onSheetSelect: PropTypes.func.isRequired,
   handleClose: PropTypes.func.isRequired,
+  tempData: PropTypes.object,
+  setTempData: PropTypes.func.isRequired,
+};
+
+FolderModal.defaultProps = {
+  tempData: {},
 };
 
 export default FolderModal;

@@ -7,6 +7,7 @@ import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
 import { MdFilterAlt } from "react-icons/md";
 import { MainContext } from "../Contexts/MainContext";
+import { CgArrowsExchangeAlt } from "react-icons/cg";
 
 const SheetTemplate = ({
   headers,
@@ -23,7 +24,7 @@ const SheetTemplate = ({
   onOpenSheetsModal,
   onOpenTransportModal,
   onOpenSheetFolderModal,
-  onOpenFolderModal, // Added prop from App.jsx
+  onOpenFolderModal,
 }) => {
   const { isDarkTheme, setCards, cards } = useContext(MainContext);
 
@@ -308,34 +309,20 @@ const SheetTemplate = ({
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        <div className={styles.searchContainer}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search"
-            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
-          />
-          {searchQuery && (
-            <button className={styles.clearButton} onClick={clearSearch}>
-              <IoCloseCircle size={18} />
-            </button>
-          )}
-        </div>
-        <div className={styles.buttonGroup}>
+      <div className={styles.buttonGroup}>
           {!isSelectMode ? (
             <>
-              <button
-                className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={onFilter}
-              >
-                <MdFilterAlt size={20} />
-              </button>
               <button
                 className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSelectToggle}
               >
                 Select
+              </button>
+              <button
+                className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={onFilter}
+              >
+                <MdFilterAlt size={20} />
               </button>
             </>
           ) : (
@@ -389,6 +376,23 @@ const SheetTemplate = ({
             </>
           )}
         </div>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search"
+            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
+          />
+          {searchQuery && (
+            <button className={styles.clearButton} onClick={clearSearch}>
+              <IoCloseCircle size={18} />
+            </button>
+          )}
+        </div>
+        <button className={styles.editHeaderButton} onClick={onEditSheet}>
+          Edit
+        </button>
       </div>
       <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -421,19 +425,30 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
-        <button className={styles.editHeaderButton} onClick={onEditSheet}>
-          Edit
+      <button
+          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          onClick={onOpenSheetsModal}
+        >
+          <CgArrowsExchangeAlt />
+        </button>
+        <button
+          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          onClick={onOpenSheetFolderModal}
+        >
+          +
         </button>
         {sheets.structure.map((item, index) =>
           item.folderName ? (
             <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
               <button
-                className={`${styles.tabButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                className={`${styles.tabButton} ${
+                  item.sheets.includes(activeSheetName) ? styles.activeTab : ""
+                } ${isDarkTheme ? styles.darkTheme : ""}`}
                 data-folder-name={item.folderName}
                 onClick={() => handleFolderClick(item.folderName)}
               >
                 <FaFolder className={styles.folderIcon} />
-                {item.folderName}
+                {item.sheets.includes(activeSheetName) ? `${item.folderName} > ${activeSheetName}` : item.folderName}
               </button>
             </div>
           ) : (
@@ -523,7 +538,7 @@ SheetTemplate.propTypes = {
   onOpenSheetsModal: PropTypes.func.isRequired,
   onOpenTransportModal: PropTypes.func.isRequired,
   onOpenSheetFolderModal: PropTypes.func.isRequired,
-  onOpenFolderModal: PropTypes.func.isRequired, // Added prop
+  onOpenFolderModal: PropTypes.func.isRequired,
 };
 
 export default SheetTemplate;
