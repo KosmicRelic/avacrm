@@ -3,10 +3,9 @@ import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
 import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
-import { IoMdRemoveCircle } from "react-icons/io";
 
 const CardsTemplate = ({ tempData, setTempData }) => {
   const { cardTemplates, headers, isDarkTheme } = useContext(MainContext);
@@ -84,16 +83,24 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         ...prev,
         title: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
         showDoneButton: false,
-        showBackButton: true,
+        showBackButton: !editMode,
         backButtonTitle: "Card Templates",
-        leftButton: null,
+        leftButton: editMode
+          ? {
+              label: "Cancel",
+              onClick: () => setEditMode(false),
+              isActive: true,
+              isRemove: false,
+              color: "blue",
+            }
+          : null,
         rightButton: editMode
           ? {
-              label: "Remove",
-              onClick: handleRemoveSections,
+              label: "Done",
+              onClick: () => setEditMode(false),
               isActive: true,
-              isRemove: true,
-              color: "red",
+              isRemove: false,
+              color: "blue",
             }
           : {
               label: "Edit",
@@ -127,10 +134,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     }
   }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, goToStep]);
 
-  const handleRemoveSections = useCallback(() => {
-    setEditMode(false);
-  }, []);
-
   const handleDeleteSection = useCallback(
     (index) => {
       const sectionName = currentCardTemplates[selectedTemplateIndex].sections[index].name;
@@ -142,9 +145,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           newTemplates[selectedTemplateIndex] = currentTemplate;
           return newTemplates;
         });
+        goToStep(2);
       }
     },
-    [selectedTemplateIndex]
+    [selectedTemplateIndex, goToStep]
   );
 
   const handleDragStart = useCallback((e, sectionIndex, index) => {
@@ -485,41 +489,17 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         <div className={`${styles.sectionItem} ${isDarkTheme ? styles.darkTheme : ""}`} key={index}>
                           <button
                             className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            onClick={() =>
-                              editMode
-                                ? inputRefs.current.get(index)?.focus()
-                                : handleEditSection(index)
-                            }
-                            disabled={editMode && !inputRefs.current.get(index)}
+                            onClick={() => !editMode && handleEditSection(index)}
+                            disabled={editMode}
                           >
-                            {editMode ? (
-                              <input
-                                type="text"
-                                value={section.name}
-                                onChange={(e) => updateSectionName(index, e.target.value)}
-                                className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                placeholder="Section Name"
-                                ref={(el) => inputRefs.current.set(index, el)}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : (
+                            <span className={styles.sectionContent}>
                               <span className={styles.sectionName}>{section.name}</span>
-                            )}
-                            <span className={`${styles.chevronContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              {!editMode ? (
-                                <IoChevronForward className={styles.chevronIcon} />
-                              ) : (
-                                <span
-                                  className={`${styles.removeIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteSection(index);
-                                  }}
-                                >
-                                  <IoMdRemoveCircle size={18} />
-                                </span>
-                              )}
                             </span>
+                            {!editMode && (
+                              <span className={`${styles.chevronContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <IoChevronForward className={`${styles.chevronIcon} ${isDarkTheme ? styles.darkTheme : ""}`} />
+                              </span>
+                            )}
                           </button>
                         </div>
                       ))}
@@ -570,7 +550,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   type="text"
                   value={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
                   onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
-                  className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                   placeholder="Section Name"
                 />
                 <div className={styles.searchContainer}>
@@ -604,25 +584,26 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
                         onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
                         onTouchEnd={() => !editMode && handleTouchEnd()}
+                        onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
                       >
                         {editMode && (
                           <button
                             className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            onClick={() => handleDeleteKey(currentSectionIndex, header.key)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteKey(currentSectionIndex, header.key);
+                            }}
                           >
                             <BsDashCircle />
                           </button>
                         )}
-                        <div
-                          className={styles.headerContent}
-                          onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                        >
+                        <div className={styles.headerContent}>
                           <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            <input
-                              type="checkbox"
-                              checked={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)}
-                              readOnly
-                            />
+                            {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) ? (
+                              <FaRegCheckCircle size={18} className={styles.checked} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
                           </span>
                           <span className={styles.headerName}>{header.name}</span>
                           <span className={styles.headerType}>({header.type})</span>
@@ -634,17 +615,18 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                     );
                   })}
                   {filteredHeaders.map((header, index) => (
-                    <div key={index} className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      <div
-                        className={styles.headerContent}
-                        onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                      >
+                    <div
+                      key={index}
+                      className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
+                    >
+                      <div className={styles.headerContent}>
                         <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <input
-                            type="checkbox"
-                            checked={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)}
-                            readOnly
-                          />
+                          {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) ? (
+                            <FaRegCheckCircle size={18} className={styles.checked} />
+                          ) : (
+                            <FaRegCircle size={18} />
+                          )}
                         </span>
                         <span className={styles.headerName}>{header.name}</span>
                         <span className={styles.headerType}>({header.type})</span>
@@ -655,6 +637,12 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                     </div>
                   ))}
                 </div>
+                <button
+                  className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={() => handleDeleteSection(currentSectionIndex)}
+                >
+                  Delete Section
+                </button>
               </>
             )}
           </div>

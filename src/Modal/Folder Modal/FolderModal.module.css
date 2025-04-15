@@ -92,37 +92,65 @@
     transition: opacity 0.2s ease;
   }
   
-  .deleteFolder {
-    padding: 16px;
-    text-align: center;
-  }
-  
-  .deleteFolder.darkTheme {
-    background: transparent; /* Dark mode */
-  }
   
   .deleteButton {
-    background: none;
-    border: none;
-    color: #ff453a; /* Light mode */
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+    width: 100%; /* Changed to auto for consistency with deleteSectionButton */
+    padding: 13.5px 16px; /* Updated to match deleteSectionButton */
+    margin-top: 16px; /* Added for spacing consistency */
+    border-radius: 12px; /* Updated to match deleteSectionButton */
+    background: #ffffff; /* Changed from none to match deleteSectionButton */
+    border: none; /* Updated to match deleteSectionButton */
+    color: #ff453a; /* Unchanged */
+    font-size: 14px; /* Unchanged */
+    font-weight: 600; /* Updated to match deleteSectionButton */
+    cursor: pointer; /* Unchanged */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Added to match deleteSectionButton */
+    transition: background 0.2s ease, color 0.3s ease; /* Updated for smoother transitions */
   }
   
   .deleteButton.darkTheme {
-    color: #ff453a; /* Dark mode: keep same red */
+    background: #2c2c2e; /* Changed to match deleteSectionButton.darkTheme */
+    color: #ff453a; /* Unchanged */
   }
   
   .deleteButton:hover {
-    background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+    background: #f5f5f5; /* Changed to match deleteSectionButton:hover */
   }
   
   .deleteButton.darkTheme:hover {
-    background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+    background: #3a3a3c; /* Changed to match deleteSectionButton.darkTheme:hover */
+  }
+  
+  /* For reference: deleteSectionButton from CardsTemplate.module.css */
+  .deleteSectionButton {
+    width: 100%;
+    padding: 13.5px 16px;
+    margin-top: 16px;
+    margin-bottom: 24px;
+    margin-left: auto;
+    border-radius: 12px;
+    background: #ffffff;
+    border: none;
+    color: #ff453a;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 0 0 auto;
+    letter-spacing: 0.02em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .deleteSectionButton.darkTheme {
+    background: #2c2c2e;
+    color: #ff453a;
+  }
+  
+  .deleteSectionButton:hover {
+    background: #f5f5f5;
+  }
+  
+  .deleteSectionButton.darkTheme:hover {
+    background: #3a3a3c;
   }
   
   .actionButton {

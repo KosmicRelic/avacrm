@@ -1,9 +1,9 @@
 .templateWrapper {
   background: transparent;
   width: 100%;
-  height: 100vh;
+  /* Removed height: 100vh to allow natural sizing */
   box-sizing: border-box;
-  overflow: hidden;
+  /* Removed overflow: hidden to allow content to flow */
 }
 
 .templateWrapper.darkTheme {
@@ -13,8 +13,8 @@
 .viewContainer {
   position: relative;
   width: 100%;
-  height: 100%;
-  overflow-y: auto;
+  /* Removed height: 100% to allow natural sizing */
+  /* Removed overflow-y: auto to prevent internal scrolling */
   box-sizing: border-box;
 }
 
@@ -23,11 +23,14 @@
   box-sizing: border-box;
   background: #f2f2f7;
   border-radius: 16px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  overflow-y: auto;
+  position: static; /* Changed from absolute to flow naturally */
+  /* Removed top: 0, left: 0 as no longer positioned absolutely */
+  /* Removed height: 100% to allow content-driven height */
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  /* Removed min-height: 100% as no longer needed */
 }
 
 .view.darkTheme {
@@ -75,6 +78,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff00;
+  flex: 0 0 auto;
 }
 
 .templateButton {
@@ -127,6 +131,12 @@
   background: rgba(44, 44, 46, 0.95);
 }
 
+.sectionContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .input {
   width: 100%;
   padding: 13.5px 16px;
@@ -156,9 +166,42 @@
 .section {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  overflow: visible;
 }
 
-.searchInput,
+.searchInput {
+  width: 100%;
+  padding: 13.5px 16px;
+  padding-left: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #ffffff;
+  box-sizing: border-box;
+  letter-spacing: 0.02em;
+  color: #1d1d1f;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 14px;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.searchInput.darkTheme {
+  color: #ffffff;
+  background: #2c2c2e;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.searchInput.darkTheme:focus {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .sectionInput {
   width: 100%;
   padding: 13.5px 16px;
@@ -174,11 +217,6 @@
   outline: none;
 }
 
-.searchInput {
-  padding-left: 44px;
-}
-
-.searchInput.darkTheme,
 .sectionInput.darkTheme {
   color: #ffffff;
   background: transparent;
@@ -216,11 +254,12 @@
   padding: 6px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
-  cursor: default;
+  cursor: pointer;
   user-select: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .keyItem.darkTheme {
@@ -264,7 +303,6 @@
   align-items: center;
   gap: 12px;
   flex: 1;
-  cursor: pointer;
 }
 
 .customCheckbox {
@@ -274,12 +312,24 @@
   justify-content: center;
   align-items: center;
   position: relative;
+  color: #007aff;
+  transition: transform 0.1s ease;
 }
 
-.customCheckbox input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
+.customCheckbox.darkTheme {
+  color: #0a84ff;
+}
+
+.customCheckbox:hover {
+  transform: scale(1.1);
+}
+
+.customCheckbox.checked {
+  color: #007aff;
+}
+
+.customCheckbox.checked.darkTheme {
+  color: #0a84ff;
 }
 
 .headerName {
@@ -367,7 +417,7 @@
 
 .chevronIcon {
   font-size: 16px;
-  color: #000;
+  color: #1d1d1f;
   margin-left: 6px;
   margin-right: 12px;
   transition: color 0.3s ease;
@@ -375,7 +425,7 @@
 }
 
 .chevronIcon.darkTheme {
-  color: #fff;
+  color: #ffffff;
 }
 
 .templateButton:hover .chevronIcon {
@@ -384,29 +434,6 @@
 
 .templateButton.darkTheme:hover .chevronIcon {
   color: #0a84ff;
-}
-
-.removeIcon {
-  color: #ff453a;
-  cursor: pointer;
-  margin-left: 6px;
-  margin-right: 12px;
-  font-size: 18px;
-  transition: color 0.3s ease, transform 0.2s ease;
-  vertical-align: middle;
-}
-
-.removeIcon.darkTheme {
-  color: #ff453a;
-}
-
-.removeIcon:hover {
-  color: #cc2e26;
-  transform: scale(1.1);
-}
-
-.removeIcon.darkTheme:hover {
-  color: #d83a34;
 }
 
 .removeButton {
@@ -442,25 +469,69 @@
 .deleteButton {
   width: 100%;
   padding: 13.5px 16px;
-  background: transparent;
-  border: 0;
-  text-align: center;
+  margin-top: 24px; /* Added to match deleteSectionButton spacing */
+  border-radius: 12px;
+  background: #ffffff; /* Changed from transparent to match deleteSectionButton */
+  border: none; /* Added to match deleteSectionButton */
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   flex: 0 0 auto;
-  font-weight: 600;
-  font-size: 14px;
   letter-spacing: 0.02em;
-  color: #ff453a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Added to match deleteSectionButton */
 }
 
 .deleteButton.darkTheme {
+  background: #2c2c2e; /* Changed to match deleteSectionButton.darkTheme */
   color: #ff453a;
+}
+
+.deleteButton:hover {
+  background: #f5f5f5; /* Added to match deleteSectionButton:hover */
+}
+
+.deleteButton.darkTheme:hover {
+  background: #3a3a3c; /* Added to match deleteSectionButton.darkTheme:hover */
+}
+
+.deleteSectionButton {
+  width: 100%; /* Changed to auto for right alignment */
+  padding: 13.5px 16px;
+  margin-top: 16px; /* Reduced for tighter spacing below headers */
+  margin-bottom: 24px;
+  margin-left: auto; /* Aligns button to the right */
+  border-radius: 12px;
+  background: #ffffff;
+  border: none;
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-left: auto;
+}
+
+.deleteSectionButton.darkTheme {
+  background: #2c2c2e;
+  color: #ff453a;
+}
+
+.deleteSectionButton:hover {
+  background: #f5f5f5;
+}
+
+.deleteSectionButton.darkTheme:hover {
+  background: #3a3a3c;
 }
 
 .searchContainer {
   position: relative;
   gap: 16px;
   margin: 16px 0;
+  flex: 0 0 auto;
 }
 
 .searchIcon {
@@ -478,6 +549,7 @@
   margin: 16px 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  flex: 0 0 auto;
 }
 
 .sectionTitle.darkTheme {
@@ -497,6 +569,7 @@
   transition: background 0.2s ease;
   margin-top: 12px;
   width: 100%;
+  flex: 0 0 auto;
 }
 
 .confirmButton.darkTheme {

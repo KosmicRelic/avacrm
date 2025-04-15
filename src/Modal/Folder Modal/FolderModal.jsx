@@ -191,14 +191,12 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
           ))
         )}
       </div>
-      <div className={`${styles.deleteFolder} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        <button
+        {isEditMode && <button
           onClick={handleDeleteFolder}
           className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
         >
           Delete Folder
-        </button>
-      </div>
+        </button>}
     </div>
   );
 };

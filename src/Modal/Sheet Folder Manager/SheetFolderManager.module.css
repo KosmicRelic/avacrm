@@ -155,6 +155,7 @@
   border-radius: 12px; /* Match item border-radius for overflow */
   background: transparent;
   overflow: hidden; /* Ensure rounded corners are visible */
+  margin-bottom: 20px;
 }
 
 .headerList.darkTheme {
