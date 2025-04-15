@@ -1,12 +1,12 @@
 import { useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import styles from "./SheetModal.module.css";
+import styles from "./EditSheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaEye, FaEyeSlash, FaThumbtack } from "react-icons/fa";
 import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
 
-const SheetModal = ({
+const EditSheetsModal = ({
   isEditMode = false,
   tempData,
   setTempData,
@@ -329,7 +329,7 @@ const SheetModal = ({
   );
 };
 
-SheetModal.propTypes = {
+EditSheetsModal.propTypes = {
   isEditMode: PropTypes.bool,
   tempData: PropTypes.shape({
     sheetName: PropTypes.string,
@@ -343,10 +343,10 @@ SheetModal.propTypes = {
   handleClose: PropTypes.func,
 };
 
-SheetModal.defaultProps = {
+EditSheetsModal.defaultProps = {
   isEditMode: false,
   sheets: { allSheets: [] },
   handleClose: null,
 };
 
-export default SheetModal;
+export default EditSheetsModal;

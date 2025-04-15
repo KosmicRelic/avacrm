@@ -10,7 +10,7 @@ import { MainContext } from "../Contexts/MainContext";
 import { CgArrowsExchangeAlt } from "react-icons/cg";
 import { BiSolidSpreadsheet } from "react-icons/bi";
 
-const SheetTemplate = ({
+const Sheets = ({
   headers,
   rows,
   sheets,
@@ -529,7 +529,7 @@ const SheetTemplate = ({
   );
 };
 
-SheetTemplate.propTypes = {
+Sheets.propTypes = {
   headers: PropTypes.arrayOf(
     PropTypes.shape({
       key: PropTypes.string.isRequired,
@@ -558,4 +558,4 @@ SheetTemplate.propTypes = {
   onOpenFolderModal: PropTypes.func.isRequired,
 };
 
-export default SheetTemplate;
+export default Sheets;

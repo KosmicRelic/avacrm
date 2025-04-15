@@ -1,13 +1,13 @@
 import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import styles from "./SheetsModal.module.css";
+import styles from "./ReOrderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { IoArrowBack, IoChevronForward } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
 import { BiSolidSpreadsheet } from "react-icons/bi";
 
-const SheetsModal = ({ sheets, tempData, setTempData }) => {
+const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const { isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
@@ -346,7 +346,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
   );
 };
 
-SheetsModal.propTypes = {
+ReOrderModal.propTypes = {
   sheets: PropTypes.shape({
     structure: PropTypes.arrayOf(
       PropTypes.oneOfType([
@@ -364,4 +364,4 @@ SheetsModal.propTypes = {
   setTempData: PropTypes.func.isRequired,
 };
 
-export default SheetsModal;
+export default ReOrderModal;

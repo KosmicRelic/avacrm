@@ -1,11 +1,11 @@
 import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import styles from "./SheetFolderManager.module.css";
+import styles from "./CreateSheetsAndFolders.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa"; // Added icons
 
-const SheetFolderManager = ({
+const CreateSheetsAndFolders = ({
   tempData,
   setTempData,
   sheets,
@@ -321,7 +321,7 @@ const SheetFolderManager = ({
   );
 };
 
-SheetFolderManager.propTypes = {
+CreateSheetsAndFolders.propTypes = {
   tempData: PropTypes.shape({
     sheets: PropTypes.object,
   }).isRequired,
@@ -338,4 +338,4 @@ SheetFolderManager.propTypes = {
   handleClose: PropTypes.func.isRequired,
 };
 
-export default SheetFolderManager;
+export default CreateSheetsAndFolders;

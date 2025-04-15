@@ -6,14 +6,14 @@ import FilterModal from "./Modal/FilterModal/FilterModal";
 import HeadersModal from "./Modal/HeadersModal/HeaderModal";
 import { MainContext } from "./Contexts/MainContext";
 import styles from "./App.module.css";
-import SheetModal from "./Modal/SheetModal/SheetModal";
+import EditSheetsModal from "./Modal/Edit Sheets Modal/EditSheetsModal";
 import useModal from "./Modal/Hooks/UseModal";
 import useSheets from "./Modal/Hooks/UseSheets";
 import Modal from "./Modal/Modal";
-import SheetsModal from "./Modal/Sheets Modal/SheetsModal";
+import ReOrderModal from "./Modal/Re Order Modal/ReOrderModal";
 import ProfileModal from "./Profile Modal/ProfileModal";
 import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
-import SheetFolderManager from "./Modal/Sheet Folder Manager/SheetFolderManager";
+import CreateSheetsAndFolders from "./Modal/Create Sheets And Folders/CreateSheetsAndFolders";
 import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
 import FolderOperations from "./Modal/Folder Modal/FolderModal";
 
@@ -396,7 +396,7 @@ function App() {
     switch (activeModal.type) {
       case "sheet":
         return (
-          <SheetModal
+          <EditSheetsModal
             isEditMode={isSheetModalEditMode}
             tempData={activeModal.data || {
               sheetName: isSheetModalEditMode ? activeSheetName : "",
@@ -436,7 +436,7 @@ function App() {
         );
       case "sheets":
         return (
-          <SheetsModal
+          <ReOrderModal
             sheets={sheets || { structure: [] }}
             tempData={activeModal.data || { newOrder: sheets?.structure || [] }}
             setTempData={(newData) =>
@@ -466,7 +466,7 @@ function App() {
         );
       case "sheetFolder":
         return (
-          <SheetFolderManager
+          <CreateSheetsAndFolders
             tempData={activeModal.data || { sheets }}
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
