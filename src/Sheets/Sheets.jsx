@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, useContext } from "react";
 import PropTypes from "prop-types";
 import styles from "./Sheets.module.css";
 import RowComponent from "./Row Template/RowComponent";
@@ -6,7 +6,6 @@ import CardsEditor from "./Cards Editor/CardsEditor";
 import { IoCloseCircle } from "react-icons/io5";
 import { FaFolder } from "react-icons/fa";
 import { MdFilterAlt } from "react-icons/md";
-import { CgArrowsExchangeAlt } from "react-icons/cg";
 import { MainContext } from "../Contexts/MainContext";
 
 const SheetTemplate = ({
@@ -372,208 +371,196 @@ const SheetTemplate = ({
                   <button
                     className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={() => handleMoveOrCopy("copy")}
-                  >
+                    >
                     Copy
-                  </button>
-                  <button
+                    </button>
+                    <button
                     className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={() => {
-                      if (window.confirm("Are you sure you want to delete the selected cards? This action cannot be undone.")) {
-                        handleDeleteSelected();
-                      }
+                    if (window.confirm("Are you sure you want to delete the selected cards? This action cannot be undone.")) {
+                    handleDeleteSelected();
+                    }
                     }}
-                  >
-                    Delete
-                  </button>
-                  {!isPrimarySheet && (
-                    <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
-                          handleRemoveSelected();
-                        }
-                      }}
                     >
-                      Remove
+                    Delete
                     </button>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
-        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          {visibleHeaders.map((header) => (
-            <div key={header.key} className={styles.headerCell}>
-              {header.name}
-            </div>
-          ))}
-        </div>
-        <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <RowComponent
-            rowData={{ id: "Add New Card", isAddNew: true }}
-            headerNames={visibleHeaders.map((h) => h.key)}
-            onClick={() => handleRowClick({ isAddNew: true })}
-            isSelected={false}
-          />
-          {finalRows.length > 0 ? (
-            finalRows.map((rowData, rowIndex) => (
-              <RowComponent
-                key={rowIndex}
-                rowData={rowData}
-                headerNames={visibleHeaders.map((h) => h.key)}
-                onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData.id || rowData)}
-              />
-            ))
-          ) : (
-            <div className={styles.noResults}>No results found</div>
-          )}
-        </div>
-      </div>
-      <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
-        <button className={styles.editHeaderButton} onClick={onEditSheet}>
-          Edit
-        </button>
-        <button
-          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-          onClick={onOpenSheetsModal}
-        >
-          <CgArrowsExchangeAlt />
-        </button>
-        {sheets.structure.map((item, index) =>
-          item.folderName ? (
-            <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
-              <button
-                className={`${styles.tabButton} ${
-                  openFolder === item.folderName ? styles.activeFolder : ""
-                } ${isDarkTheme ? styles.darkTheme : ""}`}
-                data-folder-name={item.folderName}
-                onClick={() => toggleFolder(item.folderName)}
-              >
-                <FaFolder className={styles.folderIcon} />
-                {item.folderName}
-                {openFolder === item.folderName && (
-                  <span className={styles.folderSheets}>
+                    {!isPrimarySheet && (
+                    <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => {
+                    if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
+                    handleRemoveSelected();
+                    }
+                    }}
+                    >
+                    Remove
+                    </button>
+                    )}
+                    </>
+                    )}
+                    </>
+                    )}
+                    </div>
+                    </div>
+                    <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
+                    <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    {visibleHeaders.map((header) => (
+                    <div key={header.key} className={styles.headerCell}>
+                    {header.name}
+                    </div>
+                    ))}
+                    </div>
+                    <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <RowComponent
+                    rowData={{ id: "Add New Card", isAddNew: true }}
+                    headerNames={visibleHeaders.map((h) => h.key)}
+                    onClick={() => handleRowClick({ isAddNew: true })}
+                    isSelected={false}
+                    />
+                    {finalRows.length > 0 ? (
+                    finalRows.map((rowData, rowIndex) => (
+                    <RowComponent
+                    key={rowIndex}
+                    rowData={rowData}
+                    headerNames={visibleHeaders.map((h) => h.key)}
+                    onClick={() => handleRowSelect(rowData)}
+                    isSelected={selectedRowIds.includes(rowData.id || rowData)}
+                    />
+                    ))
+                    ) : (
+                    <div className={styles.noResults}>No results found</div>
+                    )}
+                    </div>
+                    </div>
+                    <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
+                    <button className={styles.editHeaderButton} onClick={onEditSheet}>
+                    Edit
+                    </button>
+                    {sheets.structure.map((item, index) =>
+                    item.folderName ? (
+                    <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+                    <button
+                    className={`${styles.tabButton} ${
+                    openFolder === item.folderName ? styles.activeFolder : ""
+                    } ${isDarkTheme ? styles.darkTheme : ""}`}
+                    data-folder-name={item.folderName}
+                    onClick={() => toggleFolder(item.folderName)}
+                    >
+                    <FaFolder className={styles.folderIcon} />
+                    {item.folderName}
+                    {openFolder === item.folderName && (
+                    <span className={styles.folderSheets}>
                     {" > "}
                     {item.sheets.map((sheetName, idx) => (
-                      <span key={`inline-sheet-${sheetName}-${idx}`}>
-                        <span
-                          className={`${styles.inlineSheet} ${
-                            sheetName === activeSheetName ? styles.activeInlineSheet : ""
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSheetClick(sheetName);
-                          }}
-                        >
-                          {sheetName}
-                        </span>
-                        {idx < item.sheets.length - 1 && " | "}
-                      </span>
+                    <span key={`inline-sheet-${sheetName}-${idx}`}>
+                    <span
+                    className={`${styles.inlineSheet} ${
+                    sheetName === activeSheetName ? styles.activeInlineSheet : ""
+                    }`}
+                    onClick={(e) => {
+                    e.stopPropagation();
+                    handleSheetClick(sheetName);
+                    }}
+                    >
+                    {sheetName}
+                    </span>
+                    {idx < item.sheets.length - 1 && " | "}
+                    </span>
                     ))}
-                  </span>
-                )}
-                {openFolder !== item.folderName && item.sheets.includes(activeSheetName) && (
-                  <span className={styles.folderPath}> {` > ${activeSheetName}`}</span>
-                )}
-              </button>
-            </div>
-          ) : (
-            !folderSheets.includes(item.sheetName) && (
-              <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
-                <button
-                  className={`${styles.tabButton} ${
+                    </span>
+                    )}
+                    {openFolder !== item.folderName && item.sheets.includes(activeSheetName) && (
+                    <span className={styles.folderPath}> {` > ${activeSheetName}`}</span>
+                    )}
+                    </button>
+                    </div>
+                    ) : (
+                    !folderSheets.includes(item.sheetName) && (
+                    <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
+                    <button
+                    className={`${styles.tabButton} ${
                     item.sheetName === activeSheetName ? styles.activeTab : ""
-                  } ${isDarkTheme ? styles.darkTheme : ""}`}
-                  data-sheet-name={item.sheetName}
-                  onClick={() => handleSheetClick(item.sheetName)}
-                >
-                  {item.sheetName}
-                </button>
-              </div>
-            )
-          )
-        )}
-        <button
-          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-          onClick={onOpenSheetFolderModal}
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
+                    } ${isDarkTheme ? styles.darkTheme : ""}`}
+                    data-sheet-name={item.sheetName}
+                    onClick={() => handleSheetClick(item.sheetName)}
+                    >
+                    {item.sheetName}
+                    </button>
+                    </div>
+                    )
+                    )
+                    )}
+                    </div>
+                    </div>
+                    );
 
-  return (
-    <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {TableContent}
-        {isMobile && isEditorOpen && (
-          <div
-            className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
-          >
-            <CardsEditor
-              key={selectedRow?.id || Date.now()}
-              onClose={handleEditorClose}
-              onSave={handleEditorSave}
-              initialRowData={selectedRow}
-              startInEditMode={!!selectedRow}
-              preSelectedSheet={activeSheetName}
-            />
-          </div>
-        )}
-      </div>
-      {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          {isEditorOpen ? (
-            <CardsEditor
-              key={selectedRow?.id || Date.now()}
-              onClose={handleEditorClose}
-              onSave={handleEditorSave}
-              initialRowData={selectedRow}
-              startInEditMode={!!selectedRow}
-              preSelectedSheet={activeSheetName}
-            />
-          ) : (
-            <div className={styles.placeholder}>
-              <p>Select a row to show its data</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+                    return (
+                    <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    {TableContent}
+                    {isMobile && isEditorOpen && (
+                    <div
+                    className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
+                    >
+                    <CardsEditor
+                    key={selectedRow?.id || Date.now()}
+                    onClose={handleEditorClose}
+                    onSave={handleEditorSave}
+                    initialRowData={selectedRow}
+                    startInEditMode={!!selectedRow}
+                    preSelectedSheet={activeSheetName}
+                    />
+                    </div>
+                    )}
+                    </div>
+                    {!isMobile && (
+                    <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    {isEditorOpen ? (
+                    <CardsEditor
+                    key={selectedRow?.id || Date.now()}
+                    onClose={handleEditorClose}
+                    onSave={handleEditorSave}
+                    initialRowData={selectedRow}
+                    startInEditMode={!!selectedRow}
+                    preSelectedSheet={activeSheetName}
+                    />
+                    ) : (
+                    <div className={styles.placeholder}>
+                    <p>Select a row to show its data</p>
+                    </div>
+                    )}
+                    </div>
+                    )}
+                    </div>
+                    );
+                    };
 
-SheetTemplate.propTypes = {
-  headers: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.string,
-      visible: PropTypes.bool,
-      hidden: PropTypes.bool,
-    })
-  ).isRequired,
-  rows: PropTypes.array.isRequired,
-  sheets: PropTypes.shape({
-    allSheets: PropTypes.array.isRequired,
-    structure: PropTypes.array.isRequired,
-  }).isRequired,
-  setSheets: PropTypes.func.isRequired,
-  activeSheetName: PropTypes.string,
-  onSheetChange: PropTypes.func.isRequired,
-  onEditSheet: PropTypes.func.isRequired,
-  onFilter: PropTypes.func.isRequired,
-  onRowClick: PropTypes.func.isRequired,
-  onCardSave: PropTypes.func.isRequired,
-  onCardDelete: PropTypes.func.isRequired,
-  onOpenSheetsModal: PropTypes.func.isRequired,
-  onOpenTransportModal: PropTypes.func.isRequired,
-  onOpenSheetFolderModal: PropTypes.func.isRequired,
-};
+                    SheetTemplate.propTypes = {
+                    headers: PropTypes.arrayOf(
+                    PropTypes.shape({
+                    key: PropTypes.string.isRequired,
+                    name: PropTypes.string.isRequired,
+                    type: PropTypes.string,
+                    visible: PropTypes.bool,
+                    hidden: PropTypes.bool,
+                    })
+                    ).isRequired,
+                    rows: PropTypes.array.isRequired,
+                    sheets: PropTypes.shape({
+                    allSheets: PropTypes.array.isRequired,
+                    structure: PropTypes.array.isRequired,
+                    }).isRequired,
+                    setSheets: PropTypes.func.isRequired,
+                    activeSheetName: PropTypes.string,
+                    onSheetChange: PropTypes.func.isRequired,
+                    onEditSheet: PropTypes.func.isRequired,
+                    onFilter: PropTypes.func.isRequired,
+                    onRowClick: PropTypes.func.isRequired,
+                    onCardSave: PropTypes.func.isRequired,
+                    onCardDelete: PropTypes.func.isRequired,
+                    onOpenSheetsModal: PropTypes.func.isRequired,
+                    onOpenTransportModal: PropTypes.func.isRequired,
+                    onOpenSheetFolderModal: PropTypes.func.isRequired,
+                    };
 
-export default SheetTemplate;
+                    export default SheetTemplate;

@@ -132,7 +132,7 @@
 }
 
 .section {
-  flex: 1;
+  margin-bottom: 20px;
 }
 
 .section h3 {

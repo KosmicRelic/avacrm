@@ -1,25 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./ProfileModal.module.css";
-import { FaAddressCard } from "react-icons/fa";
+import { FaAddressCard, FaFolder } from "react-icons/fa";
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
+import { CgArrowsExchangeAlt } from "react-icons/cg";
 
-const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption, onOpenCardsTemplateModal }) => {
+const ProfileModal = ({
+  isOpen,
+  onClose,
+  onOpenHeadersModal,
+  setActiveOption,
+  onOpenCardsTemplateModal,
+  onOpenSheetsModal,
+  onOpenSheetFolderModal,
+  onOpenFolderOperationsModal,
+}) => {
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      setIsAnimating(true); // Start fade-in and slide-in when opened
+      setIsAnimating(true);
     }
   }, [isOpen]);
 
   const handleClose = () => {
-    setIsAnimating(false); // Trigger fade-out and slide-out
+    setIsAnimating(false);
     setTimeout(() => {
-      onClose(); // Call onClose after animation completes
-    }, 400); // Match 0.4s animation duration
+      onClose();
+    }, 400);
   };
 
   const handleBackgroundClick = (e) => {
@@ -34,10 +44,22 @@ const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption, on
   };
 
   const handleCardsClick = () => {
-    handleButtonClick(onOpenCardsTemplateModal); // Open CardsTemplate modal instead of setting activeOption
+    handleButtonClick(onOpenCardsTemplateModal);
   };
 
-  if (!isOpen && !isAnimating) return null; // Don’t render when closed and not animating
+  const handleSheetsOrderClick = () => {
+    handleButtonClick(onOpenSheetsModal);
+  };
+
+  const handleSheetFolderClick = () => {
+    handleButtonClick(onOpenSheetFolderModal);
+  };
+
+  const handleFolderOperationsClick = () => {
+    handleButtonClick(onOpenFolderOperationsModal);
+  };
+
+  if (!isOpen && !isAnimating) return null;
 
   return (
     <div
@@ -72,6 +94,30 @@ const ProfileModal = ({ isOpen, onClose, onOpenHeadersModal, setActiveOption, on
           >
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
+          </button>
+        </div>
+        <div className={styles.section}>
+          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Sheets</h3>
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleSheetFolderClick}
+          >
+            <FaFolder size={16} style={{ marginRight: "8px" }} />
+            Create Sheets & Folders
+          </button>
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleFolderOperationsClick}
+          >
+            <FaFolder size={16} style={{ marginRight: "8px" }} />
+            Manage Folders
+          </button>
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleSheetsOrderClick}
+          >
+            <CgArrowsExchangeAlt size={16} style={{ marginRight: "8px" }} />
+            Re-order Sheet Tabs
           </button>
         </div>
       </div>

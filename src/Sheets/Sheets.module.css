@@ -210,61 +210,6 @@
   color: #0A84FF;
 }
 
-.addTabButton {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
-}
-
-.addTabButton.darkTheme {
-  color: #0A84FF;
-  background: rgba(10, 132, 255, 0.2);
-}
-
-.addTabButton:hover {
-  background: rgba(0, 122, 255, 0.2);
-}
-
-.addTabButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.3);
-}
-
-.orderButton {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  height: 32px;
-  color: #6e6e73;
-  background: rgba(245, 245, 247, 0.9);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.orderButton.darkTheme {
-  color: rgb(235, 235, 245);
-  background: rgba(58, 58, 60, 0.9);
-}
-
-.orderButton:hover {
-  background: rgba(229, 229, 234, 0.9);
-}
-
-.orderButton.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.9);
-  color: #0A84FF;
-}
-
 .folderSheets {
   margin-left: 6px;
   font-size: 14px;
@@ -673,7 +618,7 @@
 
 .selectButton {
   border: none;
-  padding: 8px 6px; /* Adjusted padding to match editHeaderButton */
+  padding: 0px; /* Adjusted padding to match editHeaderButton */
   cursor: pointer;
   transition: transform 0.1s ease, color 0.3s ease;
   color: #007aff;
@@ -808,7 +753,7 @@
   animation: jiggle 0.2s infinite;
 }
 
-.buttonGroup{
+.buttonGroup {
   display: flex;
   flex-direction: row;
   gap: 8px;
@@ -881,7 +826,7 @@
     max-width: 320px;
   }
 
-  .buttonGroup{
+  .buttonGroup {
     max-width: 300px;
   }
 }

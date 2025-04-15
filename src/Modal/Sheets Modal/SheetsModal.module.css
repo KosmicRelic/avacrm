@@ -24,6 +24,7 @@
 
 .sheetItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.12); /* Dark mode */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
 }
 
 .sheetItem:last-child {

@@ -15,6 +15,7 @@ import ProfileModal from "./Profile Modal/ProfileModal";
 import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
 import SheetFolderManager from "./Modal/Sheet Folder Manager/SheetFolderManager";
 import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
+import FolderOperations from "./Modal/Folder Operations/FolderOperations";
 
 function App() {
   const {
@@ -290,6 +291,16 @@ function App() {
     sheetFolderModal.open();
   }, [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]);
 
+  const onOpenFolderOperationsModal = useCallback(() => {
+    setActiveModal({
+      type: "folderOperations",
+      data: {
+        sheets,
+      },
+    });
+    sheetFolderModal.open();
+  }, [sheetFolderModal, sheets]);
+
   const handleModalClose = useCallback(
     (options = {}) => {
       setActiveModal(null);
@@ -417,6 +428,16 @@ function App() {
             handleClose={handleModalClose}
           />
         );
+      case "folderOperations":
+        return (
+          <FolderOperations
+            tempData={activeModal.data || { sheets }}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({ ...prev, data: newData }))
+            }
+            handleClose={handleModalClose}
+          />
+        );
       default:
         console.warn("Unknown modal type in renderModalContent:", activeModal.type);
         return null;
@@ -456,7 +477,9 @@ function App() {
           <Modal
             onClose={handleModalClose}
             onSave={
-              activeModal.type !== "transport" && activeModal.type !== "sheetFolder"
+              activeModal.type !== "transport" &&
+              activeModal.type !== "sheetFolder" &&
+              activeModal.type !== "folderOperations"
                 ? () => handleModalSave(activeModal.type, activeModal.data)
                 : undefined
             }
@@ -472,12 +495,17 @@ function App() {
           onOpenHeadersModal={onManageHeaders}
           setActiveOption={setActiveOption}
           onOpenCardsTemplateModal={onOpenCardsTemplateModal}
+          onOpenSheetsModal={onOpenSheetsModal}
+          onOpenSheetFolderModal={onOpenSheetFolderModal}
+          onOpenFolderOperationsModal={onOpenFolderOperationsModal}
         />
       </div>
     </div>
   );
 }
 
-App.propTypes = {};
+App.propTypes = {
+  // Define prop types if needed
+};
 
 export default App;
