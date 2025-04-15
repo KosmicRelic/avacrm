@@ -38,7 +38,8 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
         isClickOutsideEnabled &&
         modalRef.current &&
         !modalRef.current.contains(event.target) &&
-        currentStep === 1
+        currentStep === 1 &&
+        modalConfig.allowClose !== false // Respect allowClose
       ) {
         handleClose();
       }
@@ -49,7 +50,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
       clearTimeout(timer);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [currentStep, isClickOutsideEnabled, handleClose]);
+  }, [currentStep, isClickOutsideEnabled, handleClose, modalConfig.allowClose]);
 
   if (!modalConfig) {
     return null;

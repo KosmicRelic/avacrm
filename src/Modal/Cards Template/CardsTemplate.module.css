@@ -90,6 +90,10 @@
   font-size: 14px;
   letter-spacing: 0.02em;
   color: #1d1d1f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 
 .templateButton.darkTheme {
@@ -160,9 +164,8 @@
   padding: 13.5px 16px;
   border: none;
   border-radius: 12px;
-  background: #ffffff;
+  background: transparent;
   box-sizing: border-box;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   letter-spacing: 0.02em;
   color: #1d1d1f;
   flex: 0 0 auto;
@@ -178,7 +181,7 @@
 .searchInput.darkTheme,
 .sectionInput.darkTheme {
   color: #ffffff;
-  background: #2c2c2e;
+  background: transparent;
 }
 
 .sectionInput:focus {
@@ -194,12 +197,19 @@
 }
 
 .sectionInput {
-  padding: 10px 12px;
+  padding: 0;
   margin: 0;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 550;
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
+  flex-grow: 1;
+}
+
+.sectionName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .keyItem {
@@ -266,16 +276,10 @@
   position: relative;
 }
 
-.customCheckbox.darkTheme {
-  /* No border needed, handled by icon */
-}
-
-.customCheckbox.checked {
-  /* Handled by FaRegCheckCircle */
-}
-
-.customCheckbox.checked.darkTheme {
-  /* Handled by FaRegCheckCircle */
+.customCheckbox input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 .headerName {
@@ -356,57 +360,59 @@
   position: relative;
 }
 
-.selectCell {
+.chevronContainer {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 14px 12px;
 }
 
-.selectCell.selectMode {
-  width: 18px;
-  padding: 12px;
+.chevronIcon {
+  font-size: 16px;
+  color: #000;
+  margin-left: 6px;
+  margin-right: 12px;
+  transition: color 0.3s ease;
+  vertical-align: middle;
 }
 
-.selectIcon {
-  color: #6e6e73;
-  cursor: pointer;
-  transition: color 0.2s ease, transform 0.1s ease;
+.chevronIcon.darkTheme {
+  color: #fff;
 }
 
-.selectIcon.darkTheme {
-  color: #6e6e73;
-}
-
-.selectIcon:hover {
+.templateButton:hover .chevronIcon {
   color: #007aff;
+}
+
+.templateButton.darkTheme:hover .chevronIcon {
+  color: #0a84ff;
+}
+
+.removeIcon {
+  color: #ff453a;
+  cursor: pointer;
+  margin-left: 6px;
+  margin-right: 12px;
+  font-size: 18px;
+  transition: color 0.3s ease, transform 0.2s ease;
+  vertical-align: middle;
+}
+
+.removeIcon.darkTheme {
+  color: #ff453a;
+}
+
+.removeIcon:hover {
+  color: #cc2e26;
   transform: scale(1.1);
 }
 
-.selectIcon.darkTheme:hover {
-  color: #0a84ff;
-}
-
-.selectIcon.selected {
-  color: #007aff;
-}
-
-.selectIcon.darkTheme.selected {
-  color: #0a84ff;
-}
-
-.selectedRow {
-  background: rgba(0, 122, 255, 0.25);
-}
-
-.selectedRow.darkTheme {
-  background: rgba(10, 132, 255, 0.35);
+.removeIcon.darkTheme:hover {
+  color: #d83a34;
 }
 
 .removeButton {
   position: absolute;
-  right: 1em;
-  background: #ff3b30;
+  right: 0em;
+  background: #ff453a;
   color: white;
   border: none;
   width: 20px;
@@ -444,7 +450,7 @@
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #ff3b30;
+  color: #ff453a;
 }
 
 .deleteButton.darkTheme {

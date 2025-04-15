@@ -16,11 +16,7 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
   const folder = sheets.structure.find((item) => item.folderName === folderName);
   const folderSheets = folder ? folder.sheets : [];
 
-  // Initialize displayedSheets with all folder sheets
-  useEffect(() => {
-    setDisplayedSheets(folderSheets);
-  }, [folderSheets]);
-
+  // Move useCallback hooks before useEffect
   const handleRemoveSheets = useCallback(() => {
     if (selectedSheets.length === 0) {
       setIsEditMode(false);
@@ -43,74 +39,6 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
       setSelectedSheets([]);
     }
   }, [selectedSheets, folderName, setTempData]);
-
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      const editButton = {
-        label: "Edit",
-        onClick: () => {
-          setIsEditMode(true);
-        },
-      };
-
-      registerModalSteps({
-        steps: [
-          {
-            title: folderName,
-            rightButton: null,
-            leftButton: editButton,
-          },
-        ],
-      });
-
-      setModalConfig({
-        showTitle: true,
-        showDoneButton: true,
-        showBackButton: false,
-        title: folderName,
-        rightButton: null,
-        leftButton: editButton,
-      });
-
-      hasInitialized.current = true;
-    }
-  }, [folderName, registerModalSteps, setModalConfig]);
-
-  useEffect(() => {
-    if (isEditMode) {
-      setModalConfig((prev) => ({
-        ...prev,
-        showDoneButton: false,
-        leftButton: {
-          label: "Cancel",
-          onClick: () => {
-            setIsEditMode(false);
-            setSelectedSheets([]);
-            setTempData({});
-            // Reset displayedSheets to original folderSheets
-            setDisplayedSheets(folderSheets);
-          },
-        },
-        rightButton: {
-          label: "Remove",
-          onClick: handleRemoveSheets,
-          isActive: selectedSheets.length > 0,
-        },
-      }));
-    } else {
-      setModalConfig((prev) => ({
-        ...prev,
-        showDoneButton: true,
-        rightButton: null,
-        leftButton: {
-          label: "Edit",
-          onClick: () => {
-            setIsEditMode(true);
-          },
-        },
-      }));
-    }
-  }, [isEditMode, selectedSheets, setModalConfig, handleRemoveSheets, folderSheets]);
 
   const toggleSheetSelection = useCallback(
     (sheetName) => {
@@ -148,6 +76,84 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
     [isEditMode, onSheetSelect, handleClose, toggleSheetSelection]
   );
 
+  // Initialize displayedSheets with all folder sheets
+  useEffect(() => {
+    setDisplayedSheets(folderSheets);
+  }, [folderSheets]);
+
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      const editButton = {
+        label: "Edit",
+        onClick: () => {
+          setIsEditMode(true);
+        },
+      };
+
+      registerModalSteps({
+        steps: [
+          {
+            title: folderName,
+            rightButton: null,
+            leftButton: editButton,
+          },
+        ],
+      });
+
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: folderName,
+        rightButton: null,
+        leftButton: editButton,
+        allowClose: true,
+      });
+
+      hasInitialized.current = true;
+    }
+  }, [folderName, registerModalSteps, setModalConfig]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      setModalConfig((prev) => ({
+        ...prev,
+        showDoneButton: false,
+        allowClose: false, // Prevent click-outside closing
+        leftButton: {
+          label: "Cancel",
+          onClick: () => {
+            setIsEditMode(false);
+            setSelectedSheets([]);
+            setTempData({});
+            // Reset displayedSheets to original folderSheets
+            setDisplayedSheets(folderSheets);
+          },
+        },
+        rightButton: {
+          label: "Remove",
+          onClick: handleRemoveSheets,
+          isActive: selectedSheets.length > 0,
+          isRemove: true,
+          color: "red",
+        },
+      }));
+    } else {
+      setModalConfig((prev) => ({
+        ...prev,
+        showDoneButton: true,
+        allowClose: true, // Allow closing when not in edit mode
+        rightButton: null,
+        leftButton: {
+          label: "Edit",
+          onClick: () => {
+            setIsEditMode(true);
+          },
+        },
+      }));
+    }
+  }, [isEditMode, selectedSheets, setModalConfig, handleRemoveSheets, folderSheets]);
+
   return (
     <div className={`${styles.folderModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.sheetList}>
@@ -177,7 +183,9 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
                     />
                   </span>
                 )}
-                <span className={`${styles.sheetName} ${isDarkTheme?styles.darkTheme:""}`}>{sheetName}</span>
+                <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  {sheetName}
+                </span>
               </div>
             </div>
           ))
