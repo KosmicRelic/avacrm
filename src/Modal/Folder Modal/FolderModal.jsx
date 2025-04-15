@@ -21,8 +21,6 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
     setDisplayedSheets(folderSheets);
   }, [folderSheets]);
 
-  console.log("FolderModal rendering", { folderName, folderSheets, structure: sheets.structure });
-
   const handleRemoveSheets = useCallback(() => {
     if (selectedSheets.length === 0) {
       setIsEditMode(false);

@@ -3,12 +3,11 @@ import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaPlus, FaSearch } from "react-icons/fa";
-import { IoIosCheckmark } from "react-icons/io";
+import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
 import { BsDashCircle } from "react-icons/bs";
 
 const CardsTemplate = ({ tempData, setTempData }) => {
-  const { cardTemplates, setCardTemplates, headers, isDarkTheme } = useContext(MainContext);
+  const { cardTemplates, headers, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, goToStep, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
@@ -17,6 +16,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [selectedSections, setSelectedSections] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [draggedSectionIndex, setDraggedSectionIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
@@ -31,10 +31,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   useEffect(() => {
     const templatesChanged = JSON.stringify(currentCardTemplates) !== JSON.stringify(prevCardTemplatesRef.current);
     if (templatesChanged) {
-      setTempData({ currentCardTemplates });
+      setTempData({ currentCardTemplates, selectedSections });
       prevCardTemplatesRef.current = currentCardTemplates;
     }
-  }, [currentCardTemplates, setTempData]);
+  }, [currentCardTemplates, selectedSections, setTempData]);
 
   // Initialize modal steps
   useEffect(() => {
@@ -50,10 +50,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
             selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
               ? currentCardTemplates[selectedTemplateIndex].name || "New Template"
               : "New Template",
-          rightButton: () =>
-            selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
-              ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
-              : null,
+          rightButton: null,
         },
         {
           title: () =>
@@ -72,36 +69,93 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         showDoneButton: true,
         showBackButton: false,
         title: "Card Templates",
-        backButtonTitle: "",
         rightButton: null,
+        leftButton: null,
       });
     }
-  }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates]);
+  }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, currentCardTemplates]);
 
   // Update modal config based on step and state changes
   useEffect(() => {
-    setModalConfig((prev) => ({
-      ...prev,
-      title:
-        currentStep === 1
-          ? "Card Templates"
-          : currentStep === 2 && currentCardTemplates[selectedTemplateIndex]
-          ? currentCardTemplates[selectedTemplateIndex].name || "New Template"
-          : currentStep === 3 && currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]
-          ? currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
-          : prev.title,
-      rightButton:
-        currentStep === 2 && currentCardTemplates[selectedTemplateIndex]
-          ? { label: editMode ? "Done" : "Edit", onClick: toggleEditMode }
-          : null,
-      showDoneButton: currentStep === 1,
-      showBackButton: currentStep > 1,
-    }));
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig]);
+    if (currentStep === 2) {
+      setModalConfig((prev) => ({
+        ...prev,
+        title: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
+        showDoneButton: false,
+        showBackButton: false,
+        leftButton: {
+          label: editMode ? "Cancel" : "Back",
+          onClick: editMode
+            ? () => {
+                setEditMode(false);
+                setSelectedSections([]);
+              }
+            : () => goToStep(1),
+        },
+        rightButton: editMode
+          ? {
+              label: "Remove",
+              onClick: handleRemoveSections,
+              isActive: selectedSections.length > 0,
+              isRemove: true,
+            }
+          : {
+              label: "Edit",
+              onClick: () => setEditMode(true),
+              isActive: true,
+              isRemove: false,
+            },
+      }));
+    } else if (currentStep === 1) {
+      setModalConfig((prev) => ({
+        ...prev,
+        title: "Card Templates",
+        showDoneButton: true,
+        showBackButton: false,
+        leftButton: null,
+        rightButton: null,
+      }));
+    } else {
+      setModalConfig((prev) => ({
+        ...prev,
+        title:
+          currentStep === 3 && currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]
+            ? currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+            : prev.title,
+        showDoneButton: false,
+        showBackButton: true,
+        leftButton: null,
+        rightButton: null,
+      }));
+    }
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, selectedSections, currentCardTemplates, setModalConfig, goToStep]);
 
-  const toggleEditMode = useCallback(() => {
-    setEditMode((prev) => !prev);
+  const toggleSectionSelection = useCallback((sectionName) => {
+    setSelectedSections((prev) =>
+      prev.includes(sectionName) ? prev.filter((name) => name !== sectionName) : [...prev, sectionName]
+    );
   }, []);
+
+  const handleRemoveSections = useCallback(() => {
+    if (selectedSections.length === 0) {
+      setEditMode(false);
+      setSelectedSections([]);
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to remove the following section${selectedSections.length > 1 ? "s" : ""}: ${selectedSections.join(", ")}?`;
+    if (window.confirm(confirmMessage)) {
+      setCurrentCardTemplates((prev) => {
+        const newTemplates = [...prev];
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        currentTemplate.sections = currentTemplate.sections.filter((section) => !selectedSections.includes(section.name));
+        newTemplates[selectedTemplateIndex] = currentTemplate;
+        return newTemplates;
+      });
+      setEditMode(false);
+      setSelectedSections([]);
+    }
+  }, [selectedSections, selectedTemplateIndex]);
 
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
@@ -213,6 +267,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         if (existingIndex >= 0) {
           setSelectedTemplateIndex(existingIndex);
           setEditMode(false);
+          setSelectedSections([]);
           goToStep(2);
           return;
         }
@@ -221,6 +276,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setSelectedTemplateIndex(currentCardTemplates.length);
       setNewTemplateName("");
       setEditMode(false);
+      setSelectedSections([]);
       goToStep(2);
     },
     [currentCardTemplates, goToStep]
@@ -246,9 +302,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       const newTemplates = [...prev, newTemplate];
       setSelectedTemplateIndex(newTemplates.length - 1);
       setEditMode(false);
+      setSelectedSections([]);
       return newTemplates;
     });
-  }, [newTemplateName, currentCardTemplates]);
+    goToStep(2);
+  }, [newTemplateName, currentCardTemplates, goToStep]);
 
   const updateTemplateName = useCallback(
     (newName) => {
@@ -293,35 +351,20 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         const newTemplates = [...prev];
         const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
         if (
+          newName.trim() &&
           currentTemplate.sections.some(
-            (s, i) => i !== index && s.name.toLowerCase() === newName.toLowerCase()
+            (s, i) => i !== index && s.name.toLowerCase() === newName.trim().toLowerCase()
           )
         ) {
           alert(`Section name "${newName}" already exists. Please use a unique name.`);
           return prev;
         }
-        currentTemplate.sections[index].name = newName;
+        currentTemplate.sections[index].name = newName.trim();
         newTemplates[selectedTemplateIndex] = currentTemplate;
         return newTemplates;
       });
     },
     [selectedTemplateIndex]
-  );
-
-  const removeSection = useCallback(
-    (index) => {
-      const sectionName = currentCardTemplates[selectedTemplateIndex].sections[index].name;
-      if (window.confirm(`Are you sure you want to delete the "${sectionName}" section?`)) {
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-          currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
-          newTemplates[selectedTemplateIndex] = currentTemplate;
-          return newTemplates;
-        });
-      }
-    },
-    [selectedTemplateIndex, currentCardTemplates]
   );
 
   const handleEditSection = useCallback(
@@ -394,6 +437,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         const newTemplates = prev.filter((_, i) => i !== selectedTemplateIndex);
         setSelectedTemplateIndex(null);
         setEditMode(false);
+        setSelectedSections([]);
         goToStep(1);
         return newTemplates;
       });
@@ -454,18 +498,44 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                       {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
                         <div className={styles.sectionItem} key={index}>
                           {editMode && (
-                            <button
-                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              onClick={() => removeSection(index)}
+                            <div
+                              className={`${styles.selectCell} ${styles.selectMode} ${
+                                isDarkTheme ? styles.darkTheme : ""
+                              }`}
+                              onClick={() => toggleSectionSelection(section.name)}
                             >
-                              <BsDashCircle />
-                            </button>
+                              <div
+                                className={`${styles.selectIcon} ${
+                                  selectedSections.includes(section.name) ? styles.selected : ""
+                                } ${isDarkTheme ? styles.darkTheme : ""}`}
+                              >
+                                {selectedSections.includes(section.name) ? (
+                                  <FaRegCheckCircle size={18} />
+                                ) : (
+                                  <FaRegCircle size={18} />
+                                )}
+                              </div>
+                            </div>
                           )}
                           <button
-                            className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            className={`${styles.templateButton} ${
+                              selectedSections.includes(section.name) ? styles.selectedRow : ""
+                            } ${isDarkTheme ? styles.darkTheme : ""}`}
                             onClick={() => !editMode && handleEditSection(index)}
+                            disabled={editMode}
                           >
-                            {section.name}
+                            {editMode ? (
+                              <input
+                                type="text"
+                                value={section.name}
+                                onChange={(e) => updateSectionName(index, e.target.value)}
+                                className={`${styles.sectionInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                placeholder="Section Name"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              section.name
+                            )}
                           </button>
                         </div>
                       ))}
@@ -570,14 +640,23 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                                 : ""
                             } ${isDarkTheme ? styles.darkTheme : ""}`}
                           >
-                            <IoIosCheckmark
+                            <FaRegCircle
                               style={{
                                 color: currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                                  ? "#ffffff"
-                                  : "transparent",
+                                  ? "#007aff"
+                                  : "#6e6e73",
                               }}
                               size={18}
                             />
+                            {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) && (
+                              <FaRegCheckCircle
+                                style={{
+                                  color: "#007aff",
+                                  position: "absolute",
+                                }}
+                                size={18}
+                              />
+                            )}
                           </span>
                           <span className={styles.headerName}>{header.name}</span>
                           <span className={styles.headerType}>({header.type})</span>
@@ -601,14 +680,23 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                               : ""
                           } ${isDarkTheme ? styles.darkTheme : ""}`}
                         >
-                          <IoIosCheckmark
+                          <FaRegCircle
                             style={{
                               color: currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key)
-                                ? "#ffffff"
-                                : "transparent",
+                                ? "#007aff"
+                                : "#6e6e73",
                             }}
                             size={18}
                           />
+                          {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) && (
+                            <FaRegCheckCircle
+                              style={{
+                                color: "#007aff",
+                                position: "absolute",
+                              }}
+                              size={18}
+                            />
+                          )}
                         </span>
                         <span className={styles.headerName}>{header.name}</span>
                         <span className={styles.headerType}>({header.type})</span>
@@ -642,6 +730,7 @@ CardsTemplate.propTypes = {
         ),
       })
     ),
+    selectedSections: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
 };

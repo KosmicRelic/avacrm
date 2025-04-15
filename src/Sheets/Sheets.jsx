@@ -8,6 +8,7 @@ import { FaFolder } from "react-icons/fa";
 import { MdFilterAlt } from "react-icons/md";
 import { MainContext } from "../Contexts/MainContext";
 import { CgArrowsExchangeAlt } from "react-icons/cg";
+import { BiSolidSpreadsheet } from "react-icons/bi";
 
 const SheetTemplate = ({
   headers,
@@ -201,7 +202,6 @@ const SheetTemplate = ({
       const rowId = updatedRow.id;
       const newCardData = { ...updatedRow, id: rowId };
 
-      // Double-check the active sheet's rows directly from sheets
       const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
       const sheetRows = activeSheet ? activeSheet.rows : [];
 
@@ -250,8 +250,8 @@ const SheetTemplate = ({
 
   const handleRowSelect = useCallback(
     (rowData) => {
-      if (isSelectMode) {
-        const rowId = rowData.id || rowData;
+      if (isSelectMode && !rowData.isAddNew) {
+        const rowId = rowData.id;
         setSelectedRowIds((prev) =>
           prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
         );
@@ -261,6 +261,14 @@ const SheetTemplate = ({
     },
     [isSelectMode, handleRowClick]
   );
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedRowIds.length === finalRows.length) {
+      setSelectedRowIds([]);
+    } else {
+      setSelectedRowIds(finalRows.filter((row) => !row.isAddNew).map((row) => row.id));
+    }
+  }, [finalRows, selectedRowIds]);
 
   const handleMoveOrCopy = useCallback(
     (action) => {
@@ -309,22 +317,14 @@ const SheetTemplate = ({
   const TableContent = (
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <div className={styles.buttonGroup}>
+        <div className={styles.buttonGroup}>
           {!isSelectMode ? (
-            <>
-              <button
-                className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={handleSelectToggle}
-              >
-                Select
-              </button>
-              <button
-                className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={onFilter}
-              >
-                <MdFilterAlt size={20} />
-              </button>
-            </>
+            <button
+              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={onFilter}
+            >
+              <MdFilterAlt size={20} />
+            </button>
           ) : (
             <>
               <button
@@ -335,6 +335,14 @@ const SheetTemplate = ({
               </button>
               {selectedRowIds.length > 0 && (
                 <>
+                  <button
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={handleSelectAll}
+                  >
+                    {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
+                      ? "Deselect All"
+                      : "Select All"}
+                  </button>
                   {!isPrimarySheet && (
                     <button
                       className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -396,6 +404,9 @@ const SheetTemplate = ({
       </div>
       <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          {isSelectMode && (
+            <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
+          )}
           {visibleHeaders.map((header) => (
             <div key={header.key} className={styles.headerCell}>
               {header.name}
@@ -408,6 +419,9 @@ const SheetTemplate = ({
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={() => handleRowClick({ isAddNew: true })}
             isSelected={false}
+            isSelectMode={isSelectMode}
+            onSelect={handleSelectToggle}
+            onAddRow={() => handleRowClick({ isAddNew: true })}
           />
           {finalRows.length > 0 ? (
             finalRows.map((rowData, rowIndex) => (
@@ -416,7 +430,9 @@ const SheetTemplate = ({
                 rowData={rowData}
                 headerNames={visibleHeaders.map((h) => h.key)}
                 onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData.id || rowData)}
+                isSelected={selectedRowIds.includes(rowData.id)}
+                isSelectMode={isSelectMode}
+                onSelect={handleRowSelect}
               />
             ))
           ) : (
@@ -425,7 +441,7 @@ const SheetTemplate = ({
         </div>
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
-      <button
+        <button
           className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
           onClick={onOpenSheetsModal}
         >
@@ -461,6 +477,7 @@ const SheetTemplate = ({
                   data-sheet-name={item.sheetName}
                   onClick={() => handleSheetClick(item.sheetName)}
                 >
+                  <BiSolidSpreadsheet className={styles.folderIcon} />
                   {item.sheetName}
                 </button>
               </div>

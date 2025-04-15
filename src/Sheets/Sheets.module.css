@@ -575,8 +575,11 @@
   text-transform: uppercase;
 }
 
+.emptyHeaderCell {
+  width: 18px;
+}
+
 .bodyContainer {
-  width: max-content;
   min-width: 100%;
   background-color: white;
   transition: background 0.3s ease;
@@ -618,22 +621,23 @@
 
 .selectButton {
   border: none;
-  padding: 6px;
   cursor: pointer;
   transition: transform 0.1s ease, color 0.3s ease;
   color: #007aff;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  font-size: 16px; /* Match editHeaderButton */
-  font-weight: 400; /* Match editHeaderButton */
+  font-size: 16px;
+  font-weight: 400;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent; /* Match editHeaderButton */
+  background: transparent;
   border-radius: 10px;
+  margin: auto;
+  padding: 0;
 }
 
 .selectButton:hover {
-  transform: scale(1.05); /* Match editHeaderButton hover effect */
+  transform: scale(1.05);
 }
 
 .cancelButton {
@@ -673,6 +677,7 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+  white-space: nowrap;
 }
 
 .actionButton.darkTheme {
@@ -690,7 +695,7 @@
 
 .editHeaderButton {
   border: none;
-  padding: 8px 6px;
+  padding: 8px 0;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease;
   color: #007aff;
@@ -854,6 +859,10 @@
 
   .headerCell {
     width: 120px;
+  }
+
+  .emptyHeaderCell {
+    width: 18px;
   }
 
   .activeTab {

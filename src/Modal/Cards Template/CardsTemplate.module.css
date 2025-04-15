@@ -4,21 +4,21 @@
   height: 100vh;
   box-sizing: border-box;
   overflow: hidden;
- }
- 
- .templateWrapper.darkTheme {
+}
+
+.templateWrapper.darkTheme {
   background: transparent;
- }
- 
- .viewContainer {
+}
+
+.viewContainer {
   position: relative;
   width: 100%;
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
- }
- 
- .view {
+}
+
+.view {
   width: 100%;
   box-sizing: border-box;
   background: #f2f2f7;
@@ -28,17 +28,17 @@
   left: 0;
   height: 100%;
   overflow-y: auto;
- }
- 
- .view.darkTheme {
+}
+
+.view.darkTheme {
   background: #1c1c1e;
- }
- 
- .hidden {
+}
+
+.hidden {
   display: none;
- }
- 
- .addButton {
+}
+
+.addButton {
   padding: 12px 16px;
   margin-bottom: 24px;
   border-radius: 12px;
@@ -56,28 +56,28 @@
   justify-content: center;
   width: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
- }
- 
- .addButton.darkTheme {
+}
+
+.addButton.darkTheme {
   background: #2c2c2e;
   color: #0a84ff;
- }
- 
- .addButton:hover {
+}
+
+.addButton:hover {
   background: #f5f5f5;
- }
- 
- .addButton.darkTheme:hover {
+}
+
+.addButton.darkTheme:hover {
   background: #3a3a3c;
- }
- 
- .templateList {
+}
+
+.templateList {
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff00;
- }
- 
- .templateButton {
+}
+
+.templateButton {
   width: 100%;
   padding: 13.5px 16px;
   background: rgba(255, 255, 255, 0.95);
@@ -90,27 +90,40 @@
   font-size: 14px;
   letter-spacing: 0.02em;
   color: #1d1d1f;
- }
- 
- .templateButton.darkTheme {
+}
+
+.templateButton.darkTheme {
   background: rgba(44, 44, 46, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
- }
- 
- .templateButton:last-child {
+}
+
+.templateButton:last-child {
   border-bottom: none;
- }
- 
- .templateButton:hover {
+}
+
+.templateButton:hover {
   background: #f5f5f5;
- }
- 
- .templateButton.darkTheme:hover {
+}
+
+.templateButton.darkTheme:hover {
   background: #3a3a3c;
- }
- 
- .input {
+}
+
+.templateButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.templateButton:disabled:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.templateButton.darkTheme:disabled:hover {
+  background: rgba(44, 44, 46, 0.95);
+}
+
+.input {
   width: 100%;
   padding: 13.5px 16px;
   border: none;
@@ -125,23 +138,24 @@
   font-weight: 600;
   font-size: 14px;
   text-align: center;
- }
- 
- .input.darkTheme {
+}
+
+.input.darkTheme {
   color: #ffffff;
   background: #2c2c2e;
- }
- 
- .input:focus {
+}
+
+.input:focus {
   outline: none;
- }
- 
- .section {
+}
+
+.section {
   display: flex;
   flex-direction: column;
- }
- 
- .searchInput, .sectionInput {
+}
+
+.searchInput,
+.sectionInput {
   width: 100%;
   padding: 13.5px 16px;
   border: none;
@@ -155,30 +169,40 @@
   font-weight: 600;
   font-size: 14px;
   outline: none;
- }
- 
- .searchInput {
+}
+
+.searchInput {
   padding-left: 44px;
- }
- 
- .searchInput.darkTheme, .sectionInput.darkTheme {
+}
+
+.searchInput.darkTheme,
+.sectionInput.darkTheme {
   color: #ffffff;
   background: #2c2c2e;
- }
- 
- .sectionInput:focus {
+}
+
+.sectionInput:focus {
   outline: none;
- }
- 
- .sectionInput::placeholder {
+}
+
+.sectionInput::placeholder {
   color: #8e8e93;
- }
- 
- .sectionInput.darkTheme::placeholder {
+}
+
+.sectionInput.darkTheme::placeholder {
   color: #8e8e93;
- }
- 
- .keyItem {
+}
+
+.sectionInput {
+  padding: 10px 12px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 550;
+  text-align: left;
+}
+
+.keyItem {
   padding: 6px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
@@ -187,114 +211,111 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
- }
- 
- .keyItem.darkTheme {
+}
+
+.keyItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(44, 44, 46, 0.95);
- }
- 
- .section .keyItem:first-child {
+}
+
+.section .keyItem:first-child {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
- }
- 
- .section .keyItem:last-child {
+}
+
+.section .keyItem:last-child {
   border-bottom: none;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
- }
- 
- .keyItem:hover {
+}
+
+.keyItem:hover {
   background: #f5f5f5;
- }
- 
- .keyItem.darkTheme:hover {
+}
+
+.keyItem.darkTheme:hover {
   background: #3a3a3c;
- }
- 
- .keyItem.dragging {
+}
+
+.keyItem.dragging {
   background: rgba(0, 122, 255, 0.1);
   opacity: 0.7;
   transform: scale(1.02);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
- }
- 
- .keyItem.darkTheme.dragging {
+}
+
+.keyItem.darkTheme.dragging {
   background: rgba(10, 132, 255, 0.2);
- }
- 
- .headerContent {
+}
+
+.headerContent {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
   cursor: pointer;
- }
- 
- .customCheckbox {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #8e8e93;
-  border-radius: 50%;
+}
+
+.customCheckbox {
+  width: 18px;
+  height: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
- }
- 
- .customCheckbox.darkTheme {
-  border: 2px solid #8e8e93;
- }
- 
- .customCheckbox.checked {
-  background: #007aff;
-  border-color: #007aff;
- }
- 
- .customCheckbox.checked.darkTheme {
-  background: #0a84ff;
-  border-color: #0a84ff;
- }
- 
- .headerName {
+  position: relative;
+}
+
+.customCheckbox.darkTheme {
+  /* No border needed, handled by icon */
+}
+
+.customCheckbox.checked {
+  /* Handled by FaRegCheckCircle */
+}
+
+.customCheckbox.checked.darkTheme {
+  /* Handled by FaRegCheckCircle */
+}
+
+.headerName {
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
   color: #1d1d1f;
- }
- 
- .keyItem.darkTheme .headerName {
+}
+
+.keyItem.darkTheme .headerName {
   color: #ffffff;
- }
- 
- .headerType {
+}
+
+.headerType {
   font-size: 17px;
   font-weight: 400;
   color: #8e8e93;
- }
- 
- .keyItem.darkTheme .headerType {
+}
+
+.keyItem.darkTheme .headerType {
   color: #d0d0d0;
- }
- 
- .dragIcon {
+}
+
+.dragIcon {
   font-size: 18px;
   color: #8e8e93;
   cursor: grab;
   padding: 4px;
   user-select: none;
- }
- 
- .dragIcon.darkTheme {
+}
+
+.dragIcon.darkTheme {
   color: #8e8e93;
- }
- 
- .dragIcon:active {
+}
+
+.dragIcon:active {
   cursor: grabbing;
- }
- 
- .addSectionButton {
+}
+
+.addSectionButton {
   padding: 13.5px 16px;
   margin-top: 24px;
   margin-bottom: 24px;
@@ -313,30 +334,77 @@
   justify-content: center;
   width: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
- }
- 
- .addSectionButton.darkTheme {
+}
+
+.addSectionButton.darkTheme {
   background: #2c2c2e;
   color: #0a84ff;
- }
- 
- .addSectionButton:hover {
+}
+
+.addSectionButton:hover {
   background: #f5f5f5;
- }
- 
- .addSectionButton.darkTheme:hover {
+}
+
+.addSectionButton.darkTheme:hover {
   background: #3a3a3c;
- }
- 
- .sectionItem {
+}
+
+.sectionItem {
   display: flex;
   align-items: center;
   margin-bottom: 1px;
   position: relative;
- }
- 
- .removeButton {
-  position:absolute;
+}
+
+.selectCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+}
+
+.selectCell.selectMode {
+  width: 18px;
+  padding: 12px;
+}
+
+.selectIcon {
+  color: #6e6e73;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.selectIcon.darkTheme {
+  color: #6e6e73;
+}
+
+.selectIcon:hover {
+  color: #007aff;
+  transform: scale(1.1);
+}
+
+.selectIcon.darkTheme:hover {
+  color: #0a84ff;
+}
+
+.selectIcon.selected {
+  color: #007aff;
+}
+
+.selectIcon.darkTheme.selected {
+  color: #0a84ff;
+}
+
+.selectedRow {
+  background: rgba(0, 122, 255, 0.25);
+}
+
+.selectedRow.darkTheme {
+  background: rgba(10, 132, 255, 0.35);
+}
+
+.removeButton {
+  position: absolute;
   right: 1em;
   background: #ff3b30;
   color: white;
@@ -351,21 +419,21 @@
   justify-content: center;
   font-size: 16px;
   padding: 0;
- }
- 
- .removeButton.darkTheme {
+}
+
+.removeButton.darkTheme {
   background: #ff453a;
- }
- 
- .removeButton:hover {
+}
+
+.removeButton:hover {
   background: #cc2e26;
- }
- 
- .removeButton.darkTheme:hover {
+}
+
+.removeButton.darkTheme:hover {
   background: #d83a34;
- }
- 
- .deleteButton {
+}
+
+.deleteButton {
   width: 100%;
   padding: 13.5px 16px;
   background: transparent;
@@ -377,106 +445,40 @@
   font-size: 14px;
   letter-spacing: 0.02em;
   color: #ff3b30;
- }
- 
- .deleteButton.darkTheme {
-  color: #ff3b30;
- }
- 
- .searchContainer {
+}
+
+.deleteButton.darkTheme {
+  color: #ff453a;
+}
+
+.searchContainer {
   position: relative;
   gap: 16px;
   margin: 16px 0;
- }
- 
- .searchIcon {
+}
+
+.searchIcon {
   position: absolute;
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: #999;
- }
- 
- .sectionTitle {
+}
+
+.sectionTitle {
   font-size: 17px;
   font-weight: 600;
   color: #8e8e93;
   margin: 16px 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.02em;
- }
- 
- .sectionTitle.darkTheme {
-  color: #8e8e93;
- }
- 
- .createButton {
-  padding: 13.5px 16px;
-  margin-bottom: 24px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 0 0 auto;
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
- }
- 
- .createButton:hover {
-  background: #f5f5f5;
- }
- 
- .darkTheme .createButton {
-  background: #2c2c2e;
-  color: #0a84ff;
- }
- 
- .darkTheme .createButton:hover {
-  background: #3a3a3c;
- }
- 
- .backButton {
-  padding: 13.5px 16px;
-  margin-top: 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 0 0 auto;
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
- }
- 
- .backButton.darkTheme {
-  background: #2c2c2e;
-  color: #0a84ff;
- }
- 
- .backButton:hover {
-  background: #f5f5f5;
- }
- 
- .backButton.darkTheme:hover {
-  background: #3a3a3c;
- }
+}
 
- .confirmButton {
+.sectionTitle.darkTheme {
+  color: #8e8e93;
+}
+
+.confirmButton {
   padding: 8px 16px;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
   font-size: 15px;

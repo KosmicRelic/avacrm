@@ -114,7 +114,7 @@
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
-  line-height: 20px; /* Match checkbox height */
+  line-height: 20px; /* Match icon height */
   color: #1d1d1f; /* Light mode text */
   background: #ffffff; /* Light mode: white */
   box-sizing: border-box;
@@ -208,7 +208,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 20px; /* Match checkbox */
+  min-height: 20px; /* Match icon */
 }
 
 .headerNameType {
@@ -234,7 +234,7 @@
 .headerType {
   color: #6e6e73; /* Light mode */
   font-size: 14px;
-  line-height: 20px; /* Match checkbox */
+  line-height: 20px; /* Match icon */
   transition: color 0.3s ease;
 }
 
@@ -243,50 +243,32 @@
 }
 
 .customCheckbox {
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid #6e6e73; /* Light mode border, matches HeadersModal headerType */
-  border-radius: 50%; /* Circular checkbox */
+  color: #6e6e73; /* Light mode: matches RowComponent selectIcon */
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
   margin-right: 8px;
   flex-shrink: 0;
-  background: transparent;
-  transition: all 0.2s ease, border-color 0.3s ease, background 0.3s ease;
-  cursor: pointer;
 }
 
 .customCheckbox.darkTheme {
-  border-color: #8e8e93; /* Dark mode border, matches HeadersModal headerType.darkTheme */
-}
-
-.customCheckbox.checked {
-  background: #007aff; /* Light mode checked, matches HeadersModal actionButton */
-  border-color: #007aff;
-  position: relative;
-}
-
-.customCheckbox.checked::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 10px;
-  height: 5px;
-  border: solid #ffffff;
-  border-width: 0 0 2px 2px;
-  transform: translate(-50%, -65%) rotate(-45deg);
-}
-
-.customCheckbox.checked.darkTheme {
-  background: #0a84ff; /* Dark mode checked, matches HeadersModal actionButton.darkTheme */
-  border-color: #0a84ff;
+  color: #8e8e93; /* Dark mode: matches RowComponent selectIcon.darkTheme */
 }
 
 .customCheckbox:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode hover, matches HeadersModal actionButton hover */
+  color: #007aff; /* Light mode hover: matches RowComponent selectIcon:hover */
+  transform: scale(1.1); /* Matches RowComponent selectIcon:hover */
 }
 
-.customCheckbox.checked.darkTheme::after {
-  border-color: #ffffff; /* White checkmark in dark mode */
+.customCheckbox.darkTheme:hover {
+  color: #0a84ff; /* Dark mode hover: matches RowComponent selectIcon.darkTheme:hover */
+}
+
+.customCheckbox.checked {
+  color: #007aff; /* Light mode selected: matches RowComponent selectIcon.selected */
+}
+
+.customCheckbox.checked.darkTheme {
+  color: #0a84ff; /* Dark mode selected: matches RowComponent selectIcon.darkTheme.selected */
 }
 
 /* No items message */

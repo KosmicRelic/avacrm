@@ -3,34 +3,43 @@ import PropTypes from "prop-types";
 import styles from "./SheetsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
+import { IoArrowBack, IoChevronForward } from "react-icons/io5";
+import { FaFolder } from "react-icons/fa";
+import { BiSolidSpreadsheet } from "react-icons/bi";
 
 const SheetsModal = ({ sheets, tempData, setTempData }) => {
   const { isDarkTheme } = useContext(MainContext);
-  const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
+  const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     const structure = sheets?.structure || [];
     return structure.map((item, index) => ({
       ...item,
       displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
+      id: item.sheetName || item.folderName || `item-${index}`,
     }));
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [orderedFolderSheets, setOrderedFolderSheets] = useState([]);
   const dragItemRef = useRef(null);
   const hasInitialized = useRef(false);
 
-  // Initialize modal config
+  // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
-      registerModalSteps({
-        steps: [
-          {
-            title: "Reorder Sheets",
-            rightButton: null,
-          },
-        ],
-      });
+      const steps = [
+        {
+          title: "Reorder Sheets",
+          rightButton: null,
+        },
+        {
+          title: () => selectedFolder || "Folder Sheets",
+          rightButton: null,
+        },
+      ];
+      registerModalSteps({ steps });
       setModalConfig({
         showTitle: true,
         showDoneButton: true,
@@ -41,27 +50,38 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       });
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig]);
+  }, [registerModalSteps, setModalConfig, selectedFolder]);
 
-  // Sync orderedItems only when sheets.structure changes and no drag is in progress
+  // Update modal config based on step
   useEffect(() => {
-    if (draggedIndex !== null) return; // Skip update during drag
-    const structure = sheets?.structure || [];
-    const newItems = structure.map((item, index) => ({
-      ...item,
-      displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
+    setModalConfig((prev) => ({
+      ...prev,
+      title: currentStep === 1 ? "Reorder Sheets" : selectedFolder || "Folder Sheets",
+      showDoneButton: currentStep === 1,
+      showBackButton: currentStep === 2,
+      rightButton: null,
     }));
-    // Only update if the structure has actually changed
-    if (JSON.stringify(newItems) !== JSON.stringify(orderedItems)) {
-      setOrderedItems(newItems);
-    }
-  }, [sheets?.structure, orderedItems]);
+  }, [currentStep, selectedFolder, setModalConfig]);
 
-  // Update tempData on orderedItems change
+  // Initialize folder sheets when entering step 2
+  useEffect(() => {
+    if (currentStep === 2 && selectedFolder) {
+      const folder = orderedItems.find((item) => item.folderName === selectedFolder);
+      const folderSheets = folder?.sheets || [];
+      setOrderedFolderSheets(folderSheets.map((sheetName) => ({ sheetName, displayName: sheetName })));
+    }
+  }, [currentStep, selectedFolder, orderedItems]);
+
+  // Update tempData for main structure
   useEffect(() => {
     const newStructure = orderedItems.map((item) => {
       if (item.folderName) {
-        return { folderName: item.folderName, sheets: item.sheets };
+        return {
+          folderName: item.folderName,
+          sheets: item.sheets?.length && selectedFolder === item.folderName
+            ? orderedFolderSheets.map((sheet) => sheet.sheetName)
+            : item.sheets || [],
+        };
       }
       return { sheetName: item.sheetName };
     });
@@ -70,10 +90,10 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     if (JSON.stringify(newStructure) !== JSON.stringify(currentTempData)) {
       setTempData(newTempData);
     }
-  }, [orderedItems, setTempData, tempData]);
+  }, [orderedItems, orderedFolderSheets, selectedFolder, setTempData, tempData]);
 
   const handleDragStart = useCallback((e, index) => {
-    if (index === 0) return; // Prevent dragging primary sheet
+    if (index === 0) return;
     setDraggedIndex(index);
     dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
     e.dataTransfer.effectAllowed = "move";
@@ -84,12 +104,11 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     (e, index) => {
       e.preventDefault();
       if (draggedIndex === null || draggedIndex === index || index === 0 || draggedIndex === 0) return;
-
       setOrderedItems((prev) => {
         const newItems = [...prev];
         const [draggedItem] = newItems.splice(draggedIndex, 1);
         newItems.splice(index, 0, draggedItem);
-        setDraggedIndex(index); // Update draggedIndex to new position
+        setDraggedIndex(index);
         return newItems;
       });
     },
@@ -101,11 +120,11 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       dragItemRef.current.classList.remove(styles.dragging);
       dragItemRef.current = null;
     }
-    setDraggedIndex(null); // Reset drag state
+    setDraggedIndex(null);
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
-    if (index === 0) return; // Prevent dragging primary sheet
+    if (index === 0) return;
     if (e.target.classList.contains(styles.dragIcon)) {
       e.preventDefault();
       setDraggedIndex(index);
@@ -122,7 +141,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
       e.preventDefault();
 
       const touchY = e.touches[0].clientY;
-      const itemHeight = 48; // Adjust if your item height differs
+      const itemHeight = 48;
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
       const newIndex = Math.max(1, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
@@ -134,7 +153,7 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
           setDraggedIndex(newIndex);
           return newItems;
         });
-        setTouchTargetIndex(newIndex); // Update touch target
+        setTouchTargetIndex(newIndex);
       }
     },
     [draggedIndex, touchStartY, touchTargetIndex, orderedItems.length]
@@ -150,32 +169,177 @@ const SheetsModal = ({ sheets, tempData, setTempData }) => {
     setTouchTargetIndex(null);
   }, []);
 
+  const handleFolderClick = useCallback(
+    (folderName) => {
+      setSelectedFolder(folderName);
+      goToStep(2);
+    },
+    [goToStep]
+  );
+
+  const handleFolderSheetDragStart = useCallback((e, index) => {
+    setDraggedIndex(index);
+    dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+    e.dataTransfer.effectAllowed = "move";
+    dragItemRef.current?.classList.add(styles.dragging);
+  }, []);
+
+  const handleFolderSheetDragOver = useCallback(
+    (e, index) => {
+      e.preventDefault();
+      if (draggedIndex === null || draggedIndex === index) return;
+
+      setOrderedFolderSheets((prev) => {
+        const newItems = [...prev];
+        const [draggedItem] = newItems.splice(draggedIndex, 1);
+        newItems.splice(index, 0, draggedItem);
+        setDraggedIndex(index);
+        return newItems;
+      });
+    },
+    [draggedIndex]
+  );
+
+  const handleFolderSheetDragEnd = useCallback(() => {
+    if (dragItemRef.current) {
+      dragItemRef.current.classList.remove(styles.dragging);
+      dragItemRef.current = null;
+    }
+    setDraggedIndex(null);
+  }, []);
+
+  const handleFolderSheetTouchStart = useCallback((e, index) => {
+    if (e.target.classList.contains(styles.dragIcon)) {
+      e.preventDefault();
+      setDraggedIndex(index);
+      setTouchStartY(e.touches[0].clientY);
+      setTouchTargetIndex(index);
+      dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+      dragItemRef.current?.classList.add(styles.dragging);
+    }
+  }, []);
+
+  const handleFolderSheetTouchMove = useCallback(
+    (e) => {
+      if (draggedIndex === null || touchStartY === null) return;
+      e.preventDefault();
+
+      const touchY = e.touches[0].clientY;
+      const itemHeight = 48;
+      const delta = Math.round((touchY - touchStartY) / itemHeight);
+
+      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedFolderSheets.length - 1));
+      if (newIndex !== draggedIndex) {
+        setOrderedFolderSheets((prev) => {
+          const newItems = [...prev];
+          const [draggedItem] = newItems.splice(draggedIndex, 1);
+          newItems.splice(newIndex, 0, draggedItem);
+          setDraggedIndex(newIndex);
+          return newItems;
+        });
+        setTouchTargetIndex(newIndex);
+      }
+    },
+    [draggedIndex, touchStartY, touchTargetIndex, orderedFolderSheets.length]
+  );
+
+  const handleFolderSheetTouchEnd = useCallback(() => {
+    if (dragItemRef.current) {
+      dragItemRef.current.classList.remove(styles.dragging);
+      dragItemRef.current = null;
+    }
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchTargetIndex(null);
+  }, []);
+
   return (
     <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      {orderedItems.map((item, index) => (
+      {[1, 2].map((step) => (
         <div
-          key={item.displayName}
-          className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
-            isDarkTheme ? styles.darkTheme : ""
+          key={step}
+          className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
+            step !== currentStep ? styles.hidden : ""
           }`}
-          onDragOver={(e) => handleDragOver(e, index)}
+          style={{ display: step !== currentStep ? "none" : "block" }}
         >
-          <div className={styles.sheetRow}>
-            <span className={styles.sheetName}>{item.displayName}</span>
-            {index !== 0 && (
-              <span
-                className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragEnd={handleDragEnd}
-                onTouchStart={(e) => handleTouchStart(e, index)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+          {step === 1 &&
+            orderedItems.map((item, index) => (
+              <div
+                key={item.id}
+                className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
+                  isDarkTheme ? styles.darkTheme : ""
+                }`}
+                onDragOver={(e) => handleDragOver(e, index)}
               >
-                ☰
-              </span>
-            )}
-          </div>
+                <div
+                  className={`${styles.sheetRow} ${item.folderName ? styles.folderRow : ""}`}
+                  onClick={() => item.folderName && handleFolderClick(item.folderName)}
+                >
+                  <span className={styles.sheetName}>
+                    {item.folderName ? (
+                      <>
+                        <FaFolder className={styles.folderIcon} />
+                        {item.displayName}
+                        <IoChevronForward className={styles.folderChevron} />
+                      </>
+                    ) : (
+                      <>
+                      <BiSolidSpreadsheet className={styles.folderIcon} />
+                      {item.displayName}
+                      </>
+                    )}
+                  </span>
+                  {index !== 0 && (
+                    <span
+                      className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      ☰
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          {step === 2 && selectedFolder && (
+            <div className={styles.folderSheetsContainer}>
+              {orderedFolderSheets.length > 0 ? (
+                orderedFolderSheets.map((sheet, index) => (
+                  <div
+                    key={sheet.sheetName || `sheet-${index}`}
+                    className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
+                      isDarkTheme ? styles.darkTheme : ""
+                    }`}
+                    onDragOver={(e) => handleFolderSheetDragOver(e, index)}
+                  >
+                    <div className={styles.sheetRow}>
+                      <span className={styles.sheetName}>
+                        <BiSolidSpreadsheet className={styles.folderIcon} />
+                        {sheet.displayName || sheet.sheetName}</span>
+                      <span
+                        className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        draggable
+                        onDragStart={(e) => handleFolderSheetDragStart(e, index)}
+                        onDragEnd={handleFolderSheetDragEnd}
+                        onTouchStart={(e) => handleFolderSheetTouchStart(e, index)}
+                        onTouchMove={handleFolderSheetTouchMove}
+                        onTouchEnd={handleFolderSheetTouchEnd}
+                      >
+                        ☰
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.emptyMessage}>No sheets in this folder</div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

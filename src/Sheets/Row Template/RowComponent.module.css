@@ -1,54 +1,54 @@
 .bodyRow {
   display: flex;
-  background: rgba(245, 245, 247, 0.9); /* Restored original light mode */
+  background: rgba(245, 245, 247, 0.9);
   border-radius: 12px;
-  transition: all 0.2s ease, background 0.3s ease, box-shadow 0.3s ease; /* Kept theme transitions */
+  transition: all 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
   min-width: 100%;
   width: max-content;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Restored original light mode */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin: 8px 0px;
   cursor: pointer;
-  animation: rowAppear 0.3s ease-out forwards; /* Kept appearance animation */
+  animation: rowAppear 0.3s ease-out forwards;
   position: relative;
   left: 1em;
 }
 
 .bodyRow.darkTheme {
-  background: rgb(44, 44, 46); /* Kept dark mode */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Kept dark mode */
+  background: rgb(44, 44, 46);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .bodyRow:hover {
-  background: rgba(245, 245, 247, 0.9); /* Restored original light mode hover */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Restored original light mode hover */
+  background: rgba(245, 245, 247, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
 
 .bodyRow.darkTheme:hover {
-  background: rgb(58, 58, 60); /* Kept dark mode hover */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Kept dark mode hover */
+  background: rgb(58, 58, 60);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
 
 .addNewRow {
-  background: rgba(0, 122, 255, 0.1); /* Restored original light mode */
-  color: #007aff; /* Restored original */
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
   font-weight: 600;
 }
 
 .addNewRow.darkTheme {
-  background: rgba(10, 132, 255, 0.2); /* Kept dark mode */
-  color: #0A84FF; /* Kept dark mode */
+  background: rgba(10, 132, 255, 0.2);
+  color: #0A84FF;
 }
 
 .addNewRow:hover {
-  background: rgba(0, 122, 255, 0.2); /* Restored original light mode hover */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Restored original light mode hover */
+  background: rgba(0, 122, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .addNewRow.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.3); /* Kept dark mode hover */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); /* Kept dark mode hover */
+  background: rgba(10, 132, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .bodyCell {
@@ -57,26 +57,120 @@
   text-align: center;
   font-size: 13px;
   font-weight: 550;
-  color: #1d1d1f; /* Restored original */
+  color: #1d1d1f;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.3s ease; /* Kept theme transition */
+  transition: color 0.3s ease, width 0.3s ease;
 }
 
 .bodyCell.darkTheme {
-  background: transparent; /* Kept dark mode */
-  color: rgb(235, 235, 245); /* Kept dark mode */
+  background: transparent;
+  color: rgb(235, 235, 245);
+}
+
+.bodyCell.selectMode {
+  width: 18px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selectCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+}
+
+.selectCell.selectMode {
+  width: 18px;
+  padding: 12px;
+}
+
+.selectButton {
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, color 0.3s ease;
+  color: #007aff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  background: transparent;
+  border-radius: 10px;
+  padding: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.selectButton.darkTheme {
+  color: #0a84ff;
+}
+
+.selectButton:hover {
+  transform: scale(1.05);
+}
+
+.addCell {
+  width: 150px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #007aff;
+  transition: color 0.3s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addCell.darkTheme {
+  color: #0a84ff;
+}
+
+.addCell:hover {
+  transform: scale(1.05);
+}
+
+.addCell.darkTheme:hover {
+  color: #0a84ff;
+}
+
+.selectIcon {
+  color: #6e6e73;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.selectIcon.darkTheme {
+  color: #6e6e73;
+}
+
+.selectIcon:hover {
+  color: #007aff;
+  transform: scale(1.1);
+}
+
+.selectIcon.darkTheme:hover {
+  color: #0a84ff;
+}
+
+.selectIcon.selected {
+  color: #007aff;
+}
+
+.selectIcon.darkTheme.selected {
+  color: #0a84ff;
 }
 
 .selectedRow {
-  background: rgba(0, 122, 255, 0.25); /* Increased opacity for visibility */
+  background: rgba(0, 122, 255, 0.25);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 122, 255, 0.5); /* Added border for emphasis */
+  border: 1px solid rgba(0, 122, 255, 0.5);
 }
 
 .selectedRow.darkTheme {
-  background: rgba(10, 132, 255, 0.35); /* Slightly stronger in dark mode */
+  background: rgba(10, 132, 255, 0.35);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(10, 132, 255, 0.7);
 }
@@ -95,9 +189,22 @@
     font-size: 13px;
     font-weight: 550;
   }
+
+  .bodyCell.selectMode {
+    width: 18px;
+    padding: 12px;
+  }
+
+  .selectCell.selectMode {
+    width: 18px;
+    padding: 12px;
+  }
+
+  .addCell {
+    width: 120px;
+  }
 }
 
-/* Kept row appearance animation */
 @keyframes rowAppear {
   from {
     opacity: 0;

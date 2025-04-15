@@ -191,3 +191,61 @@
 .removeIcon:active {
   transform: scale(0.95);
 }
+
+.folderChevron {
+  font-size: 14px;
+  margin-left: 6px; /* Space between folder name and chevron */
+  color: #8e8e93; /* Light mode: Apple gray */
+  transition: color 0.3s ease;
+  vertical-align: middle;
+}
+
+.sheetList.darkTheme .folderChevron {
+  color: #6e6e73; /* Dark mode: Apple gray */
+}
+
+.folderChevron:hover {
+  color: #007aff; /* Apple blue on hover */
+}
+
+.sheetList.darkTheme .folderChevron:hover {
+  color: #0a84ff; /* Dark mode Apple blue */
+}
+
+.folderIcon {
+  font-size: 16px; /* Matches sheetName */
+  margin-right: 6px; /* Space before folder name */
+  margin-bottom: 4px;
+  color: #6e6e73;
+  transition: color 0.3s ease;
+  vertical-align: middle;
+}
+
+.sheetList.darkTheme .folderIcon {
+  color: #fff; /* Dark mode: same as sheetName */
+}
+
+.folderChevron {
+  font-size: 16px; /* Matches sheetName */
+  font-weight: 500; /* Matches sheetName */
+  margin-left: 6px; /* Space after folder name */
+  color: #000; /* Light mode: same as sheetName */
+  transition: color 0.3s ease;
+  vertical-align: middle;
+}
+
+.sheetList.darkTheme .folderChevron {
+  color: #fff; /* Dark mode: same as sheetName */
+}
+
+.folderRow:hover .folderIcon,
+.folderRow:hover .sheetName,
+.folderRow:hover .folderChevron {
+  color: #007aff; /* Apple blue on hover */
+}
+
+.sheetList.darkTheme .folderRow:hover .folderIcon,
+.sheetList.darkTheme .folderRow:hover .sheetName,
+.sheetList.darkTheme .folderRow:hover .folderChevron {
+  color: #0a84ff; /* Dark mode Apple blue */
+}

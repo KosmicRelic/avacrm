@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import styles from "./SheetFolderManager.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
+import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa"; // Added icons
 
 const SheetFolderManager = ({
   tempData,
@@ -232,11 +233,21 @@ const SheetFolderManager = ({
                     >
                       <div className={styles.headerRow}>
                         <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <span
-                            className={`${styles.customCheckbox} ${
-                              selectedHeaders.includes(header.key) ? styles.checked : ""
-                            } ${isDarkTheme ? styles.darkTheme : ""}`}
-                          ></span>
+                          {selectedHeaders.includes(header.key) ? (
+                            <FaRegCheckCircle
+                              className={`${styles.customCheckbox} ${styles.checked} ${
+                                isDarkTheme ? styles.darkTheme : ""
+                              }`}
+                              size={18}
+                            />
+                          ) : (
+                            <FaRegCircle
+                              className={`${styles.customCheckbox} ${
+                                isDarkTheme ? styles.darkTheme : ""
+                              }`}
+                              size={18}
+                            />
+                          )}
                           <span>{header.name}</span>
                           <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             ({header.type})
@@ -278,11 +289,21 @@ const SheetFolderManager = ({
                     >
                       <div className={styles.headerRow}>
                         <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <span
-                            className={`${styles.customCheckbox} ${
-                              selectedSheets.includes(sheetName) ? styles.checked : ""
-                            } ${isDarkTheme ? styles.darkTheme : ""}`}
-                          ></span>
+                          {selectedSheets.includes(sheetName) ? (
+                            <FaRegCheckCircle
+                              className={`${styles.customCheckbox} ${styles.checked} ${
+                                isDarkTheme ? styles.darkTheme : ""
+                              }`}
+                              size={18}
+                            />
+                          ) : (
+                            <FaRegCircle
+                              className={`${styles.customCheckbox} ${
+                                isDarkTheme ? styles.darkTheme : ""
+                              }`}
+                              size={18}
+                            />
+                          )}
                           <span>{sheetName}</span>
                         </div>
                       </div>
