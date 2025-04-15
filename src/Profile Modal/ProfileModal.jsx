@@ -55,10 +55,6 @@ const ProfileModal = ({
     handleButtonClick(onOpenSheetFolderModal);
   };
 
-  const handleFolderOperationsClick = () => {
-    handleButtonClick(onOpenFolderOperationsModal);
-  };
-
   if (!isOpen && !isAnimating) return null;
 
   return (
@@ -104,13 +100,6 @@ const ProfileModal = ({
           >
             <FaFolder size={16} style={{ marginRight: "8px" }} />
             Create Sheets & Folders
-          </button>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleFolderOperationsClick}
-          >
-            <FaFolder size={16} style={{ marginRight: "8px" }} />
-            Manage Folders
           </button>
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}

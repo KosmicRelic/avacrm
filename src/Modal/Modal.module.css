@@ -202,6 +202,22 @@
   color: #0a84ff;
 }
 
+.doneButton.activeRemove {
+  color: #ff453a; /* Full red when active */
+}
+
+.doneButton.activeRemove.darkTheme {
+  color: #ff453a;
+}
+
+.doneButton.inactiveRemove {
+  color: rgba(255, 69, 58, 0.5); /* Fainted red when inactive */
+}
+
+.doneButton.inactiveRemove.darkTheme {
+  color: rgba(255, 69, 58, 0.5);
+}
+
 .leftButton {
   background: none;
   border: none;

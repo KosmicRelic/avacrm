@@ -1,0 +1,167 @@
+.folderModal {
+    background: transparent; /* Light mode: no additional background */
+    transition: background 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .folderModal.darkTheme {
+    background: transparent; /* Dark mode: keep transparent to match modal */
+  }
+  
+  .sheetList {
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: transparent; /* Light mode: no additional background */
+    transition: background 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .sheetList.darkTheme {
+    background: transparent; /* Dark mode: keep transparent */
+  }
+  
+  .sheetItem {
+    padding: 13.5px 16px;
+    background: rgba(255, 255, 255, 0.95); /* Light mode */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+    transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
+    cursor: pointer;
+  }
+  
+  .sheetItem.darkTheme {
+    background: rgba(44, 44, 46, 0.95); /* Dark mode */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+  }
+  
+  .sheetItem:last-child {
+    border-bottom: none;
+  }
+  
+  .sheetItem:hover {
+    background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+  }
+  
+  .sheetItem.darkTheme:hover {
+    background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+  }
+  
+  .sheetRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .sheetName {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    color: #1d1d1f; /* Light mode default */
+    transition: color 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .sheetName.darkTheme {
+    color: #ffffff; /* Dark mode override */
+  }
+  
+  .selectionCircle {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007aff; /* Light mode border */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.3s ease;
+  }
+  
+  .selectionCircle.darkTheme {
+    border-color: #0a84ff; /* Dark mode border */
+  }
+  
+  .selectionCircle.selected {
+    background: #007aff; /* Light mode fill */
+  }
+  
+  .selectionCircle.darkTheme.selected {
+    background: #0a84ff; /* Dark mode fill */
+  }
+  
+  .checkmark {
+    color: #ffffff;
+    font-size: 18px;
+    transition: opacity 0.2s ease;
+  }
+  
+  .deleteFolder {
+    padding: 16px;
+    text-align: center;
+  }
+  
+  .deleteFolder.darkTheme {
+    background: transparent; /* Dark mode */
+  }
+  
+  .deleteButton {
+    background: none;
+    border: none;
+    color: #ff453a; /* Light mode */
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .deleteButton.darkTheme {
+    color: #ff453a; /* Dark mode: keep same red */
+  }
+  
+  .deleteButton:hover {
+    background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+  }
+  
+  .deleteButton.darkTheme:hover {
+    background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+  }
+  
+  .actionButton {
+    background: none;
+    border: none;
+    color: #007aff; /* Light mode */
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .actionButton.darkTheme {
+    color: #0a84ff; /* Dark mode */
+  }
+  
+  .actionButton:hover {
+    background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+  }
+  
+  .actionButton.darkTheme:hover {
+    background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
+  }
+  
+  .editButton {
+    /* Inherits from actionButton */
+  }
+  
+  .noSheets {
+    padding: 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666; /* Light mode */
+    transition: color 0.3s ease; /* Smooth theme transition */
+  }
+  
+  .noSheets.darkTheme {
+    color: #aaa; /* Dark mode */
+  }
