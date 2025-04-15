@@ -197,6 +197,8 @@ function App() {
               activeSheet?.pinnedHeaders || [],
               isSheetModalEditMode
             );
+            // Explicitly update activeSheetName to the new sheet name
+            handleSheetChange(data.sheetName);
           }
           break;
         case "sheets":
@@ -268,6 +270,7 @@ function App() {
       setSelectedTemplateIndex,
       setCurrentSectionIndex,
       setTempData,
+      handleSheetChange, // Ensure handleSheetChange is included in dependencies
     ]
   );
 
