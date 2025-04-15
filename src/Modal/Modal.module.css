@@ -235,3 +235,49 @@
 .leftButton.darkTheme {
   color: #0a84ff;
 }
+
+.doneButton {
+  background: none;
+  border: none;
+  color: #007aff; /* Default blue for light mode */
+  font-size: 17px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease;
+  position: absolute;
+  right: 0px;
+  top: 0;
+}
+
+.doneButton.darkTheme {
+  color: #0a84ff; /* Default blue for dark mode */
+}
+
+.doneButton.activeRemove {
+  color: #ff453a; /* Full red when active */
+}
+
+.doneButton.activeRemove.darkTheme {
+  color: #ff453a;
+}
+
+.doneButton.inactiveRemove {
+  color: rgba(255, 69, 58, 0.5); /* Faded red when inactive */
+}
+
+.doneButton.inactiveRemove.darkTheme {
+  color: rgba(255, 69, 58, 0.5);
+}
+
+.doneButton.activeAction {
+  color: #007aff; /* Full blue when active */
+}
+
+.doneButton.activeAction.darkTheme {
+  color: #0a84ff;
+}
+
+.doneButton.inactiveAction {
+  color: rgba(0, 122, 255, 0.5); /* Faded blue when inactive */
+}

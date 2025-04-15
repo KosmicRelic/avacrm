@@ -317,3 +317,64 @@
 .actionButton.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
 }
+
+.viewContainer {
+  width: 100%;
+}
+
+.view {
+  transition: opacity 0.3s ease;
+}
+
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.editActions {
+  margin-top: 0; /* Remove top margin since it's a full step */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent; /* Match modal content background */
+  padding: 16px 0;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.editActions.darkTheme {
+  background: transparent; /* Match dark modal content */
+}
+
+.editActionsButtons {
+  display: flex;
+  justify-content: center; /* Center the button horizontally */
+  margin-top: 16px; /* Add spacing above the button */
+  gap: 12px;
+}
+
+/* Ensure the delete button looks consistent */
+.deleteButton {
+  background: none;
+  border: none;
+  color: #ff453a; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.deleteButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
+}
+
+.deleteButton:hover {
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+}
+
+.deleteButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+}

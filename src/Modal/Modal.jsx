@@ -117,7 +117,15 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
               {modalConfig.rightButton ? (
                 <button
                   className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""} ${
-                    modalConfig.rightButton.isActive ? styles.activeRemove : styles.inactiveRemove
+                    modalConfig.rightButton.color === "red" || modalConfig.rightButton.isRemove
+                      ? modalConfig.rightButton.isActive
+                        ? styles.activeRemove
+                        : styles.inactiveRemove
+                      : modalConfig.rightButton.color === "blue" || !modalConfig.rightButton.color
+                      ? modalConfig.rightButton.isActive
+                        ? styles.activeAction
+                        : styles.inactiveAction
+                      : ""
                   }`}
                   onClick={modalConfig.rightButton.onClick}
                   disabled={!modalConfig.rightButton.isActive}
