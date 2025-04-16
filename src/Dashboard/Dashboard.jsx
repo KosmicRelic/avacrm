@@ -1,9 +1,8 @@
-// src/components/Dashboard/Dashboard.jsx
 import React, { useContext, useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
-import DatePicker from "./Date Picker/DatePicker";
+import DatePicker from './Date Picker/DatePicker';
 
 const Widget = ({ id, name, size, title, children, darkTheme }) => {
   return (
@@ -101,7 +100,7 @@ const Dashboard = () => {
     {
       id: 'campaign-roi',
       name: 'Campaign ROI',
-      size: 'medium',
+      size: 'small',
       title: 'Campaign ROI',
       data: `${metrics.campaignROI}x`,
       section: 'Marketing',
@@ -109,10 +108,10 @@ const Dashboard = () => {
     {
       id: 'top-campaigns',
       name: 'Top Campaigns',
-      size: 'large',
+      size: 'verySmall',
       title: 'Top Campaigns',
       data: (
-        <ul className={styles.campaignList}>
+        <ul className={`${styles.campaignList} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {metrics.topCampaigns.map((campaign, index) => (
             <li key={index}>
               {campaign.name}: {campaign.leads} leads, ${campaign.costPerLead}/lead

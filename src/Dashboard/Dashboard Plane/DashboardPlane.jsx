@@ -1,4 +1,3 @@
-// src/components/DashboardPlane/DashboardPlane.jsx
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
@@ -47,21 +46,22 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
   });
 
   const windowSizes = {
-    verySmall: { width: 1, height: 1 },
-    small: { width: 1, height: 2 },
-    medium: { width: 2, height: 2 },
-    big: { width: 2, height: 4 },
+    verySmall: { width: 1, height: 1 }, // 200px × 92px
+    small: { width: 1, height: 2 }, // 200px × 200px (92px × 2 + 16px gap)
+    medium: { width: 2, height: 2 }, // 416px × 200px (200px × 2 + 16px gap, 92px × 2 + 16px gap)
+    big: { width: 2, height: 4 }, // 416px × 416px (full grid)
   };
 
   const windowScores = {
-    verySmall: 12.5,
-    small: 25,
-    medium: 50,
-    big: 100,
+    verySmall: 10,
+    small: 20,
+    medium: 40,
+    big: 80,
   };
 
   const sizeMap = {
     tiny: 'verySmall',
+    verySmall: 'verySmall',
     small: 'small',
     medium: 'medium',
     large: 'big',
@@ -74,12 +74,14 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
   const canPlaceWindow = (size, row, col, skipIndex = null) => {
     const { width, height } = windowSizes[size];
     if (row < 0 || col < 0 || row + height > gridRef.current.rows || col + width > gridRef.current.columns) {
+      console.log(`Cannot place ${size} at (${row}, ${col}): Out of bounds`);
       return false;
     }
 
     const currentScore = calculateScore(windows.filter((_, idx) => idx !== skipIndex));
     const newScore = currentScore + windowScores[size];
-    if (newScore > 100) {
+    if (newScore > 200) {
+      console.log(`Cannot place ${size} at (${row}, ${col}): Exceeds score limit (${newScore})`);
       return false;
     }
 
@@ -99,6 +101,7 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
     for (let r = row; r < row + height; r++) {
       for (let c = col; c < col + width; c++) {
         if (r >= 4 || c >= 2 || occupied[r][c]) {
+          console.log(`Cannot place ${size} at (${row}, ${col}): Cell (${r}, ${c}) occupied or out of bounds`);
           return false;
         }
       }
@@ -108,13 +111,16 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
   };
 
   const findPositionForWindow = (size, skipIndex = null) => {
+    console.log(`Finding position for ${size} (skipIndex: ${skipIndex})`);
     for (let row = 0; row <= gridRef.current.rows - windowSizes[size].height; row++) {
       for (let col = 0; col <= gridRef.current.columns - windowSizes[size].width; col++) {
         if (canPlaceWindow(size, row, col, skipIndex)) {
+          console.log(`Found position for ${size} at (${row}, ${col})`);
           return { row, col };
         }
       }
     }
+    console.log(`No position found for ${size}`);
     return null;
   };
 
@@ -159,11 +165,18 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
     let newWindows = [];
     let currentScore = 0;
 
-    initialWidgets.forEach((widget) => {
+    // Sort widgets by size score (descending) to prioritize larger widgets
+    const sortedWidgets = [...initialWidgets].sort((a, b) => {
+      const sizeA = sizeMap[a.size] || 'small';
+      const sizeB = sizeMap[b.size] || 'small';
+      return windowScores[sizeB] - windowScores[sizeA];
+    });
+
+    sortedWidgets.forEach((widget) => {
       const size = sizeMap[widget.size] || 'small';
       const score = windowScores[size];
 
-      if (currentScore + score > 100) {
+      if (currentScore + score > 200) {
         console.warn(`Skipping widget ${widget.title}: Exceeds score limit`);
         return;
       }
@@ -178,8 +191,12 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
         size,
         content: (
           <div className={styles.widgetWrapper}>
-            <h3 className={`${styles.widgetTitle} ${isDarkTheme?styles.darkTheme:""}`}>{widget.title}</h3>
-            <div className={`${styles.widgetData} ${isDarkTheme?styles.darkTheme:""}`}>{widget.data}</div>
+            <h3 className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {widget.title}
+            </h3>
+            <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {widget.data || 'No data'}
+            </div>
           </div>
         ),
         position,
@@ -227,45 +244,53 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
           </button>
           <button
             className={styles.addButton}
-            onClick={() => addWindow('verySmall', (
-              <div className={styles.widgetWrapper}>
-                <h3 className={styles.widgetTitle}>New Widget</h3>
-                <div className={styles.widgetData}>Add content</div>
-              </div>
-            ))}
+            onClick={() =>
+              addWindow('verySmall', (
+                <div className={styles.widgetWrapper}>
+                  <h3 className={styles.widgetTitle}>New Widget</h3>
+                  <div className={styles.widgetData}>Add content</div>
+                </div>
+              ))
+            }
           >
             <FaPlus /> Very Small
           </button>
           <button
             className={styles.addButton}
-            onClick={() => addWindow('small', (
-              <div className={styles.widgetWrapper}>
-                <h3 className={styles.widgetTitle}>New Widget</h3>
-                <div className={styles.widgetData}>Add content</div>
-              </div>
-            ))}
+            onClick={() =>
+              addWindow('small', (
+                <div className={styles.widgetWrapper}>
+                  <h3 className={styles.widgetTitle}>New Widget</h3>
+                  <div className={styles.widgetData}>Add content</div>
+                </div>
+              ))
+            }
           >
             <FaPlus /> Small
           </button>
           <button
             className={styles.addButton}
-            onClick={() => addWindow('medium', (
-              <div className={styles.widgetWrapper}>
-                <h3 className={styles.widgetTitle}>New Widget</h3>
-                <div className={styles.widgetData}>Add content</div>
-              </div>
-            ))}
+            onClick={() =>
+              addWindow('medium', (
+                <div className={styles.widgetWrapper}>
+                  <h3 className={styles.widgetTitle}>New Widget</h3>
+                  <div className={styles.widgetData}>Add content</div>
+                </div>
+              ))
+            }
           >
             <FaPlus /> Medium
           </button>
           <button
             className={styles.addButton}
-            onClick={() => addWindow('big', (
-              <div className={styles.widgetWrapper}>
-                <h3 className={styles.widgetTitle}>New Widget</h3>
-                <div className={styles.widgetData}>Add content</div>
-              </div>
-            ))}
+            onClick={() =>
+              addWindow('big', (
+                <div className={styles.widgetWrapper}>
+                  <h3 className={styles.widgetTitle}>New Widget</h3>
+                  <div className={styles.widgetData}>Add content</div>
+                </div>
+              ))
+            }
           >
             <FaPlus /> Big
           </button>
