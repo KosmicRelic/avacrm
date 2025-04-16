@@ -29,7 +29,6 @@ const Dashboard = () => {
     topCampaigns: [],
   });
 
-  // Calculate critical metrics from context cards
   useEffect(() => {
     const totalLeads = cards.length;
     const closedLeads = cards.filter((card) => card.nextActions === 'Close deal').length;
@@ -55,7 +54,6 @@ const Dashboard = () => {
     });
   }, [cards]);
 
-  // Widget configuration
   const widgetConfig = [
     {
       id: 'revenue',
@@ -123,7 +121,6 @@ const Dashboard = () => {
     },
   ];
 
-  // Distribute widgets across three DashboardPlanes
   const dashboardPlanes = [
     widgetConfig.filter((w) => w.section === 'Financials'),
     widgetConfig.filter((w) => w.section === 'Lead Metrics'),
