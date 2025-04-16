@@ -16,6 +16,7 @@ import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
 import CreateSheetsAndFolders from "./Modal/Create Sheets And Folders/CreateSheetsAndFolders";
 import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
 import FolderOperations from "./Modal/Folder Modal/FolderModal";
+import Dashboard from "./Dashboard/Dashboard";
 
 function App() {
   const {
@@ -46,7 +47,7 @@ function App() {
   const sheetFolderModal = useModal();
   const folderOperationsModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
-  const [activeOption, setActiveOption] = useState("sheets");
+  const [activeOption, setActiveOption] = useState("dashboard");
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -514,6 +515,26 @@ function App() {
       <div className={styles.contentWrapper}>
         {activeOption === "sheets" && activeSheetName && (
           <Sheets
+            headers={resolvedHeaders}
+            rows={resolvedRows}
+            sheets={sheets}
+            setSheets={setSheets}
+            activeSheetName={activeSheetName}
+            onSheetChange={handleSheetChange}
+            onEditSheet={onEditSheet}
+            onFilter={onFilter}
+            onRowClick={() => {}}
+            onCardSave={() => {}}
+            onCardDelete={() => {}}
+            onOpenSheetsModal={onOpenSheetsModal}
+            onOpenTransportModal={onOpenTransportModal}
+            onOpenSheetFolderModal={onOpenSheetFolderModal}
+            onOpenFolderModal={onOpenFolderOperationsModal}
+          />
+        )}
+        
+        {activeOption === "dashboard" && activeSheetName && (
+          <Dashboard
             headers={resolvedHeaders}
             rows={resolvedRows}
             sheets={sheets}

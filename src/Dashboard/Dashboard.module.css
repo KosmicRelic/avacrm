@@ -1,0 +1,123 @@
+.dashboardWrapper {
+  width: 100%;
+  max-width: 1400px;
+  height: calc(100vh - 65px);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #f2f2f7;
+  overflow-y: auto;
+  transition: background 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+}
+
+.dashboardWrapper.darkTheme {
+  background: black;
+}
+
+.windowsSection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.windowContainer {
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  padding: 16px;
+}
+
+.windowContainer.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.windowContainer.tiny {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.windowContainer.small {
+  grid-column: span 1;
+  grid-row: span 2;
+}
+
+.windowContainer.medium {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.windowContainer.large {
+  grid-column: span 2;
+  grid-row: span 4;
+}
+
+.widgetTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.02em;
+}
+
+.widgetTitle.darkTheme {
+  color: #ffffff;
+}
+
+.data {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  letter-spacing: 0.02em;
+}
+
+.data.darkTheme {
+  color: #ffffff;
+}
+
+.campaignList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campaignList li {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.campaignList.darkTheme li {
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .dashboardWrapper {
+    height: calc(100vh - 176px);
+    padding: 8px;
+    max-width: 100%;
+  }
+
+  .windowsSection {
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .windowContainer.tiny,
+  .windowContainer.small,
+  .windowContainer.medium,
+  .windowContainer.large {
+    width: 100%;
+    max-width: 400px;
+  }
+}

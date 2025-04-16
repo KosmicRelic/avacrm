@@ -285,7 +285,7 @@ export const MainContextProvider = ({ children }) => {
       localStorage.setItem("theme", themeRef.current);
     }
   }, [isDarkTheme]);
-
+  
   return (
     <MainContext.Provider
       value={{

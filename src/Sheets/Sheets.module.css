@@ -1,6 +1,6 @@
 .sheetWrapper {
   width: 100%;
-  height: calc(100vh - 94px);
+  height: calc(100vh - 65px);
   display: flex;
   flex-direction: row;
   padding: 16px 0;
@@ -489,7 +489,7 @@
 
 .searchBar.darkTheme {
   color: rgb(235, 235, 245);
-  background: rgba(58, 58, 60, 0.9);
+  background: rgba(58, 58, 60);
 }
 
 .searchBar:focus {
