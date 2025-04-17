@@ -1,4 +1,3 @@
-
 .datePicker {
   display: flex;
   position: sticky;
@@ -13,10 +12,26 @@
   margin-left: auto;
   margin-right: auto;
   z-index: 1;
+  transition: all 0.3s ease; /* Smooth transition */
 }
 
-.datePicker.darkTheme{
+.datePicker.darkTheme {
   background: #2c2c2e;
+}
+
+/* When collapsed */
+.datePicker.collapsed {
+  max-width: 80px; /* Set a smaller max width when collapsed */
+  padding: 4px 12px;
+  justify-content: center;
+  gap: 0;
+  height: 34px;
+  opacity: 0.8; /* Slightly fade when collapsed */
+}
+
+.datePicker.collapsed button {
+  flex: none;
+  padding: 4px 16px;
 }
 
 .datePicker button {
@@ -26,16 +41,17 @@
   background: transparent;
   cursor: pointer;
   z-index: 2;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
   flex: 1;
   font-weight: 500; /* Medium weight for Apple aesthetic */
   font-size: 14px; /* Slightly larger for readability */
   letter-spacing: -0.01em;
   color: #9f9f9f; /* Light mode */
-  transition: color 0.3s ease;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.3s ease; /* Fade effect */
 }
 
 .datePicker button.active {
@@ -43,7 +59,7 @@
   font-weight: 500;
 }
 
-.datePicker.darkTheme button.active{
+.datePicker.darkTheme button.active {
   color: #007aff;
 }
 

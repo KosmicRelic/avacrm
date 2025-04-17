@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { FaPlus } from 'react-icons/fa';
 
 const Window = ({ size, children, className = '', style, onDelete, editMode, isSelected, onClick }) => {
   const { isDarkTheme } = useContext(MainContext);
@@ -33,12 +32,21 @@ const Window = ({ size, children, className = '', style, onDelete, editMode, isS
   );
 };
 
-const DashboardPlane = ({ initialWidgets = [] }) => {
+const DashboardPlane = ({
+  dashboardId,
+  initialWidgets = [],
+  editMode,
+  isSelected,
+  onSelect,
+  updateWidgets,
+  onWindowSelect,
+  selectedWindow,
+  getDashboardWidgets,
+}) => {
   const { isDarkTheme } = useContext(MainContext);
   const [windows, setWindows] = useState([]);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(null);
   const planeRef = useRef(null);
+  const prevWidgetsRef = useRef(null);
 
   const gridRef = useRef({
     columns: 2,
@@ -73,20 +81,24 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
   };
 
   const canPlaceWindow = (size, row, col, skipIndices = []) => {
+    console.log(`Checking if window of size ${size} can be placed at row: ${row}, col: ${col}, skipIndices: ${skipIndices}`);
     const { width, height } = windowSizes[size];
     if (row < 0 || col < 0 || row + height > gridRef.current.rows || col + width > gridRef.current.columns) {
+      console.log('Placement out of bounds');
       return false;
     }
 
     const currentScore = calculateScore(windows.filter((_, idx) => !skipIndices.includes(idx)));
     const newScore = currentScore + windowScores[size];
     if (newScore > 200) {
+      console.log(`Score limit exceeded: current ${currentScore}, new ${newScore}`);
       return false;
     }
 
     const occupied = gridRef.current.occupied.map((row) => [...row]);
     skipIndices.forEach((skipIndex) => {
       const skippedWindow = windows[skipIndex];
+      if (!skippedWindow) return;
       const { width: sWidth, height: sHeight } = windowSizes[skippedWindow.size];
       for (let r = skippedWindow.position.row; r < skippedWindow.position.row + sHeight; r++) {
         for (let c = skippedWindow.position.col; c < skippedWindow.position.col + sWidth; c++) {
@@ -100,48 +112,34 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
     for (let r = row; r < row + height; r++) {
       for (let c = col; c < col + width; c++) {
         if (r >= 4 || c >= 2 || occupied[r][c]) {
+          console.log(`Position blocked at row: ${r}, col: ${c}`);
           return false;
         }
       }
     }
-
+    console.log('Placement valid');
     return true;
   };
 
   const findPositionForWindow = (size, skipIndices = []) => {
+    console.log(`Finding position for window of size ${size}, skipIndices: ${skipIndices}`);
     for (let row = 0; row <= gridRef.current.rows - windowSizes[size].height; row++) {
       for (let col = 0; col <= gridRef.current.columns - windowSizes[size].width; col++) {
         if (canPlaceWindow(size, row, col, skipIndices)) {
+          console.log(`Found position at row: ${row}, col: ${col}`);
           return { row, col };
         }
       }
     }
+    console.log('No valid position found');
     return null;
   };
 
-  const addWindow = (size, content) => {
-    const position = findPositionForWindow(size);
-    if (!position) {
-      alert(`Cannot add ${size} window: No space or exceeds score`);
-      return;
-    }
-
-    const newWindow = { size, content, position };
-    setWindows((prev) => {
-      const updatedWindows = [...prev, newWindow];
-      const { width, height } = windowSizes[size];
-      for (let r = position.row; r < position.row + height; r++) {
-        for (let c = position.col; c < position.col + width; c++) {
-          gridRef.current.occupied[r][c] = true;
-        }
-      }
-      return updatedWindows;
-    });
-  };
-
   const removeWindow = (index) => {
+    console.log(`Removing window at index ${index} from dashboard ${dashboardId}`);
     setWindows((prev) => {
       const windowToRemove = prev[index];
+      if (!windowToRemove) return prev;
       const { size } = windowToRemove;
       const { width, height } = windowSizes[size];
       const { row, col } = windowToRemove.position;
@@ -150,220 +148,366 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
           gridRef.current.occupied[r][c] = false;
         }
       }
-      return prev.filter((_, i) => i !== index);
+      const newWindows = prev.filter((_, i) => i !== index);
+      updateWidgets(dashboardId, newWindows.map((win) => win.originalWidget));
+      return newWindows;
     });
-    if (selectedIndex === index) {
-      setSelectedIndex(null);
-    }
   };
 
-  const handleWindowClick = (index) => {
-    if (!editMode) return;
+  const attemptSameDashboardSwap = (indexA, indexB) => {
+    console.log(`Attempting same-dashboard swap in ${dashboardId}: ${indexA} ↔ ${indexB}`);
+    const localWindows = windows.map((win) => ({
+      ...win,
+      position: win.position || findPositionForWindow(win.size) || { row: 0, col: 0 },
+    }));
 
-    if (selectedIndex === null) {
-      setSelectedIndex(index);
-    } else if (selectedIndex !== index) {
-      attemptSmartSwap(selectedIndex, index);
-      setSelectedIndex(null);
-    } else {
-      setSelectedIndex(null);
-    }
-  };
-
-  const attemptSmartSwap = (indexA, indexB) => {
-    const windowA = windows[indexA];
-    const sizeA = windowA.size;
+    const windowA = localWindows[indexA];
+    const sizeA = sizeMap[windowA.size] || windowA.size;
     const posA = windowA.position;
     const { width: widthA, height: heightA } = windowSizes[sizeA];
     const areaA = widthA * heightA;
 
-    const windowB = windows[indexB];
-    const sizeB = windowB.size;
+    const windowB = localWindows[indexB];
+    const sizeB = sizeMap[windowB.size] || windowB.size;
     const posB = windowB.position;
     const { width: widthB, height: heightB } = windowSizes[sizeB];
     const areaB = widthB * heightB;
 
+    console.log(`Window A: size ${sizeA}, pos ${JSON.stringify(posA)}, area ${areaA}`);
+    console.log(`Window B: size ${sizeB}, pos ${JSON.stringify(posB)}, area ${areaB}`);
+
     if (areaA === areaB) {
-      // Direct swap for equal areas
-      const canPlaceAatB = canPlaceWindow(sizeA, posB.row, posB.col, [indexA, indexB]);
-      const canPlaceBatA = canPlaceWindow(sizeB, posA.row, posA.col, [indexA, indexB]);
-
-      if (canPlaceAatB && canPlaceBatA) {
-        setWindows((prev) => {
-          const updatedWindows = [...prev];
-          updatedWindows[indexA] = { ...windowA, position: posB };
-          updatedWindows[indexB] = { ...windowB, position: posA };
-
-          // Update grid occupancy
-          for (let r = posA.row; r < posA.row + heightA; r++) {
-            for (let c = posA.col; c < posA.col + widthA; c++) {
-              gridRef.current.occupied[r][c] = false;
+      console.log('Attempting direct swap');
+      if (canPlaceWindow(sizeA, posB.row, posB.col, [indexA, indexB]) && canPlaceWindow(sizeB, posA.row, posA.col, [indexA, indexB])) {
+        const updatedWindows = localWindows.map((win, idx) =>
+          idx === indexA
+            ? { ...win, position: posB }
+            : idx === indexB
+            ? { ...win, position: posA }
+            : win
+        );
+        console.log('Direct swap successful, updating windows');
+        setWindows(updatedWindows);
+        gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
+        updatedWindows.forEach((win) => {
+          const { width, height } = windowSizes[win.size];
+          for (let r = win.position.row; r < win.position.row + height; r++) {
+            for (let c = win.position.col; c < win.position.col + width; c++) {
+              if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+                gridRef.current.occupied[r][c] = true;
+              }
             }
           }
-          for (let r = posB.row; r < posB.row + heightB; r++) {
-            for (let c = posB.col; c < posB.col + widthB; c++) {
-              gridRef.current.occupied[r][c] = false;
-            }
-          }
-
-          for (let r = posB.row; r < posB.row + heightA; r++) {
-            for (let c = posB.col; c < posB.col + widthA; c++) {
-              gridRef.current.occupied[r][c] = true;
-            }
-          }
-          for (let r = posA.row; r < posA.row + heightB; r++) {
-            for (let c = posA.col; c < posA.col + widthB; c++) {
-              gridRef.current.occupied[r][c] = true;
-            }
-          }
-
-          return updatedWindows;
         });
+        updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
+        return true;
       } else {
-        alert('Cannot swap windows: Invalid positioning or space conflict');
+        console.log('Direct swap failed: invalid positions');
       }
     } else {
-      // Determine which window has the larger area
-      const [largeIndex, smallIndex, largeSize, largePos, largeArea, smallArea] =
-        areaB > areaA
-          ? [indexB, indexA, sizeB, posB, areaB, areaA]
-          : [indexA, indexB, sizeA, posA, areaA, areaB];
+      console.log('Attempting group or fallback swap');
+      const [largeIndex, smallIndex, largeArea] =
+        areaA > areaB ? [indexA, indexB, areaA] : [indexB, indexA, areaB];
+      const groupSmall = findMatchingGroup(localWindows, smallIndex, largeArea);
+      if (groupSmall) {
+        console.log(`Found group: ${JSON.stringify(groupSmall)}`);
+        const { indices, minRow, minCol, relativePositions } = groupSmall;
+        if (canPlaceWindow(localWindows[largeIndex].size, minRow, minCol, indices)) {
+          let canPlaceGroup = true;
+          const groupPositions = [];
+          const baseRow = localWindows[largeIndex].position.row;
+          const baseCol = localWindows[largeIndex].position.col;
 
-      // Find a group starting with the smaller-area window that matches the larger-area window's area
-      const groupSmall = findMatchingGroup(smallIndex, largeArea);
-      if (!groupSmall) {
-        // Try direct swap as fallback
-        const canPlaceAatB = canPlaceWindow(sizeA, posB.row, posB.col, [indexA, indexB]);
-        const canPlaceBatA = canPlaceWindow(sizeB, posA.row, posA.col, [indexA, indexB]);
-
-        if (canPlaceAatB && canPlaceBatA) {
-          setWindows((prev) => {
-            const updatedWindows = [...prev];
-            updatedWindows[indexA] = { ...windowA, position: posB };
-            updatedWindows[indexB] = { ...windowB, position: posA };
-
-            // Update grid occupancy
-            for (let r = posA.row; r < posA.row + heightA; r++) {
-              for (let c = posA.col; c < posA.col + widthA; c++) {
-                gridRef.current.occupied[r][c] = false;
+          for (const { index, relRow, relCol } of relativePositions) {
+            const win = localWindows[index];
+            const size = win.size;
+            const newRow = baseRow + relRow;
+            const newCol = baseCol + relCol;
+            console.log(`Checking group window ${index} at row: ${newRow}, col: ${newCol}`);
+            if (canPlaceWindow(size, newRow, newCol, [largeIndex, ...indices])) {
+              groupPositions.push({ index, position: { row: newRow, col: newCol } });
+            } else {
+              const pos = findPositionForWindow(size, [largeIndex, ...indices]);
+              if (pos) {
+                console.log(`Alternative position for ${index}: ${JSON.stringify(pos)}`);
+                groupPositions.push({ index, position: pos });
+              } else {
+                console.log(`No position for group window ${index}`);
+                canPlaceGroup = false;
+                break;
               }
             }
-            for (let r = posB.row; r < posB.row + heightB; r++) {
-              for (let c = posB.col; c < posB.col + widthB; c++) {
-                gridRef.current.occupied[r][c] = false;
+          }
+
+          if (canPlaceGroup) {
+            const updatedWindows = localWindows.map((win, idx) =>
+              idx === largeIndex
+                ? { ...win, position: { row: minRow, col: minCol } }
+                : groupPositions.find((gp) => gp.index === idx)
+                ? { ...win, position: groupPositions.find((gp) => gp.index === idx).position }
+                : win
+            );
+            console.log('Group swap successful, updating windows');
+            setWindows(updatedWindows);
+            gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
+            updatedWindows.forEach((win) => {
+              const { width, height } = windowSizes[win.size];
+              for (let r = win.position.row; r < win.position.row + height; r++) {
+                for (let c = win.position.col; c < win.position.col + width; c++) {
+                  if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+                    gridRef.current.occupied[r][c] = true;
+                  }
+                }
               }
-            }
-
-            for (let r = posB.row; r < posB.row + heightA; r++) {
-              for (let c = posB.col; c < posB.col + widthA; c++) {
-                gridRef.current.occupied[r][c] = true;
-              }
-            }
-            for (let r = posA.row; r < posA.row + heightB; r++) {
-              for (let c = posA.col; c < posA.col + widthB; c++) {
-                gridRef.current.occupied[r][c] = true;
-              }
-            }
-
-            return updatedWindows;
-          });
-        } else {
-          alert('Cannot swap windows: Invalid positioning or space conflict');
-        }
-        return;
-      }
-
-      // Proceed with group swap
-      const { minRow: groupRow, minCol: groupCol, relativePositions } = groupSmall;
-      const largeWindow = windows[largeIndex];
-      const canPlaceLargeAtGroup = canPlaceWindow(largeSize, groupRow, groupCol, groupSmall.indices);
-
-      // Try to place group windows in large window's position, preserving relative structure
-      let canPlaceGroupAtLarge = true;
-      const groupPositions = [];
-      const baseRow = largePos.row;
-      const baseCol = largePos.col;
-
-      for (const { index, relRow, relCol } of relativePositions) {
-        const win = windows[index];
-        const newRow = baseRow + relRow;
-        const newCol = baseCol + relCol;
-        const canPlace = canPlaceWindow(win.size, newRow, newCol, [largeIndex, ...groupSmall.indices]);
-        if (canPlace) {
-          groupPositions.push({ index, position: { row: newRow, col: newCol } });
-        } else {
-          // Fall back to finding any valid position
-          const pos = findPositionForWindow(win.size, [largeIndex, ...groupSmall.indices]);
-          if (pos) {
-            groupPositions.push({ index, position: pos });
+            });
+            updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
+            return true;
           } else {
-            canPlaceGroupAtLarge = false;
-            break;
+            console.log('Group swap failed: cannot place all group windows');
           }
+        } else {
+          console.log('Group swap failed: cannot place large window');
         }
-      }
-
-      if (canPlaceLargeAtGroup && canPlaceGroupAtLarge) {
-        setWindows((prev) => {
-          const updatedWindows = [...prev];
-
-          // Clear all affected grid positions
-          for (let r = largePos.row; r < largePos.row + windowSizes[largeSize].height; r++) {
-            for (let c = largePos.col; c < largePos.col + windowSizes[largeSize].width; c++) {
-              gridRef.current.occupied[r][c] = false;
-            }
-          }
-          for (const idx of groupSmall.indices) {
-            const win = windows[idx];
+      } else {
+        console.log('No group found, attempting fallback swap');
+        // Fallback: Try swapping positions directly
+        const largeWin = localWindows[largeIndex];
+        const smallWin = localWindows[smallIndex];
+        if (
+          canPlaceWindow(largeWin.size, smallWin.position.row, smallWin.position.col, [largeIndex, smallIndex]) &&
+          canPlaceWindow(smallWin.size, largeWin.position.row, largeWin.position.col, [largeIndex, smallIndex])
+        ) {
+          const updatedWindows = localWindows.map((win, idx) =>
+            idx === largeIndex
+              ? { ...win, position: smallWin.position }
+              : idx === smallIndex
+              ? { ...win, position: largeWin.position }
+              : win
+          );
+          console.log('Fallback swap successful, updating windows');
+          setWindows(updatedWindows);
+          gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
+          updatedWindows.forEach((win) => {
             const { width, height } = windowSizes[win.size];
             for (let r = win.position.row; r < win.position.row + height; r++) {
               for (let c = win.position.col; c < win.position.col + width; c++) {
-                gridRef.current.occupied[r][c] = false;
+                if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+                  gridRef.current.occupied[r][c] = true;
+                }
               }
             }
-          }
-
-          // Place large window in group's position
-          updatedWindows[largeIndex] = { ...largeWindow, position: { row: groupRow, col: groupCol } };
-          for (let r = groupRow; r < groupRow + windowSizes[largeSize].height; r++) {
-            for (let c = groupCol; c < groupCol + windowSizes[largeSize].width; c++) {
-              gridRef.current.occupied[r][c] = true;
-            }
-          }
-
-          // Place group windows in new positions
-          for (const { index, position } of groupPositions) {
-            updatedWindows[index] = { ...windows[index], position };
-            const { width, height } = windowSizes[windows[index].size];
-            for (let r = position.row; r < position.row + height; r++) {
-              for (let c = position.col; c < position.col + width; c++) {
-                gridRef.current.occupied[r][c] = true;
-              }
-            }
-          }
-
-          return updatedWindows;
-        });
-      } else {
-        alert('Cannot swap windows: Cannot place all windows');
+          });
+          updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
+          return true;
+        } else {
+          console.log('Fallback swap failed: invalid positions');
+        }
       }
     }
+    console.log('Swap failed: no valid configuration found');
+    return false;
   };
 
-  const findMatchingGroup = (startIndex, targetArea) => {
-    const queue = [{ indices: [startIndex], area: windowSizes[windows[startIndex].size].width * windowSizes[windows[startIndex].size].height }];
+  const attemptCrossDashboardSwap = (
+    sourceDashboardId,
+    sourceIndex,
+    targetDashboardId,
+    targetIndex
+  ) => {
+    console.log(
+      `Attempting cross-dashboard swap: ${sourceDashboardId} index ${sourceIndex} ↔ ${targetDashboardId} index ${targetIndex}`
+    );
+
+    const sourceWidgets = getDashboardWidgets(sourceDashboardId);
+    const targetWidgets = getDashboardWidgets(targetDashboardId);
+
+    // Generate windows for source and target dashboards
+    const sourceWindows = windows.map((win) => ({
+      ...win,
+      position: win.position || findPositionForWindow(win.size) || { row: 0, col: 0 },
+    }));
+
+    const targetWindows = targetWidgets.map((widget) => {
+      const size = sizeMap[widget.size] || 'small';
+      const position = findPositionForWindow(size) || { row: 0, col: 0 };
+      return {
+        originalWidget: widget,
+        size,
+        position,
+      };
+    });
+
+    const windowA = sourceWindows[sourceIndex];
+    const sizeA = sizeMap[windowA.size] || windowA.size;
+    const posA = windowA.position;
+    const { width: widthA, height: heightA } = windowSizes[sizeA];
+    const areaA = widthA * heightA;
+
+    const windowB = targetWindows[targetIndex];
+    const sizeB = sizeMap[windowB.size] || windowB.size;
+    const posB = windowB.position;
+    const { width: widthB, height: heightB } = windowSizes[sizeB];
+    const areaB = widthB * heightB;
+
+    console.log(`Source window: size ${sizeA}, pos ${JSON.stringify(posA)}, area ${areaA}`);
+    console.log(`Target window: size ${sizeB}, pos ${JSON.stringify(posB)}, area ${areaB}`);
+
+    if (areaA === areaB) {
+      console.log('Attempting direct cross-dashboard swap');
+      if (canPlaceWindow(sizeA, posB.row, posB.col, [sourceIndex]) && canPlaceWindow(sizeB, posA.row, posA.col, [targetIndex])) {
+        const updatedSourceWindows = sourceWindows.filter((_, idx) => idx !== sourceIndex).concat([
+          { ...windowB, position: posA },
+        ]);
+        const updatedTargetWindows = targetWindows.filter((_, idx) => idx !== targetIndex).concat([
+          { ...windowA, position: posB },
+        ]);
+
+        console.log('Direct cross-dashboard swap successful');
+        if (dashboardId === sourceDashboardId) {
+          setWindows(updatedSourceWindows);
+          updateWidgets(sourceDashboardId, updatedSourceWindows.map((win) => win.originalWidget));
+        } else {
+          setWindows(updatedTargetWindows);
+          updateWidgets(targetDashboardId, updatedTargetWindows.map((win) => win.originalWidget));
+        }
+        updateWidgets(
+          sourceDashboardId === dashboardId ? targetDashboardId : sourceDashboardId,
+          (sourceDashboardId === dashboardId ? updatedTargetWindows : updatedSourceWindows).map((win) => win.originalWidget)
+        );
+        return true;
+      } else {
+        console.log('Direct cross-dashboard swap failed: invalid positions');
+      }
+    } else {
+      console.log('Attempting group or fallback cross-dashboard swap');
+      const [largeIndex, smallIndex, largeWindows, smallWindows, largeDashboardId, smallDashboardId, largeArea] =
+        areaA > areaB
+          ? [sourceIndex, targetIndex, sourceWindows, targetWindows, sourceDashboardId, targetDashboardId, areaA]
+          : [targetIndex, sourceIndex, targetWindows, sourceWindows, targetDashboardId, sourceDashboardId, areaB];
+
+      const groupSmall = findMatchingGroup(smallWindows, smallIndex, largeArea);
+      if (groupSmall) {
+        console.log(`Found group in ${smallDashboardId}: ${JSON.stringify(groupSmall)}`);
+        const { indices, minRow, minCol, relativePositions } = groupSmall;
+
+        if (canPlaceWindow(largeWindows[largeIndex].size, minRow, minCol, indices)) {
+          let canPlaceGroup = true;
+          const groupPositions = [];
+          const baseRow = largeWindows[largeIndex].position.row;
+          const baseCol = largeWindows[largeIndex].position.col;
+
+          for (const { index, relRow, relCol } of relativePositions) {
+            const win = smallWindows[index];
+            const size = win.size;
+            const newRow = baseRow + relRow;
+            const newCol = baseCol + relCol;
+            console.log(`Checking group window ${index} at row: ${newRow}, col: ${newCol} in ${largeDashboardId}`);
+            if (canPlaceWindow(size, newRow, newCol, [largeIndex])) {
+              groupPositions.push({ index, position: { row: newRow, col: newCol } });
+            } else {
+              const pos = findPositionForWindow(size, [largeIndex]);
+              if (pos) {
+                console.log(`Alternative position for ${index}: ${JSON.stringify(pos)}`);
+                groupPositions.push({ index, position: pos });
+              } else {
+                console.log(`No position for group window ${index}`);
+                canPlaceGroup = false;
+                break;
+              }
+            }
+          }
+
+          if (canPlaceGroup) {
+            const updatedLargeWindows = largeWindows.filter((_, idx) => idx !== largeIndex).concat(
+              groupPositions.map(({ index, position }) => ({
+                ...smallWindows[index],
+                position,
+              }))
+            );
+            const updatedSmallWindows = smallWindows.filter((_, idx) => !indices.includes(idx)).concat([
+              {
+                ...largeWindows[largeIndex],
+                position: { row: minRow, col: minCol },
+              },
+            ]);
+
+            console.log('Group cross-dashboard swap successful');
+            if (dashboardId === largeDashboardId) {
+              setWindows(updatedLargeWindows);
+              updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
+            } else {
+              setWindows(updatedSmallWindows);
+              updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
+            }
+            updateWidgets(
+              largeDashboardId === dashboardId ? smallDashboardId : largeDashboardId,
+              (largeDashboardId === dashboardId ? updatedSmallWindows : updatedLargeWindows).map((win) => win.originalWidget)
+            );
+            return true;
+          } else {
+            console.log('Group cross-dashboard swap failed: cannot place all group windows');
+          }
+        } else {
+          console.log('Group cross-dashboard swap failed: cannot place large window');
+        }
+      } else {
+        console.log('No group found, attempting fallback cross-dashboard swap');
+        const largeWin = largeWindows[largeIndex];
+        const smallWin = smallWindows[smallIndex];
+        if (
+          canPlaceWindow(largeWin.size, smallWin.position.row, smallWin.position.col, [largeIndex]) &&
+          canPlaceWindow(smallWin.size, largeWin.position.row, largeWin.position.col, [smallIndex])
+        ) {
+          const updatedLargeWindows = largeWindows.filter((_, idx) => idx !== largeIndex).concat([
+            { ...smallWin, position: largeWin.position },
+          ]);
+          const updatedSmallWindows = smallWindows.filter((_, idx) => idx !== smallIndex).concat([
+            { ...largeWin, position: smallWin.position },
+          ]);
+
+          console.log('Fallback cross-dashboard swap successful');
+          if (dashboardId === largeDashboardId) {
+            setWindows(updatedLargeWindows);
+            updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
+          } else {
+            setWindows(updatedSmallWindows);
+            updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
+          }
+          updateWidgets(
+            largeDashboardId === dashboardId ? smallDashboardId : largeDashboardId,
+            (largeDashboardId === dashboardId ? updatedSmallWindows : updatedLargeWindows).map((win) => win.originalWidget)
+          );
+          return true;
+        } else {
+          console.log('Fallback cross-dashboard swap failed: invalid positions');
+        }
+      }
+    }
+    console.log('Cross-dashboard swap failed: no valid configuration found');
+    return false;
+  };
+
+  const findMatchingGroup = (windows, startIndex, targetArea) => {
+    console.log(`Finding group for target area ${targetArea} starting at index ${startIndex}`);
+    const queue = [
+      {
+        indices: [startIndex],
+        area: windowSizes[windows[startIndex].size].width * windowSizes[windows[startIndex].size].height,
+      },
+    ];
     const visited = new Set();
 
     while (queue.length > 0) {
       const { indices, area } = queue.shift();
+      console.log(`Checking group: indices ${indices}, area ${area}`);
       if (area === targetArea) {
-        const boundingBox = getBoundingBox(indices);
-        // Calculate relative positions for each window in the group
+        const boundingBox = getBoundingBox(windows, indices);
         const relativePositions = indices.map((idx) => ({
           index: idx,
           relRow: windows[idx].position.row - boundingBox.minRow,
           relCol: windows[idx].position.col - boundingBox.minCol,
         }));
+        console.log(`Group found: ${JSON.stringify({ indices, minRow: boundingBox.minRow, minCol: boundingBox.minCol })}`);
         return { indices, minRow: boundingBox.minRow, minCol: boundingBox.minCol, relativePositions };
       }
       if (area > targetArea) continue;
@@ -372,8 +516,8 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
         if (indices.includes(i) || visited.has([...indices, i].sort().join(','))) continue;
         const newIndices = [...indices, i];
         const newArea = newIndices.reduce((sum, idx) => {
-          const { width, height } = windowSizes[windows[idx].size];
-          return sum + width * height;
+          const size = windows[idx].size;
+          return sum + windowSizes[size].width * windowSizes[size].height;
         }, 0);
         if (newArea <= targetArea) {
           queue.push({ indices: newIndices, area: newArea });
@@ -381,11 +525,11 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
         }
       }
     }
-
+    console.log('No group found');
     return null;
   };
 
-  const getBoundingBox = (indices) => {
+  const getBoundingBox = (windows, indices) => {
     let minRow = Infinity;
     let maxRow = -Infinity;
     let minCol = Infinity;
@@ -409,7 +553,28 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
     };
   };
 
+  const areWidgetsEqual = (prev, next) => {
+    if (!prev || prev.length !== next.length) return false;
+    return prev.every((p, i) => {
+      const n = next[i];
+      return (
+        p.id === n.id &&
+        p.size === n.size &&
+        p.title === n.title &&
+        p.data === n.data &&
+        p.section === n.section
+      );
+    });
+  };
+
   useEffect(() => {
+    console.log(`Checking initialization for dashboard ${dashboardId}, widgets: ${initialWidgets.length}`);
+    if (areWidgetsEqual(prevWidgetsRef.current, initialWidgets)) {
+      console.log(`Widgets unchanged for ${dashboardId}, skipping initialization`);
+      return;
+    }
+
+    console.log(`Initializing windows for dashboard ${dashboardId}`);
     gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
     let newWindows = [];
     let currentScore = 0;
@@ -424,16 +589,21 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
       const size = sizeMap[widget.size] || 'small';
       const score = windowScores[size];
 
+      console.log(`Processing widget ${widget.id}, size ${size}, score ${score}`);
+
       if (currentScore + score > 200) {
+        console.log(`Skipping widget ${widget.id}: score limit exceeded`);
         return;
       }
 
       const position = findPositionForWindow(size);
       if (!position) {
+        console.log(`Skipping widget ${widget.id}: no valid position`);
         return;
       }
 
       newWindows.push({
+        originalWidget: widget,
         size,
         content: (
           <div className={styles.widgetWrapper}>
@@ -458,103 +628,42 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
       currentScore += score;
     });
 
+    console.log(`Windows initialized for ${dashboardId}: ${newWindows.length} windows`);
     setWindows(newWindows);
-  }, [initialWidgets, isDarkTheme]);
+    prevWidgetsRef.current = initialWidgets;
+  }, [initialWidgets, isDarkTheme, dashboardId]);
 
-  useEffect(() => {
-    const handleExitEditMode = (event) => {
-      if (event.detail.planeRef !== planeRef && editMode) {
-        setEditMode(false);
-        setSelectedIndex(null);
+  const handleWindowClick = (index) => {
+    if (!editMode) {
+      console.log('Edit mode off, ignoring window click');
+      return;
+    }
+
+    console.log(`Window clicked at index ${index} in dashboard ${dashboardId}`);
+    onWindowSelect(dashboardId, index, (sourceDashboardId, sourceIndex, targetDashboardId, targetIndex) => {
+      if (sourceDashboardId === targetDashboardId) {
+        attemptSameDashboardSwap(sourceIndex, targetIndex);
+      } else {
+        attemptCrossDashboardSwap(sourceDashboardId, sourceIndex, targetDashboardId, targetIndex);
       }
-    };
-
-    document.addEventListener('exitEditMode', handleExitEditMode);
-    return () => document.removeEventListener('exitEditMode', handleExitEditMode);
-  }, [editMode]);
-
-  const toggleEditMode = () => {
-    setEditMode((prev) => {
-      const newEditMode = !prev;
-      if (newEditMode) {
-        document.dispatchEvent(new CustomEvent('exitEditMode', { detail: { planeRef } }));
-      }
-      setSelectedIndex(null);
-      return newEditMode;
     });
   };
 
   return (
     <div
-      className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''} ${editMode ? styles.editModeContainer : ''}`}
+      className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''} ${
+        editMode ? styles.editModeContainer : ''
+      } ${isSelected ? styles.selectedDashboard : ''} ${windows.length === 0 ? styles.empty : ''}`}
       ref={planeRef}
+      onClick={() => editMode && onSelect()}
     >
-      <button className={styles.toggleEditButton} onClick={toggleEditMode}>
-        {editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
-      </button>
-      {editMode && (
-        <div className={styles.controls}>
-          <button className={styles.doneButton} onClick={() => setEditMode(false)}>
-            Done
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() =>
-              addWindow('verySmall', (
-                <div className={styles.widgetWrapper}>
-                  <h3 className={styles.widgetTitle}>New Widget</h3>
-                  <div className={styles.widgetData}>Add content</div>
-                </div>
-              ))
-            }
-          >
-            <FaPlus /> Very Small
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() =>
-              addWindow('small', (
-                <div className={styles.widgetWrapper}>
-                  <h3 className={styles.widgetTitle}>New Widget</h3>
-                  <div className={styles.widgetData}>Add content</div>
-                </div>
-              ))
-            }
-          >
-            <FaPlus /> Small
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() =>
-              addWindow('medium', (
-                <div className={styles.widgetWrapper}>
-                  <h3 className={styles.widgetTitle}>New Widget</h3>
-                  <div className={styles.widgetData}>Add content</div>
-                </div>
-              ))
-            }
-          >
-            <FaPlus /> Medium
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() =>
-              addWindow('big', (
-                <div className={styles.widgetWrapper}>
-                  <h3 className={styles.widgetTitle}>New Widget</h3>
-                  <div className={styles.widgetData}>Add content</div>
-                </div>
-              ))
-            }
-          >
-            <FaPlus /> Big
-          </button>
-        </div>
-      )}
+      <h3 className={`${styles.dashboardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        Dashboard {dashboardId.split('-')[1]}
+      </h3>
       <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {windows.map((window, index) => (
           <Window
-            key={index}
+            key={`${dashboardId}-${window.originalWidget.id}`}
             size={window.size}
             style={{
               gridRow: `${window.position.row + 1} / span ${windowSizes[window.size].height}`,
@@ -562,7 +671,7 @@ const DashboardPlane = ({ initialWidgets = [] }) => {
             }}
             onDelete={() => removeWindow(index)}
             editMode={editMode}
-            isSelected={selectedIndex === index}
+            isSelected={selectedWindow && selectedWindow.dashboardId === dashboardId && selectedWindow.index === index}
             onClick={() => handleWindowClick(index)}
           >
             {window.content}

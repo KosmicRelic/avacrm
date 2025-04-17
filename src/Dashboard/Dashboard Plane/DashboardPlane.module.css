@@ -11,90 +11,32 @@
   background: transparent;
 }
 
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+.container.empty {
+  display: none; /* Hide empty dashboards to not affect container height */
 }
 
-.addButton {
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 600;
+.editModeContainer {
   cursor: pointer;
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: background 0.2s ease;
 }
 
-.addButton.darkTheme {
-  background: #2c2c2e;
-  color: #0a84ff;
+.selectedDashboard {
+  border: 2px solid #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
 }
 
-.addButton:hover {
-  background: #f5f5f5;
+.darkTheme.selectedDashboard {
+  border-color: #1a73e8;
+  background-color: rgba(26, 115, 232, 0.1);
 }
 
-.addButton.darkTheme:hover {
-  background: #3a3a3c;
+.dashboardTitle {
+  font-size: 18px;
+  margin: 0 0 10px 0;
+  color: #1d1d1f;
 }
 
-.editButton {
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: none;
-  color: #007aff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: background 0.2s ease;
-}
-
-.editButton.darkTheme {
-  background: #2c2c2e;
-  color: #0a84ff;
-}
-
-.editButton:hover {
-  background: #f5f5f5;
-}
-
-.editButton.darkTheme:hover {
-  background: #3a3a3c;
-}
-
-.doneButton {
-  background: #007aff;
+.darkTheme .dashboardTitle {
   color: #ffffff;
-}
-
-.doneButton.darkTheme {
-  background: #0a84ff;
-}
-
-.doneButton:hover {
-  background: #0066d6;
-}
-
-.doneButton.darkTheme:hover {
-  background: #0073e6;
 }
 
 .dashboardWrapper {
@@ -102,9 +44,9 @@
   max-width: 416px;
   height: 416px;
   display: grid;
-  grid-template-columns: repeat(2, 200px); /* 400px + 16px gap = 416px */
-  grid-template-rows: repeat(4, 92px); /* 368px + 48px gaps = 416px */
-  gap: 16px; /* Added 16px gap */
+  grid-template-columns: repeat(2, 200px);
+  grid-template-rows: repeat(4, 92px);
+  gap: 16px;
   box-sizing: border-box;
   border-radius: 16px;
   position: relative;
@@ -181,23 +123,23 @@
 }
 
 .verySmallWindow {
-  grid-column: span 1; /* 200px */
-  grid-row: span 1; /* 92px */
+  grid-column: span 1;
+  grid-row: span 1;
 }
 
 .smallWindow {
-  grid-column: span 1; /* 200px */
-  grid-row: span 2; /* 200px (92px × 2 + 16px gap) */
+  grid-column: span 1;
+  grid-row: span 2;
 }
 
 .mediumWindow {
-  grid-column: span 2; /* 416px (200px × 2 + 16px gap) */
-  grid-row: span 2; /* 200px (92px × 2 + 16px gap) */
+  grid-column: span 2;
+  grid-row: span 2;
 }
 
 .bigWindow {
-  grid-column: span 2; /* 416px */
-  grid-row: span 4; /* 416px (92px × 4 + 3 × 16px gaps) */
+  grid-column: span 2;
+  grid-row: span 4;
 }
 
 .verySmallWindow.editMode,
@@ -205,6 +147,7 @@
 .mediumWindow.editMode,
 .bigWindow.editMode {
   cursor: grab;
+  animation: jiggle 0.3s ease-in-out infinite alternate;
 }
 
 .verySmallWindow.editMode:active,
@@ -214,6 +157,7 @@
   cursor: grabbing;
   transform: scale(1.02);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: none; /* Stop jiggle when active */
 }
 
 .verySmallWindow.editMode.darkTheme:active,
@@ -221,6 +165,15 @@
 .mediumWindow.editMode.darkTheme:active,
 .bigWindow.editMode.darkTheme:active {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes jiggle {
+  0% {
+    transform: rotate(-1deg);
+  }
+  100% {
+    transform: rotate(1deg);
+  }
 }
 
 .windowContent {
@@ -267,23 +220,16 @@
   background: #d83a34;
 }
 
-.dragIcon {
-  font-size: 18px;
-  color: #8e8e93;
-  cursor: grab;
-  padding: 4px;
-  user-select: none;
+.selected {
+  background-color: rgba(0, 123, 255, 0.2);
+  border: 2px solid #007bff;
 }
 
-.dragIcon.darkTheme {
-  color: #8e8e93;
+.darkTheme .selected {
+  background-color: rgba(26, 115, 232, 0.2);
+  border: 2px solid #1a73e8;
 }
 
-.dragIcon:active {
-  cursor: grabbing;
-}
-
-/* Center container on small screens */
 @media (max-width: 768px) {
   .container {
   }
@@ -292,39 +238,4 @@
     max-width: 100%;
     margin: 0;
   }
-}
-
-/* Selected window style */
-.selected {
-  background-color: rgba(0, 123, 255, 0.2); /* Blue-ish transparent background */
-  border: 2px solid #007bff; /* Blue border for emphasis */
-}
-
-.darkTheme .selected {
-  background-color: rgba(26, 115, 232, 0.2); /* Adjusted for dark theme */
-  border: 2px solid #1a73e8;
-}
-
-/* Toggle edit mode button */
-.toggleEditButton {
-  padding: 8px 16px;
-  margin: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.toggleEditButton:hover {
-  background-color: #0056b3;
-}
-
-.darkTheme .toggleEditButton {
-  background-color: #1a73e8;
-}
-
-.darkTheme .toggleEditButton:hover {
-  background-color: #1557b0;
 }

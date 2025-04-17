@@ -3,13 +3,14 @@ import styles from './DatePicker.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 
 const DatePicker = () => {
-  const { isDarkTheme } = useContext(MainContext); // Access dark theme state
+  const { isDarkTheme } = useContext(MainContext);
   const options = ['Today', 'Weekly', 'Monthly', 'Date'];
   const [activeOption, setActiveOption] = useState(options[0]);
+  const [collapsed, setCollapsed] = useState(true); // Collapse by default
   const highlightRef = useRef(null);
   const buttonRefs = useRef({});
+  const datePickerRef = useRef(null); // Reference for the DatePicker container
 
-  // Update highlight position and size
   const updateHighlight = (option) => {
     const button = buttonRefs.current[option];
     if (button && highlightRef.current) {
@@ -20,33 +21,62 @@ const DatePicker = () => {
     }
   };
 
-  // Handle button click
   const handleClick = (option) => {
     setActiveOption(option);
     updateHighlight(option);
+    setCollapsed(true); // Auto-collapse after selecting
   };
 
-  // Initialize highlight and update on resize
+  const handleClickOutside = (e) => {
+    // Close DatePicker if click is outside of it
+    if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
+      setCollapsed(true);
+    }
+  };
+
   useEffect(() => {
-    updateHighlight(activeOption);
+    if (!collapsed) updateHighlight(activeOption);
     const handleResize = () => updateHighlight(activeOption);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeOption]);
+    // Add event listener for clicks outside of the DatePicker
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeOption, collapsed]);
 
   return (
-    <div className={`${styles.datePicker} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      {options.map((option) => (
+    <div
+      ref={datePickerRef}
+      className={`${styles.datePicker} ${collapsed ? styles.collapsed : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+    >
+      {collapsed ? (
         <button
-          key={option}
-          ref={(el) => (buttonRefs.current[option] = el)}
-          className={`${styles.button} ${activeOption === option ? styles.active : ''}`}
-          onClick={() => handleClick(option)}
+          className={`${styles.button} ${styles.active}`}
+          onClick={() => setCollapsed(false)} // Expanding the DatePicker
         >
-          {option}
+          {activeOption}
         </button>
-      ))}
-      <div className={`${styles.highlight} ${isDarkTheme ? styles.darkTheme : ''}`} ref={highlightRef}></div>
+      ) : (
+        <>
+          {options.map((option) => (
+            <button
+              key={option}
+              ref={(el) => (buttonRefs.current[option] = el)}
+              className={`${styles.button} ${activeOption === option ? styles.active : ''}`}
+              onClick={() => handleClick(option)}
+            >
+              {option}
+            </button>
+          ))}
+          <div
+            className={`${styles.highlight} ${isDarkTheme ? styles.darkTheme : ''}`}
+            ref={highlightRef}
+          ></div>
+        </>
+      )}
     </div>
   );
 };
