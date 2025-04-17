@@ -23,7 +23,6 @@ const Dashboard = () => {
     }))
   );
   const [editMode, setEditMode] = useState(false);
-  const [selectedDashboardId, setSelectedDashboardId] = useState(null);
   const [selectedWindow, setSelectedWindow] = useState(null); // { dashboardId, index }
   const editControlsRef = useRef(null);
 
@@ -144,40 +143,71 @@ const Dashboard = () => {
       const newEditMode = !prev;
       if (!newEditMode) {
         console.log('Exiting edit mode, clearing selections');
-        setSelectedDashboardId(null);
         setSelectedWindow(null);
       }
       return newEditMode;
     });
   };
 
-  const handleDashboardSelect = (dashboardId) => {
-    if (editMode) {
-      console.log(`Selecting dashboard: ${dashboardId}`);
-      setSelectedDashboardId(dashboardId);
-    }
-  };
-
   const addWindowToDashboard = (size, content) => {
-    if (!selectedDashboardId) {
-      console.log('No dashboard selected for adding widget');
-      alert('Please select a dashboard to add a widget to');
+    console.log(`Attempting to add ${size} widget to a dashboard`);
+
+    const windowScores = {
+      verySmall: 10,
+      small: 20,
+      medium: 40,
+      big: 80,
+    };
+    const sizeMap = {
+      tiny: 'verySmall',
+      verySmall: 'verySmall',
+      small: 'small',
+      medium: 'medium',
+      large: 'big',
+    };
+
+    const widgetSize = sizeMap[size] || 'small';
+    const widgetScore = windowScores[widgetSize] || 20;
+
+    const calculateScore = (widgets) => {
+      return widgets.reduce((sum, w) => {
+        const wSize = sizeMap[w.size] || 'small';
+        return sum + (windowScores[wSize] || 0);
+      }, 0);
+    };
+
+    // Check each dashboard for available space
+    let targetDashboard = null;
+    for (const dashboard of dashboards) {
+      const currentScore = calculateScore(dashboard.widgets);
+      if (currentScore + widgetScore > 200) {
+        console.log(`Dashboard ${dashboard.id} score too high: ${currentScore} + ${widgetScore} > 200`);
+        continue;
+      }
+
+      // Check if there's a valid position (logic handled in DashboardPlane via findPositionForWindow)
+      // Assume DashboardPlane will validate position during rendering
+      targetDashboard = dashboard;
+      break; // Use the first dashboard with enough score capacity
+    }
+
+    if (!targetDashboard) {
+      console.log('No dashboard has enough space to add the widget');
       return;
     }
-    console.log(`Adding ${size} widget to dashboard: ${selectedDashboardId}`);
+
     const newWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      size,
+      size: widgetSize,
       title: 'New Widget',
       data: content,
     };
+
+    console.log(`Adding ${widgetSize} widget to dashboard: ${targetDashboard.id}`);
     setDashboards((prev) =>
       prev.map((dashboard) =>
-        dashboard.id === selectedDashboardId
-          ? {
-              ...dashboard,
-              widgets: [...dashboard.widgets, newWidget],
-            }
+        dashboard.id === targetDashboard.id
+          ? { ...dashboard, widgets: [...dashboard.widgets, newWidget] }
           : dashboard
       )
     );
@@ -202,21 +232,22 @@ const Dashboard = () => {
       console.log('Edit mode off, ignoring window selection');
       return;
     }
-    console.log(
-      `Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`
-    );
+    console.log(`Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`);
     if (!selectedWindow) {
       setSelectedWindow({ dashboardId, index });
-      if (selectedDashboardId !== dashboardId) {
-        handleDashboardSelect(dashboardId);
-      }
     } else {
-      const success = attemptSwap(selectedWindow.dashboardId, selectedWindow.index, dashboardId, index);
+      const success = attemptSwap(
+        selectedWindow.dashboardId,
+        selectedWindow.index,
+        dashboardId,
+        index
+      );
       if (success) {
         console.log('Swap successful, clearing selected window');
         setSelectedWindow(null);
       } else {
-        console.log('Swap failed, preserving selected window');
+        console.log('Swap failed, setting new selected window');
+        setSelectedWindow({ dashboardId, index });
       }
     }
   };
@@ -265,10 +296,7 @@ const Dashboard = () => {
           >
             <FaPlus /> Big
           </button>
-          <button
-            className={styles.addButton}
-            onClick={addDashboard}
-          >
+          <button className={styles.addButton} onClick={addDashboard}>
             <FaPlus /> Dashboard
           </button>
         </div>
@@ -280,8 +308,6 @@ const Dashboard = () => {
             dashboardId={dashboard.id}
             initialWidgets={dashboard.widgets}
             editMode={editMode}
-            isSelected={selectedDashboardId === dashboard.id}
-            onSelect={() => handleDashboardSelect(dashboard.id)}
             updateWidgets={updateWidgets}
             onWindowSelect={handleWindowSelect}
             selectedWindow={selectedWindow}
