@@ -212,8 +212,11 @@ const DashboardPlane = ({
 
     // Handle group swap for different areas
     console.log('Attempting group swap');
-    const [largeIndex, smallIndex, largeArea] =
-      areaA > areaB ? [indexA, indexB, areaA] : [indexB, indexA, areaB];
+    const [largeIndex, smallIndex, largeSize, smallSize, largeArea] =
+      areaA > areaB
+        ? [indexA, indexB, sizeA, sizeB, areaA]
+        : [indexB, indexA, sizeB, sizeA, areaB];
+
     const groupSmall = findMatchingGroup(localWindows, smallIndex, largeArea);
     if (groupSmall) {
       console.log(`Found group: ${JSON.stringify(groupSmall)}`);
@@ -232,7 +235,7 @@ const DashboardPlane = ({
       });
 
       // Check if large window can be placed
-      if (canPlaceWindow(localWindows[largeIndex].size, minRow, minCol, [], groupGrid)) {
+      if (canPlaceWindow(largeSize, minRow, minCol, [], groupGrid)) {
         let canPlaceGroup = true;
         const groupPositions = [];
         const tempGrid = Array(4).fill().map(() => Array(2).fill(false));
@@ -246,6 +249,7 @@ const DashboardPlane = ({
           }
         });
 
+        // Place group windows
         for (const { index } of relativePositions) {
           const win = localWindows[index];
           const size = win.size;
@@ -273,21 +277,35 @@ const DashboardPlane = ({
               ? { ...win, position: groupPositions.find((gp) => gp.index === idx).position }
               : win
           );
-          console.log('Group swap successful, updating windows');
-          setWindows(updatedWindows);
-          gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
-          updatedWindows.forEach((win) => {
+
+          // Validate no overlaps
+          const finalGrid = Array(4).fill().map(() => Array(2).fill(false));
+          let hasOverlap = false;
+          for (const win of updatedWindows) {
             const { width, height } = windowSizes[win.size] || windowSizes.small;
-            for (let r = win.position.row; r < win.position.row + height; r++) {
-              for (let c = win.position.col; c < win.position.col + width; c++) {
+            const { row, col } = win.position;
+            for (let r = row; r < row + height; r++) {
+              for (let c = col; c < col + width; c++) {
                 if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-                  gridRef.current.occupied[r][c] = true;
+                  if (finalGrid[r][c]) {
+                    console.log(`Overlap detected at row: ${r}, col: ${c}`);
+                    hasOverlap = true;
+                  }
+                  finalGrid[r][c] = true;
                 }
               }
             }
-          });
-          updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
-          return true;
+          }
+
+          if (!hasOverlap) {
+            console.log('Group swap successful, updating windows');
+            setWindows(updatedWindows);
+            gridRef.current.occupied = finalGrid;
+            updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
+            return true;
+          } else {
+            console.log('Group swap failed: windows overlap');
+          }
         } else {
           console.log('Group swap failed: cannot place all group windows');
         }
@@ -296,37 +314,81 @@ const DashboardPlane = ({
       }
     }
 
-    // Fallback swap
+    // Fallback swap with proper grid management
     console.log('Attempting fallback swap');
     const largeWin = localWindows[largeIndex];
     const smallWin = localWindows[smallIndex];
-    const largePos = findPositionForWindow(largeWin.size, [largeIndex, smallIndex]);
-    const smallPos = findPositionForWindow(smallWin.size, [largeIndex, smallIndex]);
-    if (largePos && smallPos) {
-      const updatedWindows = localWindows.map((win, idx) =>
-        idx === largeIndex
-          ? { ...win, position: largePos }
-          : idx === smallIndex
-          ? { ...win, position: smallPos }
-          : win
-      );
-      console.log('Fallback swap successful, updating windows');
-      setWindows(updatedWindows);
-      gridRef.current.occupied = Array(4).fill().map(() => Array(2).fill(false));
-      updatedWindows.forEach((win) => {
-        const { width, height } = windowSizes[win.size] || windowSizes.small;
-        for (let r = win.position.row; r < win.position.row + height; r++) {
-          for (let c = win.position.col; c < win.position.col + width; c++) {
-            if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-              gridRef.current.occupied[r][c] = true;
+
+    // Step 1: Place the large window
+    const tempGrid = Array(4).fill().map(() => Array(2).fill(false));
+    localWindows.forEach((win, idx) => {
+      if (idx === largeIndex || idx === smallIndex) return;
+      const { width, height } = windowSizes[win.size] || windowSizes.small;
+      for (let r = win.position.row; r < win.position.row + height; r++) {
+        for (let c = win.position.col; c < win.position.col + width; c++) {
+          if (r >= 0 && r < 4 && c >= 0 && c < 2) tempGrid[r][c] = true;
+        }
+      }
+    });
+
+    const largePos = findPositionForWindow(largeWin.size, [], tempGrid);
+    if (!largePos) {
+      console.log('Fallback swap failed: no position for large window');
+      return false;
+    }
+
+    // Update grid with large window
+    const { width: largeWidth, height: largeHeight } = windowSizes[largeWin.size] || windowSizes.small;
+    for (let r = largePos.row; r < largePos.row + largeHeight; r++) {
+      for (let c = largePos.col; c < largePos.col + largeWidth; c++) {
+        if (r >= 0 && r < 4 && c >= 0 && c < 2) tempGrid[r][c] = true;
+      }
+    }
+
+    // Step 2: Place the small window
+    const smallPos = findPositionForWindow(smallWin.size, [], tempGrid);
+    if (!smallPos) {
+      console.log('Fallback swap failed: no position for small window');
+      return false;
+    }
+
+    // Step 3: Create updated windows
+    const updatedWindows = localWindows.map((win, idx) =>
+      idx === largeIndex
+        ? { ...win, position: largePos }
+        : idx === smallIndex
+        ? { ...win, position: smallPos }
+        : win
+    );
+
+    // Step 4: Validate no overlaps
+    const finalGrid = Array(4).fill().map(() => Array(2).fill(false));
+    let hasOverlap = false;
+    for (const win of updatedWindows) {
+      const { width, height } = windowSizes[win.size] || windowSizes.small;
+      const { row, col } = win.position;
+      for (let r = row; r < row + height; r++) {
+        for (let c = col; c < col + width; c++) {
+          if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+            if (finalGrid[r][c]) {
+              console.log(`Overlap detected at row: ${r}, col: ${c}`);
+              hasOverlap = true;
             }
+            finalGrid[r][c] = true;
           }
         }
-      });
+      }
+    }
+
+    if (!hasOverlap) {
+      console.log('Fallback swap successful, updating windows');
+      console.log(`Updated windows: ${JSON.stringify(updatedWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+      setWindows(updatedWindows);
+      gridRef.current.occupied = finalGrid;
       updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
       return true;
     } else {
-      console.log('Fallback swap failed: invalid positions');
+      console.log('Fallback swap failed: windows overlap');
       return false;
     }
   };
