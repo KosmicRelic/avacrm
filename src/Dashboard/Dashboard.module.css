@@ -102,6 +102,102 @@
   color: #ffffff;
 }
 
+.buttonGroup {
+  position: absolute;
+  right: 1em;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  z-index: 1
+  ;
+}
+
+.addDashboardButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.themeButton {
+  background-color: #6c757d;
+  color: white;
+  transform: translateY(0);
+}
+
+.themeButton:hover {
+  background-color: #5a6268;
+}
+
+.darkTheme .themeButton {
+  background-color: #495057;
+}
+
+.darkTheme .themeButton:hover {
+  background-color: #343a40;
+}
+
+.addDashboardButton {
+  background-color: #28a745;
+  color: white;
+  transform: translateY(0);
+}
+
+.addDashboardButton:hover {
+  background-color: #218838;
+}
+
+.darkTheme .addDashboardButton {
+  background-color: #20c997;
+}
+
+.darkTheme .addDashboardButton:hover {
+  background-color: #1aa179;
+}
+
+.themeButton.initial {
+  top: 7em;
+}
+
+/* Selected window style */
+.selected {
+  background-color: rgba(0, 123, 255, 0.2);
+  border: 2px solid #007bff;
+}
+
+.darkTheme .selected {
+  background-color: rgba(26, 115, 232, 0.2);
+  border: 2px solid #1a73e8;
+}
+
+.editHeaderButton {
+  border: none;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease, color 0.3s ease;
+  color: #007aff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-radius: 10px;
+}
+
+.editHeaderButton.darkTheme {
+  color: #0A84FF;
+}
+
+.editHeaderButton:hover {
+  transform: scale(1.05);
+}
+
 @media (max-width: 768px) {
   .dashboardWrapper {
     height: calc(100vh - 176px);
@@ -121,62 +217,9 @@
     width: 100%;
     max-width: 400px;
   }
-}
 
-.toggleEditButton {
-  padding: 8px 16px;
-  margin: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.toggleEditButton:hover {
-  background-color: #0056b3;
-}
-
-.darkTheme .toggleEditButton {
-  background-color: #1a73e8;
-}
-
-.darkTheme .toggleEditButton:hover {
-  background-color: #1557b0;
-}
-
-/* Selected window style */
-.selected {
-  background-color: rgba(0, 123, 255, 0.2); /* Blue-ish transparent background */
-  border: 2px solid #007bff; /* Blue border for emphasis */
-}
-
-.darkTheme .selected {
-  background-color: rgba(26, 115, 232, 0.2); /* Adjusted for dark theme */
-  border: 2px solid #1a73e8;
-}
-
-/* Toggle edit mode button */
-.toggleEditButton {
-  padding: 8px 16px;
-  margin: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.toggleEditButton:hover {
-  background-color: #0056b3;
-}
-
-.darkTheme .toggleEditButton {
-  background-color: #1a73e8;
-}
-
-.darkTheme .toggleEditButton:hover {
-  background-color: #1557b0;
+  .buttonGroup {
+    flex-direction: column;
+    align-items: center;
+  }
 }

@@ -202,17 +202,25 @@ const Dashboard = () => {
       console.log('Edit mode off, ignoring window selection');
       return;
     }
-    console.log(`Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`);
+    console.log(
+      `Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`
+    );
     if (!selectedWindow) {
       setSelectedWindow({ dashboardId, index });
-      handleDashboardSelect(dashboardId);
+      if (selectedDashboardId !== dashboardId) {
+        handleDashboardSelect(dashboardId);
+      }
     } else {
-      attemptSwap(selectedWindow.dashboardId, selectedWindow.index, dashboardId, index);
-      setSelectedWindow(null);
+      const success = attemptSwap(selectedWindow.dashboardId, selectedWindow.index, dashboardId, index);
+      if (success) {
+        console.log('Swap successful, clearing selected window');
+        setSelectedWindow(null);
+      } else {
+        console.log('Swap failed, preserving selected window');
+      }
     }
   };
 
-  // Memoize dashboards with deep comparison
   const memoizedDashboards = useMemo(() => {
     return dashboards.map((d) => ({
       ...d,
@@ -223,17 +231,16 @@ const Dashboard = () => {
   return (
     <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <DatePicker />
-      <button
-        className={`${styles.toggleEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-        onClick={toggleEditMode}
-      >
-        {editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
-      </button>
+      <div className={styles.buttonGroup}>
+        <button
+          className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={toggleEditMode}
+        >
+          {editMode ? 'Done' : 'Edit'}
+        </button>
+      </div>
       {editMode && (
         <div className={styles.controls} ref={editControlsRef}>
-          <button className={styles.doneButton} onClick={() => setEditMode(false)}>
-            Done
-          </button>
           <button
             className={styles.addButton}
             onClick={() => addWindowToDashboard('verySmall', 'Add content')}
@@ -258,14 +265,14 @@ const Dashboard = () => {
           >
             <FaPlus /> Big
           </button>
+          <button
+            className={styles.addButton}
+            onClick={addDashboard}
+          >
+            <FaPlus /> Dashboard
+          </button>
         </div>
       )}
-      <button
-        className={`${styles.addDashboardButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-        onClick={addDashboard}
-      >
-        <FaPlus /> Add Dashboard
-      </button>
       <div className={styles.windowsSection}>
         {memoizedDashboards.map((dashboard) => (
           <DashboardPlane
