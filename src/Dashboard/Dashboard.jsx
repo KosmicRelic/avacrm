@@ -16,41 +16,8 @@ const Dashboard = () => {
     pendingPayouts: 0,
     topCampaigns: [],
   });
-  const [dashboards, setDashboards] = useState(
-    Array.from({ length: 6 }, (_, index) => ({
-      id: `dashboard-${index + 1}`,
-      widgets: [],
-    }))
-  );
-  const [editMode, setEditMode] = useState(false);
-  const [selectedWindow, setSelectedWindow] = useState(null); // { dashboardId, index }
-  const editControlsRef = useRef(null);
 
-  useEffect(() => {
-    const totalLeads = cards.length;
-    const closedLeads = cards.filter((card) => card.nextActions === 'Close deal').length;
-    const closeRate = totalLeads ? ((closedLeads / totalLeads) * 100).toFixed(1) : 0;
-    const bottleneck = closeRate < 10 ? 'Low close rate: Improve sales process' : 'None';
-    const revenue = closedLeads * 2000;
-    const costPerLead = totalLeads ? (1000 / totalLeads).toFixed(2) : 0;
-    const campaignROI = 2.5;
-    const pendingPayouts = closedLeads * 1200;
-    const topCampaigns = [
-      { name: 'Facebook Ad #1', leads: 5, costPerLead: 20 },
-      { name: 'Google Ad #1', leads: 3, costPerLead: 25 },
-    ];
-
-    setMetrics({
-      revenue,
-      closeRate,
-      costPerLead,
-      bottleneck,
-      campaignROI,
-      pendingPayouts,
-      topCampaigns,
-    });
-  }, [cards]);
-
+  // Compute widgetConfig once to use in initial state
   const widgetConfig = useMemo(
     () => [
       {
@@ -113,15 +80,56 @@ const Dashboard = () => {
     [metrics]
   );
 
+  // Initialize dashboards with widgets directly in state
+  const [dashboards, setDashboards] = useState(
+    Array.from({ length: 6 }, (_, index) => ({
+      id: `dashboard-${index + 1}`,
+      widgets:
+        index < 3
+          ? widgetConfig.filter((w) => w.section === ['Financials', 'Lead Metrics', 'Marketing'][index])
+          : widgetConfig.slice(0, 2),
+    }))
+  );
+
+  const [editMode, setEditMode] = useState(false);
+  const [selectedWindow, setSelectedWindow] = useState(null); // { dashboardId, index }
+  const editControlsRef = useRef(null);
+
   useEffect(() => {
-    console.log('Initializing dashboards with widgets');
+    const totalLeads = cards.length;
+    const closedLeads = cards.filter((card) => card.nextActions === 'Close deal').length;
+    const closeRate = totalLeads ? ((closedLeads / totalLeads) * 100).toFixed(1) : 0;
+    const bottleneck = closeRate < 10 ? 'Low close rate: Improve sales process' : 'None';
+    const revenue = closedLeads * 2000;
+    const costPerLead = totalLeads ? (1000 / totalLeads).toFixed(2) : 0;
+    const campaignROI = 2.5;
+    const pendingPayouts = closedLeads * 1200;
+    const topCampaigns = [
+      { name: 'Facebook Ad #1', leads: 5, costPerLead: 20 },
+      { name: 'Google Ad #1', leads: 3, costPerLead: 25 },
+    ];
+
+    setMetrics({
+      revenue,
+      closeRate,
+      costPerLead,
+      bottleneck,
+      campaignROI,
+      pendingPayouts,
+      topCampaigns,
+    });
+  }, [cards]);
+
+  // Update widget data when metrics change, without reinitializing dashboards
+  useEffect(() => {
+    console.log('Updating widget data due to metrics change');
     setDashboards((prev) =>
-      prev.map((dashboard, index) => ({
+      prev.map((dashboard) => ({
         ...dashboard,
-        widgets:
-          index < 3
-            ? widgetConfig.filter((w) => w.section === ['Financials', 'Lead Metrics', 'Marketing'][index])
-            : widgetConfig.slice(0, 2),
+        widgets: dashboard.widgets.map((widget) => {
+          const config = widgetConfig.find((w) => w.id === widget.id);
+          return config ? { ...widget, data: config.data } : widget;
+        }),
       }))
     );
   }, [widgetConfig]);
@@ -176,7 +184,6 @@ const Dashboard = () => {
       }, 0);
     };
 
-    // Check each dashboard for available space
     let targetDashboard = null;
     for (const dashboard of dashboards) {
       const currentScore = calculateScore(dashboard.widgets);
@@ -184,11 +191,8 @@ const Dashboard = () => {
         console.log(`Dashboard ${dashboard.id} score too high: ${currentScore} + ${widgetScore} > 200`);
         continue;
       }
-
-      // Check if there's a valid position (logic handled in DashboardPlane via findPositionForWindow)
-      // Assume DashboardPlane will validate position during rendering
       targetDashboard = dashboard;
-      break; // Use the first dashboard with enough score capacity
+      break;
     }
 
     if (!targetDashboard) {
@@ -223,32 +227,69 @@ const Dashboard = () => {
   };
 
   const getDashboardWidgets = (dashboardId) => {
+    console.log(`Getting widgets for ${dashboardId}, dashboards: ${JSON.stringify(dashboards.map(d => d.id))}`);
     const dashboard = dashboards.find((d) => d.id === dashboardId);
-    return dashboard ? dashboard.widgets : [];
+    const widgets = dashboard ? dashboard.widgets : [];
+    console.log(`Widgets for ${dashboardId}: ${JSON.stringify(widgets.map(w => w.id))}`);
+    return widgets;
   };
 
-  const handleWindowSelect = (dashboardId, index, attemptSwap) => {
+  const handleWindowSelect = (windowInfo, swapHandler) => {
     if (!editMode) {
       console.log('Edit mode off, ignoring window selection');
-      return;
+      return false;
     }
-    console.log(`Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`);
+
+    console.log(`Handle window select: ${JSON.stringify(windowInfo)}, previous: ${JSON.stringify(selectedWindow)}`);
+
+    if (!windowInfo) {
+      console.log('Clearing selected window');
+      setSelectedWindow(null);
+      return true;
+    }
+
+    const { dashboardId, index } = windowInfo;
+
+    if (
+      selectedWindow &&
+      selectedWindow.dashboardId === dashboardId &&
+      selectedWindow.index === index
+    ) {
+      console.log(`Deselecting window at dashboard ${dashboardId}, index ${index}`);
+      setSelectedWindow(null);
+      return true;
+    }
+
     if (!selectedWindow) {
+      console.log(`Selecting source window: dashboard ${dashboardId}, index ${index}`);
       setSelectedWindow({ dashboardId, index });
+      return true;
+    }
+
+    console.log(
+      `Attempting swap: ${selectedWindow.dashboardId}:${selectedWindow.index} ↔ ${dashboardId}:${index}`
+    );
+    const success = swapHandler(
+      selectedWindow.dashboardId,
+      selectedWindow.index,
+      dashboardId,
+      index
+    );
+
+    if (success) {
+      console.log('Swap successful, clearing selected window');
+      setSelectedWindow(null);
     } else {
-      const success = attemptSwap(
-        selectedWindow.dashboardId,
-        selectedWindow.index,
-        dashboardId,
-        index
-      );
-      if (success) {
-        console.log('Swap successful, clearing selected window');
-        setSelectedWindow(null);
-      } else {
-        console.log('Swap failed, setting new selected window');
-        setSelectedWindow({ dashboardId, index });
-      }
+      console.log('Swap failed, keeping source window selected');
+    }
+
+    return success;
+  };
+
+  const handleContainerClick = () => {
+    if (editMode && selectedWindow) {
+      console.log('Container clicked, clearing selected window');
+      setSelectedWindow(null);
     }
   };
 
@@ -260,7 +301,10 @@ const Dashboard = () => {
   }, [dashboards]);
 
   return (
-    <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
+    <div
+      className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
+      onClick={handleContainerClick}
+    >
       <DatePicker />
       <div className={styles.buttonGroup}>
         <button

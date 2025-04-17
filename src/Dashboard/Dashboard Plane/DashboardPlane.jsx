@@ -97,7 +97,6 @@ const DashboardPlane = ({
       ? customGrid.map((row) => [...row])
       : gridRef.current.occupied.map((row) => [...row]);
 
-    // Clear positions of skipped windows to treat them as empty slots
     skipIndices.forEach((skipIndex) => {
       const skippedWindow = windows[skipIndex];
       if (!skippedWindow) return;
@@ -182,7 +181,6 @@ const DashboardPlane = ({
     console.log(`Window A: size ${sizeA}, pos ${JSON.stringify(posA)}, area ${areaA}`);
     console.log(`Window B: size ${sizeB}, pos ${JSON.stringify(posB)}, area ${areaB}`);
 
-    // Try direct swap if areas are equal
     if (areaA === areaB) {
       console.log('Attempting direct swap');
       if (
@@ -216,7 +214,6 @@ const DashboardPlane = ({
       }
     }
 
-    // Handle group swap for different areas
     console.log('Attempting group swap');
     const [largeIndex, smallIndex, largeSize, smallSize, largeArea] =
       areaA > areaB
@@ -228,7 +225,6 @@ const DashboardPlane = ({
       console.log(`Found group: ${JSON.stringify(groupSmall)}`);
       const { indices, minRow, minCol, relativePositions } = groupSmall;
 
-      // Build grid excluding group windows
       const groupGrid = Array(4).fill().map(() => Array(2).fill(false));
       localWindows.forEach((win, idx) => {
         if (indices.includes(idx)) return;
@@ -240,7 +236,6 @@ const DashboardPlane = ({
         }
       });
 
-      // Check if large window can be placed
       if (canPlaceWindow(largeSize, minRow, minCol, [], groupGrid)) {
         let canPlaceGroup = true;
         const groupPositions = [];
@@ -255,7 +250,6 @@ const DashboardPlane = ({
           }
         });
 
-        // Place group windows
         for (const { index } of relativePositions) {
           const win = localWindows[index];
           const size = win.size;
@@ -284,7 +278,6 @@ const DashboardPlane = ({
               : win
           );
 
-          // Validate no overlaps
           const finalGrid = Array(4).fill().map(() => Array(2).fill(false));
           let hasOverlap = false;
           for (const win of updatedWindows) {
@@ -320,14 +313,12 @@ const DashboardPlane = ({
       }
     }
 
-    // Fallback swap with proper grid management
     console.log('Attempting fallback swap');
     const largeWin = localWindows[largeIndex];
     const smallWin = localWindows[smallIndex];
-    const largePos = smallWin.position; // Try small widget's position for large widget
-    const smallPos = largeWin.position; // Try large widget's position for small widget
+    const largePos = smallWin.position;
+    const smallPos = largeWin.position;
 
-    // Step 1: Build grid excluding both widgets
     const tempGrid = Array(4).fill().map(() => Array(2).fill(false));
     localWindows.forEach((win, idx) => {
       if (idx === largeIndex || idx === smallIndex) return;
@@ -339,7 +330,6 @@ const DashboardPlane = ({
       }
     });
 
-    // Step 2: Check if direct position swap is possible
     let canSwap = true;
     if (!canPlaceWindow(largeWin.size, largePos.row, largePos.col, [], tempGrid)) {
       console.log('Cannot place large window at small window position');
@@ -350,7 +340,6 @@ const DashboardPlane = ({
       canSwap = false;
     }
 
-    // Step 3: If direct swap is possible, update positions
     if (canSwap) {
       const updatedWindows = localWindows.map((win, idx) =>
         idx === largeIndex
@@ -360,7 +349,6 @@ const DashboardPlane = ({
           : win
       );
 
-      // Step 4: Validate no overlaps
       const finalGrid = Array(4).fill().map(() => Array(2).fill(false));
       let hasOverlap = false;
       for (const win of updatedWindows) {
@@ -391,7 +379,6 @@ const DashboardPlane = ({
       }
     }
 
-    // Step 5: If direct swap fails, find new positions
     console.log('Direct swap failed, finding new positions');
     const newLargePos = findPositionForWindow(largeWin.size, [smallIndex], tempGrid);
     if (!newLargePos) {
@@ -399,7 +386,6 @@ const DashboardPlane = ({
       return false;
     }
 
-    // Update grid with large window
     const { width: largeWidth, height: largeHeight } = windowSizes[largeWin.size] || windowSizes.small;
     for (let r = newLargePos.row; r < newLargePos.row + largeHeight; r++) {
       for (let c = newLargePos.col; c < newLargePos.col + largeWidth; c++) {
@@ -413,7 +399,6 @@ const DashboardPlane = ({
       return false;
     }
 
-    // Step 6: Create updated windows
     const updatedWindows = localWindows.map((win, idx) =>
       idx === largeIndex
         ? { ...win, position: newLargePos }
@@ -422,7 +407,6 @@ const DashboardPlane = ({
         : win
     );
 
-    // Step 7: Validate no overlaps
     const finalGrid = Array(4).fill().map(() => Array(2).fill(false));
     let hasOverlap = false;
     for (const win of updatedWindows) {
@@ -446,7 +430,6 @@ const DashboardPlane = ({
       console.log(`Updated windows: ${JSON.stringify(updatedWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
       setWindows(updatedWindows);
       gridRef.current.occupied = finalGrid;
-Online
       updateWidgets(dashboardId, updatedWindows.map((win) => win.originalWidget));
       return true;
     } else {
@@ -468,20 +451,20 @@ Online
     const sourceWidgets = getDashboardWidgets(sourceDashboardId) || [];
     const targetWidgets = getDashboardWidgets(targetDashboardId) || [];
 
+    console.log(`Source widgets: ${JSON.stringify(sourceWidgets.map(w => w.id))}`);
+    console.log(`Target widgets: ${JSON.stringify(targetWidgets.map(w => w.id))}`);
+
     if (sourceIndex >= sourceWidgets.length || targetIndex >= targetWidgets.length) {
       console.log(`Invalid indices: sourceIndex=${sourceIndex}, targetIndex=${targetIndex}`);
       return false;
     }
 
-    // Use existing windows for the current dashboard, compute for the other
     let sourceWindows = dashboardId === sourceDashboardId ? windows : [];
     let targetWindows = dashboardId === targetDashboardId ? windows : [];
 
-    // Initialize grids for accurate position assignment
     const sourceGrid = Array(4).fill().map(() => Array(2).fill(false));
     const targetGrid = Array(4).fill().map(() => Array(2).fill(false));
 
-    // Build source windows if not current dashboard
     if (dashboardId !== sourceDashboardId) {
       sourceWidgets.forEach((widget, idx) => {
         const size = sizeMap[widget.size] || 'small';
@@ -501,7 +484,6 @@ Online
       });
     }
 
-    // Build target windows if not current dashboard
     if (dashboardId !== targetDashboardId) {
       targetWidgets.forEach((widget, idx) => {
         const size = sizeMap[widget.size] || 'small';
@@ -542,7 +524,6 @@ Online
     console.log(`Source window: size ${sizeA}, pos ${JSON.stringify(posA)}, area ${areaA}`);
     console.log(`Target window: size ${sizeB}, pos ${JSON.stringify(posB)}, area ${areaB}`);
 
-    // Build grids excluding the swapped windows
     const sourceGridExcl = Array(4).fill().map(() => Array(2).fill(false));
     sourceWindows.forEach((win, idx) => {
       if (idx === sourceIndex) return;
@@ -568,7 +549,6 @@ Online
     console.log(`Source grid (excluding sourceIndex ${sourceIndex}): ${JSON.stringify(sourceGridExcl)}`);
     console.log(`Target grid (excluding targetIndex ${targetIndex}): ${JSON.stringify(targetGridExcl)}`);
 
-    // Try direct swap first
     if (
       canPlaceWindow(sizeA, posB.row, posB.col, [], targetGridExcl) &&
       canPlaceWindow(sizeB, posA.row, posA.col, [], sourceGridExcl)
@@ -581,7 +561,6 @@ Online
         idx === targetIndex ? { ...win, originalWidget: windowA.originalWidget, size: sizeA, position: posB } : win
       );
 
-      // Validate no overlaps
       const sourceFinalGrid = Array(4).fill().map(() => Array(2).fill(false));
       const targetFinalGrid = Array(4).fill().map(() => Array(2).fill(false));
       let hasOverlap = false;
@@ -643,7 +622,6 @@ Online
       console.log(`Found group in ${smallDashboardId}: ${JSON.stringify(groupSmall)}`);
       const { indices, minRow, minCol, relativePositions } = groupSmall;
 
-      // Build grid for small dashboard excluding group windows
       const groupGrid = Array(4).fill().map(() => Array(2).fill(false));
       smallWindows.forEach((win, idx) => {
         if (indices.includes(idx)) return;
@@ -655,7 +633,6 @@ Online
         }
       });
 
-      // Try placing large window in group position
       let canPlaceLarge = canPlaceWindow(largeWindows[largeIndex].size, minRow, minCol, [], groupGrid);
       let newGroupGrid = groupGrid;
       let remainingSmallWindows = smallWindows.filter((_, idx) => !indices.includes(idx));
@@ -754,7 +731,6 @@ Online
     const largeWin = largeWindows[largeIndex];
     const smallWin = smallWindows[smallIndex];
 
-    // Try direct position swap first
     if (
       canPlaceWindow(largeWin.size, smallWin.position.row, smallWin.position.col, [], smallGrid) &&
       canPlaceWindow(smallWin.size, largeWin.position.row, largeWin.position.col, [], largeGrid)
@@ -766,7 +742,6 @@ Online
         idx === smallIndex ? { ...win, originalWidget: largeWin.originalWidget, size: largeWin.size, position: smallWin.position } : win
       );
 
-      // Validate no overlaps
       const sourceFinalGrid = Array(4).fill().map(() => Array(2).fill(false));
       const targetFinalGrid = Array(4).fill().map(() => Array(2).fill(false));
       let hasOverlap = false;
@@ -805,36 +780,35 @@ Online
 
       if (!hasOverlap) {
         console.log('Direct fallback cross-dashboard swap successful');
-        console.log(`Updated large windows: ${JSON.stringify(updatedLargeWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-        console.log(`Updated small windows: ${JSON.stringify(updatedSmallWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-        updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
-        updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
-        if (dashboardId === largeDashboardId) setWindows(updatedLargeWindows);
-        else if (dashboardId === smallDashboardId) setWindows(updatedSmallWindows);
+        console.log(`Updated large windows: ${JSON.stringify(updatedLargeWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+        console.log(`Updated small windows: ${JSON.stringify(updatedSmallWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+        updateWidgets(largeDashboardId, updatedLargeWidgets.map((win) => win.originalWidget));
+        updateWidgets(smallDashboardId, updatedSmallWidgets.map((win) => win.originalWidget));
+        if (dashboardId === largeDashboardId) setWidgets(updatedLargeWidgets);
+        else if (dashboardId === targetDashboardId) setWidgets(updatedSmallWidgets);
         return true;
       } else {
         console.log('Direct fallback cross-dashboard swap failed: windows overlap');
       }
     }
 
-    // Fallback to finding new positions
     const largePos = findPositionForWindow(largeWin.size, [], smallGrid);
     const smallPos = findPositionForWindow(smallWin.size, [], largeGrid);
     if (largePos && smallPos) {
-      const updatedLargeWindows = largeWindows
+      const updatedLargeWidgets = largeWidgets
         .filter((_, idx) => idx !== largeIndex)
         .concat([{ ...smallWin, position: smallPos }]);
-      const updatedSmallWindows = smallWindows
+      const updatedSmallWidgets = smallWidgets
         .filter((_, idx) => idx !== smallIndex)
         .concat([{ ...largeWin, position: largePos }]);
 
       console.log('Fallback cross-dashboard swap successful');
-      console.log(`Updated large windows: ${JSON.stringify(updatedLargeWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-      console.log(`Updated small windows: ${JSON.stringify(updatedSmallWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-      updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
-      updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
-      if (dashboardId === largeDashboardId) setWindows(updatedLargeWindows);
-      else if (dashboardId === smallDashboardId) setWindows(updatedSmallWindows);
+      console.log(`Updated large windows: ${JSON.stringify(updatedLargeWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+      console.log(`Updated small windows: ${JSON.stringify(updatedSmallWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+      updateWidgets(largeDashboardId, updatedLargeWidgets.map((win) => win.originalWidget));
+      updateWidgets(smallDashboardId, updatedSmallWidgets.map((win) => win.originalWidget));
+      if (dashboardId === largeDashboardId) setWidgets(updatedLargeWidgets);
+      else if (dashboardId === smallDashboardId) setWidgets(updatedSmallWidgets);
       return true;
     } else {
       console.log('Fallback cross-dashboard swap failed: invalid positions');
@@ -854,17 +828,29 @@ Online
     ];
     const visited = new Set();
 
-    // Check for specific configurations first
     const startWindow = windows[startIndex];
-    const startSize = startWindow?.size || 'small';
-    const startPos = startWindow?.position || { row: 0, col: 0 };
+    if (!startWindow || !startWindow.position) {
+      console.log(`Invalid start window at index ${startIndex}`);
+      return {
+        indices: [startIndex],
+        minRow: 0,
+        minCol: 0,
+        relativePositions: [{ index: startIndex, relRow: 0, relCol: 0 }],
+      };
+    }
+
+    const startSize = startWindow.size || 'small';
+    const startPos = startWindow.position;
     const startArea = (windowSizes[startSize]?.width || 1) * (windowSizes[startSize]?.height || 2);
 
     if (targetArea === 4 && startSize === 'small') {
       for (let i = 0; i < windows.length; i++) {
         if (i === startIndex) continue;
         const win = windows[i];
-        if (win.size !== 'small') continue;
+        if (!win || !win.position || win.size !== 'small') {
+          console.log(`Skipping invalid window at index ${i}: ${!win ? 'undefined' : !win.position ? 'no position' : 'wrong size'}`);
+          continue;
+        }
         const pos = win.position;
         const isHorizontal = pos.row === startPos.row && Math.abs(pos.col - startPos.col) === 1;
         const isVertical = pos.col === startPos.col && Math.abs(pos.row - startPos.row) === 2;
@@ -884,7 +870,10 @@ Online
       for (let i = 0; i < windows.length; i++) {
         if (i === startIndex) continue;
         const win = windows[i];
-        if (win.size !== 'verySmall') continue;
+        if (!win || !win.position || win.size !== 'verySmall') {
+          console.log(`Skipping invalid window at index ${i}: ${!win ? 'undefined' : !win.position ? 'no position' : 'wrong size'}`);
+          continue;
+        }
         const pos = win.position;
         const isVertical = pos.col === startPos.col && Math.abs(pos.row - startPos.row) === 1;
         if (isVertical) {
@@ -901,7 +890,6 @@ Online
       }
     }
 
-    // General group search
     while (queue.length > 0) {
       const { indices, area } = queue.shift();
       console.log(`Checking group: indices ${indices}, area ${area}`);
@@ -919,6 +907,11 @@ Online
 
       for (let i = 0; i < windows.length; i++) {
         if (indices.includes(i) || visited.has([...indices, i].sort().join(','))) continue;
+        const win = windows[i];
+        if (!win || !win.position) {
+          console.log(`Skipping invalid window at index ${i}: ${!win ? 'undefined' : 'no position'}`);
+          continue;
+        }
         const newIndices = [...indices, i];
         const newArea = newIndices.reduce((sum, idx) => {
           const size = windows[idx]?.size || 'small';
@@ -932,7 +925,6 @@ Online
       }
     }
 
-    // Fallback: Return single widget as a group
     console.log(`No group found, returning single widget at index ${startIndex}`);
     const boundingBox = getBoundingBox(windows, [startIndex]);
     const relativePositions = [{ index: startIndex, relRow: 0, relCol: 0 }];
@@ -1059,25 +1051,59 @@ Online
 
     event.stopPropagation();
     console.log(`Window clicked at index ${index} in dashboard ${dashboardId}`);
-    onWindowSelect(dashboardId, index, (sourceDashboardId, sourceIndex, targetDashboardId, targetIndex) => {
-      if (sourceDashboardId === targetDashboardId) {
-        if (attemptSameDashboardSwap(sourceIndex, targetIndex)) {
-          console.log('Same-dashboard swap completed');
-          return true;
+
+    // Check if this window is already selected (to allow deselection)
+    if (
+      selectedWindow &&
+      selectedWindow.dashboardId === dashboardId &&
+      selectedWindow.index === index
+    ) {
+      console.log(`Deselecting window at index ${index} in dashboard ${dashboardId}`);
+      onWindowSelect(null); // Clear selection
+      return;
+    }
+
+    // If no window is selected, select this as the source
+    if (!selectedWindow) {
+      console.log(`Selecting source window at index ${index} in dashboard ${dashboardId}`);
+      onWindowSelect({ dashboardId, index });
+      return;
+    }
+
+    // If a window is already selected, attempt to swap
+    console.log(
+      `Attempting swap: source ${selectedWindow.dashboardId}:${selectedWindow.index} → target ${dashboardId}:${index}`
+    );
+    const swapSuccess = onWindowSelect(
+      { dashboardId, index },
+      (sourceDashboardId, sourceIndex, targetDashboardId, targetIndex) => {
+        if (sourceDashboardId === targetDashboardId) {
+          if (attemptSameDashboardSwap(sourceIndex, targetIndex)) {
+            console.log('Same-dashboard swap completed');
+            return true;
+          } else {
+            console.log('Same-dashboard swap failed');
+            return false;
+          }
         } else {
-          console.log('Same-dashboard swap failed');
-          return false;
-        }
-      } else {
-        if (attemptCrossDashboardSwap(sourceDashboardId, sourceIndex, targetDashboardId, targetIndex)) {
-          console.log('Cross-dashboard swap completed');
-          return true;
-        } else {
-          console.log('Cross-dashboard swap failed');
-          return false;
+          if (attemptCrossDashboardSwap(sourceDashboardId, sourceIndex, targetDashboardId, targetIndex)) {
+            console.log('Cross-dashboard swap completed');
+            return true;
+          } else {
+            console.log('Cross-dashboard swap failed');
+            return false;
+          }
         }
       }
-    });
+    );
+
+    if (swapSuccess) {
+      console.log('Swap successful, clearing selection');
+      onWindowSelect(null); // Clear selection after successful swap
+    } else {
+      console.log('Swap failed, keeping source window selected');
+      // Keep the original selection to allow retrying with a different destination
+    }
   };
 
   return (
