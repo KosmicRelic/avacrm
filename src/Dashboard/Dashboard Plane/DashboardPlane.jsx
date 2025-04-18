@@ -453,7 +453,15 @@ const DashboardPlane = ({
         if (dashboardId === sourceDashboardId) setWindows(updatedSourceWindows);
         else if (dashboardId === targetDashboardId) setWindows(updatedTargetWindows);
         return true;
-      } else {
+      } if (sizeA !== sizeB) {
+        console.log('Direct swap skipped: different sizes');
+        // Proceed to group or fallback swap
+      } else if (
+        canPlaceWindow(sizeA, posB.row, posB.col, [indexA, indexB], null, localWindows) &&
+        canPlaceWindow(sizeB, posA.row, posA.col, [indexA, indexB], null, localWindows)
+      ) {
+        // Direct swap logic
+      }else {
         console.log('Direct cross-dashboard swap failed: invalid positions');
       }
     } else {
