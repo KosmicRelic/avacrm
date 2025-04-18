@@ -103,11 +103,12 @@
 }
 
 .buttonGroup {
-  position: absolute;
-  right: 1em;
+  position: sticky;
+  top: 0em;
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: space-between;
+  width: 100%;
   transition: transform 0.3s ease;
   z-index: 1;
 }
@@ -174,6 +175,7 @@
 
 .editHeaderButton {
   position: absolute;
+  top: 4px;
   right: 1em;
   border: none;
   padding: 8px 0;
@@ -199,10 +201,13 @@
 }
 
 .controls {
+  position: sticky;
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  gap: 16px;
   justify-content: center;
+  overflow-y: scroll;
+  overflow-x: none;
+  width: 100%;
 }
 
 .addButton {
@@ -211,25 +216,26 @@
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  background-color: #28a745;
+  font-weight: 600;
+  background-color: #0A84FF;
   color: white;
   display: flex;
   align-items: center;
+  white-space: nowrap;
   gap: 4px;
   transition: background-color 0.3s ease;
 }
 
 .addButton:hover {
-  background-color: #218838;
+  background-color: #0A84FF;
 }
 
 .darkTheme .addButton {
-  background-color: #20c997;
+  background-color: #0A84FF;
 }
 
 .darkTheme .addButton:hover {
-  background-color: #1aa179;
+  background-color: #0A84FF;
 }
 
 @media (max-width: 768px) {
@@ -255,6 +261,10 @@
   .buttonGroup {
     flex-direction: column;
     align-items: center;
+  }
+
+  .editHeaderButton{
+    right: 0;
   }
 }
 

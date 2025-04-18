@@ -3,7 +3,7 @@ import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
 import DatePicker from './Date Picker/DatePicker';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 
 const Dashboard = () => {
   const { isDarkTheme, cards } = useContext(MainContext);
@@ -89,13 +89,34 @@ const Dashboard = () => {
 
   const addDashboard = () => {
     console.log('Adding new dashboard');
+    const newDashboardId = `dashboard-${dashboards.length + 1}`;
+    const newWidget = {
+      id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      size: 'verySmall',
+      title: 'New Widget',
+      data: 'Add content',
+    };
     setDashboards((prev) => [
       ...prev,
       {
-        id: `dashboard-${prev.length + 1}`,
-        widgets: [],
+        id: newDashboardId,
+        widgets: [newWidget],
       },
     ]);
+    // Auto-select the new dashboard
+    setSelectedDashboardId(newDashboardId);
+  };
+
+  const removeDashboard = () => {
+    if (!selectedDashboardId) {
+      console.log('No dashboard selected for removal');
+      alert('Please select a dashboard to remove');
+      return;
+    }
+    console.log(`Removing dashboard: ${selectedDashboardId}`);
+    setDashboards((prev) => prev.filter((dashboard) => dashboard.id !== selectedDashboardId));
+    setSelectedDashboardId(null);
+    setSelectedWindow(null);
   };
 
   const toggleEditMode = () => {
@@ -118,12 +139,45 @@ const Dashboard = () => {
     }
   };
 
+  const windowScores = {
+    verySmall: 10,
+    small: 20,
+    medium: 40,
+    large: 80,
+  };
+
+  const validateDashboardScore = (widgets, newWidgetSize) => {
+    const totalScore = widgets.reduce((sum, widget) => {
+      const size = widget.size || 'small';
+      return sum + (windowScores[size] || 0);
+    }, 0);
+    const newScore = totalScore + (windowScores[newWidgetSize] || 0);
+    if (newScore > 80) {
+      console.log(`Cannot add widget: total score ${newScore} exceeds limit of 80`);
+      return false;
+    }
+    return true;
+  };
+
   const addWindowToDashboard = (size, content) => {
     if (!selectedDashboardId) {
       console.log('No dashboard selected for adding widget');
       alert('Please select a dashboard to add a widget to');
       return;
     }
+
+    const dashboard = dashboards.find((d) => d.id === selectedDashboardId);
+    if (!dashboard) {
+      console.log(`Dashboard ${selectedDashboardId} not found`);
+      return;
+    }
+
+    // Check score limit
+    if (!validateDashboardScore(dashboard.widgets, size)) {
+      alert('Cannot add widget: Dashboard score limit reached');
+      return;
+    }
+
     console.log(`Adding ${size} widget to dashboard: ${selectedDashboardId}`);
     const newWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -131,6 +185,7 @@ const Dashboard = () => {
       title: 'New Widget',
       data: content,
     };
+
     setDashboards((prev) =>
       prev.map((dashboard) =>
         dashboard.id === selectedDashboardId
@@ -143,27 +198,9 @@ const Dashboard = () => {
     );
   };
 
-  const validateDashboardScore = (widgets) => {
-    const windowScores = {
-      verySmall: 10,
-      small: 20,
-      medium: 40,
-      large: 80,
-    };
-    const totalScore = widgets.reduce((sum, widget) => {
-      const size = widget.size || 'small';
-      return sum + (windowScores[size] || 0);
-    }, 0);
-    if (totalScore > 80) {
-      console.log(`Score validation failed: total score ${totalScore} exceeds limit of 80`);
-      return false;
-    }
-    return true;
-  };
-
   const updateWidgets = (dashboardId, newWidgets) => {
     console.log(`Updating widgets for dashboard ${dashboardId}, widgets: ${newWidgets.length}`);
-    if (!validateDashboardScore(newWidgets)) {
+    if (!validateDashboardScore(newWidgets, 'small')) {
       console.log(`Widget update rejected for dashboard ${dashboardId}: score limit exceeded`);
       return;
     }
@@ -212,16 +249,16 @@ const Dashboard = () => {
 
   return (
     <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <DatePicker />
       <div className={styles.buttonGroup}>
+      <DatePicker />
         <button
           className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={toggleEditMode}
         >
           {editMode ? 'Done' : 'Edit'}
         </button>
-      </div>
-      {editMode && (
+
+        {editMode && (
         <div className={styles.controls} ref={editControlsRef}>
           <button
             className={styles.addButton}
@@ -250,8 +287,17 @@ const Dashboard = () => {
           <button className={styles.addButton} onClick={addDashboard}>
             <FaPlus /> Dashboard
           </button>
+          <button
+            className={styles.addButton}
+            onClick={removeDashboard}
+            disabled={!selectedDashboardId}
+          >
+            <FaTrash /> Remove Dashboard
+          </button>
         </div>
       )}
+      </div>
+
       <div className={styles.windowsSection}>
         {memoizedDashboards.map((dashboard) => (
           <DashboardPlane

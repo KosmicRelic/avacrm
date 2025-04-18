@@ -819,7 +819,7 @@ const DashboardPlane = ({
             size={window.size}
             style={{
               gridRow: `${window.position.row + 1} / span ${(windowSizes[window.size] || windowSizes.small).height}`,
-              gridColumn: `${window.position.col + 1} / span ${(windowSizes[window.size] || windowSizes.small).width}`,
+              gridColumn: `${windowSizes[window.size] || windowSizes.small.width}`,
             }}
             onDelete={() => removeWindow(index)}
             editMode={editMode}
