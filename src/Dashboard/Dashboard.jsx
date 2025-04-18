@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
+import React, { useRef, useContext, useState, useEffect, useMemo } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
@@ -112,8 +112,6 @@ const Dashboard = () => {
     },
   ]);
   const [editMode, setEditMode] = useState(false);
-  const [selectedDashboardId, setSelectedDashboardId] = useState(null);
-  const editControlsRef = useRef(null);
   const prevWidgetConfigRef = useRef(null);
 
   useEffect(() => {
@@ -231,37 +229,16 @@ const Dashboard = () => {
         widgets: [newWidget],
       },
     ]);
-    setSelectedDashboardId(newDashboardId);
   };
 
-  const removeDashboard = () => {
-    if (!selectedDashboardId) {
-      console.log('No dashboard selected for removal');
-      alert('Please select a dashboard to remove');
-      return;
-    }
-    console.log(`Removing dashboard: ${selectedDashboardId}`);
-    setDashboards((prev) => prev.filter((dashboard) => dashboard.id !== selectedDashboardId));
-    setSelectedDashboardId(null);
+  const removeDashboard = (dashboardId) => {
+    console.log(`Removing dashboard: ${dashboardId}`);
+    setDashboards((prev) => prev.filter((dashboard) => dashboard.id !== dashboardId));
   };
 
   const toggleEditMode = () => {
     console.log('Toggling edit mode, current:', editMode);
-    setEditMode((prev) => {
-      const newEditMode = !prev;
-      if (!newEditMode) {
-        console.log('Exiting edit mode, clearing selections');
-        setSelectedDashboardId(null);
-      }
-      return newEditMode;
-    });
-  };
-
-  const handleDashboardSelect = (dashboardId) => {
-    if (editMode) {
-      console.log(`Selecting dashboard: ${dashboardId}`);
-      setSelectedDashboardId(dashboardId);
-    }
+    setEditMode((prev) => !prev);
   };
 
   const windowScores = {
@@ -284,16 +261,10 @@ const Dashboard = () => {
     return true;
   };
 
-  const addWindowToDashboard = (size, content) => {
-    if (!selectedDashboardId) {
-      console.log('No dashboard selected for adding widget');
-      alert('Please select a dashboard to add a widget to');
-      return;
-    }
-
-    const dashboard = dashboards.find((d) => d.id === selectedDashboardId);
+  const addWindowToDashboard = (dashboardId, size, content) => {
+    const dashboard = dashboards.find((d) => d.id === dashboardId);
     if (!dashboard) {
-      console.log(`Dashboard ${selectedDashboardId} not found`);
+      console.log(`Dashboard ${dashboardId} not found`);
       return;
     }
 
@@ -310,10 +281,10 @@ const Dashboard = () => {
       return;
     }
 
-    console.log(`Adding ${size} widget to dashboard: ${selectedDashboardId}`);
+    console.log(`Adding ${size} widget to dashboard: ${dashboardId}`);
     setDashboards((prev) =>
       prev.map((dashboard) =>
-        dashboard.id === selectedDashboardId
+        dashboard.id === dashboardId
           ? {
               ...dashboard,
               widgets: newWidgets,
@@ -341,17 +312,12 @@ const Dashboard = () => {
               ...dashboard,
               widgets: newWidgets.map((widget) => ({
                 ...widget,
-                position: widget.position || { row: 0, col: 0 },
+                position: widget.position || { row: 0, col: 0 }, // Use default position if none provided
               })),
             }
           : dashboard
       )
     );
-  };
-
-  const getDashboardWidgets = (dashboardId) => {
-    const dashboard = dashboards.find((d) => d.id === dashboardId);
-    return dashboard ? dashboard.widgets : [];
   };
 
   const memoizedDashboards = useMemo(() => {
@@ -373,58 +339,55 @@ const Dashboard = () => {
         </button>
 
         {editMode && (
-          <div className={styles.controls} ref={editControlsRef}>
+          <div className={styles.controls}>
             <button
               className={styles.addButton}
-              onClick={() => addWindowToDashboard('verySmall', 'Add content')}
+              onClick={() => addWindowToDashboard(dashboards[0].id, 'verySmall', 'Add content')}
             >
               <FaPlus /> Very Small
             </button>
             <button
               className={styles.addButton}
-              onClick={() => addWindowToDashboard('small', 'Add content')}
+              onClick={() => addWindowToDashboard(dashboards[0].id, 'small', 'Add content')}
             >
               <FaPlus /> Small
             </button>
             <button
               className={styles.addButton}
-              onClick={() => addWindowToDashboard('medium', 'Add content')}
+              onClick={() => addWindowToDashboard(dashboards[0].id, 'medium', 'Add content')}
             >
               <FaPlus /> Medium
             </button>
             <button
               className={styles.addButton}
-              onClick={() => addWindowToDashboard('large', 'Add content')}
+              onClick={() => addWindowToDashboard(dashboards[0].id, 'large', 'Add content')}
             >
               <FaPlus /> Large
             </button>
             <button className={styles.addButton} onClick={addDashboard}>
               <FaPlus /> Dashboard
             </button>
-            <button
-              className={styles.addButton}
-              onClick={removeDashboard}
-              disabled={!selectedDashboardId}
-            >
-              <FaTrash /> Remove Dashboard
-            </button>
+            {dashboards.map((dashboard) => (
+              <button
+                key={dashboard.id}
+                className={styles.addButton}
+                onClick={() => removeDashboard(dashboard.id)}
+              >
+                <FaTrash /> Remove {dashboard.id}
+              </button>
+            ))}
           </div>
         )}
       </div>
 
       <div className={styles.windowsSection}>
-        {memoizedDashboards.map((dashboard, index) => (
+        {memoizedDashboards.map((dashboard) => (
           <DashboardPlane
             key={dashboard.id}
             dashboardId={dashboard.id}
             initialWidgets={dashboard.widgets}
             editMode={editMode}
-            isSelected={selectedDashboardId === dashboard.id}
-            onSelect={() => handleDashboardSelect(dashboard.id)}
             updateWidgets={updateWidgets}
-            getDashboardWidgets={getDashboardWidgets}
-            dashboards={dashboards}
-            dashboardIndex={index}
           />
         ))}
       </div>

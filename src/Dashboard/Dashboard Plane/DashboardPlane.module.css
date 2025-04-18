@@ -195,30 +195,15 @@
 
 /* Remove button */
 .removeButton {
-  background: #ff453a;
-  color: white;
   border: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
+  size: 40px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
   transition: background 0.2s ease;
-}
-
-.removeButton.darkTheme {
-  background: #ff453a;
-}
-
-.removeButton:hover {
-  background: #cc2e26;
-}
-
-.removeButton.darkTheme:hover {
-  background: #d83a34;
+  padding: 0;
 }
 
 /* Selected window */
