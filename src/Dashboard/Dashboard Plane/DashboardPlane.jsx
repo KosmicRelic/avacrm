@@ -102,9 +102,18 @@ const DashboardPlane = ({
       return false;
     }
 
-    if (size === 'small' && row % 2 !== 0) return false;
-    if (size === 'medium' && (row !== 0 && row !== 2)) return false;
-    if (size === 'large' && (row !== 0 || col !== 0)) return false;
+    if (size === 'small' && row % 2 !== 0) {
+      console.log(`Cannot place window: Small widgets must start at row 0 or 2`);
+      return false;
+    }
+    if (size === 'medium' && (row !== 0 && row !== 2)) {
+      console.log(`Cannot place window: Medium widgets must start at row 0 or 2`);
+      return false;
+    }
+    if (size === 'large' && (row !== 0 || col !== 0)) {
+      console.log(`Cannot place window: Large widgets must start at row 0, col 0`);
+      return false;
+    }
 
     const occupied = customGrid
       ? customGrid.map((row) => [...row])
@@ -242,6 +251,7 @@ const DashboardPlane = ({
     const row = Math.floor((clientY - rect.top) / cellHeight);
 
     if (row >= 0 && row < 4 && col >= 0 && col < 2) {
+      console.log(`Drop detected on dashboard ${dashboardId} at row=${row}, col=${col}`);
       onDrop({ dashboardId, row, col });
     } else {
       console.log(`Invalid drop position: row=${row}, col=${col}`);
