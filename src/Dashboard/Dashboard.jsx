@@ -21,60 +21,36 @@ const Dashboard = () => {
   const widgetConfig = useMemo(
     () => [
       {
-        id: 'revenue',
+        id: 'revenue-medium', // Unique ID
         name: 'Revenue',
         size: 'medium',
-        title: 'Revenue',
-        data: `$${metrics.revenue.toLocaleString()}`,
+        title: 'Revenue Overview',
+        // data: metrics.revenue,
         section: 'Financials',
       },
       {
-        id: 'pending-payouts',
-        name: 'Pending Payouts',
-        size: 'small',
-        title: 'Pending Payouts',
-        data: `$${metrics.pendingPayouts.toLocaleString()}`,
-        section: 'Financials',
-      },
-      {
-        id: 'close-rate',
-        name: 'Close Rate',
-        size: 'small',
-        title: 'Close Rate',
-        data: `${metrics.closeRate}%`,
-        section: 'Lead Metrics',
-      },
-      {
-        id: 'cost-per-lead',
-        name: 'Cost Per Lead',
-        size: 'small',
-        title: 'Cost Per Lead',
-        data: `$${metrics.costPerLead}`,
-        section: 'Lead Metrics',
-      },
-      {
-        id: 'bottleneck',
-        name: 'Bottleneck',
-        size: 'small',
-        title: 'Bottleneck',
-        data: metrics.bottleneck,
-        section: 'Lead Metrics',
-      },
-      {
-        id: 'campaign-roi',
-        name: 'Campaign ROI',
-        size: 'small',
-        title: 'Campaign ROI',
-        data: `${metrics.campaignROI}x`,
-        section: 'Marketing',
-      },
-      {
-        id: 'top-campaigns',
-        name: 'Top Campaigns',
+        id: 'revenue-verysmall-1', // Unique ID
+        name: 'Revenue',
         size: 'verySmall',
-        title: 'Top Campaigns',
-        data: JSON.stringify(metrics.topCampaigns),
-        section: 'Marketing',
+        title: 'Revenue Snapshot 1',
+        // data: metrics.revenue,
+        section: 'Financials',
+      },
+      {
+        id: 'revenue-verysmall-2', // Unique ID
+        name: 'Revenue',
+        size: 'verySmall',
+        title: 'Revenue Snapshot 2',
+        // data: metrics.revenue,
+        section: 'Financials',
+      },
+      {
+        id: 'revenue-small', // Unique ID
+        name: 'Revenue',
+        size: 'small',
+        title: 'Revenue Details',
+        // data: metrics.revenue,
+        section: 'Financials',
       },
     ],
     [metrics]
@@ -171,7 +147,7 @@ const Dashboard = () => {
       verySmall: 'verySmall',
       small: 'small',
       medium: 'medium',
-      large: 'big',
+      large: 'large',
     };
 
     const widgetSize = sizeMap[size] || 'small';
@@ -336,9 +312,9 @@ const Dashboard = () => {
           </button>
           <button
             className={styles.addButton}
-            onClick={() => addWindowToDashboard('big', 'Add content')}
+            onClick={() => addWindowToDashboard('large', 'Add content')}
           >
-            <FaPlus /> Big
+            <FaPlus /> Large
           </button>
           <button className={styles.addButton} onClick={addDashboard}>
             <FaPlus /> Dashboard

@@ -2,14 +2,14 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 
-const Window = ({ size, children, className = '', style, onDelete, editMode, isSelected, onClick }) => {
+const Window = ({ size, originalWidget, className = '', style, onDelete, editMode, isSelected, onClick }) => {
   const { isDarkTheme } = useContext(MainContext);
 
   const sizeClasses = {
     verySmall: styles.verySmallWindow,
     small: styles.smallWindow,
     medium: styles.mediumWindow,
-    big: styles.bigWindow,
+    large: styles.largeWindow,
   };
 
   return (
@@ -21,7 +21,14 @@ const Window = ({ size, children, className = '', style, onDelete, editMode, isS
       onClick={editMode ? onClick : undefined}
     >
       <div className={styles.windowContent}>
-        {children}
+        <div className={styles.widgetWrapper}>
+          <h3 className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {originalWidget.title}
+          </h3>
+          <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {originalWidget.data || 'No data'}
+          </div>
+        </div>
         {editMode && (
           <button className={styles.removeButton} onClick={onDelete}>
             ×
@@ -56,14 +63,14 @@ const DashboardPlane = ({
     verySmall: { width: 1, height: 1 },
     small: { width: 1, height: 2 },
     medium: { width: 2, height: 2 },
-    big: { width: 2, height: 4 },
+    large: { width: 2, height: 4 },
   };
 
   const windowScores = {
     verySmall: 10,
     small: 20,
     medium: 40,
-    big: 80,
+    large: 80,
   };
 
   const sizeMap = {
@@ -71,7 +78,7 @@ const DashboardPlane = ({
     verySmall: 'verySmall',
     small: 'small',
     medium: 'medium',
-    large: 'big',
+    large: 'large',
   };
 
   const calculateScore = (windows) => {
@@ -88,7 +95,7 @@ const DashboardPlane = ({
 
     const currentScore = calculateScore(windows.filter((_, idx) => !skipIndices.includes(idx)));
     const newScore = currentScore + (windowScores[size] || 0);
-    if (newScore > 200) {
+    if (newScore > 80) {
       console.log(`Score limit exceeded: current ${currentScore}, new ${newScore}`);
       return false;
     }
@@ -272,7 +279,7 @@ const DashboardPlane = ({
         if (canPlaceGroup) {
           const updatedWindows = localWindows.map((win, idx) =>
             idx === largeIndex
-              ? { ...win, position: { row: minRow, col: minCol } }
+              ? { ...win , position: { row: minRow, col: minCol } }
               : groupPositions.find((gp) => gp.index === idx)
               ? { ...win, position: groupPositions.find((gp) => gp.index === idx).position }
               : win
@@ -780,12 +787,12 @@ const DashboardPlane = ({
 
       if (!hasOverlap) {
         console.log('Direct fallback cross-dashboard swap successful');
-        console.log(`Updated large windows: ${JSON.stringify(updatedLargeWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-        console.log(`Updated small windows: ${JSON.stringify(updatedSmallWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-        updateWidgets(largeDashboardId, updatedLargeWidgets.map((win) => win.originalWidget));
-        updateWidgets(smallDashboardId, updatedSmallWidgets.map((win) => win.originalWidget));
-        if (dashboardId === largeDashboardId) setWidgets(updatedLargeWidgets);
-        else if (dashboardId === targetDashboardId) setWidgets(updatedSmallWidgets);
+        console.log(`Updated large windows: ${JSON.stringify(updatedLargeWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+        console.log(`Updated small windows: ${JSON.stringify(updatedSmallWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+        updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
+        updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
+        if (dashboardId === largeDashboardId) setWindows(updatedLargeWindows);
+        else if (dashboardId === smallDashboardId) setWindows(updatedSmallWindows);
         return true;
       } else {
         console.log('Direct fallback cross-dashboard swap failed: windows overlap');
@@ -795,20 +802,20 @@ const DashboardPlane = ({
     const largePos = findPositionForWindow(largeWin.size, [], smallGrid);
     const smallPos = findPositionForWindow(smallWin.size, [], largeGrid);
     if (largePos && smallPos) {
-      const updatedLargeWidgets = largeWidgets
+      const updatedLargeWindows = largeWindows
         .filter((_, idx) => idx !== largeIndex)
         .concat([{ ...smallWin, position: smallPos }]);
-      const updatedSmallWidgets = smallWidgets
+      const updatedSmallWindows = smallWindows
         .filter((_, idx) => idx !== smallIndex)
         .concat([{ ...largeWin, position: largePos }]);
 
       console.log('Fallback cross-dashboard swap successful');
-      console.log(`Updated large windows: ${JSON.stringify(updatedLargeWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-      console.log(`Updated small windows: ${JSON.stringify(updatedSmallWidgets.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
-      updateWidgets(largeDashboardId, updatedLargeWidgets.map((win) => win.originalWidget));
-      updateWidgets(smallDashboardId, updatedSmallWidgets.map((win) => win.originalWidget));
-      if (dashboardId === largeDashboardId) setWidgets(updatedLargeWidgets);
-      else if (dashboardId === smallDashboardId) setWidgets(updatedSmallWidgets);
+      console.log(`Updated large windows: ${JSON.stringify(updatedLargeWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+      console.log(`Updated small windows: ${JSON.stringify(updatedSmallWindows.map(w => ({ id: w.originalWidget.id, pos: w.position })))}`);
+      updateWidgets(largeDashboardId, updatedLargeWindows.map((win) => win.originalWidget));
+      updateWidgets(smallDashboardId, updatedSmallWindows.map((win) => win.originalWidget));
+      if (dashboardId === largeDashboardId) setWindows(updatedLargeWindows);
+      else if (dashboardId === smallDashboardId) setWindows(updatedSmallWindows);
       return true;
     } else {
       console.log('Fallback cross-dashboard swap failed: invalid positions');
@@ -999,7 +1006,7 @@ const DashboardPlane = ({
 
       console.log(`Processing widget ${widget.id}, size ${size}, score ${score}`);
 
-      if (currentScore + score > 200) {
+      if (currentScore + score > 80) {
         console.log(`Skipping widget ${widget.id}: score limit exceeded`);
         return;
       }
@@ -1013,16 +1020,6 @@ const DashboardPlane = ({
       newWindows.push({
         originalWidget: widget,
         size,
-        content: (
-          <div className={styles.widgetWrapper}>
-            <h3 className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {widget.title}
-            </h3>
-            <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {widget.data || 'No data'}
-            </div>
-          </div>
-        ),
         position,
       });
 
@@ -1041,7 +1038,7 @@ const DashboardPlane = ({
     console.log(`Windows initialized for ${dashboardId}: ${newWindows.length} windows`);
     setWindows(newWindows);
     prevWidgetsRef.current = initialWidgets;
-  }, [initialWidgets, isDarkTheme, dashboardId]);
+  }, [initialWidgets, dashboardId]);
 
   const handleWindowClick = (index, event) => {
     if (!editMode) {
@@ -1118,6 +1115,7 @@ const DashboardPlane = ({
           <Window
             key={`${dashboardId}-${window.originalWidget.id}`}
             size={window.size}
+            originalWidget={window.originalWidget}
             style={{
               gridRow: `${window.position.row + 1} / span ${(windowSizes[window.size] || windowSizes.small).height}`,
               gridColumn: `${window.position.col + 1} / span ${(windowSizes[window.size] || windowSizes.small).width}`,
@@ -1126,9 +1124,7 @@ const DashboardPlane = ({
             editMode={editMode}
             isSelected={selectedWindow && selectedWindow.dashboardId === dashboardId && selectedWindow.index === index}
             onClick={(e) => handleWindowClick(index, e)}
-          >
-            {window.content}
-          </Window>
+          />
         ))}
       </div>
     </div>
