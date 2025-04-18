@@ -3,7 +3,7 @@ import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 
-const Window = ({ size, widget, style, onDelete, editMode }) => {
+const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index }) => {
   const { isDarkTheme } = useContext(MainContext);
 
   const sizeClasses = {
@@ -19,6 +19,15 @@ const Window = ({ size, widget, style, onDelete, editMode }) => {
         editMode ? styles.editMode : ''
       }`}
       style={style}
+      draggable={editMode}
+      onDragStart={(e) => {
+        if (editMode) {
+          onDragStart(e, { dashboardId, index, widget, size, position: { row: style.gridRowStart - 1, col: style.gridColumnStart - 1 } });
+        }
+      }}
+      onDragEnd={(e) => {
+        e.target.classList.remove(styles.dragging);
+      }}
     >
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
@@ -44,6 +53,8 @@ const DashboardPlane = ({
   initialWidgets = [],
   editMode,
   updateWidgets,
+  onDragStart,
+  onDrop,
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [windows, setWindows] = useState([]);
@@ -91,16 +102,21 @@ const DashboardPlane = ({
       return false;
     }
 
+    if (size === 'small' && row % 2 !== 0) return false;
+    if (size === 'medium' && (row !== 0 && row !== 2)) return false;
+    if (size === 'large' && (row !== 0 || col !== 0)) return false;
+
     const occupied = customGrid
       ? customGrid.map((row) => [...row])
       : gridRef.current.occupied.map((row) => [...row]);
 
-    skipWidgets.forEach((widget) => {
-      const { width: sWidth, height: sHeight } = windowSizes[widget.size] || windowSizes.small;
-      for (let r = widget.position.row; r < widget.position.row + sHeight; r++) {
-        for (let c = widget.position.col; c < widget.position.col + sWidth; c++) {
+    currentWindows.forEach((win) => {
+      if (skipWidgets.some((sw) => sw.id === win.originalWidget.id)) return;
+      const { width: wWidth, height: wHeight } = windowSizes[win.size] || windowSizes.small;
+      for (let r = win.position.row; r < win.position.row + wHeight; r++) {
+        for (let c = win.position.col; c < win.position.col + wWidth; c++) {
           if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-            occupied[r][c] = false;
+            occupied[r][c] = true;
           }
         }
       }
@@ -110,7 +126,6 @@ const DashboardPlane = ({
       for (let c = col; c < col + width; c++) {
         if (r >= 4 || c >= 2 || occupied[r][c]) {
           console.log(`Cannot place window: Position row=${r}, col=${c} is occupied or out of bounds`);
-          console.log(`Grid state:\n${occupied.map(row => row.map(cell => cell ? 'X' : '.').join(' ')).join('\n')}`);
           return false;
         }
       }
@@ -184,8 +199,8 @@ const DashboardPlane = ({
         }
       }
       const newWindows = prev.filter((_, i) => i !== index);
-      console.log(`Removed window index ${index} from dashboard ${dashboardId}`);
-      updateWidgets(dashboardId, newWindows.map((win) => win.originalWidget));
+      console.log(`Removed window index ${index} (${windowToRemove.originalWidget.id}) from dashboard ${dashboardId}`);
+      updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
       return newWindows;
     });
   };
@@ -205,6 +220,34 @@ const DashboardPlane = ({
     });
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    planeRef.current.classList.add(styles.dropTarget);
+  };
+
+  const handleDragLeave = () => {
+    planeRef.current.classList.remove(styles.dropTarget);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    planeRef.current.classList.remove(styles.dropTarget);
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    const rect = planeRef.current.getBoundingClientRect();
+    const cellWidth = rect.width / 2;
+    const cellHeight = rect.height / 4;
+    const col = Math.floor((clientX - rect.left) / cellWidth);
+    const row = Math.floor((clientY - rect.top) / cellHeight);
+
+    if (row >= 0 && row < 4 && col >= 0 && col < 2) {
+      onDrop({ dashboardId, row, col });
+    } else {
+      console.log(`Invalid drop position: row=${row}, col=${col}`);
+    }
+  };
+
   useEffect(() => {
     if (areWidgetsEqual(prevWidgetsRef.current, initialWidgets)) {
       console.log(`Dashboard ${dashboardId}: Widgets unchanged, skipping initialization`);
@@ -216,7 +259,26 @@ const DashboardPlane = ({
     let newWindows = [];
     let tempGrid = Array(4).fill().map(() => Array(2).fill(false));
 
-    const sortedWidgets = [...initialWidgets].sort((a, b) => {
+    // Remove duplicates by ID, keeping the last occurrence
+    const uniqueWidgets = [];
+    const seenIds = new Set();
+    const discardedWidgets = [];
+    for (const widget of initialWidgets.reverse()) {
+      if (!seenIds.has(widget.id)) {
+        uniqueWidgets.push(widget);
+        seenIds.add(widget.id);
+      } else {
+        console.warn(`Duplicate widget ID ${widget.id} detected in initialWidgets, keeping last occurrence`);
+        discardedWidgets.push(widget);
+      }
+    }
+    uniqueWidgets.reverse();
+
+    if (discardedWidgets.length > 0) {
+      console.log(`Discarded duplicate widgets:`, discardedWidgets.map(w => ({ id: w.id, size: w.size })));
+    }
+
+    const sortedWidgets = [...uniqueWidgets].sort((a, b) => {
       const sizeA = sizeMap[a.size] || 'small';
       const sizeB = sizeMap[b.size] || 'small';
       return windowScores[sizeB] - windowScores[sizeA];
@@ -241,6 +303,8 @@ const DashboardPlane = ({
         let position;
         if (
           widget.position &&
+          typeof widget.position.row !== 'undefined' &&
+          typeof widget.position.col !== 'undefined' &&
           canPlaceWindow(size, widget.position.row, widget.position.col, [], tempGrid, newWindows)
         ) {
           position = widget.position;
@@ -265,14 +329,15 @@ const DashboardPlane = ({
         }
       });
 
-      console.log(`Dashboard ${dashboardId}: Initialized ${newWindows.length} widgets`);
+      console.log(`Dashboard ${dashboardId}: Initialized ${newWindows.length} widgets`, newWindows.map(w => ({ id: w.originalWidget.id, size: w.size, position: w.position })));
       setWindows(newWindows);
       gridRef.current.occupied = tempGrid;
-      prevWidgetsRef.current = initialWidgets;
+      prevWidgetsRef.current = uniqueWidgets;
+      updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
     } catch (error) {
       console.error(`Dashboard ${dashboardId}: Error initializing widgets`, error);
     }
-  }, [initialWidgets, dashboardId]);
+  }, [initialWidgets, dashboardId, updateWidgets]);
 
   return (
     <div
@@ -280,6 +345,9 @@ const DashboardPlane = ({
         editMode ? styles.editModeContainer : ''
       } ${windows.length === 0 ? styles.empty : ''}`}
       ref={planeRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {Array.from({ length: 4 }).map((_, row) =>
@@ -296,7 +364,7 @@ const DashboardPlane = ({
         )}
         {windows.map((window, index) => (
           <Window
-            key={`${dashboardId}-${window.originalWidget.id}`}
+            key={`${dashboardId}-${window.originalWidget.id}-${index}`}
             size={window.size}
             widget={window.originalWidget}
             style={{
@@ -305,6 +373,9 @@ const DashboardPlane = ({
             }}
             onDelete={() => removeWindow(index)}
             editMode={editMode}
+            onDragStart={onDragStart}
+            dashboardId={dashboardId}
+            index={index}
           />
         ))}
       </div>

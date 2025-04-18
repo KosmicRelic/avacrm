@@ -12,6 +12,7 @@
   overflow-y: auto;
   transition: background 0.3s ease;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+  touch-action: none; /* Prevent touch scrolling during drag */
 }
 
 .dashboardWrapper.darkTheme {
@@ -239,6 +240,11 @@
   background-color: #0A84FF;
 }
 
+.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
 @media (max-width: 768px) {
   .dashboardWrapper {
     height: calc(100vh - 176px);
@@ -264,8 +270,7 @@
     align-items: center;
   }
 
-  .editHeaderButton{
+  .editHeaderButton {
     right: 0;
   }
-}
-
+} 
