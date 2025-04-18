@@ -113,7 +113,6 @@ const Dashboard = () => {
   ]);
   const [editMode, setEditMode] = useState(false);
   const [selectedDashboardId, setSelectedDashboardId] = useState(null);
-  const [selectedWindow, setSelectedWindow] = useState(null);
   const editControlsRef = useRef(null);
   const prevWidgetConfigRef = useRef(null);
 
@@ -244,7 +243,6 @@ const Dashboard = () => {
     console.log(`Removing dashboard: ${selectedDashboardId}`);
     setDashboards((prev) => prev.filter((dashboard) => dashboard.id !== selectedDashboardId));
     setSelectedDashboardId(null);
-    setSelectedWindow(null);
   };
 
   const toggleEditMode = () => {
@@ -254,7 +252,6 @@ const Dashboard = () => {
       if (!newEditMode) {
         console.log('Exiting edit mode, clearing selections');
         setSelectedDashboardId(null);
-        setSelectedWindow(null);
       }
       return newEditMode;
     });
@@ -344,7 +341,7 @@ const Dashboard = () => {
               ...dashboard,
               widgets: newWidgets.map((widget) => ({
                 ...widget,
-                position: widget.position || { row: 0, col: 0 }, // Use default position if none provided
+                position: widget.position || { row: 0, col: 0 },
               })),
             }
           : dashboard
@@ -355,30 +352,6 @@ const Dashboard = () => {
   const getDashboardWidgets = (dashboardId) => {
     const dashboard = dashboards.find((d) => d.id === dashboardId);
     return dashboard ? dashboard.widgets : [];
-  };
-
-  const handleWindowSelect = (dashboardId, index, attemptSwap) => {
-    if (!editMode) {
-      console.log('Edit mode off, ignoring window selection');
-      return;
-    }
-    console.log(
-      `Window selected: dashboard ${dashboardId}, index ${index}, previous: ${JSON.stringify(selectedWindow)}`
-    );
-    if (!selectedWindow) {
-      setSelectedWindow({ dashboardId, index });
-      if (selectedDashboardId !== dashboardId) {
-        handleDashboardSelect(dashboardId);
-      }
-    } else {
-      const success = attemptSwap(selectedWindow.dashboardId, selectedWindow.index, dashboardId, index);
-      if (success) {
-        console.log('Swap successful, clearing selected window');
-        setSelectedWindow(null);
-      } else {
-        console.log('Swap failed, preserving selected window');
-      }
-    }
   };
 
   const memoizedDashboards = useMemo(() => {
@@ -440,7 +413,7 @@ const Dashboard = () => {
       </div>
 
       <div className={styles.windowsSection}>
-        {memoizedDashboards.map((dashboard) => (
+        {memoizedDashboards.map((dashboard, index) => (
           <DashboardPlane
             key={dashboard.id}
             dashboardId={dashboard.id}
@@ -449,9 +422,9 @@ const Dashboard = () => {
             isSelected={selectedDashboardId === dashboard.id}
             onSelect={() => handleDashboardSelect(dashboard.id)}
             updateWidgets={updateWidgets}
-            onWindowSelect={handleWindowSelect}
-            selectedWindow={selectedWindow}
             getDashboardWidgets={getDashboardWidgets}
+            dashboards={dashboards}
+            dashboardIndex={index}
           />
         ))}
       </div>
