@@ -16,17 +16,106 @@ const Dashboard = () => {
     pendingPayouts: 0,
     topCampaigns: [],
   });
-  const [dashboards, setDashboards] = useState(
-    Array.from({ length: 3 }, (_, index) => ({
-      id: `dashboard-${index + 1}`,
-      widgets: [],
-    }))
-  );
+  const [dashboards, setDashboards] = useState([
+    {
+      id: 'dashboard-1',
+      widgets: [
+        {
+          id: 'widget-revenue-1',
+          size: 'verySmall',
+          title: 'Total Revenue',
+          data: '$10,000',
+          section: 'Financials',
+        },
+        {
+          id: 'widget-revenue-3',
+          size: 'small',
+          title: 'Total Revenue',
+          data: '$10,000',
+          section: 'Financials',
+        },
+        {
+          id: 'widget-pending-4',
+          size: 'verySmall',
+          title: 'Pending Payouts',
+          data: '$1,200',
+          section: 'Financials',
+        },
+        {
+          id: 'widget-pending-2',
+          size: 'medium',
+          title: 'Pending Payouts',
+          data: '$1,200',
+          section: 'Financials',
+          position: { row: 2, col: 0 },
+        },
+      ],
+    },
+    {
+      id: 'dashboard-2',
+      widgets: [
+        {
+          id: 'widget-close-rate',
+          size: 'medium',
+          title: 'Close Rate',
+          data: '15%',
+          section: 'Lead Metrics',
+        },
+        {
+          id: 'widget-cost-per-lead',
+          size: 'small',
+          title: 'Cost Per Lead',
+          data: '$25.00',
+          section: 'Lead Metrics',
+        },
+        {
+          id: 'widget-bottleneck',
+          size: 'verySmall',
+          title: 'Bottleneck',
+          data: 'Low close rate',
+          section: 'Lead Metrics',
+        },
+      ],
+    },
+    {
+      id: 'dashboard-3',
+      widgets: [
+        {
+          id: 'widget-campaign-roi',
+          size: 'small',
+          title: 'Campaign ROI',
+          data: '2.5x',
+          section: 'Marketing',
+        },
+        {
+          id: 'widget-top-campaign-1',
+          size: 'small',
+          title: 'Top Campaign: FB Ad',
+          data: '5 leads, $20/lead',
+          section: 'Marketing',
+        },
+        {
+          id: 'widget-top-campaign-2',
+          size: 'small',
+          title: 'Top Campaign: Google Ad',
+          data: '3 leads, $25/lead',
+          section: 'Marketing',
+        },
+        {
+          id: 'widget-campaign-status',
+          size: 'verySmall',
+          title: 'Campaign Status',
+          data: 'Active',
+          section: 'Marketing',
+        },
+      ],
+    },
+  ]);
   const [editMode, setEditMode] = useState(false);
   const [selectedDashboardId, setSelectedDashboardId] = useState(null);
-  const [selectedWindow, setSelectedWindow] = useState(null); // { dashboardId, index }
+  const [selectedWindow, setSelectedWindow] = useState(null);
   const editControlsRef = useRef(null);
-  const prevWidgetConfigRef = useRef(null); // To prevent unnecessary dashboard updates
+  const prevWidgetConfigRef = useRef(null);
 
   useEffect(() => {
     const totalLeads = cards.length;
@@ -63,25 +152,64 @@ const Dashboard = () => {
         data: `$${metrics.revenue.toLocaleString()}`,
         section: 'Financials',
       },
+      {
+        id: 'close-rate',
+        name: 'Close Rate',
+        size: 'medium',
+        title: 'Close Rate',
+        data: `${metrics.closeRate}%`,
+        section: 'Lead Metrics',
+      },
+      {
+        id: 'cost-per-lead',
+        name: 'Cost Per Lead',
+        size: 'small',
+        title: 'Cost Per Lead',
+        data: `$${metrics.costPerLead}`,
+        section: 'Lead Metrics',
+      },
+      {
+        id: 'bottleneck',
+        name: 'Bottleneck',
+        size: 'verySmall',
+        title: 'Bottleneck',
+        data: metrics.bottleneck,
+        section: 'Lead Metrics',
+      },
+      {
+        id: 'campaign-roi',
+        name: 'Campaign ROI',
+        size: 'small',
+        title: 'Campaign ROI',
+        data: `${metrics.campaignROI}x`,
+        section: 'Marketing',
+      },
+      {
+        id: 'top-campaigns',
+        name: 'Top Campaigns',
+        size: 'small',
+        title: 'Top Campaigns',
+        data: metrics.topCampaigns.map((c) => `${c.name}: ${c.leads} leads`).join(', '),
+        section: 'Marketing',
+      },
     ],
     [metrics]
   );
 
   useEffect(() => {
-    // Prevent re-initialization if widgetConfig hasn't changed
     if (JSON.stringify(widgetConfig) === JSON.stringify(prevWidgetConfigRef.current)) {
       console.log('Widget config unchanged, skipping dashboard initialization');
       return;
     }
 
-    console.log('Initializing dashboards with widgets');
+    console.log('Updating dashboards with dynamic widgets');
     setDashboards((prev) =>
-      prev.map((dashboard, index) => ({
+      prev.map((dashboard) => ({
         ...dashboard,
-        widgets:
-          index < 3
-            ? widgetConfig.filter((w) => w.section === ['Financials', 'Lead Metrics', 'Marketing'][index])
-            : widgetConfig.slice(0, 2),
+        widgets: dashboard.widgets.map((widget) => {
+          const config = widgetConfig.find((wc) => wc.id === widget.id);
+          return config ? { ...widget, data: config.data } : widget;
+        }),
       }))
     );
     prevWidgetConfigRef.current = widgetConfig;
@@ -95,6 +223,7 @@ const Dashboard = () => {
       size: 'verySmall',
       title: 'New Widget',
       data: 'Add content',
+      section: 'Custom',
     };
     setDashboards((prev) => [
       ...prev,
@@ -103,7 +232,6 @@ const Dashboard = () => {
         widgets: [newWidget],
       },
     ]);
-    // Auto-select the new dashboard
     setSelectedDashboardId(newDashboardId);
   };
 
@@ -146,16 +274,16 @@ const Dashboard = () => {
     large: 80,
   };
 
-  const validateDashboardScore = (widgets, newWidgetSize) => {
-    const totalScore = widgets.reduce((sum, widget) => {
+  const validateDashboardScore = (currentWidgets, newWidgets) => {
+    const totalScore = newWidgets.reduce((sum, widget) => {
       const size = widget.size || 'small';
       return sum + (windowScores[size] || 0);
     }, 0);
-    const newScore = totalScore + (windowScores[newWidgetSize] || 0);
-    if (newScore > 80) {
-      console.log(`Cannot add widget: total score ${newScore} exceeds limit of 80`);
+    if (totalScore > 80) {
+      console.log(`Cannot update widgets: total score ${totalScore} exceeds limit of 80`);
       return false;
     }
+    console.log(`Score validation passed: new score ${totalScore}`);
     return true;
   };
 
@@ -172,26 +300,26 @@ const Dashboard = () => {
       return;
     }
 
-    // Check score limit
-    if (!validateDashboardScore(dashboard.widgets, size)) {
-      alert('Cannot add widget: Dashboard score limit reached');
-      return;
-    }
-
-    console.log(`Adding ${size} widget to dashboard: ${selectedDashboardId}`);
     const newWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       size,
       title: 'New Widget',
       data: content,
+      section: 'Custom',
     };
+    const newWidgets = [...dashboard.widgets, newWidget];
+    if (!validateDashboardScore(dashboard.widgets, newWidgets)) {
+      alert('Cannot add widget: Dashboard score limit reached');
+      return;
+    }
 
+    console.log(`Adding ${size} widget to dashboard: ${selectedDashboardId}`);
     setDashboards((prev) =>
       prev.map((dashboard) =>
         dashboard.id === selectedDashboardId
           ? {
               ...dashboard,
-              widgets: [...dashboard.widgets, newWidget],
+              widgets: newWidgets,
             }
           : dashboard
       )
@@ -200,13 +328,26 @@ const Dashboard = () => {
 
   const updateWidgets = (dashboardId, newWidgets) => {
     console.log(`Updating widgets for dashboard ${dashboardId}, widgets: ${newWidgets.length}`);
-    if (!validateDashboardScore(newWidgets, 'small')) {
+    const dashboard = dashboards.find((d) => d.id === dashboardId);
+    if (!dashboard) {
+      console.log(`Dashboard ${dashboardId} not found`);
+      return;
+    }
+    if (!validateDashboardScore(dashboard.widgets, newWidgets)) {
       console.log(`Widget update rejected for dashboard ${dashboardId}: score limit exceeded`);
       return;
     }
     setDashboards((prev) =>
       prev.map((dashboard) =>
-        dashboard.id === dashboardId ? { ...dashboard, widgets: newWidgets } : dashboard
+        dashboard.id === dashboardId
+          ? {
+              ...dashboard,
+              widgets: newWidgets.map((widget) => ({
+                ...widget,
+                position: widget.position || { row: 0, col: 0 }, // Use default position if none provided
+              })),
+            }
+          : dashboard
       )
     );
   };
@@ -250,7 +391,7 @@ const Dashboard = () => {
   return (
     <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.buttonGroup}>
-      <DatePicker />
+        {!editMode && <DatePicker />}
         <button
           className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={toggleEditMode}
@@ -259,43 +400,43 @@ const Dashboard = () => {
         </button>
 
         {editMode && (
-        <div className={styles.controls} ref={editControlsRef}>
-          <button
-            className={styles.addButton}
-            onClick={() => addWindowToDashboard('verySmall', 'Add content')}
-          >
-            <FaPlus /> Very Small
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() => addWindowToDashboard('small', 'Add content')}
-          >
-            <FaPlus /> Small
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() => addWindowToDashboard('medium', 'Add content')}
-          >
-            <FaPlus /> Medium
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={() => addWindowToDashboard('large', 'Add content')}
-          >
-            <FaPlus /> Large
-          </button>
-          <button className={styles.addButton} onClick={addDashboard}>
-            <FaPlus /> Dashboard
-          </button>
-          <button
-            className={styles.addButton}
-            onClick={removeDashboard}
-            disabled={!selectedDashboardId}
-          >
-            <FaTrash /> Remove Dashboard
-          </button>
-        </div>
-      )}
+          <div className={styles.controls} ref={editControlsRef}>
+            <button
+              className={styles.addButton}
+              onClick={() => addWindowToDashboard('verySmall', 'Add content')}
+            >
+              <FaPlus /> Very Small
+            </button>
+            <button
+              className={styles.addButton}
+              onClick={() => addWindowToDashboard('small', 'Add content')}
+            >
+              <FaPlus /> Small
+            </button>
+            <button
+              className={styles.addButton}
+              onClick={() => addWindowToDashboard('medium', 'Add content')}
+            >
+              <FaPlus /> Medium
+            </button>
+            <button
+              className={styles.addButton}
+              onClick={() => addWindowToDashboard('large', 'Add content')}
+            >
+              <FaPlus /> Large
+            </button>
+            <button className={styles.addButton} onClick={addDashboard}>
+              <FaPlus /> Dashboard
+            </button>
+            <button
+              className={styles.addButton}
+              onClick={removeDashboard}
+              disabled={!selectedDashboardId}
+            >
+              <FaTrash /> Remove Dashboard
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.windowsSection}>

@@ -190,6 +190,7 @@
   justify-content: center;
   background: transparent;
   border-radius: 10px;
+  z-index: 10;
 }
 
 .editHeaderButton.darkTheme {
