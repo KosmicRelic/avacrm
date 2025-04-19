@@ -47,38 +47,38 @@ const DatePicker = () => {
     };
   }, [activeOption, collapsed]);
 
-  return (
-    <div
-      ref={datePickerRef}
-      className={`${styles.datePicker} ${collapsed ? styles.collapsed : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-    >
-      {collapsed ? (
-        <button
-          className={`${styles.button} ${styles.active}`}
-          onClick={() => setCollapsed(false)} // Expanding the DatePicker
-        >
-          {activeOption}
-        </button>
-      ) : (
-        <>
-          {options.map((option) => (
-            <button
-              key={option}
-              ref={(el) => (buttonRefs.current[option] = el)}
-              className={`${styles.button} ${activeOption === option ? styles.active : ''}`}
-              onClick={() => handleClick(option)}
-            >
-              {option}
-            </button>
-          ))}
-          <div
-            className={`${styles.highlight} ${isDarkTheme ? styles.darkTheme : ''}`}
-            ref={highlightRef}
-          ></div>
-        </>
-      )}
-    </div>
-  );
+  // return (
+  //   <div
+  //     ref={datePickerRef}
+  //     className={`${styles.datePicker} ${collapsed ? styles.collapsed : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+  //   >
+  //     {collapsed ? (
+  //       <button
+  //         className={`${styles.button} ${styles.active}`}
+  //         onClick={() => setCollapsed(false)} // Expanding the DatePicker
+  //       >
+  //         {activeOption}
+  //       </button>
+  //     ) : (
+  //       <>
+  //         {options.map((option) => (
+  //           <button
+  //             key={option}
+  //             ref={(el) => (buttonRefs.current[option] = el)}
+  //             className={`${styles.button} ${activeOption === option ? styles.active : ''}`}
+  //             onClick={() => handleClick(option)}
+  //           >
+  //             {option}
+  //           </button>
+  //         ))}
+  //         <div
+  //           className={`${styles.highlight} ${isDarkTheme ? styles.darkTheme : ''}`}
+  //           ref={highlightRef}
+  //         ></div>
+  //       </>
+  //     )}
+  //   </div>
+  // );
 };
 
 export default DatePicker;

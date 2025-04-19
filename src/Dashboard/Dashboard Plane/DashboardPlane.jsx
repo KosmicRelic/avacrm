@@ -315,17 +315,16 @@ const DashboardPlane = ({
           widget.position &&
           typeof widget.position.row !== 'undefined' &&
           typeof widget.position.col !== 'undefined' &&
+          !isNaN(widget.position.row) &&
+          !isNaN(widget.position.col) &&
           canPlaceWindow(size, widget.position.row, widget.position.col, [], tempGrid, newWindows)
         ) {
           position = widget.position;
           console.log(`Dashboard ${dashboardId}: Using predefined position for widget ${widget.id}`, position);
         } else {
-          position = findFreePosition(size, [], tempGrid, newWindows);
-          if (!position) {
-            console.log(`Dashboard ${dashboardId}: No valid position found for widget ${widget.id}`);
-            return;
-          }
-          console.log(`Dashboard ${dashboardId}: Assigned new position for widget ${widget.id}`, position);
+          console.warn(`Dashboard ${dashboardId}: Invalid or unusable position for widget ${widget.id} (row: ${widget.position?.row}, col: ${widget.position?.col}), finding free position`);
+          position = findFreePosition(size, [], tempGrid, newWindows) || { row: 0, col: 0 };
+          console.log(`Dashboard ${dashboardId}: Assigned fallback position for widget ${widget.id}`, position);
         }
 
         newWindows.push({ originalWidget: widget, size, position });
@@ -372,22 +371,32 @@ const DashboardPlane = ({
             />
           ))
         )}
-        {windows.map((window, index) => (
-          <Window
-            key={`${dashboardId}-${window.originalWidget.id}-${index}`}
-            size={window.size}
-            widget={window.originalWidget}
-            style={{
-              gridRow: `${window.position.row + 1} / span ${(windowSizes[window.size] || windowSizes.small).height}`,
-              gridColumn: `${window.position.col + 1} / span ${(windowSizes[window.size] || windowSizes.small).width}`,
-            }}
-            onDelete={() => removeWindow(index)}
-            editMode={editMode}
-            onDragStart={onDragStart}
-            dashboardId={dashboardId}
-            index={index}
-          />
-        ))}
+        {windows.map((window, index) => {
+          const { size, position, originalWidget } = window;
+          // Validate position before rendering
+          if (!position || isNaN(position.row) || isNaN(position.col)) {
+            console.warn(`Skipping render for widget ${originalWidget.id}: Invalid position (row: ${position?.row}, col: ${position?.col})`);
+            return null;
+          }
+          return (
+            <Window
+              key={`${dashboardId}-${originalWidget.id}-${index}`}
+              size={size}
+              widget={originalWidget}
+              style={{
+                gridRow: `${position.row + 1} / span ${(windowSizes[size] || windowSizes.small).height}`,
+                gridColumn: `${position.col + 1} / span ${(windowSizes[size] || windowSizes.small).width}`,
+                gridRowStart: position.row + 1,
+                gridColumnStart: position.col + 1,
+              }}
+              onDelete={() => removeWindow(index)}
+              editMode={editMode}
+              onDragStart={onDragStart}
+              dashboardId={dashboardId}
+              index={index}
+            />
+          );
+        }).filter(Boolean)}
       </div>
     </div>
   );
