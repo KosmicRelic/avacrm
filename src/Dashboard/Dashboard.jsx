@@ -367,125 +367,136 @@ const Dashboard = () => {
     return null;
   };
 
-// In Dashboard.jsx, replace the reassignOverlappingWidgets function (around line 418)
-const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, draggedWidgetData, draggedSize, sourceDashboard = null, sourcePos = null) => {
-  // Initialize temporary grid and new widgets list for target dashboard
-  let tempGrid = Array(4).fill().map(() => Array(2).fill(false));
-  let newWidgets = dashboard.widgets.filter(w => !overlappingWidgets.some(ow => ow.id === w.id));
-  let skipWidgets = [draggedWidgetData];
+  const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, draggedWidgetData, draggedSize, sourceDashboard = null, sourcePos = null) => {
+    // Initialize temporary grid and new widgets list for target dashboard
+    let tempGrid = Array(4).fill().map(() => Array(2).fill(false));
+    let newWidgets = dashboard.widgets.filter(w => !overlappingWidgets.some(ow => ow.id === w.id));
+    let skipWidgets = [draggedWidgetData];
 
-  // Place the dragged widget at the target position
-  if (!canPlaceWidget({ widgets: newWidgets }, { id: draggedWidgetData.id, size: draggedSize }, targetPos.row, targetPos.col, skipWidgets, tempGrid)) {
-    console.log(`Cannot place dragged widget ${draggedWidgetData.id} at target position row=${targetPos.row}, col=${targetPos.col}`);
-    return null;
-  }
-  newWidgets.push({ ...draggedWidgetData, size: draggedSize, position: targetPos });
-  const { width, height } = windowSizes[draggedSize];
-  for (let r = targetPos.row; r < targetPos.row + height; r++) {
-    for (let c = targetPos.col; c < targetPos.col + width; c++) {
-      if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-        tempGrid[r][c] = true;
+    // Place the dragged widget at the target position
+    if (!canPlaceWidget({ widgets: newWidgets }, { id: draggedWidgetData.id, size: draggedSize }, targetPos.row, targetPos.col, skipWidgets, tempGrid)) {
+      console.log(`Cannot place dragged widget ${draggedWidgetData.id} at target position row=${targetPos.row}, col=${targetPos.col}`);
+      return null;
+    }
+    newWidgets.push({ ...draggedWidgetData, size: draggedSize, position: targetPos });
+    const { width, height } = windowSizes[draggedSize];
+    for (let r = targetPos.row; r < targetPos.row + height; r++) {
+      for (let c = targetPos.col; c < targetPos.col + width; c++) {
+        if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+          tempGrid[r][c] = true;
+        }
       }
     }
-  }
 
-  // If cross-dashboard, try group swap first
-  if (sourceDashboard && sourcePos && overlappingWidgets.length > 0) {
-    console.log(`Attempting group swap for overlapping widgets: ${overlappingWidgets.map(w => w.id).join(', ')}`);
+    // Handle same-dashboard or cross-dashboard group swap
+    const targetDashboard = sourceDashboard || dashboard;
+    const isSameDashboard = !sourceDashboard;
+
+    console.log(`Attempting group swap for overlapping widgets: ${overlappingWidgets.map(w => w.id).join(', ')} in ${isSameDashboard ? 'same' : 'source'} dashboard`);
     let canSwap = true;
-    let sourceTempGrid = Array(4).fill().map(() => Array(2).fill(false));
-    const sourceSkipWidgets = [draggedWidgetData];
-    const sourceWidgets = sourceDashboard.widgets.filter(w => w.id !== draggedWidgetData.id);
-    let tempSourceWidgets = [...sourceWidgets];
+    let targetTempGrid = Array(4).fill().map(() => Array(2).fill(false));
+    const targetSkipWidgets = [draggedWidgetData];
+    const targetWidgets = isSameDashboard
+      ? newWidgets
+      : targetDashboard.widgets.filter(w => w.id !== draggedWidgetData.id);
+    let tempTargetWidgets = [...targetWidgets];
 
-    // Try to place all overlapping widgets in the source dashboard
+    // Try to place all overlapping widgets in the target dashboard
     for (const widget of overlappingWidgets) {
       const size = widget.size;
-      const freePos = findFreePosition({ widgets: tempSourceWidgets }, size, sourceSkipWidgets, sourceTempGrid);
+      const freePos = findFreePosition({ widgets: tempTargetWidgets }, size, targetSkipWidgets, targetTempGrid);
       if (freePos) {
-        tempSourceWidgets.push({ ...widget, position: freePos });
-        sourceSkipWidgets.push(widget);
+        tempTargetWidgets.push({ ...widget, position: freePos });
+        targetSkipWidgets.push(widget);
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
           for (let c = freePos.col; c < freePos.col + wWidth; c++) {
             if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-              sourceTempGrid[r][c] = true;
+              targetTempGrid[r][c] = true;
             }
           }
         }
       } else {
-        console.log(`Cannot place widget ${widget.id} in source dashboard at any valid position`);
+        console.log(`Cannot place widget ${widget.id} in ${isSameDashboard ? 'same' : 'source'} dashboard at any valid position`);
         canSwap = false;
         break;
       }
     }
 
     if (canSwap) {
-      console.log(`Group swap successful: ${overlappingWidgets.map(w => w.id).join(', ')} to source dashboard`);
+      console.log(`Group swap successful: ${overlappingWidgets.map(w => w.id).join(', ')} to ${isSameDashboard ? 'same' : 'source'} dashboard`);
+      if (isSameDashboard) {
+        // For same dashboard, ensure dragged widget is included
+        const finalWidgets = tempTargetWidgets.filter(w => w.id !== draggedWidgetData.id).concat({
+          ...draggedWidgetData,
+          size: draggedSize,
+          position: targetPos,
+        });
+        return { targetWidgets: finalWidgets };
+      }
       return {
         targetWidgets: newWidgets,
-        sourceWidgets: tempSourceWidgets,
+        sourceWidgets: tempTargetWidgets,
       };
     }
-    console.log(`Group swap failed: Trying individual reassignment`);
-  }
 
-  // Try to reassign each overlapping widget individually in the target dashboard
-  const remainingWidgets = [...overlappingWidgets];
-  const placedWidgets = [];
+    console.log(`Group swap failed: Trying individual reassignment in target dashboard`);
+    // Try to reassign each overlapping widget individually in the target dashboard
+    const remainingWidgets = [...overlappingWidgets];
+    const placedWidgets = [];
 
-  while (remainingWidgets.length > 0) {
-    const widget = remainingWidgets.shift();
-    const size = widget.size;
-    const freePos = findFreePosition({ widgets: newWidgets }, size, skipWidgets, tempGrid);
-    if (freePos) {
-      console.log(`Reassigning displaced widget ${widget.id} to row=${freePos.row}, col=${freePos.col}`);
-      newWidgets.push({ ...widget, position: freePos });
-      skipWidgets.push(widget);
-      placedWidgets.push(widget);
-      const { width: wWidth, height: wHeight } = windowSizes[size];
-      for (let r = freePos.row; r < freePos.row + wHeight; r++) {
-        for (let c = freePos.col; c < freePos.col + wWidth; c++) {
-          if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-            tempGrid[r][c] = true;
+    while (remainingWidgets.length > 0) {
+      const widget = remainingWidgets.shift();
+      const size = widget.size;
+      const freePos = findFreePosition({ widgets: newWidgets }, size, skipWidgets, tempGrid);
+      if (freePos) {
+        console.log(`Reassigning displaced widget ${widget.id} to row=${freePos.row}, col=${freePos.col}`);
+        newWidgets.push({ ...widget, position: freePos });
+        skipWidgets.push(widget);
+        placedWidgets.push(widget);
+        const { width: wWidth, height: wHeight } = windowSizes[size];
+        for (let r = freePos.row; r < freePos.row + wHeight; r++) {
+          for (let c = freePos.col; c < freePos.col + wWidth; c++) {
+            if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+              tempGrid[r][c] = true;
+            }
           }
         }
+      } else {
+        remainingWidgets.push(widget);
+        break;
       }
-    } else {
-      remainingWidgets.push(widget);
-      break;
     }
-  }
 
-  if (remainingWidgets.length === 0) {
-    return { targetWidgets: newWidgets };
-  }
+    if (remainingWidgets.length === 0) {
+      return { targetWidgets: newWidgets };
+    }
 
-  console.log(`Cannot reassign widgets ${remainingWidgets.map(w => w.id).join(', ')}: No valid positions found`);
-  return null;
-};
-  
+    console.log(`Cannot reassign widgets ${remainingWidgets.map(w => w.id).join(', ')}: No valid positions found`);
+    return null;
+  };
+
   const handleDrop = ({ dashboardId, row, col }) => {
     if (!draggedWidget || !editMode || !isInitialized) {
       console.log('Drop aborted: No dragged widget, edit mode off, or not initialized');
       setDraggedWidget(null);
       return;
     }
-  
+
     const sourceDashboardId = draggedWidget.dashboardId;
     const sourceIndex = draggedWidget.index;
     const draggedSize = draggedWidget.size;
     const draggedWidgetData = draggedWidget.widget;
     const draggedOriginalPos = draggedWidget.position;
-  
+
     console.log(`Dropping widget ${draggedWidgetData.id} from ${sourceDashboardId} to ${dashboardId} at row=${row}, col=${col}`);
-  
+
     if (sourceDashboardId === dashboardId && draggedWidget.position.row === row && draggedWidget.position.col === col) {
       console.log(`Drop ignored: Widget ${draggedWidgetData.id} dropped at same position`);
       setDraggedWidget(null);
       return;
     }
-  
+
     setDashboards((prev) => {
       if (!prev || !Array.isArray(prev)) {
         console.error('Invalid dashboards state:', prev);
@@ -493,7 +504,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
         setDraggedWidget(null);
         return prev || [];
       }
-  
+
       const sourceDashboard = prev.find((d) => d.id === sourceDashboardId);
       const targetDashboard = prev.find((d) => d.id === dashboardId);
       if (!sourceDashboard || !targetDashboard) {
@@ -501,7 +512,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
         setDraggedWidget(null);
         return prev;
       }
-  
+
       const targetPos = getValidPosition(draggedSize, row, col);
       if (!targetPos || isNaN(targetPos.row) || isNaN(targetPos.col)) {
         console.log(`Invalid target position for widget ${draggedWidgetData.id}, size=${draggedSize}`);
@@ -509,7 +520,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
         setDraggedWidget(null);
         return prev;
       }
-  
+
       const skipWidgets = sourceDashboardId === dashboardId ? [draggedWidgetData] : [];
       const overlappingWidgets = targetDashboard.widgets.filter((w) => {
         if (skipWidgets.some((sw) => sw.id === w.id)) return false;
@@ -524,7 +535,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
         const tCol = targetPos.col;
         const tWidth = windowSizes[draggedSize].width;
         const tHeight = windowSizes[draggedSize].height;
-  
+
         return (
           wRow < tRow + tHeight &&
           wRow + height > tRow &&
@@ -532,84 +543,40 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
           wCol + width > tCol
         );
       });
-  
+
       console.log(`Overlapping widgets at target position:`, overlappingWidgets.map(w => w.id));
-  
+
       // Same dashboard, multiple overlaps
       if (sourceDashboardId === dashboardId && overlappingWidgets.length > 0) {
-        const newWidgets = [...targetDashboard.widgets];
-        const draggedIndex = sourceIndex;
-        const overlappingIndices = overlappingWidgets.map((w) =>
-          targetDashboard.widgets.findIndex((tw) => tw.id === w.id)
+        console.log(`Attempting to handle multiple overlaps for widget ${draggedWidgetData.id}:`, overlappingWidgets.map(w => w.id));
+        const reassignment = reassignOverlappingWidgets(
+          targetDashboard,
+          overlappingWidgets,
+          targetPos,
+          draggedWidgetData,
+          draggedSize
         );
-  
-        let placed = false;
-        for (const overlapIndex of overlappingIndices) {
-          if (
-            canPlaceWidget(
-              targetDashboard,
-              { id: draggedWidgetData.id, size: draggedSize },
-              targetPos.row,
-              targetPos.col,
-              [targetDashboard.widgets[overlapIndex]]
-            ) &&
-            canPlaceWidget(
-              targetDashboard,
-              {
-                id: targetDashboard.widgets[overlapIndex].id,
-                size: targetDashboard.widgets[overlapIndex].size,
-              },
-              draggedOriginalPos.row,
-              draggedOriginalPos.col,
-              [draggedWidgetData]
-            )
-          ) {
-            newWidgets[draggedIndex] = {
-              ...draggedWidgetData,
-              size: draggedSize,
-              position: targetPos,
-            };
-            newWidgets[overlapIndex] = {
-              ...targetDashboard.widgets[overlapIndex],
-              position: draggedOriginalPos,
-            };
-            placed = true;
-            break;
+
+        if (reassignment) {
+          const { targetWidgets } = reassignment;
+          if (!validateDashboardScore(targetDashboard.widgets, targetWidgets)) {
+            console.log('Score limit exceeded for same dashboard reassignment');
+            alert('Cannot move widget: Score limit reached');
+            setDraggedWidget(null);
+            return prev;
           }
+
+          return prev.map((dashboard) =>
+            dashboard.id === dashboardId ? { ...dashboard, widgets: targetWidgets } : dashboard
+          );
         }
-  
-        if (!placed) {
-          const freePos = findFreePosition(targetDashboard, draggedSize, skipWidgets);
-          if (freePos && !isNaN(freePos.row) && !isNaN(freePos.col)) {
-            console.log(`Moving widget ${draggedWidgetData.id} to empty slot at row=${freePos.row}, col=${freePos.col}`);
-            newWidgets[draggedIndex] = {
-              ...draggedWidgetData,
-              size: draggedSize,
-              position: freePos,
-            };
-            placed = true;
-          }
-        }
-  
-        if (!placed) {
-          console.log(`Cannot move widget ${draggedWidgetData.id}: No valid position found`);
-          alert('Cannot move widget: No valid position available');
-          setDraggedWidget(null);
-          return prev;
-        }
-  
-        if (!validateDashboardScore(targetDashboard.widgets, newWidgets)) {
-          console.log('Score limit exceeded for same dashboard');
-          alert('Cannot move widget: Score limit reached');
-          setDraggedWidget(null);
-          return prev;
-        }
-  
-        return prev.map((dashboard) =>
-          dashboard.id === dashboardId ? { ...dashboard, widgets: newWidgets } : dashboard
-        );
+
+        console.log(`Cannot drop widget ${draggedWidgetData.id}: Unable to reassign overlapping widgets`, overlappingWidgets.map(w => w.id));
+        alert('Cannot drop widget: No valid positions for displaced widgets');
+        setDraggedWidget(null);
+        return prev;
       }
-  
+
       // Cross-dashboard, single overlap
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 1) {
         const overlappingWidget = overlappingWidgets[0];
@@ -635,7 +602,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
               { row: 3, col: 1 },
             ].filter((pos) => pos.row < 4 && pos.col < 2)
           : [{ row: draggedOriginalPos.row, col: draggedOriginalPos.col }];
-  
+
         for (const pos of possiblePositions) {
           if (
             canPlaceWidget(targetDashboard, { id: draggedWidgetData.id, size: draggedSize }, targetPos.row, targetPos.col, [overlappingWidget]) &&
@@ -649,7 +616,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
               ...sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id),
               { ...overlappingWidget, size: overlappingWidget.size, position: pos },
             ];
-  
+
             if (
               !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
               !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
@@ -659,7 +626,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
               setDraggedWidget(null);
               return prev;
             }
-  
+
             return prev.map((dashboard) => {
               if (dashboard.id === sourceDashboardId) {
                 return { ...dashboard, widgets: sourceNewWidgets };
@@ -671,7 +638,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
             });
           }
         }
-  
+
         const freePos = findFreePosition({ widgets: sourceWidgets }, overlappingWidget.size, []);
         if (freePos && !isNaN(freePos.row) && !isNaN(freePos.col)) {
           const targetNewWidgets = [
@@ -682,7 +649,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
             ...sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id),
             { ...overlappingWidget, size: overlappingWidget.size, position: freePos },
           ];
-  
+
           if (
             !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
             !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
@@ -692,7 +659,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
             setDraggedWidget(null);
             return prev;
           }
-  
+
           return prev.map((dashboard) => {
             if (dashboard.id === sourceDashboardId) {
               return { ...dashboard, widgets: sourceNewWidgets };
@@ -703,21 +670,52 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
             return dashboard;
           });
         }
-  
+
         console.log(`Cannot swap widget ${overlappingWidget.id}: No valid position found`);
         alert('Cannot swap widget: No valid position for displaced widget');
         setDraggedWidget(null);
         return prev;
       }
-  
+
       // Cross-dashboard, multiple overlaps
-      if (sourceDashboardId !== dashboardId && overlappingWidgets.length > 1) {
-        console.log(`Cannot drop widget ${draggedWidgetData.id}: Multiple overlapping widgets detected`, overlappingWidgets.map(w => w.id));
-        alert('Cannot drop widget: Too many overlapping widgets at target position');
+      if (sourceDashboardId !== dashboardId && overlappingWidgets.length > 0) {
+        console.log(`Attempting to handle multiple overlaps for widget ${draggedWidgetData.id}:`, overlappingWidgets.map(w => w.id));
+        const reassignment = reassignOverlappingWidgets(
+          targetDashboard,
+          overlappingWidgets,
+          targetPos,
+          draggedWidgetData,
+          draggedSize,
+          sourceDashboard,
+          draggedOriginalPos
+        );
+
+        if (reassignment) {
+          const { targetWidgets, sourceWidgets } = reassignment;
+          if (!validateDashboardScore(targetDashboard.widgets, targetWidgets) || (sourceWidgets && !validateDashboardScore(sourceDashboard.widgets, sourceWidgets))) {
+            console.log('Score limit exceeded for cross-dashboard reassignment');
+            alert('Cannot move widget: Score limit reached');
+            setDraggedWidget(null);
+            return prev;
+          }
+
+          return prev.map((dashboard) => {
+            if (dashboard.id === sourceDashboardId && sourceWidgets) {
+              return { ...dashboard, widgets: sourceWidgets };
+            }
+            if (dashboard.id === dashboardId) {
+              return { ...dashboard, widgets: targetWidgets };
+            }
+            return dashboard;
+          });
+        }
+
+        console.log(`Cannot drop widget ${draggedWidgetData.id}: Unable to reassign overlapping widgets`, overlappingWidgets.map(w => w.id));
+        alert('Cannot drop widget: No valid positions for displaced widgets');
         setDraggedWidget(null);
         return prev;
       }
-  
+
       // Cross-dashboard, no overlap
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 0) {
         const targetNewWidgets = [
@@ -725,7 +723,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
           { ...draggedWidgetData, size: draggedSize, position: targetPos },
         ];
         const sourceNewWidgets = sourceDashboard.widgets.filter((_, i) => i !== sourceIndex);
-  
+
         if (
           !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
           !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
@@ -735,7 +733,7 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
           setDraggedWidget(null);
           return prev;
         }
-  
+
         return prev.map((dashboard) => {
           if (dashboard.id === sourceDashboardId) {
             return { ...dashboard, widgets: sourceNewWidgets };
@@ -746,11 +744,12 @@ const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, dr
           return dashboard;
         });
       }
-  
+
       setDraggedWidget(null);
       return prev;
     });
   };
+
   const handleDragStart = (e, widgetInfo) => {
     if (!editMode || !isInitialized) return;
     console.log(`Starting drag for widget ${widgetInfo.widget.id} from dashboard ${widgetInfo.dashboardId}`);
