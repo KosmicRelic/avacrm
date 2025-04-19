@@ -44,7 +44,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
  </div>
  {editMode && (
  <button className={styles.removeButton} onClick={onDelete}>
- <FaCircleMinus />
+    <FaCircleMinus size = {20} />
  </button>
  )}
  </div>

@@ -100,7 +100,7 @@
  .mediumWindow.editMode,
  .largeWindow.editMode {
   cursor: grab;
-  animation: jiggle 0.3s ease-in-out infinite alternate;
+  animation: jiggle 0.2s ease-in-out infinite alternate;
  }
  
  .verySmallWindow.editMode:active,
@@ -203,6 +203,12 @@
  
  /* Remove button */
  .removeButton {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: -0.5em;
+  left: -0.5em;
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -210,7 +216,8 @@
   align-items: center;
   justify-content: center;
   transition: background 0.2s ease;
-  padding: 0;
+  padding: 0em;
+  color: rgb(99, 99, 99);
  }
  
  /* Dragging state */

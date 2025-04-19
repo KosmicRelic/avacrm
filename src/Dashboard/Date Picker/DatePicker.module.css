@@ -4,29 +4,28 @@
   top: 0em;
   background: rgb(255, 255, 255);
   backdrop-filter: blur(10px);
-  border-radius: 100px;
+  border-radius: 10px;
   padding: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  width: 600px;
-  height: 34px;
+  width: 500px;
+  height: 24px;
   margin-left: auto;
   margin-right: auto;
   z-index: 1;
-  transition: all 0.3s ease; /* Smooth transition */
+  /* transition: all 0.3s ease; ❌ Removed */
 }
 
 .datePicker.darkTheme {
   background: #2c2c2e;
 }
 
-/* When collapsed */
 .datePicker.collapsed {
-  max-width: 80px; /* Set a smaller max width when collapsed */
+  max-width: 80px;
   padding: 4px 12px;
   justify-content: center;
   gap: 0;
   height: 34px;
-  opacity: 0.8; /* Slightly fade when collapsed */
+  opacity: 0.8;
 }
 
 .datePicker.collapsed button {
@@ -41,22 +40,21 @@
   background: transparent;
   cursor: pointer;
   z-index: 2;
-  transition: color 0.3s ease, transform 0.3s ease;
+  /* transition: color 0.3s ease, transform 0.3s ease; ❌ Removed */
   flex: 1;
-  font-weight: 400; /* Medium weight for Apple aesthetic */
-  font-size: 14px; /* Slightly larger for readability */
+  font-weight: 500;
+  font-size: 14px;
   letter-spacing: -0.01em;
-  color: #0A84FF;
+  color: #cdcdcd;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.3s ease; /* Fade effect */
+  /* transition: opacity 0.3s ease; ❌ Removed */
 }
 
 .datePicker button.active {
-  color: #0A84FF; 
-  font-weight: 400;
+  color: #0A84FF;
 }
 
 .datePicker.darkTheme button.active {
@@ -68,9 +66,9 @@
   top: 8px;
   bottom: 8px;
   background: rgb(242, 243, 248);
-  border-radius: 100px;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease; /* ✅ Only this animation stays */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .highlight.darkTheme {
@@ -83,7 +81,7 @@
 
 @media (max-width: 768px) {
   .datePicker {
-    width: calc(100% - 16px);
+    /* width: calc(100% - 16px); */
     height: 27.5px;
   }
 }
