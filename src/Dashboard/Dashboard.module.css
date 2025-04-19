@@ -13,7 +13,6 @@
   overflow-y: auto;
   transition: background 0.3s ease;
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
-  touch-action: none; /* Prevent touch scrolling during drag */
 }
 
 .dashboardWrapper.darkTheme {
@@ -250,6 +249,7 @@
   .dashboardWrapper {
     height: calc(100vh - 176px);
     max-width: 100%;
+    overflow-x: auto;
   }
 
   .windowsSection {
