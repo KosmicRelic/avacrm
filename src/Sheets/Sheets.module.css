@@ -1,6 +1,6 @@
 .sheetWrapper {
   width: 100%;
-  height: calc(100vh - 65px);
+  height: calc(100vh - 97px);
   display: flex;
   flex-direction: row;
   padding: 16px 0;
@@ -837,7 +837,7 @@
 
 @media (max-width: 1024px) {
   .sheetWrapper {
-    height: calc(100vh - 176px);
+    height: calc(100vh - 138px);
     display: block;
     padding: 0;
     margin: 0;
