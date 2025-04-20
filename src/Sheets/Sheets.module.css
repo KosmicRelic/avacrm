@@ -1,9 +1,10 @@
 .sheetWrapper {
+  position: absolute;
+  top: 64px;
+  bottom: 0;
   width: 100%;
-  height: calc(100vh - 80px);
   display: flex;
   flex-direction: row;
-  /* padding: 16px 0; */
   box-sizing: border-box;
   overflow: hidden;
   gap: 16px;
@@ -837,7 +838,6 @@
 
 @media (max-width: 1024px) {
   .sheetWrapper {
-    height: calc(100vh - 138px);
     display: block;
     padding: 0;
     margin: 0;
