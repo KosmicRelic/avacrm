@@ -1,10 +1,10 @@
 .dashboardWrapper {
   width: 100%;
   max-width: 1400px;
-  height: 100vh;
+  height: calc(100vh - 64px);
   margin-left: auto;
   margin-right: auto;
-  padding: 0 16px;
+  padding: 16px;
   padding-top: 0;
   box-sizing: border-box;
   display: flex;
@@ -111,6 +111,7 @@
 @media (max-width: 768px) {
   .dashboardWrapper {
     max-width: 100%;
+    height: calc(100vh - 56px);
     overflow-x: auto;
   }
 
