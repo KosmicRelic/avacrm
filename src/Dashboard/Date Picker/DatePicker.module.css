@@ -2,7 +2,7 @@
   display: flex;
   position: sticky;
   top: 0em;
-  background: rgb(238, 238, 238);
+  background: rgb(255, 255, 255);
   backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 4px;
@@ -65,8 +65,8 @@
   position: absolute;
   top: 4px;
   bottom: 4px;
-  background: rgb(255, 255, 255);
-  border-radius: 8px;
+  background: rgb(238, 238, 238);
+  border-radius: 6px;
   transition: all 0.3s ease; /* ✅ Only this animation stays */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -82,6 +82,7 @@
 @media (max-width: 768px) {
   .datePicker {
     /* width: calc(100% - 16px); */
+    width: 300px;
     height: 27.5px;
   }
 }
