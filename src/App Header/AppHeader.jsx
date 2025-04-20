@@ -2,7 +2,7 @@ import { CgDarkMode } from "react-icons/cg";
 import { useState, useEffect, useRef, useContext } from "react";
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
-import { FaBullhorn, FaChartBar, FaMoneyBillWave } from "react-icons/fa"; // Replaced FaAddressCard with FaMoneyBillWave
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown } from "react-icons/fa"; // Added FaChevronDown
 import { SiGoogleadsense } from "react-icons/si";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { MainContext } from "../Contexts/MainContext";
@@ -10,7 +10,8 @@ import { MainContext } from "../Contexts/MainContext";
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption }) {
   const { isDarkTheme, setIsDarkTheme } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const mobileNavRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -19,31 +20,96 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   }, []);
 
   useEffect(() => {
-    if (isMobile && mobileNavRef.current && activeOption) {
-      const activeElement = mobileNavRef.current.querySelector(
-        `.${styles.navButton}.${styles[`active${activeOption.charAt(0).toUpperCase() + activeOption.slice(1)}`]}`
-      );
-      if (activeElement) {
-        activeElement.scrollIntoView({ behavior: "smooth", inline: "center" });
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
       }
-    }
-  }, [activeOption]);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleOptionClick = (option) => {
     setActiveOption(option);
+    setIsMenuOpen(false);
   };
 
   const toggleTheme = () => {
     setIsDarkTheme((prev) => !prev);
   };
 
+  const toggleMenu = () => {
+    setIsMenuOpen((prev) => !prev);
+  };
+
   const isMobile = windowWidth <= 1024;
+
+  // Map of options to their icons and labels
+  const navOptions = {
+    dashboard: { icon: <RiDashboard2Fill size={20} />, label: "Dashboard" },
+    sheets: { icon: <SiGoogleadsense size={20} />, label: "Sheets" },
+    financials: { icon: <FaMoneyBillWave size={20} />, label: "Financials" },
+    marketing: { icon: <FaBullhorn size={20} />, label: "Marketing" },
+    metrics: { icon: <FaChartBar size={20} />, label: "Metrics" },
+  };
+
+  // Get the active option's details
+  const activeNav = navOptions[activeOption] || navOptions.dashboard;
 
   return (
     <header className={`${styles.headerContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.headerTop}>
         <div className={styles.logoContainer}>
           <h1 className={styles.avaTitle}>AVA</h1>
+          {isMobile && (
+            <>
+              <button
+                className={`${styles.menuButton} ${styles.navButton} ${
+                  activeOption === "dashboard"
+                    ? styles.activeDashboard
+                    : activeOption === "sheets"
+                    ? styles.activeSheets
+                    : activeOption === "financials"
+                    ? styles.activeFinancials
+                    : activeOption === "marketing"
+                    ? styles.activeMarketing
+                    : styles.activeMetrics
+                } ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={toggleMenu}
+                aria-label={`Toggle Menu, Current: ${activeNav.label}`}
+              >
+                {activeOption === "sheets" ? (
+                  <span className={styles.iconWrapper}>{activeNav.icon}</span>
+                ) : (
+                  activeNav.icon
+                )}
+                <span>{activeNav.label}</span>
+                <span className={`${styles.chevronWrapper} ${isMenuOpen ? styles.chevronUp : ""}`}>
+                  <FaChevronDown size={14} />
+                </span>
+              </button>
+              {isMenuOpen && (
+                <div ref={menuRef} className={`${styles.menuDropdown} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  {Object.keys(navOptions).map((option) => (
+                    <button
+                      key={option}
+                      className={`${styles.navButton} ${
+                        activeOption === option ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`] : ""
+                      }`}
+                      onClick={() => handleOptionClick(option)}
+                    >
+                      {option === "sheets" ? (
+                        <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
+                      ) : (
+                        navOptions[option].icon
+                      )}
+                      <span>{navOptions[option].label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           <button
             className={`${styles.themeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             onClick={toggleTheme}
@@ -54,43 +120,22 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
         </div>
         {!isMobile && (
           <nav className={styles.desktopNav}>
-            <button
-              className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
-              onClick={() => handleOptionClick("dashboard")}
-            >
-              <RiDashboard2Fill size={20} />
-              <span>Dashboard</span>
-            </button>
-            <button
-              className={`${styles.navButton} ${activeOption === "sheets" ? styles.activeSheets : ""}`}
-              onClick={() => handleOptionClick("sheets")}
-            >
-              <span className={styles.iconWrapper}>
-                <SiGoogleadsense size={20} />
-              </span>
-              <span>Sheets</span>
-            </button>
-            <button
-              className={`${styles.navButton} ${activeOption === "financials" ? styles.activeFinancials : ""}`}
-              onClick={() => handleOptionClick("financials")}
-            >
-              <FaMoneyBillWave size={20} />
-              <span>Financials</span>
-            </button>
-            <button
-              className={`${styles.navButton} ${activeOption === "marketing" ? styles.activeMarketing : ""}`}
-              onClick={() => handleOptionClick("marketing")}
-            >
-              <FaBullhorn size={20} />
-              <span>Marketing</span>
-            </button>
-            <button
-              className={`${styles.navButton} ${activeOption === "metrics" ? styles.activeMetrics : ""}`}
-              onClick={() => handleOptionClick("metrics")}
-            >
-              <FaChartBar size={20} />
-              <span>Metrics</span>
-            </button>
+            {Object.keys(navOptions).map((option) => (
+              <button
+                key={option}
+                className={`${styles.navButton} ${
+                  activeOption === option ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`] : ""
+                }`}
+                onClick={() => handleOptionClick(option)}
+              >
+                {option === "sheets" ? (
+                  <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
+                ) : (
+                  navOptions[option].icon
+                )}
+                <span>{navOptions[option].label}</span>
+              </button>
+            ))}
           </nav>
         )}
         <button
@@ -101,47 +146,6 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
           <CgProfile size={24} />
         </button>
       </div>
-      {isMobile && (
-        <nav ref={mobileNavRef} className={styles.mobileNav}>
-          <button
-            className={`${styles.navButton} ${activeOption === "dashboard" ? styles.activeDashboard : ""}`}
-            onClick={() => handleOptionClick("dashboard")}
-          >
-            <RiDashboard2Fill size={20} />
-            <span>Dashboard</span>
-          </button>
-          <button
-            className={`${styles.navButton} ${activeOption === "sheets" ? styles.activeSheets : ""}`}
-            onClick={() => handleOptionClick("sheets")}
-          >
-            <span className={styles.iconWrapper}>
-              <SiGoogleadsense size={20} />
-            </span>
-            <span>Sheets</span>
-          </button>
-          <button
-            className={`${styles.navButton} ${activeOption === "financials" ? styles.activeFinancials : ""}`}
-            onClick={() => handleOptionClick("financials")}
-          >
-            <FaMoneyBillWave size={20} />
-            <span>Financials</span>
-          </button>
-          <button
-            className={`${styles.navButton} ${activeOption === "marketing" ? styles.activeMarketing : ""}`}
-            onClick={() => handleOptionClick("marketing")}
-          >
-            <FaBullhorn size={20} />
-            <span>Marketing</span>
-          </button>
-          <button
-            className={`${styles.navButton} ${activeOption === "metrics" ? styles.activeMetrics : ""}`}
-            onClick={() => handleOptionClick("metrics")}
-          >
-            <FaChartBar size={20} />
-            <span>Metrics</span>
-          </button>
-        </nav>
-      )}
     </header>
   );
 }

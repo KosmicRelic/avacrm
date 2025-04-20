@@ -13,7 +13,7 @@
 }
 
 .headerContainer.darkTheme {
-  background: rgba(0, 0, 0, 0.95); /* iOS dark: semi-transparent black */
+  background: rgba(0, 0, 0, 0.95);
 }
 
 .headerTop {
@@ -26,7 +26,8 @@
 .logoContainer {
   display: flex;
   align-items: center;
-  gap: 12px; /* Space between logo and theme button */
+  gap: 12px;
+  position: relative; /* For positioning dropdown */
 }
 
 .avaTitle {
@@ -42,7 +43,7 @@
 }
 
 .themeButton {
-  color: #000000; /* Light mode: black */
+  color: #000000;
   background: none;
   border: none;
   padding: 8px;
@@ -51,7 +52,7 @@
 }
 
 .themeButton.darkTheme {
-  color: #007AFF; /* Dark mode: Apple’s blue */
+  color: #007AFF;
 }
 
 .themeButton:hover {
@@ -59,43 +60,55 @@
   transform: scale(1.05);
 }
 
-.desktopNav,
-.mobileNav {
+.menuButton {
+  color: #000000;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  transition: color 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.menuButton.darkTheme {
+  color: #007AFF;
+}
+
+.menuButton:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.menuDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 200px;
+  background: rgba(243, 242, 248);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1003;
+  margin-top: 6px;
+  padding: 6px 0;
+  animation: slideDown 0.2s ease-out;
   display: flex;
-  align-items: center;
-  gap: 64px;
-  overflow: visible;
+  flex-direction: column;
+  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menuDropdown.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .desktopNav {
-  justify-content: center;
-  margin: 0 20px;
-}
-
-.mobileNav {
-  gap: 16px;
-  overflow-x: auto;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  transition: background 0.3s ease;
-}
-
-.mobileNav.darkTheme {
-  background: transparent;
-}
-
-.mobileNav::-webkit-scrollbar {
-  display: none;
-}
-
-.sheetButtonWrapper {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 64px;
   justify-content: center;
-  z-index: 1001;
+  margin: 0 20px;
 }
 
 .navButton {
@@ -128,152 +141,44 @@
   align-items: center;
 }
 
-.sheetName {
-  flex-grow: 1;
-}
-
-.chevronWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: #6e6e73;
-  transition: transform 0.2s ease, color 0.3s ease;
-}
-
-.chevronWrapper.darkTheme {
-  color: #8e8e93;
-}
-
-.navButton:hover .chevronWrapper {
-  color: #1d1d1f;
-}
-
-.navButton.darkTheme:hover .chevronWrapper {
-  color: #ffffff;
-}
-
 .activeDashboard {
-  color: #5856d6; /* iOS purple */
+  color: #5856d6;
   background: rgba(88, 86, 214, 0.12);
 }
 
 .activeSheets {
-  color: #007aff; /* iOS blue */
+  color: #007aff;
   background: rgba(0, 122, 255, 0.12);
 }
 
 .activeFinancials {
-  color: #34c759; /* iOS green */
-  background: rgba(52, 199, 89, 0.12); /* Light mode */
+  color: #34c759;
+  background: rgba(52, 199, 89, 0.12);
 }
 
 .activeFinancials.darkTheme {
-  color: #34c759; /* Keep same green for dark mode */
-  background: rgba(52, 199, 89, 0.2); /* Slightly stronger tint for dark mode */
+  color: #34c759;
+  background: rgba(52, 199, 89, 0.2);
 }
 
 .activeMarketing {
-  color: #FF2D55; /* iOS red */
-  background: rgba(255, 45, 85, 0.12); /* Light mode */
+  color: #FF2D55;
+  background: rgba(255, 45, 85, 0.12);
 }
 
 .activeMarketing.darkTheme {
-  color: #FF2D55; /* Keep same red for dark mode */
-  background: rgba(255, 45, 85, 0.2); /* Slightly stronger tint for dark mode */
+  color: #FF2D55;
+  background: rgba(255, 45, 85, 0.2);
 }
 
 .activeMetrics {
-  color: #AF52DE; /* iOS purple (darker variant) */
-  background: rgba(175, 82, 222, 0.12); /* Light mode */
+  color: #AF52DE;
+  background: rgba(175, 82, 222, 0.12);
 }
 
 .activeMetrics.darkTheme {
-  color: #AF52DE; /* Keep same purple for dark mode */
-  background: rgba(175, 82, 222, 0.2); /* Slightly stronger tint for dark mode */
-}
-
-.sheetDropdown {
-  position: absolute;
-  top: 100%;
-  left: auto;
-  right: 0;
-  width: 180px;
-  background: rgba(243, 242, 248);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  z-index: 1003;
-  margin-top: 6px;
-  padding: 6px 0;
-  animation: slideDown 0.2s ease-out;
-  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
-}
-
-.sheetDropdown.darkTheme {
-  background: rgba(28, 28, 30, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.filterInput {
-  width: 100%;
-  padding: 8px 16px;
-  border: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background: transparent;
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
-  color: #1d1d1f;
-  transition: color 0.3s ease, border 0.3s ease;
-}
-
-.filterInput.darkTheme {
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dropdownItem {
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 400;
-  color: #1d1d1f;
-  transition: background 0.1s ease, color 0.3s ease;
-}
-
-.dropdownItem.darkTheme {
-  color: #ffffff;
-}
-
-.dropdownItem:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.dropdownItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dropdownItem:active {
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.dropdownItem.darkTheme:active {
-  background: rgba(255, 255, 255, 0.2);
+  color: #AF52DE;
+  background: rgba(175, 82, 222, 0.2);
 }
 
 .profileButton {
@@ -295,12 +200,22 @@
   transform: scale(1.05);
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1024px) {
   .headerContainer {
     flex-direction: column;
     align-items: stretch;
-    padding-bottom: 8px;
-    min-height: 78px;
+    min-height: 56px;
     background: rgba(243, 242, 248);
   }
   .headerContainer.darkTheme {
@@ -312,32 +227,25 @@
   .desktopNav {
     display: none;
   }
-  .mobileNav {
-    display: flex;
-    justify-content: space-evenly;
-    height: 30px;
-    border-radius: 12px;
-    background-color: transparent;
-  }
   .avaTitle {
     font-size: 20px;
   }
   .navButton {
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 10px;
-    height: 30px;
+    padding: 8px 16px;
+    height: auto;
+    border-radius: 0;
   }
-  .navButton.activeSheets:hover {
-    background: rgba(0, 122, 255, 0.12);
-    color: #007aff;
+  .navButton:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .navButton.darkTheme:hover {
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
 @media (min-width: 1024px) {
-  .mobileNav {
-    display: none;
-  }
   .headerContainer {
     height: 64px;
     display: flex;
@@ -352,11 +260,6 @@
   .avaTitle {
     margin-right: 20px;
   }
-  .sheetDropdown {
-    width: 200px;
-    left: 0;
-    right: auto;
-  }
   .navButton:hover {
     background: rgba(0, 0, 0, 0.06);
     color: #1d1d1f;
@@ -364,5 +267,41 @@
   .navButton.darkTheme:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #ffffff;
+  }
+  .menuButton,
+  .menuDropdown {
+    display: none;
+  }
+}
+
+/* Add to existing CSS */
+
+.chevronWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px; /* Space between label and chevron */
+  color: #6e6e73; /* Matches navButton color */
+  transition: transform 0.2s ease, color 0.3s ease; /* Smooth rotation and color change */
+}
+
+.chevronWrapper.darkTheme {
+  color: #8e8e93; /* Matches navButton dark mode color */
+}
+
+.chevronUp {
+  transform: rotate(180deg); /* Rotate chevron to point up when menu is open */
+}
+
+/* Ensure menuButton has enough space for chevron */
+.menuButton {
+  padding-right: 10px; /* Extra padding to accommodate chevron */
+  border-radius: 12px;
+}
+
+/* Update navButton in dropdown to avoid extra padding */
+@media (max-width: 1024px) {
+  .menuDropdown .navButton {
+    padding: 8px 16px;
   }
 }
