@@ -285,6 +285,112 @@ export const MainContextProvider = ({ children }) => {
       localStorage.setItem("theme", themeRef.current);
     }
   }, [isDarkTheme]);
+
+    const [dashboards, setDashboards] = useState([
+      {
+        id: 'dashboard-1',
+        widgets: [
+          {
+            id: 'widget-revenue-1',
+            size: 'verySmall',
+            title: 'Total Revenue',
+            data: '$10,000',
+            section: 'Financials',
+            position: { row: 0, col: 1 },
+          },
+          {
+            id: 'widget-revenue-3',
+            size: 'small',
+            title: 'Total Revenue',
+            data: '$10,000',
+            section: 'Financials',
+            position: { row: 0, col: 0 },
+          },
+          {
+            id: 'widget-pending-4',
+            size: 'verySmall',
+            title: 'Pending Payouts',
+            data: '$1,200',
+            section: 'Financials',
+            position: { row: 1, col: 1 },
+          },
+          {
+            id: 'widget-pending-2',
+            size: 'medium',
+            title: 'Pending Payouts',
+            data: '$1,200',
+            section: 'Financials',
+            position: { row: 2, col: 0 },
+          },
+        ],
+      },
+      {
+        id: 'dashboard-2',
+        widgets: [
+          {
+            id: 'widget-close-rate',
+            size: 'medium',
+            title: 'Close Rate',
+            data: '15%',
+            section: 'Lead Metrics',
+            position: { row: 0, col: 0 },
+          },
+          {
+            id: 'widget-cost-per-lead',
+            size: 'small',
+            title: 'Cost Per Lead',
+            data: '$25.00',
+            section: 'Lead Metrics',
+            position: { row: 2, col: 0 },
+          },
+          {
+            id: 'widget-bottleneck',
+            size: 'verySmall',
+            title: 'Bottleneck',
+            data: 'Low close rate',
+            section: 'Lead Metrics',
+            position: { row: 2, col: 1 },
+          },
+        ],
+      },
+      {
+        id: 'dashboard-3',
+        widgets: [
+          {
+            id: 'widget-campaign-roi',
+            size: 'small',
+            title: 'Campaign ROI',
+            data: '2.5x',
+            section: 'Marketing',
+            position: { row: 0, col: 0 },
+          },
+          {
+            id: 'widget-top-campaign-1',
+            size: 'small',
+            title: 'Top Campaign: FB Ad',
+            data: '5 leads, $20/lead',
+            section: 'Marketing',
+            position: { row: 0, col: 1 },
+          },
+          {
+            id: 'widget-top-campaign-2',
+            size: 'small',
+            title: 'Top Campaign: Google Ad',
+            data: '3 leads, $25/lead',
+            section: 'Marketing',
+            position: { row: 2, col: 0 },
+          },
+          {
+            id: 'widget-campaign-status',
+            size: 'verySmall',
+            title: 'Campaign Status',
+            data: 'Active',
+            section: 'Marketing',
+            position: { row: 2, col: 1 },
+          },
+        ],
+      },
+    ]);
   
   return (
     <MainContext.Provider
@@ -308,6 +414,8 @@ export const MainContextProvider = ({ children }) => {
         setCurrentSectionIndex,
         editMode,
         setEditMode,
+        dashboards,
+        setDashboards,
       }}
     >
       {children}

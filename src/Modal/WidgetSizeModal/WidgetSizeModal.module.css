@@ -1,0 +1,154 @@
+/* src/Modal/WidgetSizeModal/WidgetSizeModal.module.css */
+.widgetSizeModal {
+  padding: 20px 16px; /* 16px padding on left/right, 20px top/bottom */
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px; /* Space between carousel and pagination */
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+.darkTheme.widgetSizeModal {
+  background: #1a1a1a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.carouselContainer {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.carouselTrack {
+  display: flex;
+  width: calc(100% * 4); /* 4 slides */
+  transition: transform 0.5s ease;
+}
+
+.carouselSlide {
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px 0;
+  min-height: 450px; /* Increased to accommodate Large shape (368px) + button */
+}
+
+.slideContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  max-width: 368px; /* Modal width (400px) - 32px padding */
+}
+
+.widgetShape {
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.widgetShape:hover {
+  transform: scale(1.05);
+  background: #d0d0d0;
+}
+
+.darkTheme.widgetShape {
+  background: #444;
+  border-color: #555;
+}
+
+.darkTheme.widgetShape:hover {
+  background: #555;
+}
+
+.selectButton {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  width: 100%;
+  max-width: 368px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.selectButton:hover {
+  background-color: #f0f0f0;
+  border-color: #666;
+}
+
+.darkTheme.selectButton {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.darkTheme.selectButton:hover {
+  background-color: #444;
+  border-color: #777;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.paginationDot {
+  font-size: 8px;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.paginationDot.active {
+  color: #007aff;
+}
+
+.darkTheme.paginationDot {
+  color: #666;
+}
+
+.darkTheme.paginationDot.active {
+  color: #4a90e2;
+}
+
+@media (max-width: 767px) {
+  .widgetSizeModal {
+    padding: 15px 16px;
+    max-width: 90%;
+  }
+
+  .carouselSlide {
+    min-height: 350px; /* Adjusted for smaller shapes on mobile */
+  }
+
+  .slideContent {
+    max-width: calc(100% - 32px);
+  }
+
+  .selectButton {
+    font-size: 14px;
+    padding: 10px;
+    max-width: calc(100% - 32px);
+  }
+
+  .paginationDot {
+    font-size: 7px;
+  }
+}

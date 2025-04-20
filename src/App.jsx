@@ -17,6 +17,7 @@ import CreateSheetsAndFolders from "./Modal/Create Sheets And Folders/CreateShee
 import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
 import FolderOperations from "./Modal/Folder Modal/FolderModal";
 import Dashboard from "./Dashboard/Dashboard";
+import WidgetSizeModal from "./Modal/WidgetSizeModal/WidgetSizeModal";
 
 function App() {
   const {
@@ -46,8 +47,9 @@ function App() {
   const cardsTemplateModal = useModal();
   const sheetFolderModal = useModal();
   const folderOperationsModal = useModal();
+  const widgetSizeModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
-  const [activeOption, setActiveOption] = useState("dashboard");
+  const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -60,7 +62,7 @@ function App() {
       const header = (headers || []).find((h) => h.key === sheetHeader.key);
       return header
         ? { key: sheetHeader.key, name: header.name, type: header.type, visible: sheetHeader.visible, hidden: sheetHeader.hidden }
-        : { key: sheetHeader.key, name: sheetHeader.key, type: "text", visible: sheetHeader.visible, hidden: sheetHeader.hidden };
+        : { key: sheetHeader.key, name: sheetHeader.key, type: 'text', visible: sheetHeader.visible, hidden: sheetHeader.hidden };
     }) || [];
   }, [activeSheet, headers]);
 
@@ -173,12 +175,12 @@ function App() {
   const handleModalSave = useCallback(
     (modalType, data) => {
       switch (modalType) {
-        case "headers":
+        case 'headers':
           if (data?.currentHeaders) {
             setHeaders([...data.currentHeaders]);
           }
           break;
-        case "filter":
+        case 'filter':
           if (data?.filterValues) {
             setSheets((prev) => ({
               ...prev,
@@ -190,7 +192,7 @@ function App() {
             }));
           }
           break;
-        case "sheet":
+        case 'sheet':
           if (data?.sheetName && data.currentHeaders) {
             handleSaveSheet(
               data.sheetName,
@@ -198,11 +200,10 @@ function App() {
               activeSheet?.pinnedHeaders || [],
               isSheetModalEditMode
             );
-            // Explicitly update activeSheetName to the new sheet name
             handleSheetChange(data.sheetName);
           }
           break;
-        case "sheets":
+        case 'sheets':
           if (data?.newOrder) {
             setSheets((prev) => ({
               ...prev,
@@ -210,13 +211,13 @@ function App() {
             }));
           }
           break;
-        case "cardsTemplate":
+        case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
             setCardTemplates([...data.currentCardTemplates]);
           }
           break;
-        case "folderOperations":
-          if (data?.tempData?.action === "removeSheets" && data.tempData.selectedSheets && data.tempData.folderName) {
+        case 'folderOperations':
+          if (data?.tempData?.action === 'removeSheets' && data.tempData.selectedSheets && data.tempData.folderName) {
             setSheets((prev) => {
               const folder = prev.structure.find((item) => item.folderName === data.tempData.folderName);
               const folderSheets = folder?.sheets || [];
@@ -236,7 +237,7 @@ function App() {
                 structure: newStructure,
               };
             });
-          } else if (data?.tempData?.action === "deleteFolder" && data.tempData.folderName) {
+          } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
             setSheets((prev) => {
               const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
               const newStructure = [
@@ -249,6 +250,9 @@ function App() {
               };
             });
           }
+          break;
+        case 'widgetSize':
+          // No save action needed as widget creation is handled on selection
           break;
         default:
           break;
@@ -271,14 +275,14 @@ function App() {
       setSelectedTemplateIndex,
       setCurrentSectionIndex,
       setTempData,
-      handleSheetChange, // Ensure handleSheetChange is included in dependencies
+      handleSheetChange,
     ]
   );
 
   const onEditSheet = useCallback(() => {
     setIsSheetModalEditMode(true);
     setActiveModal({
-      type: "sheet",
+      type: 'sheet',
       data: {
         sheetName: activeSheetName,
         currentHeaders: resolvedHeaders,
@@ -289,23 +293,23 @@ function App() {
   }, [sheetModal, activeSheetName, resolvedHeaders, activeSheet]);
 
   const onFilter = useCallback(() => {
-    setActiveModal({ type: "filter", data: { filterValues: activeSheet?.filters || {} } });
+    setActiveModal({ type: 'filter', data: { filterValues: activeSheet?.filters || {} } });
     filterModal.open();
   }, [filterModal, activeSheet]);
 
   const onManageHeaders = useCallback(() => {
-    setActiveModal({ type: "headers", data: { currentHeaders: [...headers] } });
+    setActiveModal({ type: 'headers', data: { currentHeaders: [...headers] } });
     headersModal.open();
   }, [headersModal, headers]);
 
   const onOpenSheetsModal = useCallback(() => {
-    setActiveModal({ type: "sheets", data: { newOrder: sheets?.structure || [] } });
+    setActiveModal({ type: 'sheets', data: { newOrder: sheets?.structure || [] } });
     sheetsModal.open();
   }, [sheetsModal, sheets]);
 
   const onOpenTransportModal = useCallback(
     (action, selectedRowIds, onComplete) => {
-      setActiveModal({ type: "transport", data: { action, selectedRowIds, onComplete } });
+      setActiveModal({ type: 'transport', data: { action, selectedRowIds, onComplete } });
       transportModal.open();
     },
     [transportModal]
@@ -313,13 +317,13 @@ function App() {
 
   const onOpenCardsTemplateModal = useCallback(() => {
     setEditMode(false);
-    setActiveModal({ type: "cardsTemplate", data: { currentCardTemplates: [...cardTemplates] } });
+    setActiveModal({ type: 'cardsTemplate', data: { currentCardTemplates: [...cardTemplates] } });
     cardsTemplateModal.open();
   }, [cardsTemplateModal, setEditMode, cardTemplates]);
 
   const onOpenSheetFolderModal = useCallback(() => {
     setActiveModal({
-      type: "sheetFolder",
+      type: 'sheetFolder',
       data: {
         sheets,
         headers,
@@ -333,7 +337,7 @@ function App() {
   const onOpenFolderOperationsModal = useCallback(
     (folderName) => {
       setActiveModal({
-        type: "folderOperations",
+        type: 'folderOperations',
         data: { folderName, tempData: {} },
       });
       folderOperationsModal.open();
@@ -343,7 +347,7 @@ function App() {
 
   const handleModalClose = useCallback(
     (options = {}) => {
-      if (options.fromDelete && activeModal?.type === "folderOperations" && activeModal?.data) {
+      if (options.fromDelete && activeModal?.type === 'folderOperations' && activeModal?.data) {
         const dataToSave = {
           ...activeModal.data,
           tempData: options.tempData || activeModal.data.tempData,
@@ -364,6 +368,7 @@ function App() {
       cardsTemplateModal.close();
       sheetFolderModal.close();
       folderOperationsModal.close();
+      widgetSizeModal.close();
     },
     [
       activeModal,
@@ -379,6 +384,7 @@ function App() {
       cardsTemplateModal,
       sheetFolderModal,
       folderOperationsModal,
+      widgetSizeModal,
     ]
   );
 
@@ -395,12 +401,12 @@ function App() {
       return null;
     }
     switch (activeModal.type) {
-      case "sheet":
+      case 'sheet':
         return (
           <EditSheetsModal
             isEditMode={isSheetModalEditMode}
             tempData={activeModal.data || {
-              sheetName: isSheetModalEditMode ? activeSheetName : "",
+              sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
             }}
@@ -413,7 +419,7 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "filter":
+      case 'filter':
         return (
           <FilterModal
             headers={resolvedHeaders}
@@ -425,7 +431,7 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "headers":
+      case 'headers':
         return (
           <HeadersModal
             tempData={activeModal.data || { currentHeaders: [...headers] }}
@@ -435,7 +441,7 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "sheets":
+      case 'sheets':
         return (
           <ReOrderModal
             sheets={sheets || { structure: [] }}
@@ -446,16 +452,16 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "transport":
+      case 'transport':
         return (
           <TransportModal
             tempData={
-              activeModal.data || { action: "copy", selectedRowIds: [], onComplete: null }
+              activeModal.data || { action: 'copy', selectedRowIds: [], onComplete: null }
             }
             handleClose={handleModalClose}
           />
         );
-      case "cardsTemplate":
+      case 'cardsTemplate':
         return (
           <CardsTemplate
             tempData={activeModal.data || { currentCardTemplates: [...cardTemplates] }}
@@ -465,7 +471,7 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "sheetFolder":
+      case 'sheetFolder':
         return (
           <CreateSheetsAndFolders
             tempData={activeModal.data || { sheets }}
@@ -481,7 +487,7 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case "folderOperations":
+      case 'folderOperations':
         return (
           <FolderOperations
             folderName={activeModal.data.folderName}
@@ -494,6 +500,16 @@ function App() {
                 data: { ...prev.data, tempData: newData },
               }))
             }
+          />
+        );
+      case 'widgetSize':
+        return (
+          <WidgetSizeModal
+            handleClose={handleModalClose}
+            onSelectSize={(size) => {
+              setActiveModal({ ...activeModal, data: { size } });
+              handleModalSave('widgetSize', { size });
+            }}
           />
         );
       default:
@@ -513,7 +529,7 @@ function App() {
         onOpenFolderModal={onOpenFolderOperationsModal}
       />
       <div className={styles.contentWrapper}>
-        {activeOption === "sheets" && activeSheetName && (
+        {activeOption === 'sheets' && activeSheetName && (
           <Sheets
             headers={resolvedHeaders}
             rows={resolvedRows}
@@ -533,7 +549,7 @@ function App() {
           />
         )}
         
-        {activeOption === "dashboard" && activeSheetName && (
+        {activeOption === 'dashboard' && activeSheetName && (
           <Dashboard
             headers={resolvedHeaders}
             rows={resolvedRows}
@@ -574,8 +590,6 @@ function App() {
   );
 }
 
-App.propTypes = {
-  // Define prop types if needed
-};
+App.propTypes = {};
 
 export default App;

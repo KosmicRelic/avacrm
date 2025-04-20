@@ -1,12 +1,16 @@
+// src/Dashboard/Dashboard.js
 import React, { useRef, useContext, useState, useEffect, useMemo } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
 import DatePicker from './Date Picker/DatePicker';
 import { FaPlus } from 'react-icons/fa';
+import useModal from '../Modal/Hooks/UseModal';
+import Modal from '../Modal/Modal';
+import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
 const Dashboard = () => {
-  const { isDarkTheme, cards } = useContext(MainContext);
+  const { isDarkTheme, cards, dashboards, setDashboards } = useContext(MainContext);
   const [metrics, setMetrics] = useState({
     revenue: 0,
     closeRate: 0,
@@ -16,115 +20,12 @@ const Dashboard = () => {
     pendingPayouts: 0,
     topCampaigns: [],
   });
-  const [dashboards, setDashboards] = useState([
-    {
-      id: 'dashboard-1',
-      widgets: [
-        {
-          id: 'widget-revenue-1',
-          size: 'verySmall',
-          title: 'Total Revenue',
-          data: '$10,000',
-          section: 'Financials',
-          position: { row: 0, col: 1 },
-        },
-        {
-          id: 'widget-revenue-3',
-          size: 'small',
-          title: 'Total Revenue',
-          data: '$10,000',
-          section: 'Financials',
-          position: { row: 0, col: 0 },
-        },
-        {
-          id: 'widget-pending-4',
-          size: 'verySmall',
-          title: 'Pending Payouts',
-          data: '$1,200',
-          section: 'Financials',
-          position: { row: 1, col: 1 },
-        },
-        {
-          id: 'widget-pending-2',
-          size: 'medium',
-          title: 'Pending Payouts',
-          data: '$1,200',
-          section: 'Financials',
-          position: { row: 2, col: 0 },
-        },
-      ],
-    },
-    {
-      id: 'dashboard-2',
-      widgets: [
-        {
-          id: 'widget-close-rate',
-          size: 'medium',
-          title: 'Close Rate',
-          data: '15%',
-          section: 'Lead Metrics',
-          position: { row: 0, col: 0 },
-        },
-        {
-          id: 'widget-cost-per-lead',
-          size: 'small',
-          title: 'Cost Per Lead',
-          data: '$25.00',
-          section: 'Lead Metrics',
-          position: { row: 2, col: 0 },
-        },
-        {
-          id: 'widget-bottleneck',
-          size: 'verySmall',
-          title: 'Bottleneck',
-          data: 'Low close rate',
-          section: 'Lead Metrics',
-          position: { row: 2, col: 1 },
-        },
-      ],
-    },
-    {
-      id: 'dashboard-3',
-      widgets: [
-        {
-          id: 'widget-campaign-roi',
-          size: 'small',
-          title: 'Campaign ROI',
-          data: '2.5x',
-          section: 'Marketing',
-          position: { row: 0, col: 0 },
-        },
-        {
-          id: 'widget-top-campaign-1',
-          size: 'small',
-          title: 'Top Campaign: FB Ad',
-          data: '5 leads, $20/lead',
-          section: 'Marketing',
-          position: { row: 0, col: 1 },
-        },
-        {
-          id: 'widget-top-campaign-2',
-          size: 'small',
-          title: 'Top Campaign: Google Ad',
-          data: '3 leads, $25/lead',
-          section: 'Marketing',
-          position: { row: 2, col: 0 },
-        },
-        {
-          id: 'widget-campaign-status',
-          size: 'verySmall',
-          title: 'Campaign Status',
-          data: 'Active',
-          section: 'Marketing',
-          position: { row: 2, col: 1 },
-        },
-      ],
-    },
-  ]);
+
   const [editMode, setEditMode] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState(null);
   const prevWidgetConfigRef = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const widgetSizeModal = useModal();
 
   const windowSizes = {
     verySmall: { width: 1, height: 1 },
@@ -234,7 +135,7 @@ const Dashboard = () => {
       }))
     );
     prevWidgetConfigRef.current = widgetConfig;
-  }, [widgetConfig]);
+  }, [widgetConfig, setDashboards]);
 
   const toggleEditMode = () => {
     setEditMode((prev) => !prev);
@@ -817,6 +718,14 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddWidgetClick = () => {
+    widgetSizeModal.open();
+  };
+
+  const handleWidgetSizeSelect = (size) => {
+    addWindowToDashboard(size, 'Add content');
+  };
+
   const memoizedDashboards = useMemo(() => {
     return dashboards.map((d) => ({
       ...d,
@@ -828,41 +737,22 @@ const Dashboard = () => {
     <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.buttonGroup}>
         {!editMode && <DatePicker />}
+        {editMode && (
+          <div className={styles.controls}>
+            <button
+              className={styles.addButton}
+              onClick={handleAddWidgetClick}
+            >
+              <FaPlus /> Add Widget
+            </button>
+          </div>
+        )}
         <button
           className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={toggleEditMode}
         >
           {editMode ? 'Done' : 'Edit'}
         </button>
-
-        {editMode && (
-          <div className={styles.controls}>
-            <button
-              className={styles.addButton}
-              onClick={() => addWindowToDashboard('verySmall', 'Add content')}
-            >
-              <FaPlus /> Very Small
-            </button>
-            <button
-              className={styles.addButton}
-              onClick={() => addWindowToDashboard('small', 'Add content')}
-            >
-              <FaPlus /> Small
-            </button>
-            <button
-              className={styles.addButton}
-              onClick={() => addWindowToDashboard('medium', 'Add content')}
-            >
-              <FaPlus /> Medium
-            </button>
-            <button
-              className={styles.addButton}
-              onClick={() => addWindowToDashboard('large', 'Add content')}
-            >
-              <FaPlus /> Large
-            </button>
-          </div>
-        )}
       </div>
 
       <div className={styles.windowsSection}>
@@ -878,6 +768,18 @@ const Dashboard = () => {
           />
         ))}
       </div>
+
+      {widgetSizeModal.isOpen && (
+        <Modal
+          onClose={widgetSizeModal.close}
+          modalType="widgetSize"
+        >
+          <WidgetSizeModal
+            handleClose={widgetSizeModal.close}
+            onSelectSize={handleWidgetSizeSelect}
+          />
+        </Modal>
+      )}
     </div>
   );
 };
