@@ -3,7 +3,7 @@ import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
 import DatePicker from './Date Picker/DatePicker';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 
 const Dashboard = () => {
   const { isDarkTheme, cards } = useContext(MainContext);
@@ -236,29 +236,6 @@ const Dashboard = () => {
     prevWidgetConfigRef.current = widgetConfig;
   }, [widgetConfig]);
 
-  const addDashboard = () => {
-    const newDashboardId = `dashboard-${dashboards.length + 1}`;
-    const newWidget = {
-      id: `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      size: 'verySmall',
-      title: 'New Widget',
-      data: 'Add content',
-      section: 'Custom',
-      position: { row: 0, col: 0 },
-    };
-    setDashboards((prev) => [
-      ...prev,
-      {
-        id: newDashboardId,
-        widgets: [newWidget],
-      },
-    ]);
-  };
-
-  const removeDashboard = (dashboardId) => {
-    setDashboards((prev) => prev.filter((dashboard) => dashboard.id !== dashboardId));
-  };
-
   const toggleEditMode = () => {
     setEditMode((prev) => !prev);
     setDraggedWidget(null);
@@ -269,10 +246,7 @@ const Dashboard = () => {
       const size = widget.size || 'small';
       return sum + (windowScores[size] || 0);
     }, 0);
-    if (totalScore > 80) {
-      return false;
-    }
-    return true;
+    return totalScore <= 80;
   };
 
   const canPlaceWidget = (dashboard, widget, row, col, skipWidgets = [], customGrid = null) => {
@@ -351,6 +325,87 @@ const Dashboard = () => {
       }
     }
     return null;
+  };
+
+  const cleanupEmptyDashboards = (currentDashboards) => {
+    let newDashboards = currentDashboards.filter((dashboard) => dashboard.widgets.length > 0);
+    if (newDashboards.length === 0) {
+      newDashboards = [
+        {
+          id: `dashboard-${Date.now()}`,
+          widgets: [],
+        },
+      ];
+    }
+    return newDashboards;
+  };
+
+  const addWindowToDashboard = (size, content) => {
+    const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newWidget = {
+      id: newWidgetId,
+      size,
+      title: 'New Widget',
+      data: content,
+      section: 'Custom',
+      position: { row: 0, col: 0 },
+    };
+
+    let targetDashboard = null;
+    let freePosition = null;
+
+    for (const dashboard of dashboards) {
+      const existingWidgetIds = new Set(dashboard.widgets.map((w) => w.id));
+      if (existingWidgetIds.has(newWidgetId)) {
+        alert('Error: Duplicate widget ID. Please try again.');
+        return;
+      }
+
+      const newWidgets = [...dashboard.widgets, { ...newWidget, position: { row: 0, col: 0 } }];
+      if (!validateDashboardScore(dashboard.widgets, newWidgets)) {
+        continue;
+      }
+
+      freePosition = findFreePosition(dashboard, size);
+      if (freePosition) {
+        targetDashboard = dashboard;
+        break;
+      }
+    }
+
+    if (!targetDashboard || !freePosition) {
+      const newDashboardId = `dashboard-${Date.now()}`;
+      targetDashboard = { id: newDashboardId, widgets: [] };
+      freePosition = findFreePosition(targetDashboard, size);
+      if (!freePosition) {
+        alert('Cannot add widget: No valid position available.');
+        return;
+      }
+
+      setDashboards((prev) => {
+        const newDashboards = [
+          ...prev,
+          {
+            ...targetDashboard,
+            widgets: [{ ...newWidget, position: freePosition }],
+          },
+        ];
+        return cleanupEmptyDashboards(newDashboards);
+      });
+      return;
+    }
+
+    setDashboards((prev) => {
+      const newDashboards = prev.map((dashboard) =>
+        dashboard.id === targetDashboard.id
+          ? {
+              ...dashboard,
+              widgets: [...dashboard.widgets, { ...newWidget, position: freePosition }],
+            }
+          : dashboard
+      );
+      return cleanupEmptyDashboards(newDashboards);
+    });
   };
 
   const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, draggedWidgetData, draggedSize, sourceDashboard = null, sourcePos = null) => {
@@ -526,9 +581,9 @@ const Dashboard = () => {
             return prev;
           }
 
-          return prev.map((dashboard) =>
+          return cleanupEmptyDashboards(prev.map((dashboard) =>
             dashboard.id === dashboardId ? { ...dashboard, widgets: targetWidgets } : dashboard
-          );
+          ));
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -584,7 +639,7 @@ const Dashboard = () => {
               return prev;
             }
 
-            return prev.map((dashboard) => {
+            return cleanupEmptyDashboards(prev.map((dashboard) => {
               if (dashboard.id === sourceDashboardId) {
                 return { ...dashboard, widgets: sourceNewWidgets };
               }
@@ -592,7 +647,7 @@ const Dashboard = () => {
                 return { ...dashboard, widgets: targetNewWidgets };
               }
               return dashboard;
-            });
+            }));
           }
         }
 
@@ -616,7 +671,7 @@ const Dashboard = () => {
             return prev;
           }
 
-          return prev.map((dashboard) => {
+          return cleanupEmptyDashboards(prev.map((dashboard) => {
             if (dashboard.id === sourceDashboardId) {
               return { ...dashboard, widgets: sourceNewWidgets };
             }
@@ -624,7 +679,7 @@ const Dashboard = () => {
               return { ...dashboard, widgets: targetNewWidgets };
             }
             return dashboard;
-          });
+          }));
         }
 
         alert('Cannot swap widget: No valid position for displaced widget');
@@ -651,7 +706,7 @@ const Dashboard = () => {
             return prev;
           }
 
-          return prev.map((dashboard) => {
+          return cleanupEmptyDashboards(prev.map((dashboard) => {
             if (dashboard.id === sourceDashboardId && sourceWidgets) {
               return { ...dashboard, widgets: sourceWidgets };
             }
@@ -659,7 +714,7 @@ const Dashboard = () => {
               return { ...dashboard, widgets: targetWidgets };
             }
             return dashboard;
-          });
+          }));
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -683,7 +738,7 @@ const Dashboard = () => {
           return prev;
         }
 
-        return prev.map((dashboard) => {
+        return cleanupEmptyDashboards(prev.map((dashboard) => {
           if (dashboard.id === sourceDashboardId) {
             return { ...dashboard, widgets: sourceNewWidgets };
           }
@@ -691,7 +746,7 @@ const Dashboard = () => {
             return { ...dashboard, widgets: targetNewWidgets };
           }
           return dashboard;
-        });
+        }));
       }
 
       const draggedElement = document.querySelector(`.${styles.dragging}`);
@@ -711,56 +766,6 @@ const Dashboard = () => {
     e.target.addEventListener('dragend', () => {
       e.target.classList.remove(styles.dragging);
     }, { once: true });
-  };
-
-  const addWindowToDashboard = (size, content) => {
-    const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newWidget = {
-      id: newWidgetId,
-      size,
-      title: 'New Widget',
-      data: content,
-      section: 'Custom',
-      position: { row: 0, col: 0 },
-    };
-
-    let targetDashboard = null;
-    let freePosition = null;
-
-    for (const dashboard of dashboards) {
-      const existingWidgetIds = new Set(dashboard.widgets.map((w) => w.id));
-      if (existingWidgetIds.has(newWidgetId)) {
-        alert('Error: Duplicate widget ID. Please try again.');
-        return;
-      }
-
-      const newWidgets = [...dashboard.widgets, { ...newWidget, position: { row: 0, col: 0 } }];
-      if (!validateDashboardScore(dashboard.widgets, newWidgets)) {
-        continue;
-      }
-
-      freePosition = findFreePosition(dashboard, size);
-      if (freePosition) {
-        targetDashboard = dashboard;
-        break;
-      }
-    }
-
-    if (!targetDashboard || !freePosition) {
-      alert('Cannot add widget: No dashboard has enough space. Please remove widgets or add a new dashboard.');
-      return;
-    }
-
-    setDashboards((prev) =>
-      prev.map((dashboard) =>
-        dashboard.id === targetDashboard.id
-          ? {
-              ...dashboard,
-              widgets: [...dashboard.widgets, { ...newWidget, position: freePosition }],
-            }
-          : dashboard
-      )
-    );
   };
 
   const updateWidgets = (dashboardId, newWidgets) => {
@@ -786,13 +791,14 @@ const Dashboard = () => {
       return;
     }
 
-    setDashboards((prev) =>
-      prev.map((dashboard) =>
+    setDashboards((prev) => {
+      const newDashboards = prev.map((dashboard) =>
         dashboard.id === dashboardId
           ? { ...dashboard, widgets: uniqueWidgets }
           : dashboard
-      )
-    );
+      );
+      return cleanupEmptyDashboards(newDashboards);
+    });
     setIsInitialized(true);
   };
 
@@ -855,18 +861,6 @@ const Dashboard = () => {
             >
               <FaPlus /> Large
             </button>
-            <button className={styles.addButton} onClick={addDashboard}>
-              <FaPlus /> Dashboard
-            </button>
-            {dashboards.map((dashboard) => (
-              <button
-                key={dashboard.id}
-                className={styles.addButton}
-                onClick={() => removeDashboard(dashboard.id)}
-              >
-                <FaTrash /> Remove {dashboard.id}
-              </button>
-            ))}
           </div>
         )}
       </div>
