@@ -246,8 +246,8 @@
 }
 
 .editHeaderButton {
-  position: absolute;
-  right: 1em;
+  position: relative;
+  /* right: 1em; */
   border: none;
   padding: 0px 0;
   cursor: pointer;
