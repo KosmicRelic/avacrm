@@ -772,7 +772,6 @@ const Dashboard = ({ onWidgetClick }) => {
   };
 
   const handleWidgetClick = (payload) => {
-    console.log('Dashboard: onWidgetClick', payload);
     onWidgetClick(payload);
   };
 

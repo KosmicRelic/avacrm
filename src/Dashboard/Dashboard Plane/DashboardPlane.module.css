@@ -176,10 +176,23 @@
   padding: 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
 }
 
-.widgetTitleContainer.darkTheme {
+.widgetTitleContainer span{
+  color: rgb(0, 0, 0);
+}
+
+.widgetTitleContainer span.darkTheme{
+  color: #ffffff;
+}
+
+.widgetTitleContainer.darkTheme{
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: black;
 }
 
 .verySmallWindow .widgetTitleContainer {
@@ -211,19 +224,6 @@
 
 .widgetTitle:disabled {
   cursor: default;
-}
-
-.verySmallWindow .widgetTitle {
-  font-size: 10px;
-}
-
-.smallWindow .widgetTitle {
-  font-size: 12px;
-}
-
-.mediumWindow .widgetTitle,
-.largeWindow .widgetTitle {
-  font-size: 14px;
 }
 
 .widgetData {

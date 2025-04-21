@@ -447,7 +447,6 @@ function App() {
     if (!activeModal) {
       return null;
     }
-    console.log('App: Rendering modal', { type: activeModal.type, data: activeModal.data }); // Debug log
     switch (activeModal.type) {
       case 'sheet':
         return (

@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
+import { FaChevronRight } from 'react-icons/fa';
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme } = useContext(MainContext);
@@ -16,7 +17,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   // Handle title click to open modal with category view (step 1)
   const handleTitleClick = () => {
     if (!editMode && onWidgetClick && widget) {
-      console.log('Window: Title clicked, opening step 1', { widget: { id: widget.id, category: widget.category, title: widget.title } });
       onWidgetClick({ type: 'category', widget, step: 1 });
     }
   };
@@ -24,10 +24,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   // Handle metric click to open modal directly to step 2 with metric details
   const handleMetricClick = (metric) => {
     if (!editMode && onWidgetClick && widget && metric) {
-      console.log('Window: Metric clicked, opening step 2', { 
-        metric: { id: metric.id, name: metric.name, value: metric.value },
-        widget: { id: widget.id, category: widget.category, title: widget.title }
-      });
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
   };
@@ -62,6 +58,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
             >
               {widget?.title || 'Untitled'}
             </button>
+            <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
           </div>
           <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
             {widget?.metrics && widget.metrics.length > 0 ? (

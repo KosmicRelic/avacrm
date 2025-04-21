@@ -33,26 +33,14 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
     }
   }, [localTempData, setTempData, initialTempData]);
 
-  // Debug props and local state
-  useEffect(() => {
-    console.log('MetricsCategories: Props and state', {
-      initialWidget,
-      initialTempData,
-      localWidget,
-      localTempData,
-    });
-  }, [initialWidget, initialTempData, localWidget, localTempData]);
-
   // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
-      console.log('MetricsCategories: Initializing modal steps', { category: localWidget?.category || 'Unknown' });
       const steps = [
         {
           title: localWidget?.category || 'Unknown',
           leftButton: {
             label: 'Edit',
-            onClick: () => console.log('Edit widget:', localWidget),
             isActive: true,
             isRemove: false,
             color: 'blue',
@@ -77,67 +65,16 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
       setModalConfig(initialConfig);
       lastModalConfig.current = initialConfig;
       hasInitialized.current = true;
-      console.log('MetricsCategories: Set initial modal config', initialConfig);
 
       // Navigate to step 2 if specified in tempData
       if (localTempData?.step === 2 && localTempData?.selectedMetric) {
-        console.log('MetricsCategories: Navigating to step 2 for metric', localTempData.selectedMetric);
         goToStep(2, { selectedMetric: localTempData.selectedMetric });
       }
     }
   }, [registerModalSteps, setModalConfig, goToStep, localWidget?.category, localTempData?.step, localTempData?.selectedMetric]);
 
-  // Update modal config based on currentStep
-  useEffect(() => {
-    console.log('MetricsCategories: useEffect for currentStep', {
-      currentStep,
-      category: localWidget?.category,
-      metricName: localTempData?.selectedMetric?.name,
-      localTempData,
-    });
-
-    const newConfig = currentStep === 1
-      ? {
-          showTitle: true,
-          showDoneButton: true,
-          showBackButton: false,
-          title: localWidget?.category || 'Unknown',
-          backButtonTitle: '',
-          leftButton: {
-            label: 'Edit',
-            onClick: () => console.log('Edit widget:', localWidget),
-            isActive: true,
-            isRemove: false,
-            color: 'blue',
-          },
-          rightButton: null,
-        }
-      : {
-          showTitle: true,
-          showDoneButton: false,
-          showBackButton: true,
-          title: localTempData?.selectedMetric?.name || 'Metric Details',
-          backButtonTitle: localWidget?.category || 'Unknown',
-          leftButton: null,
-          rightButton: null,
-        };
-
-    // Update config if it has changed
-    if (JSON.stringify(newConfig) !== JSON.stringify(lastModalConfig.current)) {
-      setModalConfig((prev) => {
-        const updatedConfig = { ...prev, ...newConfig };
-        console.log('MetricsCategories: Updating modal config', updatedConfig);
-        return updatedConfig;
-      });
-      lastModalConfig.current = newConfig;
-    } else {
-      console.log('MetricsCategories: Skipping modal config update (no change)');
-    }
-  }, [currentStep, localWidget?.category, localTempData, setModalConfig]);
-
   const handleMetricClick = useCallback(
     (metric) => {
-      console.log('MetricsCategories: Metric clicked', metric);
       setLocalTempData((prev) => {
         const newTempData = {
           ...prev,
@@ -145,7 +82,6 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
           selectedMetric: { ...metric },
           step: 2,
         };
-        console.log('MetricsCategories: Updated localTempData', newTempData);
         return newTempData;
       });
       goToStep(2, { selectedMetric: metric });
@@ -169,14 +105,13 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
                 {categoryMetrics.length > 0 ? (
                   <ul className={styles.metricsList}>
                     {categoryMetrics.map((metric) => (
-                      <li key={metric.id} className={styles.metricItem}>
+                      <li key={metric.id} className={`${styles.metricItem} ${isDarkTheme ? styles.darkTheme : ''}`} onClick={() => handleMetricClick(metric)}>
                         <button
                           className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          onClick={() => handleMetricClick(metric)}
                         >
-                          <span className={styles.metricName}>{metric.name}:</span>{' '}
-                          <span className={styles.metricValue}>{metric.value}</span>
+                          <span className={`${styles.metricName} ${isDarkTheme?styles.darkTheme:""}`}>{metric.name}</span>{' '}
                         </button>
+                        <span className={`${styles.metricValue} ${isDarkTheme?styles.darkTheme:""}`}>{metric.value}</span>
                       </li>
                     ))}
                   </ul>
