@@ -9,21 +9,6 @@ import Modal from '../Modal/Modal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
 const Dashboard = ({
-  headers,
-  rows,
-  sheets,
-  setSheets,
-  activeSheetName,
-  onSheetChange,
-  onEditSheet,
-  onFilter,
-  onRowClick,
-  onCardSave,
-  onCardDelete,
-  onOpenSheetsModal,
-  onOpenTransportModal,
-  onOpenSheetFolderModal,
-  onOpenFolderModal,
   onWidgetClick, // Add this prop
 }) => {
   const { isDarkTheme, cards, dashboards, setDashboards } = useContext(MainContext);

@@ -565,21 +565,6 @@ function App() {
         )}
         {activeOption === 'dashboard' && activeSheetName && (
           <Dashboard
-            headers={resolvedHeaders}
-            rows={resolvedRows}
-            sheets={sheets}
-            setSheets={setSheets}
-            activeSheetName={activeSheetName}
-            onSheetChange={handleSheetChange}
-            onEditSheet={onEditSheet}
-            onFilter={onFilter}
-            onRowClick={() => {}}
-            onCardSave={() => {}}
-            onCardDelete={() => {}}
-            onOpenSheetsModal={onOpenSheetsModal}
-            onOpenTransportModal={onOpenTransportModal}
-            onOpenSheetFolderModal={onOpenSheetFolderModal}
-            onOpenFolderModal={onOpenFolderOperationsModal}
             onWidgetClick={handleWidgetClick} // Pass the handler
           />
         )}
