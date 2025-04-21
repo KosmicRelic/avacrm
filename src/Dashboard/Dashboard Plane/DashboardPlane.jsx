@@ -13,6 +13,25 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     large: styles.largeWindow,
   };
 
+  // Handle title click to open modal with category view (step 1)
+  const handleTitleClick = () => {
+    if (!editMode && onWidgetClick && widget) {
+      console.log('Window: Title clicked, opening step 1', { widget: { id: widget.id, category: widget.category, title: widget.title } });
+      onWidgetClick({ type: 'category', widget, step: 1 });
+    }
+  };
+
+  // Handle metric click to open modal directly to step 2 with metric details
+  const handleMetricClick = (metric) => {
+    if (!editMode && onWidgetClick && widget && metric) {
+      console.log('Window: Metric clicked, opening step 2', { 
+        metric: { id: metric.id, name: metric.name, value: metric.value },
+        widget: { id: widget.id, category: widget.category, title: widget.title }
+      });
+      onWidgetClick({ type: 'metric', widget, metric, step: 2 });
+    }
+  };
+
   return (
     <div
       className={`${sizeClasses[size] || styles.smallWindow} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -32,15 +51,34 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragEnd={(e) => {
         e.target.classList.remove(styles.dragging);
       }}
-      onClick={() => !editMode && onWidgetClick && onWidgetClick(widget)}
     >
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
-          <h3 className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {widget.title}
-          </h3>
+          <div className={`${styles.widgetTitleContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <button
+              className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleTitleClick}
+              disabled={editMode}
+            >
+              {widget?.title || 'Untitled'}
+            </button>
+          </div>
           <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {widget.data || 'No data'}
+            {widget?.metrics && widget.metrics.length > 0 ? (
+              widget.metrics.map((metric) => (
+                <button
+                  key={metric.id}
+                  className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => handleMetricClick(metric)}
+                  disabled={editMode}
+                >
+                  <span className={styles.metricName}>{metric.name}:</span>{' '}
+                  <span className={styles.metricValue}>{metric.value}</span>
+                </button>
+              ))
+            ) : (
+              'No metrics assigned'
+            )}
           </div>
         </div>
         {editMode && (
@@ -257,8 +295,8 @@ const DashboardPlane = ({
         p.id === n.id &&
         p.size === n.size &&
         p.title === n.title &&
-        p.data === n.data &&
-        p.section === n.section &&
+        JSON.stringify(p.metrics) === JSON.stringify(n.metrics) &&
+        p.category === n.category &&
         JSON.stringify(p.position || {}) === JSON.stringify(n.position || {})
       );
     });
@@ -337,8 +375,6 @@ const DashboardPlane = ({
           widget.position &&
           typeof widget.position.row !== 'undefined' &&
           typeof widget.position.col !== 'undefined' &&
-          !isNaN(widget.position.row) &&
-          !isNaN(widget.position.col) &&
           canPlaceWindow(size, widget.position.row, widget.position.col, [], tempGrid, newWindows)
         ) {
           position = widget.position;

@@ -18,7 +18,7 @@ import TransportModal from './Modal/Cards Transportaion Modal/TransportModal';
 import FolderOperations from './Modal/Folder Modal/FolderModal';
 import Dashboard from './Dashboard/Dashboard';
 import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
-import WidgetView from './Dashboard/WidgetView/WidgetView';
+import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 
 function App() {
   const {
@@ -38,6 +38,8 @@ function App() {
     setSelectedTemplateIndex,
     currentSectionIndex,
     setCurrentSectionIndex,
+    dashboards,
+    setDashboards,
   } = useContext(MainContext);
 
   const sheetModal = useModal();
@@ -49,11 +51,11 @@ function App() {
   const sheetFolderModal = useModal();
   const folderOperationsModal = useModal();
   const widgetSizeModal = useModal();
+  const widgetViewModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [selectedWidget, setSelectedWidget] = useState(null);
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -255,6 +257,18 @@ function App() {
           break;
         case 'widgetSize':
           break;
+        case 'widgetView':
+          if (data?.updatedWidget) {
+            setDashboards((prev) =>
+              prev.map((dashboard) => ({
+                ...dashboard,
+                widgets: dashboard.widgets.map((w) =>
+                  w.id === data.updatedWidget.id ? { ...w, ...data.updatedWidget } : w
+                ),
+              }))
+            );
+          }
+          break;
         default:
           break;
       }
@@ -277,36 +291,49 @@ function App() {
       setCurrentSectionIndex,
       setTempData,
       handleSheetChange,
+      setDashboards,
     ]
   );
 
-  const onEditSheet = useCallback(() => {
-    setIsSheetModalEditMode(true);
-    setActiveModal({
-      type: 'sheet',
-      data: {
-        sheetName: activeSheetName,
-        currentHeaders: resolvedHeaders,
-        rows: activeSheet?.rows || [],
-      },
-    });
-    sheetModal.open();
-  }, [sheetModal, activeSheetName, resolvedHeaders, activeSheet]);
+  const onEditSheet = useCallback(
+    () => {
+      setIsSheetModalEditMode(true);
+      setActiveModal({
+        type: 'sheet',
+        data: {
+          sheetName: activeSheetName,
+          currentHeaders: resolvedHeaders,
+          rows: activeSheet?.rows || [],
+        },
+      });
+      sheetModal.open();
+    },
+    [sheetModal, activeSheetName, resolvedHeaders, activeSheet]
+  );
 
-  const onFilter = useCallback(() => {
-    setActiveModal({ type: 'filter', data: { filterValues: activeSheet?.filters || {} } });
-    filterModal.open();
-  }, [filterModal, activeSheet]);
+  const onFilter = useCallback(
+    () => {
+      setActiveModal({ type: 'filter', data: { filterValues: activeSheet?.filters || {} } });
+      filterModal.open();
+    },
+    [filterModal, activeSheet]
+  );
 
-  const onManageHeaders = useCallback(() => {
-    setActiveModal({ type: 'headers', data: { currentHeaders: [...headers] } });
-    headersModal.open();
-  }, [headersModal, headers]);
+  const onManageHeaders = useCallback(
+    () => {
+      setActiveModal({ type: 'headers', data: { currentHeaders: [...headers] } });
+      headersModal.open();
+    },
+    [headersModal, headers]
+  );
 
-  const onOpenSheetsModal = useCallback(() => {
-    setActiveModal({ type: 'sheets', data: { newOrder: sheets?.structure || [] } });
-    sheetsModal.open();
-  }, [sheetsModal, sheets]);
+  const onOpenSheetsModal = useCallback(
+    () => {
+      setActiveModal({ type: 'sheets', data: { newOrder: sheets?.structure || [] } });
+      sheetsModal.open();
+    },
+    [sheetsModal, sheets]
+  );
 
   const onOpenTransportModal = useCallback(
     (action, selectedRowIds, onComplete) => {
@@ -316,24 +343,30 @@ function App() {
     [transportModal]
   );
 
-  const onOpenCardsTemplateModal = useCallback(() => {
-    setEditMode(false);
-    setActiveModal({ type: 'cardsTemplate', data: { currentCardTemplates: [...cardTemplates] } });
-    cardsTemplateModal.open();
-  }, [cardsTemplateModal, setEditMode, cardTemplates]);
+  const onOpenCardsTemplateModal = useCallback(
+    () => {
+      setEditMode(false);
+      setActiveModal({ type: 'cardsTemplate', data: { currentCardTemplates: [...cardTemplates] } });
+      cardsTemplateModal.open();
+    },
+    [cardsTemplateModal, setEditMode, cardTemplates]
+  );
 
-  const onOpenSheetFolderModal = useCallback(() => {
-    setActiveModal({
-      type: 'sheetFolder',
-      data: {
-        sheets,
-        headers,
-        handleSheetSave,
-        handleFolderSave,
-      },
-    });
-    sheetFolderModal.open();
-  }, [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]);
+  const onOpenSheetFolderModal = useCallback(
+    () => {
+      setActiveModal({
+        type: 'sheetFolder',
+        data: {
+          sheets,
+          headers,
+          handleSheetSave,
+          handleFolderSave,
+        },
+      });
+      sheetFolderModal.open();
+    },
+    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]
+  );
 
   const onOpenFolderOperationsModal = useCallback(
     (folderName) => {
@@ -344,6 +377,17 @@ function App() {
       folderOperationsModal.open();
     },
     [folderOperationsModal]
+  );
+
+  const handleWidgetClick = useCallback(
+    ({ type, widget, metric }) => {
+      setActiveModal({
+        type: 'widgetView',
+        data: { widget, selectedMetric: type === 'metric' ? metric : null, step: 1 },
+      });
+      widgetViewModal.open();
+    },
+    [widgetViewModal]
   );
 
   const handleModalClose = useCallback(
@@ -370,6 +414,7 @@ function App() {
       sheetFolderModal.close();
       folderOperationsModal.close();
       widgetSizeModal.close();
+      widgetViewModal.close();
     },
     [
       activeModal,
@@ -386,6 +431,7 @@ function App() {
       sheetFolderModal,
       folderOperationsModal,
       widgetSizeModal,
+      widgetViewModal,
     ]
   );
 
@@ -397,22 +443,11 @@ function App() {
     setIsProfileModalOpen(false);
   }, []);
 
-  const handleWidgetClick = useCallback((widget) => {
-    setSelectedWidget(widget);
-  }, []);
-
-  const handleWidgetClose = useCallback(() => {
-    setSelectedWidget(null);
-  }, []);
-
-  const handleWidgetEdit = useCallback(() => {
-    console.log('Edit widget:', selectedWidget);
-  }, [selectedWidget]);
-
   const renderModalContent = () => {
     if (!activeModal) {
       return null;
     }
+    console.log('App: Rendering modal', { type: activeModal.type, data: activeModal.data }); // Debug log
     switch (activeModal.type) {
       case 'sheet':
         return (
@@ -424,7 +459,7 @@ function App() {
               rows: activeSheet?.rows || [],
             }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             sheets={sheets}
             onPinToggle={handlePinToggle}
@@ -439,7 +474,7 @@ function App() {
             rows={resolvedRows}
             tempData={activeModal.data || { filterValues: activeSheet?.filters || {} }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             handleClose={handleModalClose}
           />
@@ -449,7 +484,7 @@ function App() {
           <HeadersModal
             tempData={activeModal.data || { currentHeaders: [...headers] }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             handleClose={handleModalClose}
           />
@@ -460,7 +495,7 @@ function App() {
             sheets={sheets || { structure: [] }}
             tempData={activeModal.data || { newOrder: sheets?.structure || [] }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             handleClose={handleModalClose}
           />
@@ -479,7 +514,7 @@ function App() {
           <CardsTemplate
             tempData={activeModal.data || { currentCardTemplates: [...cardTemplates] }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             handleClose={handleModalClose}
           />
@@ -489,7 +524,7 @@ function App() {
           <CreateSheetsAndFolders
             tempData={activeModal.data || { sheets }}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: newData }))
+              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
             }
             sheets={sheets}
             setSheets={setSheets}
@@ -523,6 +558,20 @@ function App() {
               setActiveModal({ ...activeModal, data: { size } });
               handleModalSave('widgetSize', { size });
             }}
+          />
+        );
+      case 'widgetView':
+        return (
+          <MetricsCategories
+            widget={activeModal.data?.widget}
+            tempData={activeModal.data || { step: 1 }}
+            setTempData={(newData) =>
+              setActiveModal((prev) => ({
+                ...prev,
+                data: { ...prev.data, ...newData },
+              }))
+            }
+            handleClose={handleModalClose}
           />
         );
       default:
@@ -575,13 +624,6 @@ function App() {
           >
             {renderModalContent()}
           </Modal>
-        )}
-        {selectedWidget && (
-          <WidgetView
-            widget={selectedWidget}
-            onClose={handleWidgetClose}
-            onEdit={handleWidgetEdit}
-          />
         )}
         <ProfileModal
           isOpen={isProfileModalOpen}

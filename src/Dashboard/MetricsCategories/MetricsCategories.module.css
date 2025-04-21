@@ -1,0 +1,273 @@
+.widgetOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.widgetOverlay.darkTheme {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.widgetOverlay.closing {
+  animation: fadeOut 0.2s ease-in forwards;
+}
+
+@media (max-width: 767px) {
+  .widgetOverlay {
+    align-items: flex-start;
+    animation: fadeInMobile 0.3s ease-out forwards;
+  }
+
+  .widgetOverlay.darkTheme {
+    animation: fadeInMobileDark 0.3s ease-out forwards;
+  }
+
+  .widgetOverlay.closing {
+    animation: fadeOutMobile 0.3s ease-in forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fadeInMobile {
+  from { background: rgba(0, 0, 0, 0); }
+  to { background: rgba(0, 0, 0, 0.4); }
+}
+
+@keyframes fadeInMobileDark {
+  from { background: rgba(0, 0, 0, 0); }
+  to { background: rgba(0, 0, 0, 0.6); }
+}
+
+@keyframes fadeOutMobile {
+  from { background: rgba(0, 0, 0, 0.4); }
+  to { background: rgba(0, 0, 0, 0); }
+}
+
+.widgetContent {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 960px;
+  height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.widgetContent.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.widgetContent::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .widgetContent {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    transform: translateX(-100%);
+    animation: slideInFromLeft 0.3s ease-out forwards;
+  }
+
+  .widgetContent.closing {
+    animation: slideOutToLeft 0.3s ease-in forwards;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOutToLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+.widgetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding: 0;
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+}
+
+.widgetTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+  text-align: center;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 60%;
+  top: 0;
+}
+
+.widgetTitle.darkTheme {
+  color: #ffffff;
+}
+
+.backButton, .addButton, .editButton, .cancelButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 400;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backButton {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.addButton {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.editButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.cancelButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.backButton.darkTheme, .addButton.darkTheme, .editButton.darkTheme, .cancelButton.darkTheme {
+  color: #0a84ff;
+}
+
+.chevron {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+.widgetBody {
+  padding: 20px;
+  font-size: 16px;
+  color: #1d1d1f;
+}
+
+.widgetBody.darkTheme {
+  color: #ffffff;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* New styles for metrics display */
+.metricsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.metricItem {
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.metricItem:last-child {
+  border-bottom: none;
+}
+
+.metricName {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.metricName.darkTheme {
+  color: #ffffff;
+}
+
+.metricValue {
+  color: #1d1d1f;
+}
+
+.metricValue.darkTheme {
+  color: #ffffff;
+}
+
+.backButton {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 10px 0;
+  background: none;
+  border: none;
+  color: #007aff; /* iOS blue */
+  font-size: 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.backButton.darkTheme {
+  color: #0a84ff; /* Adjusted for dark theme */
+}
+
+.metricDetails {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.metricDetails.darkTheme {
+  background-color: #2c2c2e;
+  color: #ffffff;
+}
