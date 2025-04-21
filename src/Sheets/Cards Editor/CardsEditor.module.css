@@ -338,3 +338,103 @@
 .emptySection.darkTheme {
   color: #a1a1a6;
 }
+
+.historyModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.historyModalContent {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.darkTheme .historyModalContent {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.historyModalContent h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+.historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.historyItem {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.darkTheme .historyItem {
+  border-bottom: 1px solid #3a3a3c;
+}
+
+.historyItem:hover {
+  background: #f0f0f0;
+}
+
+.darkTheme .historyItem:hover {
+  background: #2c2c2e;
+}
+
+.historyModalButtons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.darkTheme .cancelButton {
+  background: #3a3a3c;
+  color: #fff;
+}
+
+.historyButton {
+  padding: 8px 16px;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 10px;
+}
+
+.darkTheme .historyButton {
+  background: #0a84ff;
+}
+
+.readOnly {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.darkTheme .readOnly {
+  background: #2c2c2e;
+}

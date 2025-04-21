@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useContext } from "react";
-import PropTypes from "prop-types";
-import styles from "./Sheets.module.css";
-import RowComponent from "./Row Template/RowComponent";
-import CardsEditor from "./Cards Editor/CardsEditor";
-import { IoCloseCircle } from "react-icons/io5";
-import { FaFolder } from "react-icons/fa";
-import { MdFilterAlt } from "react-icons/md";
-import { MainContext } from "../Contexts/MainContext";
-import { CgArrowsExchangeAlt } from "react-icons/cg";
-import { BiSolidSpreadsheet } from "react-icons/bi";
+import React, { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
+import PropTypes from 'prop-types';
+import styles from './Sheets.module.css';
+import RowComponent from './Row Template/RowComponent';
+import CardsEditor from './Cards Editor/CardsEditor';
+import { IoCloseCircle } from 'react-icons/io5';
+import { FaFolder } from 'react-icons/fa';
+import { MdFilterAlt } from 'react-icons/md';
+import { MainContext } from '../Contexts/MainContext';
+import { CgArrowsExchangeAlt } from 'react-icons/cg';
+import { BiSolidSpreadsheet } from 'react-icons/bi';
 
 const Sheets = ({
   headers,
@@ -29,14 +29,13 @@ const Sheets = ({
 }) => {
   const { isDarkTheme, setCards, cards } = useContext(MainContext);
 
-  // Retrieve filters and sheet ID from active sheet
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const filters = activeSheet?.filters || {};
-  const isPrimarySheet = activeSheet?.id === "primarySheet";
+  const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
   const scrollContainerRef = useRef(null);
   const sheetTabsRef = useRef(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -54,14 +53,14 @@ const Sheets = ({
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
     if (sheetTabsRef.current) {
       sheetTabsRef.current.scrollWidth;
-      sheetTabsRef.current.style.width = "auto";
+      sheetTabsRef.current.style.width = 'auto';
     }
   }, []);
 
@@ -73,7 +72,7 @@ const Sheets = ({
         if (!filter || !header) return true;
 
         switch (header.type) {
-          case "number":
+          case 'number':
             if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
             const numValue = Number(rowValue) || 0;
             if (filter.start || filter.end) {
@@ -84,13 +83,13 @@ const Sheets = ({
             if (!filter.value) return true;
             const filterNum = Number(filter.value);
             switch (filter.order) {
-              case "greater": return numValue > filterNum;
-              case "less": return numValue < filterNum;
-              case "greaterOrEqual": return numValue >= filterNum;
-              case "lessOrEqual": return numValue <= filterNum;
+              case 'greater': return numValue > filterNum;
+              case 'less': return numValue < filterNum;
+              case 'greaterOrEqual': return numValue >= filterNum;
+              case 'lessOrEqual': return numValue <= filterNum;
               default: return numValue === filterNum;
             }
-          case "date":
+          case 'date':
             if (!filter.start && !filter.end && !filter.value) return true;
             const dateValue = new Date(rowValue);
             if (filter.start || filter.end) {
@@ -101,21 +100,21 @@ const Sheets = ({
             if (!filter.value) return true;
             const filterDate = new Date(filter.value);
             switch (filter.order) {
-              case "before": return dateValue < filterDate;
-              case "after": return dateValue > filterDate;
+              case 'before': return dateValue < filterDate;
+              case 'after': return dateValue > filterDate;
               default: return dateValue.toDateString() === filterDate.toDateString();
             }
-          case "dropdown":
+          case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(rowValue);
-          case "text":
+          case 'text':
             if (!filter.value) return true;
-            const strValue = String(rowValue || "").toLowerCase();
+            const strValue = String(rowValue || '').toLowerCase();
             const filterStr = filter.value.toLowerCase();
             switch (filter.condition) {
-              case "contains": return strValue.includes(filterStr);
-              case "startsWith": return strValue.startsWith(filterStr);
-              case "endsWith": return strValue.endsWith(filterStr);
+              case 'contains': return strValue.includes(filterStr);
+              case 'startsWith': return strValue.startsWith(filterStr);
+              case 'endsWith': return strValue.endsWith(filterStr);
               default: return strValue === filterStr;
             }
           default:
@@ -132,7 +131,7 @@ const Sheets = ({
       .map(([headerKey, filter]) => ({
         key: headerKey,
         sortOrder: filter.sortOrder,
-        type: headers.find((h) => h.key === headerKey)?.type || "text",
+        type: headers.find((h) => h.key === headerKey)?.type || 'text',
       }));
 
     if (sortCriteria.length > 0) {
@@ -140,18 +139,18 @@ const Sheets = ({
         for (const { key, sortOrder, type } of sortCriteria) {
           let aValue = a[key];
           let bValue = b[key];
-          if (type === "number") {
+          if (type === 'number') {
             aValue = Number(aValue) || 0;
             bValue = Number(bValue) || 0;
-          } else if (type === "date") {
+          } else if (type === 'date') {
             aValue = aValue ? new Date(aValue).getTime() : 0;
             bValue = bValue ? new Date(bValue).getTime() : 0;
           } else {
-            aValue = String(aValue || "").toLowerCase();
-            bValue = String(bValue || "").toLowerCase();
+            aValue = String(aValue || '').toLowerCase();
+            bValue = String(bValue || '').toLowerCase();
           }
-          if (aValue < bValue) return sortOrder === "ascending" ? -1 : 1;
-          if (aValue > bValue) return sortOrder === "ascending" ? 1 : -1;
+          if (aValue < bValue) return sortOrder === 'ascending' ? -1 : 1;
+          if (aValue > bValue) return sortOrder === 'ascending' ? 1 : -1;
         }
         return 0;
       });
@@ -162,7 +161,7 @@ const Sheets = ({
   const finalRows = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return sortedRows.filter((row) =>
-      visibleHeaders.some((header) => String(row[header.key] || "").toLowerCase().includes(query))
+      visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
     );
   }, [sortedRows, searchQuery, visibleHeaders]);
 
@@ -170,7 +169,7 @@ const Sheets = ({
     onSheetChange(sheetName);
   }, [onSheetChange]);
 
-  const clearSearch = useCallback(() => setSearchQuery(""), []);
+  const clearSearch = useCallback(() => setSearchQuery(''), []);
 
   const handleRowClick = useCallback(
     (rowData) => {
@@ -272,7 +271,7 @@ const Sheets = ({
 
   const handleMoveOrCopy = useCallback(
     (action) => {
-      if (action === "move" && isPrimarySheet) {
+      if (action === 'move' && isPrimarySheet) {
         alert("Cards cannot be moved from the primary sheet 'All Cards'.");
         return;
       }
@@ -316,11 +315,11 @@ const Sheets = ({
 
   const TableContent = (
     <div className={styles.tableContent}>
-      <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={styles.buttonGroup}>
           {!isSelectMode ? (
             <button
-              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={onFilter}
             >
               <MdFilterAlt size={20} />
@@ -328,7 +327,7 @@ const Sheets = ({
           ) : (
             <>
               <button
-                className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={handleSelectToggle}
               >
                 Cancel
@@ -336,31 +335,35 @@ const Sheets = ({
               {selectedRowIds.length > 0 && (
                 <>
                   <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={handleSelectAll}
                   >
                     {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
-                      ? "Deselect All"
-                      : "Select All"}
+                      ? 'Deselect All'
+                      : 'Select All'}
                   </button>
                   {!isPrimarySheet && (
                     <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleMoveOrCopy("move")}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => handleMoveOrCopy('move')}
                     >
                       Move
                     </button>
                   )}
                   <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={() => handleMoveOrCopy("copy")}
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => handleMoveOrCopy('copy')}
                   >
                     Copy
                   </button>
                   <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
-                      if (window.confirm("Are you sure you want to delete the selected cards? This action cannot be undone.")) {
+                      if (
+                        window.confirm(
+                          'Are you sure you want to delete the selected cards? This action cannot be undone.'
+                        )
+                      ) {
                         handleDeleteSelected();
                       }
                     }}
@@ -369,9 +372,13 @@ const Sheets = ({
                   </button>
                   {!isPrimarySheet && (
                     <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to remove the selected cards from this sheet?")) {
+                        if (
+                          window.confirm(
+                            'Are you sure you want to remove the selected cards from this sheet?'
+                          )
+                        ) {
                           handleRemoveSelected();
                         }
                       }}
@@ -390,7 +397,7 @@ const Sheets = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search"
-            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
+            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ''}`}
           />
           {searchQuery && (
             <button className={styles.clearButton} onClick={clearSearch}>
@@ -402,8 +409,11 @@ const Sheets = ({
           Edit
         </button>
       </div>
-      <div className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ""}`} ref={scrollContainerRef}>
-        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      <div
+        className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
+        ref={scrollContainerRef}
+      >
+        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {isSelectMode && (
             <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
           )}
@@ -413,9 +423,9 @@ const Sheets = ({
             </div>
           ))}
         </div>
-        <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <RowComponent
-            rowData={{ id: "Add New Card", isAddNew: true }}
+            rowData={{ id: 'Add New Card', isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={() => handleRowClick({ isAddNew: true })}
             isSelected={false}
@@ -440,15 +450,15 @@ const Sheets = ({
           )}
         </div>
       </div>
-      <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ""}`} ref={sheetTabsRef}>
+      <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
         <button
-          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={onOpenSheetsModal}
         >
           <CgArrowsExchangeAlt />
         </button>
         <button
-          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={onOpenSheetFolderModal}
         >
           +
@@ -458,13 +468,15 @@ const Sheets = ({
             <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
               <button
                 className={`${styles.tabButton} ${
-                  item.sheets.includes(activeSheetName) ? styles.activeTab : ""
-                } ${isDarkTheme ? styles.darkTheme : ""}`}
+                  item.sheets.includes(activeSheetName) ? styles.activeTab : ''
+                } ${isDarkTheme ? styles.darkTheme : ''}`}
                 data-folder-name={item.folderName}
                 onClick={() => handleFolderClick(item.folderName)}
               >
                 <FaFolder className={styles.folderIcon} />
-                {item.sheets.includes(activeSheetName) ? `${item.folderName} > ${activeSheetName}` : item.folderName}
+                {item.sheets.includes(activeSheetName)
+                  ? `${item.folderName} > ${activeSheetName}`
+                  : item.folderName}
               </button>
             </div>
           ) : (
@@ -472,8 +484,8 @@ const Sheets = ({
               <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
                 <button
                   className={`${styles.tabButton} ${
-                    item.sheetName === activeSheetName ? styles.activeTab : ""
-                  } ${isDarkTheme ? styles.darkTheme : ""}`}
+                    item.sheetName === activeSheetName ? styles.activeTab : ''
+                  } ${isDarkTheme ? styles.darkTheme : ''}`}
                   data-sheet-name={item.sheetName}
                   onClick={() => handleSheetClick(item.sheetName)}
                 >
@@ -489,12 +501,14 @@ const Sheets = ({
   );
 
   return (
-    <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+    <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {TableContent}
         {isMobile && isEditorOpen && (
           <div
-            className={`${styles.cardDetailsMobile} ${!isClosing ? styles.cardOpen : styles.cardClosed}`}
+            className={`${styles.cardDetailsMobile} ${
+              !isClosing ? styles.cardOpen : styles.cardClosed
+            }`}
           >
             <CardsEditor
               key={selectedRow?.id || Date.now()}
@@ -508,7 +522,7 @@ const Sheets = ({
         )}
       </div>
       {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {isEditorOpen ? (
             <CardsEditor
               key={selectedRow?.id || Date.now()}

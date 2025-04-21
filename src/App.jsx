@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useCallback, useMemo, useContext } from 'react';
 import PropTypes from 'prop-types';
 import Sheets from './Sheets/Sheets';
@@ -407,7 +406,6 @@ function App() {
   }, []);
 
   const handleWidgetEdit = useCallback(() => {
-    // Implement edit functionality later
     console.log('Edit widget:', selectedWidget);
   }, [selectedWidget]);
 
@@ -488,7 +486,7 @@ function App() {
         );
       case 'sheetFolder':
         return (
-          < KrankenSheetsAndFolders
+          <CreateSheetsAndFolders
             tempData={activeModal.data || { sheets }}
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
@@ -565,7 +563,7 @@ function App() {
         )}
         {activeOption === 'dashboard' && activeSheetName && (
           <Dashboard
-            onWidgetClick={handleWidgetClick} // Pass the handler
+            onWidgetClick={handleWidgetClick}
           />
         )}
         {activeModal && (

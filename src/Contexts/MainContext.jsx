@@ -110,6 +110,20 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "80",
       nextActions: "Call back",
       followUpDate: "2025-04-05",
+      history: [
+        {
+          field: "leadScore",
+          oldValue: "75",
+          newValue: "80",
+          timestamp: { _seconds: 1737417600, _nanoseconds: 0 } // January 21, 2025
+        },
+        {
+          field: "nextActions",
+          oldValue: "Send email",
+          newValue: "Call back",
+          timestamp: { _seconds: 1741651200, _nanoseconds: 0 } // March 10, 2025
+        }
+      ]
     },
     {
       id: "100002",
@@ -120,6 +134,14 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "90",
       nextActions: "Send offer",
       followUpDate: "2025-04-06",
+      history: [
+        {
+          field: "phone",
+          oldValue: "6977550000",
+          newValue: "6977554321",
+          timestamp: { _seconds: 1739577600, _nanoseconds: 0 } // February 15, 2025
+        }
+      ]
     },
     {
       id: "100003",
@@ -130,6 +152,14 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "75",
       nextActions: "Follow-up email",
       followUpDate: "2025-04-07",
+      history: [
+        {
+          field: "email",
+          oldValue: "dimitris.old@example.com",
+          newValue: "dimitris@example.com",
+          timestamp: { _seconds: 1745107200, _nanoseconds: 0 } // April 21, 2025
+        }
+      ]
     },
     {
       id: "100004",
@@ -140,6 +170,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "85",
       nextActions: "Schedule meeting",
       followUpDate: "2025-04-08",
+      history: []
     },
     {
       id: "100005",
@@ -150,6 +181,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "60",
       nextActions: "Send reminder",
       followUpDate: "2025-04-09",
+      history: []
     },
     {
       id: "100006",
@@ -160,6 +192,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "95",
       nextActions: "Close deal",
       followUpDate: "2025-04-10",
+      history: []
     },
     {
       id: "100007",
@@ -170,6 +203,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "70",
       nextActions: "Cold call",
       followUpDate: "2025-04-11",
+      history: []
     },
     {
       id: "100008",
@@ -180,6 +214,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "88",
       nextActions: "Send brochure",
       followUpDate: "2025-04-12",
+      history: []
     },
     {
       id: "100009",
@@ -190,6 +225,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "78",
       nextActions: "Call and pitch",
       followUpDate: "2025-04-13",
+      history: []
     },
     {
       id: "100010",
@@ -200,6 +236,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "92",
       nextActions: "Confirm interest",
       followUpDate: "2025-04-14",
+      history: []
     },
     {
       id: "100011",
@@ -210,6 +247,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "73",
       nextActions: "Send follow-up",
       followUpDate: "2025-04-15",
+      history: []
     },
     {
       id: "100012",
@@ -220,6 +258,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "81",
       nextActions: "Call again",
       followUpDate: "2025-04-16",
+      history: []
     },
     {
       id: "100013",
@@ -230,6 +269,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "68",
       nextActions: "Schedule call",
       followUpDate: "2025-04-17",
+      history: []
     },
     {
       id: "100014",
@@ -240,6 +280,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "94",
       nextActions: "Close deal",
       followUpDate: "2025-04-18",
+      history: []
     },
     {
       id: "100015",
@@ -250,6 +291,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "76",
       nextActions: "Final meeting",
       followUpDate: "2025-04-19",
+      history: []
     },
     {
       id: "100016",
@@ -260,6 +302,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "89",
       nextActions: "Confirm schedule",
       followUpDate: "2025-04-20",
+      history: []
     },
     {
       id: "100017",
@@ -270,6 +313,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "84",
       nextActions: "Send contract",
       followUpDate: "2025-04-21",
+      history: []
     },
     {
       id: "100018",
@@ -280,6 +324,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "91",
       nextActions: "Onboard",
       followUpDate: "2025-04-22",
+      history: []
     },
     {
       id: "100019",
@@ -290,6 +335,7 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "67",
       nextActions: "Check-in call",
       followUpDate: "2025-04-23",
+      history: []
     },
     {
       id: "100020",
@@ -300,7 +346,8 @@ export const MainContextProvider = ({ children }) => {
       leadScore: "86",
       nextActions: "Upsell offer",
       followUpDate: "2025-04-24",
-    },
+      history: []
+    }
   ]);
 
   const [headers, setHeaders] = useState([
@@ -501,6 +548,11 @@ export const MainContextProvider = ({ children }) => {
         ],
       },
     ]);
+
+    useEffect(() => {
+      console.log(cards);
+    }
+    , [cards]);
   
   return (
     <MainContext.Provider
