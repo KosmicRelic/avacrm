@@ -176,7 +176,7 @@
 .buttonGroup {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   position: relative;
   display: flex;
   gap: 8px;
@@ -277,7 +277,7 @@
   position: sticky;
   display: flex;
   gap: 16px;
-  justify-content: center;
+  justify-content: space-between;
   overflow-y: scroll;
   overflow-x: none;
   width: 100%;

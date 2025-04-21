@@ -1,4 +1,3 @@
-// src/Modal/WidgetSizeModal/WidgetSizeModal.js
 import React, { useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSwipeable } from 'react-swipeable';
@@ -31,10 +30,42 @@ const WidgetSizeModal = ({ handleClose, onSelectSize }) => {
   }, []);
 
   const widgetSizes = [
-    { size: 'verySmall', label: 'Very Small (2x1)', score: 10, aspectWidth: 2, aspectHeight: 1, width: 184, height: 92 },
-    { size: 'small', label: 'Small (1x1)', score: 20, aspectWidth: 1, aspectHeight: 1, width: 184, height: 184 },
-    { size: 'medium', label: 'Medium (2x1)', score: 40, aspectWidth: 2, aspectHeight: 1, width: 260, height: 130 },
-    { size: 'large', label: 'Large (1x1)', score: 80, aspectWidth: 1, aspectHeight: 1, width: 368, height: 368 },
+    {
+      size: 'verySmall',
+      label: 'Very Small (2x1)',
+      score: 10,
+      aspectWidth: 2,
+      aspectHeight: 1,
+      width: 130, // ≈ 368px * √(1/8) ≈ 368px * 0.3535
+      height: 65, // 130px / 2 for 2:1 aspect ratio
+    },
+    {
+      size: 'small',
+      label: 'Small (1x1)',
+      score: 20,
+      aspectWidth: 1,
+      aspectHeight: 1,
+      width: 184, // 368px * 1/2 for 1/4 area
+      height: 184, // 1:1 aspect ratio
+    },
+    {
+      size: 'medium',
+      label: 'Medium (2x1)',
+      score: 40,
+      aspectWidth: 2,
+      aspectHeight: 1,
+      width: 368, // Same width as large
+      height: 184, // Half height for 1/2 area, 2:1 aspect ratio
+    },
+    {
+      size: 'large',
+      label: 'Large (1x1)',
+      score: 80,
+      aspectWidth: 1,
+      aspectHeight: 1,
+      width: 368, // Full size
+      height: 368, // 1:1 aspect ratio
+    },
   ];
 
   const handleSizeSelect = (size) => {
@@ -79,7 +110,8 @@ const WidgetSizeModal = ({ handleClose, onSelectSize }) => {
                   style={{
                     width: `${width}px`,
                     height: `${height}px`,
-                    maxWidth: '368px', // Respect modal padding
+                    maxWidth: '100%',
+                    maxHeight: '100%',
                     aspectRatio: `${aspectWidth} / ${aspectHeight}`, // Ensure correct ratio
                   }}
                   onClick={() => handleSizeSelect(size)}

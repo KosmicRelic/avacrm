@@ -3,7 +3,6 @@ import React, { useRef, useContext, useState, useEffect, useMemo } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
-import DatePicker from './Date Picker/DatePicker';
 import { FaPlus } from 'react-icons/fa';
 import useModal from '../Modal/Hooks/UseModal';
 import Modal from '../Modal/Modal';
@@ -736,23 +735,22 @@ const Dashboard = () => {
   return (
     <div className={`${styles.dashboardWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.buttonGroup}>
-        {!editMode && <DatePicker />}
         {editMode && (
           <div className={styles.controls}>
             <button
               className={styles.addButton}
               onClick={handleAddWidgetClick}
             >
-              <FaPlus /> Add Widget
+              <FaPlus /> Add
             </button>
           </div>
         )}
-        <button
+        {editMode && <button
           className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={toggleEditMode}
         >
-          {editMode ? 'Done' : 'Edit'}
-        </button>
+          Done
+        </button>}
       </div>
 
       <div className={styles.windowsSection}>
@@ -780,6 +778,12 @@ const Dashboard = () => {
           />
         </Modal>
       )}
+      {!editMode &&
+        <button className={`${styles.editHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+        onClick={toggleEditMode}>
+          Edit
+        </button>
+      }
     </div>
   );
 };

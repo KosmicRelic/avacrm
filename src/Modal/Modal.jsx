@@ -13,6 +13,16 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
   const modalRef = useRef(null);
   const [isClickOutsideEnabled, setIsClickOutsideEnabled] = useState(false);
 
+  useEffect(() => {
+    // Disable body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Re-enable body scrolling when modal unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   const handleClose = (options = {}) => {
     if (currentStep !== 1) {
       return;
@@ -39,7 +49,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
         modalRef.current &&
         !modalRef.current.contains(event.target) &&
         currentStep === 1 &&
-        modalConfig.allowClose !== false // Respect allowClose
+        modalConfig.allowClose !== false
       ) {
         handleClose();
       }
