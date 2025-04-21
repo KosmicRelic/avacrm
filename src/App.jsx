@@ -1,23 +1,25 @@
-import { useState, useCallback, useMemo, useContext } from "react";
-import PropTypes from "prop-types";
-import Sheets from "./Sheets/Sheets";
-import AppHeader from "./App Header/AppHeader";
-import FilterModal from "./Modal/FilterModal/FilterModal";
-import HeadersModal from "./Modal/HeadersModal/HeaderModal";
-import { MainContext } from "./Contexts/MainContext";
-import styles from "./App.module.css";
-import EditSheetsModal from "./Modal/Edit Sheets Modal/EditSheetsModal";
-import useModal from "./Modal/Hooks/UseModal";
-import useSheets from "./Modal/Hooks/UseSheets";
-import Modal from "./Modal/Modal";
-import ReOrderModal from "./Modal/Re Order Modal/ReOrderModal";
-import ProfileModal from "./Profile Modal/ProfileModal";
-import CardsTemplate from "./Modal/Cards Template/CardsTemplate";
-import CreateSheetsAndFolders from "./Modal/Create Sheets And Folders/CreateSheetsAndFolders";
-import TransportModal from "./Modal/Cards Transportaion Modal/TransportModal";
-import FolderOperations from "./Modal/Folder Modal/FolderModal";
-import Dashboard from "./Dashboard/Dashboard";
-import WidgetSizeModal from "./Modal/WidgetSizeModal/WidgetSizeModal";
+// src/App.jsx
+import React, { useState, useCallback, useMemo, useContext } from 'react';
+import PropTypes from 'prop-types';
+import Sheets from './Sheets/Sheets';
+import AppHeader from './App Header/AppHeader';
+import FilterModal from './Modal/FilterModal/FilterModal';
+import HeadersModal from './Modal/HeadersModal/HeaderModal';
+import { MainContext } from './Contexts/MainContext';
+import styles from './App.module.css';
+import EditSheetsModal from './Modal/Edit Sheets Modal/EditSheetsModal';
+import useModal from './Modal/Hooks/UseModal';
+import useSheets from './Modal/Hooks/UseSheets';
+import Modal from './Modal/Modal';
+import ReOrderModal from './Modal/Re Order Modal/ReOrderModal';
+import ProfileModal from './Profile Modal/ProfileModal';
+import CardsTemplate from './Modal/Cards Template/CardsTemplate';
+import CreateSheetsAndFolders from './Modal/Create Sheets And Folders/CreateSheetsAndFolders';
+import TransportModal from './Modal/Cards Transportaion Modal/TransportModal';
+import FolderOperations from './Modal/Folder Modal/FolderModal';
+import Dashboard from './Dashboard/Dashboard';
+import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
+import WidgetView from './Dashboard/WidgetView/WidgetView';
 
 function App() {
   const {
@@ -52,6 +54,7 @@ function App() {
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedWidget, setSelectedWidget] = useState(null);
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -252,7 +255,6 @@ function App() {
           }
           break;
         case 'widgetSize':
-          // No save action needed as widget creation is handled on selection
           break;
         default:
           break;
@@ -396,6 +398,19 @@ function App() {
     setIsProfileModalOpen(false);
   }, []);
 
+  const handleWidgetClick = useCallback((widget) => {
+    setSelectedWidget(widget);
+  }, []);
+
+  const handleWidgetClose = useCallback(() => {
+    setSelectedWidget(null);
+  }, []);
+
+  const handleWidgetEdit = useCallback(() => {
+    // Implement edit functionality later
+    console.log('Edit widget:', selectedWidget);
+  }, [selectedWidget]);
+
   const renderModalContent = () => {
     if (!activeModal) {
       return null;
@@ -473,7 +488,7 @@ function App() {
         );
       case 'sheetFolder':
         return (
-          <CreateSheetsAndFolders
+          < KrankenSheetsAndFolders
             tempData={activeModal.data || { sheets }}
             setTempData={(newData) =>
               setActiveModal((prev) => ({ ...prev, data: newData }))
@@ -548,7 +563,6 @@ function App() {
             onOpenFolderModal={onOpenFolderOperationsModal}
           />
         )}
-        
         {activeOption === 'dashboard' && activeSheetName && (
           <Dashboard
             headers={resolvedHeaders}
@@ -566,6 +580,7 @@ function App() {
             onOpenTransportModal={onOpenTransportModal}
             onOpenSheetFolderModal={onOpenSheetFolderModal}
             onOpenFolderModal={onOpenFolderOperationsModal}
+            onWidgetClick={handleWidgetClick} // Pass the handler
           />
         )}
         {activeModal && (
@@ -577,6 +592,13 @@ function App() {
           >
             {renderModalContent()}
           </Modal>
+        )}
+        {selectedWidget && (
+          <WidgetView
+            widget={selectedWidget}
+            onClose={handleWidgetClose}
+            onEdit={handleWidgetEdit}
+          />
         )}
         <ProfileModal
           isOpen={isProfileModalOpen}

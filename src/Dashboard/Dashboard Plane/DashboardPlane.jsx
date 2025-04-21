@@ -3,7 +3,7 @@ import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 
-const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform }) => {
+const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme } = useContext(MainContext);
 
   const sizeClasses = {
@@ -32,6 +32,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragEnd={(e) => {
         e.target.classList.remove(styles.dragging);
       }}
+      onClick={() => !editMode && onWidgetClick && onWidgetClick(widget)}
     >
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
@@ -59,6 +60,7 @@ const DashboardPlane = ({
   updateWidgets,
   onDragStart,
   onDrop,
+  onWidgetClick,
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [windows, setWindows] = useState([]);
@@ -439,6 +441,7 @@ const DashboardPlane = ({
               onDelete={() => removeWindow(index)}
               editMode={editMode}
               onDragStart={onDragStart}
+              onWidgetClick={onWidgetClick}
               dashboardId={dashboardId}
               index={index}
               isAnimating={animatingWidgets.has(originalWidget.id)}
