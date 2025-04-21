@@ -14,14 +14,12 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     large: styles.largeWindow,
   };
 
-  // Handle title click to open modal with category view (step 1)
   const handleTitleClick = () => {
     if (!editMode && onWidgetClick && widget) {
       onWidgetClick({ type: 'category', widget, step: 1 });
     }
   };
 
-  // Handle metric click to open modal directly to step 2 with metric details
   const handleMetricClick = (metric) => {
     if (!editMode && onWidgetClick && widget && metric) {
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
@@ -56,7 +54,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
               onClick={handleTitleClick}
               disabled={editMode}
             >
-              {widget?.title || 'Untitled'}
+              {widget?.title || widget?.category || 'Untitled'}
             </button>
             <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
           </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useContext, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useContext, useState, useMemo } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
@@ -8,20 +8,9 @@ import Modal from '../Modal/Modal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
 const Dashboard = ({ onWidgetClick }) => {
-  const { isDarkTheme, cards, dashboards, setDashboards } = useContext(MainContext);
-  const [metrics, setMetrics] = useState({
-    revenue: 0,
-    closeRate: 0,
-    costPerLead: 0,
-    bottleneck: 'None',
-    campaignROI: 0,
-    pendingPayouts: 0,
-    topCampaigns: [],
-  });
-
+  const { isDarkTheme, dashboards, setDashboards, metricsCategories } = useContext(MainContext);
   const [editMode, setEditMode] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState(null);
-  const prevWidgetConfigRef = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const widgetSizeModal = useModal();
 
@@ -38,110 +27,6 @@ const Dashboard = ({ onWidgetClick }) => {
     medium: 40,
     large: 80,
   };
-
-  useEffect(() => {
-    const totalLeads = cards.length;
-    const closedLeads = cards.filter((card) => card.nextActions === 'Close deal').length;
-    const closeRate = totalLeads ? ((closedLeads / totalLeads) * 100).toFixed(1) : 0;
-    const bottleneck = closeRate < 10 ? 'Low close rate: Improve sales process' : 'None';
-    const revenue = closedLeads * 2000;
-    const costPerLead = totalLeads ? (1000 / totalLeads).toFixed(2) : 0;
-    const campaignROI = 2.5;
-    const pendingPayouts = closedLeads * 1200;
-    const topCampaigns = [
-      { name: 'Facebook Ad #1', leads: 5, costPerLead: 20 },
-      { name: 'Google Ad #1', leads: 3, costPerLead: 25 },
-    ];
-
-    setMetrics({
-      revenue,
-      closeRate,
-      costPerLead,
-      bottleneck,
-      campaignROI,
-      pendingPayouts,
-      topCampaigns,
-    });
-  }, [cards]);
-
-  const widgetConfig = useMemo(
-    () => [
-      {
-        id: 'revenue',
-        name: 'Revenue',
-        size: 'large',
-        title: 'Revenue',
-        metrics: [{ id: 'm1', name: 'Total Revenue', value: `$${metrics.revenue.toLocaleString()}` }],
-        category: 'Financials',
-      },
-      {
-        id: 'close-rate',
-        name: 'Close Rate',
-        size: 'medium',
-        title: 'Close Rate',
-        metrics: [{ id: 'm2', name: 'Close Rate', value: `${metrics.closeRate}%` }],
-        category: 'Lead Metrics',
-      },
-      {
-        id: 'cost-per-lead',
-        name: 'Cost Per Lead',
-        size: 'small',
-        title: 'Cost Per Lead',
-        metrics: [{ id: 'm3', name: 'Cost Per Lead', value: `$${metrics.costPerLead}` }],
-        category: 'Lead Metrics',
-      },
-      {
-        id: 'bottleneck',
-        name: 'Bottleneck',
-        size: 'verySmall',
-        title: 'Bottleneck',
-        metrics: [{ id: 'm4', name: 'Bottleneck', value: metrics.bottleneck }],
-        category: 'Lead Metrics',
-      },
-      {
-        id: 'campaign-roi',
-        name: 'Campaign ROI',
-        size: 'small',
-        title: 'Campaign ROI',
-        metrics: [{ id: 'm5', name: 'Campaign ROI', value: `${metrics.campaignROI}x` }],
-        category: 'Marketing',
-      },
-      {
-        id: 'top-campaigns',
-        name: 'Top Campaigns',
-        size: 'small',
-        title: 'Top Campaigns',
-        metrics: [
-          {
-            id: 'm6',
-            name: 'Top Campaigns',
-            value: metrics.topCampaigns.map((c) => `${c.name}: ${c.leads} leads`).join(', '),
-          },
-        ],
-        category: 'Marketing',
-      },
-    ],
-    [metrics]
-  );
-
-  useEffect(() => {
-    if (JSON.stringify(widgetConfig) === JSON.stringify(prevWidgetConfigRef.current)) {
-      return;
-    }
-
-    setDashboards((prev) =>
-      prev.map((dashboard) => ({
-        ...dashboard,
-        widgets: dashboard.widgets.map((widget) => {
-          const config = widgetConfig.find((wc) => wc.id === widget.id);
-          return config
-            ? { ...widget, metrics: config.metrics, title: config.title, category: config.category }
-            : widget;
-        }),
-      }))
-    );
-    prevWidgetConfigRef.current = widgetConfig;
-  }, [widgetConfig, setDashboards]);
 
   const toggleEditMode = () => {
     setEditMode((prev) => !prev);
@@ -179,7 +64,7 @@ const Dashboard = ({ onWidgetClick }) => {
           .fill()
           .map(() => Array(2).fill(false));
 
-    dashboard.widgets.forEach((w) => {
+    dashboard.dashboardWidgets.forEach((w) => {
       if (skipWidgets.some((sw) => sw.id === w.id)) return;
       if (!w.position || typeof w.position.row === 'undefined' || typeof w.position.col === 'undefined') {
         return;
@@ -213,9 +98,17 @@ const Dashboard = ({ onWidgetClick }) => {
         }
       }
     } else if (size === 'small') {
-      possiblePositions.push({ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 });
+      possiblePositions.push(
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 2, col: 0 },
+        { row: 2, col: 1 }
+      );
     } else if (size === 'medium') {
-      possiblePositions.push({ row: 0, col: 0 }, { row: 2, col: 0 });
+      possiblePositions.push(
+        { row: 0, col: 0 },
+        { row: 2, col: 0 }
+      );
     } else if (size === 'large') {
       possiblePositions.push({ row: 0, col: 0 });
     }
@@ -229,26 +122,30 @@ const Dashboard = ({ onWidgetClick }) => {
   };
 
   const cleanupEmptyDashboards = (currentDashboards) => {
-    let newDashboards = currentDashboards.filter((dashboard) => dashboard.widgets.length > 0);
+    let newDashboards = currentDashboards.filter((dashboard) => dashboard.dashboardWidgets.length > 0);
     if (newDashboards.length === 0) {
       newDashboards = [
         {
           id: `dashboard-${Date.now()}`,
-          widgets: [],
+          dashboardWidgets: [],
         },
       ];
     }
     return newDashboards;
   };
 
-  const addWindowToDashboard = (size, content) => {
+  const addWindowToDashboard = (size) => {
     const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Default to the first category for new widgets; later, you can add a modal to select the category
+    const defaultCategory = metricsCategories[0]?.category || 'General';
+    const defaultMetrics = metricsCategories.find((cat) => cat.category === defaultCategory)?.metrics.slice(0, 1) || [];
+    
     const newWidget = {
       id: newWidgetId,
       size,
-      title: 'New Widget',
-      metrics: [],
-      category: null,
+      title: defaultCategory,
+      metrics: defaultMetrics,
+      category: defaultCategory,
       position: { row: 0, col: 0 },
     };
 
@@ -256,14 +153,14 @@ const Dashboard = ({ onWidgetClick }) => {
     let freePosition = null;
 
     for (const dashboard of dashboards) {
-      const existingWidgetIds = new Set(dashboard.widgets.map((w) => w.id));
+      const existingWidgetIds = new Set(dashboard.dashboardWidgets.map((w) => w.id));
       if (existingWidgetIds.has(newWidgetId)) {
         alert('Error: Duplicate widget ID. Please try again.');
         return;
       }
 
-      const newWidgets = [...dashboard.widgets, { ...newWidget, position: { row: 0, col: 0 } }];
-      if (!validateDashboardScore(dashboard.widgets, newWidgets)) {
+      const newWidgets = [...dashboard.dashboardWidgets, { ...newWidget, position: { row: 0, col: 0 } }];
+      if (!validateDashboardScore(dashboard.dashboardWidgets, newWidgets)) {
         continue;
       }
 
@@ -276,7 +173,7 @@ const Dashboard = ({ onWidgetClick }) => {
 
     if (!targetDashboard || !freePosition) {
       const newDashboardId = `dashboard-${Date.now()}`;
-      targetDashboard = { id: newDashboardId, widgets: [] };
+      targetDashboard = { id: newDashboardId, dashboardWidgets: [] };
       freePosition = findFreePosition(targetDashboard, size);
       if (!freePosition) {
         alert('Cannot add widget: No valid position available.');
@@ -288,7 +185,7 @@ const Dashboard = ({ onWidgetClick }) => {
           ...prev,
           {
             ...targetDashboard,
-            widgets: [{ ...newWidget, position: freePosition }],
+            dashboardWidgets: [{ ...newWidget, position: freePosition }],
           },
         ];
         return cleanupEmptyDashboards(newDashboards);
@@ -301,7 +198,7 @@ const Dashboard = ({ onWidgetClick }) => {
         dashboard.id === targetDashboard.id
           ? {
               ...dashboard,
-              widgets: [...dashboard.widgets, { ...newWidget, position: freePosition }],
+              dashboardWidgets: [...dashboard.dashboardWidgets, { ...newWidget, position: freePosition }],
             }
           : dashboard
       );
@@ -321,12 +218,12 @@ const Dashboard = ({ onWidgetClick }) => {
     let tempGrid = Array(4)
       .fill()
       .map(() => Array(2).fill(false));
-    let newWidgets = dashboard.widgets.filter((w) => !overlappingWidgets.some((ow) => ow.id === w.id));
+    let newWidgets = dashboard.dashboardWidgets.filter((w) => !overlappingWidgets.some((ow) => ow.id === w.id));
     let skipWidgets = [draggedWidgetData];
 
     if (
       !canPlaceWidget(
-        { widgets: newWidgets },
+        { dashboardWidgets: newWidgets },
         { id: draggedWidgetData.id, size: draggedSize },
         targetPos.row,
         targetPos.col,
@@ -356,12 +253,12 @@ const Dashboard = ({ onWidgetClick }) => {
     const targetSkipWidgets = [draggedWidgetData];
     const targetWidgets = isSameDashboard
       ? newWidgets
-      : targetDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id);
+      : targetDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id);
     let tempTargetWidgets = [...targetWidgets];
 
     for (const widget of overlappingWidgets) {
       const size = widget.size;
-      const freePos = findFreePosition({ widgets: tempTargetWidgets }, size, targetSkipWidgets, targetTempGrid);
+      const freePos = findFreePosition({ dashboardWidgets: tempTargetWidgets }, size, targetSkipWidgets, targetTempGrid);
       if (freePos) {
         tempTargetWidgets.push({ ...widget, position: freePos });
         targetSkipWidgets.push(widget);
@@ -402,7 +299,7 @@ const Dashboard = ({ onWidgetClick }) => {
     while (remainingWidgets.length > 0) {
       const widget = remainingWidgets.shift();
       const size = widget.size;
-      const freePos = findFreePosition({ widgets: newWidgets }, size, skipWidgets, tempGrid);
+      const freePos = findFreePosition({ dashboardWidgets: newWidgets }, size, skipWidgets, tempGrid);
       if (freePos) {
         newWidgets.push({ ...widget, position: freePos });
         skipWidgets.push(widget);
@@ -467,7 +364,7 @@ const Dashboard = ({ onWidgetClick }) => {
       }
 
       const skipWidgets = sourceDashboardId === dashboardId ? [draggedWidgetData] : [];
-      const overlappingWidgets = targetDashboard.widgets.filter((w) => {
+      const overlappingWidgets = targetDashboard.dashboardWidgets.filter((w) => {
         if (skipWidgets.some((sw) => sw.id === w.id)) return false;
         if (!w.position || isNaN(w.position.row) || isNaN(w.position.col)) {
           return false;
@@ -494,7 +391,7 @@ const Dashboard = ({ onWidgetClick }) => {
 
         if (reassignment) {
           const { targetWidgets } = reassignment;
-          if (!validateDashboardScore(targetDashboard.widgets, targetWidgets)) {
+          if (!validateDashboardScore(targetDashboard.dashboardWidgets, targetWidgets)) {
             alert('Cannot move widget: Score limit reached');
             setDraggedWidget(null);
             return prev;
@@ -502,7 +399,7 @@ const Dashboard = ({ onWidgetClick }) => {
 
           return cleanupEmptyDashboards(
             prev.map((dashboard) =>
-              dashboard.id === dashboardId ? { ...dashboard, widgets: targetWidgets } : dashboard
+              dashboard.id === dashboardId ? { ...dashboard, dashboardWidgets: targetWidgets } : dashboard
             )
           );
         }
@@ -514,7 +411,7 @@ const Dashboard = ({ onWidgetClick }) => {
 
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 1) {
         const overlappingWidget = overlappingWidgets[0];
-        const sourceWidgets = sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id);
+        const sourceWidgets = sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id);
         const possiblePositions = overlappingWidget.size === 'small'
           ? [
               { row: draggedOriginalPos.row, col: draggedOriginalPos.col },
@@ -547,7 +444,7 @@ const Dashboard = ({ onWidgetClick }) => {
               [overlappingWidget]
             ) &&
             canPlaceWidget(
-              { widgets: sourceWidgets },
+              { dashboardWidgets: sourceWidgets },
               { id: overlappingWidget.id, size: overlappingWidget.size },
               pos.row,
               pos.col,
@@ -555,17 +452,17 @@ const Dashboard = ({ onWidgetClick }) => {
             )
           ) {
             const targetNewWidgets = [
-              ...targetDashboard.widgets.filter((w) => w.id !== overlappingWidget.id),
+              ...targetDashboard.dashboardWidgets.filter((w) => w.id !== overlappingWidget.id),
               { ...draggedWidgetData, size: draggedSize, position: targetPos },
             ];
             const sourceNewWidgets = [
-              ...sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id),
+              ...sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id),
               { ...overlappingWidget, size: overlappingWidget.size, position: pos },
             ];
 
             if (
-              !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
-              !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
+              !validateDashboardScore(targetDashboard.dashboardWidgets, targetNewWidgets) ||
+              !validateDashboardScore(sourceDashboard.dashboardWidgets, sourceNewWidgets)
             ) {
               alert('Cannot swap widgets: Score limit reached');
               setDraggedWidget(null);
@@ -575,10 +472,10 @@ const Dashboard = ({ onWidgetClick }) => {
             return cleanupEmptyDashboards(
               prev.map((dashboard) => {
                 if (dashboard.id === sourceDashboardId) {
-                  return { ...dashboard, widgets: sourceNewWidgets };
+                  return { ...dashboard, dashboardWidgets: sourceNewWidgets };
                 }
                 if (dashboard.id === dashboardId) {
-                  return { ...dashboard, widgets: targetNewWidgets };
+                  return { ...dashboard, dashboardWidgets: targetNewWidgets };
                 }
                 return dashboard;
               })
@@ -586,20 +483,20 @@ const Dashboard = ({ onWidgetClick }) => {
           }
         }
 
-        const freePos = findFreePosition({ widgets: sourceWidgets }, overlappingWidget.size, []);
+        const freePos = findFreePosition({ dashboardWidgets: sourceWidgets }, overlappingWidget.size, []);
         if (freePos && !isNaN(freePos.row) && !isNaN(freePos.col)) {
           const targetNewWidgets = [
-            ...targetDashboard.widgets.filter((w) => w.id !== overlappingWidget.id),
+            ...targetDashboard.dashboardWidgets.filter((w) => w.id !== overlappingWidget.id),
             { ...draggedWidgetData, size: draggedSize, position: targetPos },
           ];
           const sourceNewWidgets = [
-            ...sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id),
+            ...sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id),
             { ...overlappingWidget, size: overlappingWidget.size, position: freePos },
           ];
 
           if (
-            !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
-            !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
+            !validateDashboardScore(targetDashboard.dashboardWidgets, targetNewWidgets) ||
+            !validateDashboardScore(sourceDashboard.dashboardWidgets, sourceNewWidgets)
           ) {
             alert('Cannot swap widgets: Score limit reached');
             setDraggedWidget(null);
@@ -609,10 +506,10 @@ const Dashboard = ({ onWidgetClick }) => {
           return cleanupEmptyDashboards(
             prev.map((dashboard) => {
               if (dashboard.id === sourceDashboardId) {
-                return { ...dashboard, widgets: sourceNewWidgets };
+                return { ...dashboard, dashboardWidgets: sourceNewWidgets };
               }
               if (dashboard.id === dashboardId) {
-                return { ...dashboard, widgets: targetNewWidgets };
+                return { ...dashboard, dashboardWidgets: targetNewWidgets };
               }
               return dashboard;
             })
@@ -638,8 +535,8 @@ const Dashboard = ({ onWidgetClick }) => {
         if (reassignment) {
           const { targetWidgets, sourceWidgets } = reassignment;
           if (
-            !validateDashboardScore(targetDashboard.widgets, targetWidgets) ||
-            (sourceWidgets && !validateDashboardScore(sourceDashboard.widgets, sourceWidgets))
+            !validateDashboardScore(targetDashboard.dashboardWidgets, targetWidgets) ||
+            (sourceWidgets && !validateDashboardScore(sourceDashboard.dashboardWidgets, sourceWidgets))
           ) {
             alert('Cannot move widget: Score limit reached');
             setDraggedWidget(null);
@@ -649,10 +546,10 @@ const Dashboard = ({ onWidgetClick }) => {
           return cleanupEmptyDashboards(
             prev.map((dashboard) => {
               if (dashboard.id === sourceDashboardId && sourceWidgets) {
-                return { ...dashboard, widgets: sourceWidgets };
+                return { ...dashboard, dashboardWidgets: sourceWidgets };
               }
               if (dashboard.id === dashboardId) {
-                return { ...dashboard, widgets: targetWidgets };
+                return { ...dashboard, dashboardWidgets: targetWidgets };
               }
               return dashboard;
             })
@@ -666,14 +563,14 @@ const Dashboard = ({ onWidgetClick }) => {
 
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 0) {
         const targetNewWidgets = [
-          ...targetDashboard.widgets,
+          ...targetDashboard.dashboardWidgets,
           { ...draggedWidgetData, size: draggedSize, position: targetPos },
         ];
-        const sourceNewWidgets = sourceDashboard.widgets.filter((_, i) => i !== sourceIndex);
+        const sourceNewWidgets = sourceDashboard.dashboardWidgets.filter((_, i) => i !== sourceIndex);
 
         if (
-          !validateDashboardScore(targetDashboard.widgets, targetNewWidgets) ||
-          !validateDashboardScore(sourceDashboard.widgets, sourceNewWidgets)
+          !validateDashboardScore(targetDashboard.dashboardWidgets, targetNewWidgets) ||
+          !validateDashboardScore(sourceDashboard.dashboardWidgets, sourceNewWidgets)
         ) {
           alert('Cannot move widget: Score limit reached');
           setDraggedWidget(null);
@@ -683,10 +580,10 @@ const Dashboard = ({ onWidgetClick }) => {
         return cleanupEmptyDashboards(
           prev.map((dashboard) => {
             if (dashboard.id === sourceDashboardId) {
-              return { ...dashboard, widgets: sourceNewWidgets };
+              return { ...dashboard, dashboardWidgets: sourceNewWidgets };
             }
             if (dashboard.id === dashboardId) {
-              return { ...dashboard, widgets: targetNewWidgets };
+              return { ...dashboard, dashboardWidgets: targetNewWidgets };
             }
             return dashboard;
           })
@@ -735,13 +632,13 @@ const Dashboard = ({ onWidgetClick }) => {
     }
     uniqueWidgets.reverse();
 
-    if (!validateDashboardScore(dashboard.widgets, uniqueWidgets)) {
+    if (!validateDashboardScore(dashboard.dashboardWidgets, uniqueWidgets)) {
       return;
     }
 
     setDashboards((prev) => {
       const newDashboards = prev.map((dashboard) =>
-        dashboard.id === dashboardId ? { ...dashboard, widgets: uniqueWidgets } : dashboard
+        dashboard.id === dashboardId ? { ...dashboard, dashboardWidgets: uniqueWidgets } : dashboard
       );
       return cleanupEmptyDashboards(newDashboards);
     });
@@ -768,7 +665,7 @@ const Dashboard = ({ onWidgetClick }) => {
   };
 
   const handleWidgetSizeSelect = (size) => {
-    addWindowToDashboard(size, 'Add content');
+    addWindowToDashboard(size);
   };
 
   const handleWidgetClick = (payload) => {
@@ -778,7 +675,7 @@ const Dashboard = ({ onWidgetClick }) => {
   const memoizedDashboards = useMemo(() => {
     return dashboards.map((d) => ({
       ...d,
-      widgets: d.widgets.map((w) => ({ ...w })),
+      dashboardWidgets: d.dashboardWidgets.map((w) => ({ ...w })),
     }));
   }, [dashboards]);
 
@@ -807,7 +704,7 @@ const Dashboard = ({ onWidgetClick }) => {
           <DashboardPlane
             key={dashboard.id}
             dashboardId={dashboard.id}
-            initialWidgets={dashboard.widgets}
+            initialWidgets={dashboard.dashboardWidgets}
             editMode={editMode}
             updateWidgets={updateWidgets}
             onDragStart={handleDragStart}
