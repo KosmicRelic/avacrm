@@ -136,16 +136,13 @@ const Dashboard = ({ onWidgetClick }) => {
 
   const addWindowToDashboard = (size) => {
     const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    // Default to the first category for new widgets; later, you can add a modal to select the category
-    const defaultCategory = metricsCategories[0]?.category || 'General';
-    const defaultMetrics = metricsCategories.find((cat) => cat.category === defaultCategory)?.metrics.slice(0, 1) || [];
-    
+    // Modified: Create blank widget with no category or metrics
     const newWidget = {
       id: newWidgetId,
       size,
-      title: defaultCategory,
-      metrics: defaultMetrics,
-      category: defaultCategory,
+      title: 'Untitled',
+      metrics: [],
+      category: null,
       position: { row: 0, col: 0 },
     };
 
@@ -306,7 +303,7 @@ const Dashboard = ({ onWidgetClick }) => {
         placedWidgets.push(widget);
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
-          for (let c = freePos.col; c < freePos.col + wWidth; c++) {
+          for (let c = freePos.col; c < freePos.col + width; c++) {
             if (r >= 0 && r < 4 && c >= 0 && c < 2) {
               tempGrid[r][c] = true;
             }
@@ -668,8 +665,13 @@ const Dashboard = ({ onWidgetClick }) => {
     addWindowToDashboard(size);
   };
 
+  // Modified: Handle widget clicks for both setup and view modes
   const handleWidgetClick = (payload) => {
-    onWidgetClick(payload);
+    if (payload.type === 'widgetSetup') {
+      onWidgetClick({ type: 'widgetSetup', widget: payload.widget });
+    } else {
+      onWidgetClick(payload);
+    }
   };
 
   const memoizedDashboards = useMemo(() => {

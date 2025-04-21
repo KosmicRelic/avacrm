@@ -332,3 +332,14 @@
   opacity: 0.5;
   transform: scale(0.98);
 }
+
+/* Existing styles unchanged, add the following */
+.blankWidget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}

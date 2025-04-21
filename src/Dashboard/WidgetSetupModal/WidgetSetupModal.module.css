@@ -1,0 +1,41 @@
+.modalContent {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modalContent.darkTheme {
+  background: #333;
+  color: #fff;
+}
+
+.modalContent h2 {
+  margin: 0 0 20px;
+  font-size: 1.5em;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.formGroup select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.formGroup select.darkTheme {
+  background: #444;
+  color: #fff;
+  border-color: #555;
+}

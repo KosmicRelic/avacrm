@@ -14,8 +14,10 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     large: styles.largeWindow,
   };
 
-  const handleTitleClick = () => {
-    if (!editMode && onWidgetClick && widget) {
+  const handleClick = () => {
+    if (editMode && onWidgetClick && widget) {
+      onWidgetClick({ type: 'widgetSetup', widget });
+    } else if (!editMode && onWidgetClick && widget && widget.category) {
       onWidgetClick({ type: 'category', widget, step: 1 });
     }
   };
@@ -25,6 +27,8 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
   };
+
+  const isBlank = !widget?.category || !widget?.metrics || widget.metrics.length === 0;
 
   return (
     <div
@@ -45,36 +49,51 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragEnd={(e) => {
         e.target.classList.remove(styles.dragging);
       }}
+      onClick={handleClick}
     >
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
-          <div className={`${styles.widgetTitleContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <button
-              className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={handleTitleClick}
-              disabled={editMode}
-            >
-              {widget?.title || widget?.category || 'Untitled'}
-            </button>
-            <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
-          </div>
-          <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {widget?.metrics && widget.metrics.length > 0 ? (
-              widget.metrics.map((metric) => (
+          {isBlank ? (
+            <div className={styles.blankWidget}>
+              <p>Click to set up widget</p>
+            </div>
+          ) : (
+            <>
+              <div className={`${styles.widgetTitleContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <button
-                  key={metric.id}
-                  className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={() => handleMetricClick(metric)}
+                  className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!editMode) handleClick();
+                  }}
                   disabled={editMode}
                 >
-                  <span className={styles.metricName}>{metric.name}:</span>{' '}
-                  <span className={styles.metricValue}>{metric.value}</span>
+                  {widget?.title || widget?.category || 'Untitled'}
                 </button>
-              ))
-            ) : (
-              'No metrics assigned'
-            )}
-          </div>
+                <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
+              </div>
+              <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {widget?.metrics && widget.metrics.length > 0 ? (
+                  widget.metrics.map((metric) => (
+                    <button
+                      key={metric.id}
+                      className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMetricClick(metric);
+                      }}
+                      disabled={editMode}
+                    >
+                      <span className={styles.metricName}>{metric.name}:</span>{' '}
+                      <span className={styles.metricValue}>{metric.value}</span>
+                    </button>
+                  ))
+                ) : (
+                  'No metrics assigned'
+                )}
+              </div>
+            </>
+          )}
         </div>
         {editMode && (
           <button className={styles.removeButton} onClick={onDelete}>
@@ -95,7 +114,7 @@ const DashboardPlane = ({
   onDrop,
   onWidgetClick,
 }) => {
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, setDashboards } = useContext(MainContext);
   const [windows, setWindows] = useState([]);
   const [validDropCells, setValidDropCells] = useState([]);
   const [animatingWidgets, setAnimatingWidgets] = useState(new Set());
@@ -129,6 +148,29 @@ const DashboardPlane = ({
     small: 'small',
     medium: 'medium',
     large: 'large',
+  };
+
+  const addWidget = () => {
+    const newWidget = {
+      id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+      size: 'verySmall',
+      title: '',
+      metrics: [],
+      category: '',
+      position: { row: 0, col: 0 },
+    };
+    setDashboards((prev) => {
+      const newDashboards = prev.map((dashboard) => {
+        if (dashboard.id === dashboardId) {
+          return {
+            ...dashboard,
+            dashboardWidgets: [...dashboard.dashboardWidgets, newWidget],
+          };
+        }
+        return dashboard;
+      });
+      return [...newDashboards];
+    });
   };
 
   const calculateScore = (windows) => {
@@ -411,7 +453,7 @@ const DashboardPlane = ({
         }, 300);
       }
     } catch (error) {
-      // Handle error silently
+      console.error('Error in DashboardPlane useEffect:', error);
     }
   }, [initialWidgets, dashboardId, updateWidgets]);
 

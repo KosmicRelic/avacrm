@@ -19,6 +19,7 @@ import FolderOperations from './Modal/Folder Modal/FolderModal';
 import Dashboard from './Dashboard/Dashboard';
 import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
+import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 
 function App() {
   const {
@@ -52,6 +53,7 @@ function App() {
   const folderOperationsModal = useModal();
   const widgetSizeModal = useModal();
   const widgetViewModal = useModal();
+  const widgetSetupModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
@@ -256,18 +258,60 @@ function App() {
           }
           break;
         case 'widgetSize':
-          break;
-        case 'widgetView':
-          if (data?.updatedWidget) {
+          if (data?.size) {
+            const newWidget = {
+              id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+              size: data.size,
+              position: { row: 0, col: 0 },
+              category: null,
+              metrics: [],
+              title: 'New Widget',
+            };
             setDashboards((prev) =>
               prev.map((dashboard) => ({
                 ...dashboard,
-                widgets: dashboard.widgets.map((w) =>
-                  w.id === data.updatedWidget.id ? { ...w, ...data.updatedWidget } : w
-                ),
+                dashboardWidgets: [...dashboard.dashboardWidgets, newWidget],
               }))
             );
+            setActiveModal({ type: 'widgetSetup', data: { widget: newWidget } });
           }
+          break;
+        case 'widgetView':
+          if (data?.updatedWidget) {
+            setDashboards((prev) => {
+              const newDashboards = prev.map((dashboard) => ({
+                ...dashboard,
+                dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
+                  w.id === data.updatedWidget.id ? { ...w, ...data.updatedWidget } : w
+                ),
+              }));
+              return [...newDashboards];
+            });
+          }
+          break;
+        case 'widgetSetup':
+          if (!data?.updatedWidget) {
+            break;
+          }
+          setDashboards((prev) => {
+            const newDashboards = prev.map((dashboard) => {
+              const widgetExists = dashboard.dashboardWidgets.some((w) => w.id === data.updatedWidget.id);
+              if (widgetExists) {
+                return {
+                  ...dashboard,
+                  dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
+                    w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
+                  ),
+                };
+              } else {
+                return {
+                  ...dashboard,
+                  dashboardWidgets: [...dashboard.dashboardWidgets, data.updatedWidget],
+                };
+              }
+            });
+            return [...newDashboards];
+          });
           break;
         default:
           break;
@@ -381,13 +425,21 @@ function App() {
 
   const handleWidgetClick = useCallback(
     ({ type, widget, metric }) => {
-      setActiveModal({
-        type: 'widgetView',
-        data: { widget, selectedMetric: type === 'metric' ? metric : null, step: 1 },
-      });
-      widgetViewModal.open();
+      if (type === 'widgetSetup') {
+        setActiveModal({
+          type: 'widgetSetup',
+          data: { widget, category: widget.category, metric: widget.metrics?.[0]?.id || null },
+        });
+        widgetSetupModal.open();
+      } else {
+        setActiveModal({
+          type: 'widgetView',
+          data: { widget, selectedMetric: type === 'metric' ? metric : null, step: 1 },
+        });
+        widgetViewModal.open();
+      }
     },
-    [widgetViewModal]
+    [widgetViewModal, widgetSetupModal]
   );
 
   const handleModalClose = useCallback(
@@ -398,7 +450,7 @@ function App() {
           tempData: options.tempData || activeModal.data.tempData,
         };
         handleModalSave(activeModal.type, dataToSave);
-      } else if (!options.fromDelete && activeModal?.data) {
+      } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
         handleModalSave(activeModal.type, activeModal.data);
       }
       setActiveModal(null);
@@ -415,6 +467,7 @@ function App() {
       folderOperationsModal.close();
       widgetSizeModal.close();
       widgetViewModal.close();
+      widgetSetupModal.close();
     },
     [
       activeModal,
@@ -432,6 +485,7 @@ function App() {
       folderOperationsModal,
       widgetSizeModal,
       widgetViewModal,
+      widgetSetupModal,
     ]
   );
 
@@ -447,6 +501,9 @@ function App() {
     if (!activeModal) {
       return null;
     }
+    const setActiveModalData = (newData) =>
+      setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }));
+
     switch (activeModal.type) {
       case 'sheet':
         return (
@@ -457,9 +514,7 @@ function App() {
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
             }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             sheets={sheets}
             onPinToggle={handlePinToggle}
             onDeleteSheet={handleDeleteSheet}
@@ -472,9 +527,7 @@ function App() {
             headers={resolvedHeaders}
             rows={resolvedRows}
             tempData={activeModal.data || { filterValues: activeSheet?.filters || {} }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
         );
@@ -482,9 +535,7 @@ function App() {
         return (
           <HeadersModal
             tempData={activeModal.data || { currentHeaders: [...headers] }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
         );
@@ -493,9 +544,7 @@ function App() {
           <ReOrderModal
             sheets={sheets || { structure: [] }}
             tempData={activeModal.data || { newOrder: sheets?.structure || [] }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
         );
@@ -512,9 +561,7 @@ function App() {
         return (
           <CardsTemplate
             tempData={activeModal.data || { currentCardTemplates: [...cardTemplates] }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
         );
@@ -522,9 +569,7 @@ function App() {
         return (
           <CreateSheetsAndFolders
             tempData={activeModal.data || { sheets }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }))
-            }
+            setTempData={setActiveModalData}
             sheets={sheets}
             setSheets={setSheets}
             headers={headers}
@@ -564,12 +609,16 @@ function App() {
           <MetricsCategories
             widget={activeModal.data?.widget}
             tempData={activeModal.data || { step: 1 }}
-            setTempData={(newData) =>
-              setActiveModal((prev) => ({
-                ...prev,
-                data: { ...prev.data, ...newData },
-              }))
-            }
+            setTempData={setActiveModalData}
+            handleClose={handleModalClose}
+          />
+        );
+      case 'widgetSetup':
+        return (
+          <WidgetSetupModal
+            tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null }}
+            setTempData={setActiveModalData}
+            setActiveModalData={setActiveModalData}
             handleClose={handleModalClose}
           />
         );

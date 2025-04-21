@@ -589,7 +589,7 @@ export const MainContextProvider = ({ children }) => {
     themeRef.current = isDarkTheme ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', themeRef.current);
     document.body.style.backgroundColor = isDarkTheme ? 'black' : 'rgb(243, 242, 248)';
-    document.body.style.color = isDarkTheme ? 'rgb(243, 242, 248)' : 'rgb(29, 29, 31)';
+    document.body.style.color = isDarkTheme ? 'rgb(243, 242, 248)' : 'rgb(0, 0, 0)';
     if (localStorage.getItem('theme') !== null) {
       localStorage.setItem('theme', themeRef.current);
     }
