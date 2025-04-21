@@ -1,7 +1,7 @@
 .sheetWrapper {
   position: absolute;
   top: 64px;
-  bottom: 0;
+  bottom: 16px;
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -841,6 +841,7 @@
     display: block;
     padding: 0;
     margin: 0;
+    bottom: 0;
     overflow-x: hidden;
   }
 

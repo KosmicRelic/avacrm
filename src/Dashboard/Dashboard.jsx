@@ -1,3 +1,4 @@
+// src/Dashboard/Dashboard.js
 import React, { useRef, useContext, useState, useEffect, useMemo } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
@@ -26,31 +27,11 @@ const Dashboard = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const widgetSizeModal = useModal();
 
-  // Dynamic window sizes based on viewport width
-  const getWindowSizes = () => {
-    const width = window.innerWidth;
-    if (width >= 1024) {
-      return {
-        verySmall: { width: 1, height: 1 },
-        small: { width: 1, height: 2 },
-        medium: { width: 2, height: 2 },
-        large: { width: 2, height: 4 },
-      };
-    } else if (width >= 769) {
-      return {
-        verySmall: { width: 1, height: 1 },
-        small: { width: 1, height: 2 },
-        medium: { width: 1, height: 2 },
-        large: { width: 2, height: 4 },
-      };
-    } else {
-      return {
-        verySmall: { width: 1, height: 1 },
-        small: { width: 1, height: 2 },
-        medium: { width: 1, height: 2 },
-        large: { width: 1, height: 4 },
-      };
-    }
+  const windowSizes = {
+    verySmall: { width: 1, height: 1 },
+    small: { width: 1, height: 2 },
+    medium: { width: 2, height: 2 },
+    large: { width: 2, height: 4 },
   };
 
   const windowScores = {
@@ -171,18 +152,15 @@ const Dashboard = () => {
 
   const canPlaceWidget = (dashboard, widget, row, col, skipWidgets = [], customGrid = null) => {
     const size = widget.size;
-    const windowSizes = getWindowSizes();
     const { width, height } = windowSizes[size] || windowSizes.small;
-    const maxCols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 769 ? 2 : 1;
-
-    if (row < 0 || col < 0 || row + height > 4 || col + width > maxCols) {
+    if (row < 0 || col < 0 || row + height > 4 || col + width > 2) {
       return false;
     }
 
     if (size === 'small' && row % 2 !== 0) {
       return false;
     }
-    if (size === 'medium' && (row !== 0 && row !== 2) && window.innerWidth >= 1024) {
+    if (size === 'medium' && (row !== 0 && row !== 2)) {
       return false;
     }
     if (size === 'large' && (row !== 0 || col !== 0)) {
@@ -191,17 +169,17 @@ const Dashboard = () => {
 
     const occupied = customGrid
       ? customGrid.map((row) => [...row])
-      : Array(4).fill().map(() => Array(maxCols).fill(false));
+      : Array(4).fill().map(() => Array(2).fill(false));
 
     dashboard.widgets.forEach((w) => {
       if (skipWidgets.some((sw) => sw.id === w.id)) return;
       if (!w.position || typeof w.position.row === 'undefined' || typeof w.position.col === 'undefined') {
         return;
       }
-      const wSize = windowSizes[w.size] || windowSizes.small;
-      for (let r = w.position.row; r < w.position.row + wSize.height; r++) {
-        for (let c = w.position.col; c < w.position.col + wSize.width; c++) {
-          if (r >= 0 && r < 4 && c >= 0 && c < maxCols) {
+      const { width: wWidth, height: wHeight } = windowSizes[w.size] || windowSizes.small;
+      for (let r = w.position.row; r < w.position.row + wHeight; r++) {
+        for (let c = w.position.col; c < w.position.col + wWidth; c++) {
+          if (r >= 0 && r < 4 && c >= 0 && c < 2) {
             occupied[r][c] = true;
           }
         }
@@ -210,7 +188,7 @@ const Dashboard = () => {
 
     for (let r = row; r < row + height; r++) {
       for (let c = col; c < col + width; c++) {
-        if (r >= 4 || c >= maxCols || occupied[r][c]) {
+        if (r >= 4 || c >= 2 || occupied[r][c]) {
           return false;
         }
       }
@@ -219,28 +197,25 @@ const Dashboard = () => {
   };
 
   const findFreePosition = (dashboard, size, skipWidgets = [], customGrid = null) => {
-    const windowSizes = getWindowSizes();
-    const maxCols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 769 ? 2 : 1;
     const possiblePositions = [];
-
     if (size === 'verySmall') {
       for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < maxCols; c++) {
+        for (let c = 0; c < 2; c++) {
           possiblePositions.push({ row: r, col: c });
         }
       }
     } else if (size === 'small') {
-      for (let r = 0; r <= 2; r += 2) {
-        for (let c = 0; c < maxCols; c++) {
-          possiblePositions.push({ row: r, col: c });
-        }
-      }
+      possiblePositions.push(
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 2, col: 0 },
+        { row: 2, col: 1 }
+      );
     } else if (size === 'medium') {
-      for (let r = 0; r <= 2; r += 2) {
-        for (let c = 0; c <= maxCols - windowSizes[size].width; c++) {
-          possiblePositions.push({ row: r, col: c });
-        }
-      }
+      possiblePositions.push(
+        { row: 0, col: 0 },
+        { row: 2, col: 0 }
+      );
     } else if (size === 'large') {
       possiblePositions.push({ row: 0, col: 0 });
     }
@@ -335,10 +310,8 @@ const Dashboard = () => {
   };
 
   const reassignOverlappingWidgets = (dashboard, overlappingWidgets, targetPos, draggedWidgetData, draggedSize, sourceDashboard = null, sourcePos = null) => {
-    const windowSizes = getWindowSizes();
-    const maxCols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 769 ? 2 : 1;
-    let tempGrid = Array(4).fill().map(() => Array(maxCols).fill(false));
-    let newWidgets = dashboard.widgets.filter((w) => !overlappingWidgets.some((ow) => ow.id === w.id));
+    let tempGrid = Array(4).fill().map(() => Array(2).fill(false));
+    let newWidgets = dashboard.widgets.filter(w => !overlappingWidgets.some(ow => ow.id === w.id));
     let skipWidgets = [draggedWidgetData];
 
     if (!canPlaceWidget({ widgets: newWidgets }, { id: draggedWidgetData.id, size: draggedSize }, targetPos.row, targetPos.col, skipWidgets, tempGrid)) {
@@ -348,7 +321,7 @@ const Dashboard = () => {
     const { width, height } = windowSizes[draggedSize];
     for (let r = targetPos.row; r < targetPos.row + height; r++) {
       for (let c = targetPos.col; c < targetPos.col + width; c++) {
-        if (r >= 0 && r < 4 && c >= 0 && c < maxCols) {
+        if (r >= 0 && r < 4 && c >= 0 && c < 2) {
           tempGrid[r][c] = true;
         }
       }
@@ -358,11 +331,11 @@ const Dashboard = () => {
     const isSameDashboard = !sourceDashboard;
 
     let canSwap = true;
-    let targetTempGrid = Array(4).fill().map(() => Array(maxCols).fill(false));
+    let targetTempGrid = Array(4).fill().map(() => Array(2).fill(false));
     const targetSkipWidgets = [draggedWidgetData];
     const targetWidgets = isSameDashboard
       ? newWidgets
-      : targetDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id);
+      : targetDashboard.widgets.filter(w => w.id !== draggedWidgetData.id);
     let tempTargetWidgets = [...targetWidgets];
 
     for (const widget of overlappingWidgets) {
@@ -374,7 +347,7 @@ const Dashboard = () => {
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
           for (let c = freePos.col; c < freePos.col + wWidth; c++) {
-            if (r >= 0 && r < 4 && c >= 0 && c < maxCols) {
+            if (r >= 0 && r < 4 && c >= 0 && c < 2) {
               targetTempGrid[r][c] = true;
             }
           }
@@ -387,7 +360,7 @@ const Dashboard = () => {
 
     if (canSwap) {
       if (isSameDashboard) {
-        const finalWidgets = tempTargetWidgets.filter((w) => w.id !== draggedWidgetData.id).concat({
+        const finalWidgets = tempTargetWidgets.filter(w => w.id !== draggedWidgetData.id).concat({
           ...draggedWidgetData,
           size: draggedSize,
           position: targetPos,
@@ -414,7 +387,7 @@ const Dashboard = () => {
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
           for (let c = freePos.col; c < freePos.col + wWidth; c++) {
-            if (r >= 0 && r < 4 && c >= 0 && c < maxCols) {
+            if (r >= 0 && r < 4 && c >= 0 && c < 2) {
               tempGrid[r][c] = true;
             }
           }
@@ -470,15 +443,13 @@ const Dashboard = () => {
         return prev;
       }
 
-      const windowSizes = getWindowSizes();
-      const maxCols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 769 ? 2 : 1;
       const skipWidgets = sourceDashboardId === dashboardId ? [draggedWidgetData] : [];
       const overlappingWidgets = targetDashboard.widgets.filter((w) => {
         if (skipWidgets.some((sw) => sw.id === w.id)) return false;
         if (!w.position || isNaN(w.position.row) || isNaN(w.position.col)) {
           return false;
         }
-        const wSize = windowSizes[w.size] || windowSizes.small;
+        const { width, height } = windowSizes[w.size] || windowSizes.small;
         const wRow = w.position.row;
         const wCol = w.position.col;
         const tRow = targetPos.row;
@@ -488,9 +459,9 @@ const Dashboard = () => {
 
         return (
           wRow < tRow + tHeight &&
-          wRow + wSize.height > tRow &&
+          wRow + height > tRow &&
           wCol < tCol + tWidth &&
-          wCol + wSize.width > tCol
+          wCol + width > tCol
         );
       });
 
@@ -511,11 +482,9 @@ const Dashboard = () => {
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) =>
-              dashboard.id === dashboardId ? { ...dashboard, widgets: targetWidgets } : dashboard
-            )
-          );
+          return cleanupEmptyDashboards(prev.map((dashboard) =>
+            dashboard.id === dashboardId ? { ...dashboard, widgets: targetWidgets } : dashboard
+          ));
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -526,19 +495,27 @@ const Dashboard = () => {
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 1) {
         const overlappingWidget = overlappingWidgets[0];
         const sourceWidgets = sourceDashboard.widgets.filter((w) => w.id !== draggedWidgetData.id);
-        const possiblePositions =
-          overlappingWidget.size === 'small'
-            ? [
-                { row: draggedOriginalPos.row, col: draggedOriginalPos.col },
-                { row: draggedOriginalPos.row, col: Math.min(draggedOriginalPos.col + 1, maxCols - 1) },
-              ].filter((pos) => pos.row < 4 && pos.col < maxCols && (pos.row === 0 || pos.row === 2))
-            : overlappingWidget.size === 'verySmall'
-            ? Array.from({ length: 4 }, (_, r) =>
-                Array.from({ length: maxCols }, (_, c) => ({ row: r, col: c }))
-              )
-                .flat()
-                .filter((pos) => pos.row < 4 && pos.col < maxCols)
-            : [{ row: draggedOriginalPos.row, col: draggedOriginalPos.col }];
+        const possiblePositions = overlappingWidget.size === 'small'
+          ? [
+              { row: draggedOriginalPos.row, col: draggedOriginalPos.col },
+              { row: draggedOriginalPos.row, col: draggedOriginalPos.col + 1 },
+            ].filter((pos) => pos.row < 4 && pos.col < 2 && (pos.row === 0 || pos.row === 2))
+          : overlappingWidget.size === 'verySmall'
+          ? [
+              { row: draggedOriginalPos.row, col: draggedOriginalPos.col },
+              { row: draggedOriginalPos.row, col: draggedOriginalPos.col + 1 },
+              { row: draggedOriginalPos.row + 1, col: draggedOriginalPos.col },
+              { row: draggedOriginalPos.row + 1, col: draggedOriginalPos.col + 1 },
+              { row: 0, col: 0 },
+              { row: 0, col: 1 },
+              { row: 1, col: 0 },
+              { row: 1, col: 1 },
+              { row: 2, col: 0 },
+              { row: 2, col: 1 },
+              { row: 3, col: 0 },
+              { row: 3, col: 1 },
+            ].filter((pos) => pos.row < 4 && pos.col < 2)
+          : [{ row: draggedOriginalPos.row, col: draggedOriginalPos.col }];
 
         for (const pos of possiblePositions) {
           if (
@@ -563,17 +540,15 @@ const Dashboard = () => {
               return prev;
             }
 
-            return cleanupEmptyDashboards(
-              prev.map((dashboard) => {
-                if (dashboard.id === sourceDashboardId) {
-                  return { ...dashboard, widgets: sourceNewWidgets };
-                }
-                if (dashboard.id === dashboardId) {
-                  return { ...dashboard, widgets: targetNewWidgets };
-                }
-                return dashboard;
-              })
-            );
+            return cleanupEmptyDashboards(prev.map((dashboard) => {
+              if (dashboard.id === sourceDashboardId) {
+                return { ...dashboard, widgets: sourceNewWidgets };
+              }
+              if (dashboard.id === dashboardId) {
+                return { ...dashboard, widgets: targetNewWidgets };
+              }
+              return dashboard;
+            }));
           }
         }
 
@@ -597,17 +572,15 @@ const Dashboard = () => {
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) => {
-              if (dashboard.id === sourceDashboardId) {
-                return { ...dashboard, widgets: sourceNewWidgets };
-              }
-              if (dashboard.id === dashboardId) {
-                return { ...dashboard, widgets: targetNewWidgets };
-              }
-              return dashboard;
-            })
-          );
+          return cleanupEmptyDashboards(prev.map((dashboard) => {
+            if (dashboard.id === sourceDashboardId) {
+              return { ...dashboard, widgets: sourceNewWidgets };
+            }
+            if (dashboard.id === dashboardId) {
+              return { ...dashboard, widgets: targetNewWidgets };
+            }
+            return dashboard;
+          }));
         }
 
         alert('Cannot swap widget: No valid position for displaced widget');
@@ -628,26 +601,21 @@ const Dashboard = () => {
 
         if (reassignment) {
           const { targetWidgets, sourceWidgets } = reassignment;
-          if (
-            !validateDashboardScore(targetDashboard.widgets, targetWidgets) ||
-            (sourceWidgets && !validateDashboardScore(sourceDashboard.widgets, sourceWidgets))
-          ) {
+          if (!validateDashboardScore(targetDashboard.widgets, targetWidgets) || (sourceWidgets && !validateDashboardScore(sourceDashboard.widgets, sourceWidgets))) {
             alert('Cannot move widget: Score limit reached');
             setDraggedWidget(null);
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) => {
-              if (dashboard.id === sourceDashboardId && sourceWidgets) {
-                return { ...dashboard, widgets: sourceWidgets };
-              }
-              if (dashboard.id === dashboardId) {
-                return { ...dashboard, widgets: targetWidgets };
-              }
-              return dashboard;
-            })
-          );
+          return cleanupEmptyDashboards(prev.map((dashboard) => {
+            if (dashboard.id === sourceDashboardId && sourceWidgets) {
+              return { ...dashboard, widgets: sourceWidgets };
+            }
+            if (dashboard.id === dashboardId) {
+              return { ...dashboard, widgets: targetWidgets };
+            }
+            return dashboard;
+          }));
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -671,17 +639,15 @@ const Dashboard = () => {
           return prev;
         }
 
-        return cleanupEmptyDashboards(
-          prev.map((dashboard) => {
-            if (dashboard.id === sourceDashboardId) {
-              return { ...dashboard, widgets: sourceNewWidgets };
-            }
-            if (dashboard.id === dashboardId) {
-              return { ...dashboard, widgets: targetNewWidgets };
-            }
-            return dashboard;
-          })
-        );
+        return cleanupEmptyDashboards(prev.map((dashboard) => {
+          if (dashboard.id === sourceDashboardId) {
+            return { ...dashboard, widgets: sourceNewWidgets };
+          }
+          if (dashboard.id === dashboardId) {
+            return { ...dashboard, widgets: targetNewWidgets };
+          }
+          return dashboard;
+        }));
       }
 
       const draggedElement = document.querySelector(`.${styles.dragging}`);
@@ -698,13 +664,9 @@ const Dashboard = () => {
     setDraggedWidget(widgetInfo);
     e.dataTransfer.setData('text/plain', JSON.stringify(widgetInfo));
     e.target.classList.add(styles.dragging);
-    e.target.addEventListener(
-      'dragend',
-      () => {
-        e.target.classList.remove(styles.dragging);
-      },
-      { once: true }
-    );
+    e.target.addEventListener('dragend', () => {
+      e.target.classList.remove(styles.dragging);
+    }, { once: true });
   };
 
   const updateWidgets = (dashboardId, newWidgets) => {
@@ -742,18 +704,17 @@ const Dashboard = () => {
   };
 
   const getValidPosition = (size, row, col) => {
-    const maxCols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 769 ? 2 : 1;
     switch (size) {
       case 'verySmall':
-        return { row: Math.min(row, 3), col: Math.min(col, maxCols - 1) };
+        return { row, col };
       case 'small':
-        return { row: row <= 1 ? 0 : 2, col: Math.min(col, maxCols - 1) };
+        return { row: row <= 1 ? 0 : 2, col };
       case 'medium':
-        return { row: row <= 1 ? 0 : 2, col: Math.min(col, maxCols - getWindowSizes()[size].width) };
+        return { row: row <= 1 ? 0 : 2, col: 0 };
       case 'large':
         return { row: 0, col: 0 };
       default:
-        return { row: row <= 1 ? 0 : 2, col: Math.min(col, maxCols - 1) };
+        return { row: row <= 1 ? 0 : 2, col };
     }
   };
 
@@ -778,7 +739,10 @@ const Dashboard = () => {
         {!editMode && <DatePicker />}
         {editMode && (
           <div className={styles.controls}>
-            <button className={styles.addButton} onClick={handleAddWidgetClick}>
+            <button
+              className={styles.addButton}
+              onClick={handleAddWidgetClick}
+            >
               <FaPlus /> Add Widget
             </button>
           </div>
@@ -806,8 +770,14 @@ const Dashboard = () => {
       </div>
 
       {widgetSizeModal.isOpen && (
-        <Modal onClose={widgetSizeModal.close} modalType="widgetSize">
-          <WidgetSizeModal handleClose={widgetSizeModal.close} onSelectSize={handleWidgetSizeSelect} />
+        <Modal
+          onClose={widgetSizeModal.close}
+          modalType="widgetSize"
+        >
+          <WidgetSizeModal
+            handleClose={widgetSizeModal.close}
+            onSelectSize={handleWidgetSizeSelect}
+          />
         </Modal>
       )}
     </div>

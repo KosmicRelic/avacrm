@@ -7,9 +7,7 @@
   flex-direction: column;
   align-items: center;
   gap: 15px; /* Space between carousel and pagination */
-  background: #fff;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: transparent;
   margin: 0 auto;
 }
 
@@ -38,7 +36,7 @@
   justify-content: center;
   align-items: center;
   padding: 15px 0;
-  min-height: 450px; /* Increased to accommodate Large shape (368px) + button */
+  height: 200px;
 }
 
 .slideContent {
@@ -135,7 +133,7 @@
   }
 
   .carouselSlide {
-    min-height: 350px; /* Adjusted for smaller shapes on mobile */
+    /* min-height: 350px */
   }
 
   .slideContent {
