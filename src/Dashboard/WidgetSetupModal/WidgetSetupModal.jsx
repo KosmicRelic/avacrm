@@ -8,25 +8,31 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   const [selectedMetric, setSelectedMetric] = useState(tempData.metric || '');
   const prevSelectionsRef = useRef({ category: tempData.category, metric: tempData.metric });
 
-  // Update tempData when selections change
+  useEffect(() => {
+    console.log('WidgetSetupModal opened with widget ID:', tempData.widget?.id, 'dashboardId:', tempData.dashboardId);
+    console.log('metricsCategories:', metricsCategories);
+  }, [tempData.widget?.id, tempData.dashboardId, metricsCategories]);
+
   useEffect(() => {
     const currentSelections = { category: selectedCategory, metric: selectedMetric };
     if (
       currentSelections.category === prevSelectionsRef.current.category &&
       currentSelections.metric === prevSelectionsRef.current.metric
     ) {
-      return; // No change in selections
+      return;
     }
 
     if (!selectedCategory || !selectedMetric) {
+      console.log('Incomplete selections:', currentSelections);
       prevSelectionsRef.current = currentSelections;
-      return; // Don't update tempData if selections are incomplete
+      return;
     }
 
     const categoryData = metricsCategories.find((cat) => cat.category === selectedCategory);
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
 
     if (!metricData) {
+      console.log('Invalid metric selected:', selectedMetric);
       prevSelectionsRef.current = currentSelections;
       return;
     }
@@ -38,17 +44,18 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       metrics: [{ id: metricData.id, name: metricData.name, value: metricData.value }],
     };
 
+    console.log('Updating tempData with updatedWidget:', updatedWidget);
     const newTempData = {
       ...tempData,
       updatedWidget,
+      dashboardId: tempData.dashboardId,
     };
     setTempData(newTempData);
-    setActiveModalData(newTempData); // Update parent's activeModal.data
+    setActiveModalData(newTempData);
 
     prevSelectionsRef.current = currentSelections;
-  }, [selectedCategory, selectedMetric, metricsCategories, setTempData, setActiveModalData, tempData.widget]);
+  }, [selectedCategory, selectedMetric, metricsCategories, setTempData, setActiveModalData, tempData]);
 
-  // Get metrics for the selected category
   const metrics = selectedCategory
     ? metricsCategories.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
@@ -63,7 +70,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
           value={selectedCategory}
           onChange={(e) => {
             setSelectedCategory(e.target.value);
-            setSelectedMetric(''); // Reset metric when category changes
+            setSelectedMetric('');
           }}
         >
           <option value="">Select a category</option>

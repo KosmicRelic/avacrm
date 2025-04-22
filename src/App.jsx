@@ -58,9 +58,16 @@ function App() {
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
+
+  const activeDashboard = useMemo(() => {
+    const dashboard = dashboards.find((d) => d.id === activeDashboardId) || dashboards[0];
+    return dashboard;
+  }, [dashboards, activeDashboardId]);
+
   const { handleSheetChange, handleSaveSheet } = useSheets(sheets, setSheets, activeSheetName);
 
   const resolvedHeaders = useMemo(() => {
@@ -257,60 +264,40 @@ function App() {
             });
           }
           break;
-        case 'widgetSize':
-          if (data?.size) {
-            const newWidget = {
-              id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-              size: data.size,
-              position: { row: 0, col: 0 },
-              category: null,
-              metrics: [],
-              title: 'New Widget',
-            };
-            setDashboards((prev) =>
-              prev.map((dashboard) => ({
-                ...dashboard,
-                dashboardWidgets: [...dashboard.dashboardWidgets, newWidget],
-              }))
-            );
-            setActiveModal({ type: 'widgetSetup', data: { widget: newWidget } });
-          }
-          break;
         case 'widgetView':
-          if (data?.updatedWidget) {
+          if (data?.updatedWidget && data?.dashboardId) {
             setDashboards((prev) => {
-              const newDashboards = prev.map((dashboard) => ({
-                ...dashboard,
-                dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                  w.id === data.updatedWidget.id ? { ...w, ...data.updatedWidget } : w
-                ),
-              }));
-              return [...newDashboards];
+              const newDashboards = prev.map((dashboard) =>
+                dashboard.id === data.dashboardId
+                  ? {
+                      ...dashboard,
+                      dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
+                        w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
+                      ),
+                    }
+                  : dashboard
+              );
+              return newDashboards;
             });
           }
           break;
         case 'widgetSetup':
-          if (!data?.updatedWidget) {
+          if (!data?.updatedWidget || !data?.dashboardId) {
+            console.error('Invalid widget data or dashboardId:', data);
             break;
           }
           setDashboards((prev) => {
-            const newDashboards = prev.map((dashboard) => {
-              const widgetExists = dashboard.dashboardWidgets.some((w) => w.id === data.updatedWidget.id);
-              if (widgetExists) {
-                return {
-                  ...dashboard,
-                  dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                    w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
-                  ),
-                };
-              } else {
-                return {
-                  ...dashboard,
-                  dashboardWidgets: [...dashboard.dashboardWidgets, data.updatedWidget],
-                };
-              }
-            });
-            return [...newDashboards];
+            const newDashboards = prev.map((dashboard) =>
+              dashboard.id === data.dashboardId
+                ? {
+                    ...dashboard,
+                    dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
+                      w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
+                    ),
+                  }
+                : dashboard
+            );
+            return newDashboards;
           });
           break;
         default:
@@ -336,6 +323,7 @@ function App() {
       setTempData,
       handleSheetChange,
       setDashboards,
+      activeDashboard,
     ]
   );
 
@@ -424,22 +412,33 @@ function App() {
   );
 
   const handleWidgetClick = useCallback(
-    ({ type, widget, metric }) => {
+    ({ type, widget, metric, step }) => {
       if (type === 'widgetSetup') {
         setActiveModal({
           type: 'widgetSetup',
-          data: { widget, category: widget.category, metric: widget.metrics?.[0]?.id || null },
+          data: {
+            widget: { ...widget },
+            category: widget.category || null,
+            metric: widget.metrics?.[0]?.id || null,
+            dashboardId: widget.dashboardId || activeDashboard.id,
+          },
         });
         widgetSetupModal.open();
-      } else {
+      } else if (type === 'category') {
         setActiveModal({
           type: 'widgetView',
-          data: { widget, selectedMetric: type === 'metric' ? metric : null, step: 1 },
+          data: { widget, selectedMetric: null, step: step || 1, dashboardId: widget.dashboardId || activeDashboard.id },
+        });
+        widgetViewModal.open();
+      } else if (type === 'metric') {
+        setActiveModal({
+          type: 'widgetView',
+          data: { widget, selectedMetric: metric, step: step || 2, dashboardId: widget.dashboardId || activeDashboard.id },
         });
         widgetViewModal.open();
       }
     },
-    [widgetViewModal, widgetSetupModal]
+    [widgetViewModal, widgetSetupModal, activeDashboard]
   );
 
   const handleModalClose = useCallback(
@@ -495,6 +494,10 @@ function App() {
 
   const handleCloseProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
+  }, []);
+
+  const handleDashboardChange = useCallback((dashboardId) => {
+    setActiveDashboardId(dashboardId);
   }, []);
 
   const renderModalContent = () => {
@@ -598,10 +601,7 @@ function App() {
         return (
           <WidgetSizeModal
             handleClose={handleModalClose}
-            onSelectSize={(size) => {
-              setActiveModal({ ...activeModal, data: { size } });
-              handleModalSave('widgetSize', { size });
-            }}
+            onSelectSize={() => {}}
           />
         );
       case 'widgetView':
@@ -616,7 +616,7 @@ function App() {
       case 'widgetSetup':
         return (
           <WidgetSetupModal
-            tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null }}
+            tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null, dashboardId: activeDashboard.id }}
             setTempData={setActiveModalData}
             setActiveModalData={setActiveModalData}
             handleClose={handleModalClose}
@@ -658,9 +658,11 @@ function App() {
             onOpenFolderModal={onOpenFolderOperationsModal}
           />
         )}
-        {activeOption === 'dashboard' && activeSheetName && (
+        {activeOption === 'dashboard' && (
           <Dashboard
             onWidgetClick={handleWidgetClick}
+            activeDashboardId={activeDashboardId}
+            onDashboardChange={handleDashboardChange}
           />
         )}
         {activeModal && (

@@ -7,7 +7,7 @@ import useModal from '../Modal/Hooks/UseModal';
 import Modal from '../Modal/Modal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
-const Dashboard = ({ onWidgetClick }) => {
+const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   const { isDarkTheme, dashboards, setDashboards, metricsCategories } = useContext(MainContext);
   const [editMode, setEditMode] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState(null);
@@ -136,7 +136,6 @@ const Dashboard = ({ onWidgetClick }) => {
 
   const addWindowToDashboard = (size) => {
     const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    // Modified: Create blank widget with no category or metrics
     const newWidget = {
       id: newWidgetId,
       size,
@@ -144,36 +143,63 @@ const Dashboard = ({ onWidgetClick }) => {
       metrics: [],
       category: null,
       position: { row: 0, col: 0 },
+      dashboardId: activeDashboardId,
     };
 
     let targetDashboard = null;
     let freePosition = null;
 
-    for (const dashboard of dashboards) {
-      const existingWidgetIds = new Set(dashboard.dashboardWidgets.map((w) => w.id));
+    // Prioritize the active dashboard
+    const activeDashboard = dashboards.find((d) => d.id === activeDashboardId);
+    if (activeDashboard) {
+      const existingWidgetIds = new Set(activeDashboard.dashboardWidgets.map((w) => w.id));
       if (existingWidgetIds.has(newWidgetId)) {
         alert('Error: Duplicate widget ID. Please try again.');
+        widgetSizeModal.close();
         return;
       }
 
-      const newWidgets = [...dashboard.dashboardWidgets, { ...newWidget, position: { row: 0, col: 0 } }];
-      if (!validateDashboardScore(dashboard.dashboardWidgets, newWidgets)) {
-        continue;
-      }
-
-      freePosition = findFreePosition(dashboard, size);
-      if (freePosition) {
-        targetDashboard = dashboard;
-        break;
+      const newWidgets = [...activeDashboard.dashboardWidgets, { ...newWidget, position: { row: 0, col: 0 } }];
+      if (validateDashboardScore(activeDashboard.dashboardWidgets, newWidgets)) {
+        freePosition = findFreePosition(activeDashboard, size);
+        if (freePosition) {
+          targetDashboard = activeDashboard;
+        }
       }
     }
 
+    // If active dashboard can't fit, check other dashboards
+    if (!targetDashboard || !freePosition) {
+      for (const dashboard of dashboards) {
+        if (dashboard.id === activeDashboardId) continue;
+        const existingWidgetIds = new Set(dashboard.dashboardWidgets.map((w) => w.id));
+        if (existingWidgetIds.has(newWidgetId)) {
+          alert('Error: Duplicate widget ID. Please try again.');
+          widgetSizeModal.close();
+          return;
+        }
+
+        const newWidgets = [...dashboard.dashboardWidgets, { ...newWidget, position: { row: 0, col: 0 } }];
+        if (!validateDashboardScore(dashboard.dashboardWidgets, newWidgets)) {
+          continue;
+        }
+
+        freePosition = findFreePosition(dashboard, size);
+        if (freePosition) {
+          targetDashboard = dashboard;
+          break;
+        }
+      }
+    }
+
+    // If no dashboard can fit, create a new one
     if (!targetDashboard || !freePosition) {
       const newDashboardId = `dashboard-${Date.now()}`;
       targetDashboard = { id: newDashboardId, dashboardWidgets: [] };
       freePosition = findFreePosition(targetDashboard, size);
       if (!freePosition) {
         alert('Cannot add widget: No valid position available.');
+        widgetSizeModal.close();
         return;
       }
 
@@ -182,11 +208,13 @@ const Dashboard = ({ onWidgetClick }) => {
           ...prev,
           {
             ...targetDashboard,
-            dashboardWidgets: [{ ...newWidget, position: freePosition }],
+            dashboardWidgets: [{ ...newWidget, position: freePosition, dashboardId: newDashboardId }],
           },
         ];
+        widgetSizeModal.close();
         return cleanupEmptyDashboards(newDashboards);
       });
+      onDashboardChange(newDashboardId);
       return;
     }
 
@@ -195,10 +223,14 @@ const Dashboard = ({ onWidgetClick }) => {
         dashboard.id === targetDashboard.id
           ? {
               ...dashboard,
-              dashboardWidgets: [...dashboard.dashboardWidgets, { ...newWidget, position: freePosition }],
+              dashboardWidgets: [
+                ...dashboard.dashboardWidgets,
+                { ...newWidget, position: freePosition, dashboardId: targetDashboard.id },
+              ],
             }
           : dashboard
       );
+      widgetSizeModal.close();
       return cleanupEmptyDashboards(newDashboards);
     });
   };
@@ -303,7 +335,7 @@ const Dashboard = ({ onWidgetClick }) => {
         placedWidgets.push(widget);
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
-          for (let c = freePos.col; c < freePos.col + width; c++) {
+          for (let c = freePos.col; c < freePos.col + wWidth; c++) {
             if (r >= 0 && r < 4 && c >= 0 && c < 2) {
               tempGrid[r][c] = true;
             }
@@ -665,13 +697,8 @@ const Dashboard = ({ onWidgetClick }) => {
     addWindowToDashboard(size);
   };
 
-  // Modified: Handle widget clicks for both setup and view modes
   const handleWidgetClick = (payload) => {
-    if (payload.type === 'widgetSetup') {
-      onWidgetClick({ type: 'widgetSetup', widget: payload.widget });
-    } else {
-      onWidgetClick(payload);
-    }
+    onWidgetClick(payload);
   };
 
   const memoizedDashboards = useMemo(() => {
@@ -699,6 +726,7 @@ const Dashboard = ({ onWidgetClick }) => {
             Done
           </button>
         )}
+
       </div>
 
       <div className={styles.windowsSection}>
