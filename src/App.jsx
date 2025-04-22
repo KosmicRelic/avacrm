@@ -421,12 +421,19 @@ function App() {
         console.warn('Widget missing dashboardId:', widget);
       }
       if (type === 'widgetSetup') {
+        const initialMetric = widget.metrics?.[0] || { id: null, name: '', value: '' };
         setActiveModal({
           type: 'widgetSetup',
           data: {
             widget: { ...widget },
+            updatedWidget: {
+              ...widget,
+              category: widget.category || null,
+              title: widget.category || '',
+              metrics: [{ id: initialMetric.id, name: initialMetric.name, value: initialMetric.value }],
+            },
             category: widget.category || null,
-            metric: widget.metrics?.[0]?.id || null,
+            metric: initialMetric.id || null,
             dashboardId: widget.dashboardId || activeDashboard.id,
           },
         });

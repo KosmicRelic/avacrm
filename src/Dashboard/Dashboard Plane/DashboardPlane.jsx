@@ -6,6 +6,7 @@ import { FaChevronRight } from 'react-icons/fa';
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme } = useContext(MainContext);
+  const [isDragging, setIsDragging] = useState(false);
 
   const sizeClasses = {
     verySmall: styles.verySmallWindow,
@@ -14,7 +15,15 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     large: styles.largeWindow,
   };
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    if (isDragging) {
+      setIsDragging(false);
+      return;
+    }
+    // Ignore clicks on the remove button
+    if (e.target.closest(`.${styles.removeButton}`)) {
+      return;
+    }
     if (editMode && onWidgetClick && widget) {
       onWidgetClick({ type: 'widgetSetup', widget });
     } else if (!editMode && onWidgetClick && widget && widget.category) {
@@ -22,10 +31,22 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     }
   };
 
-  const handleMetricClick = (metric) => {
-    if (!editMode && onWidgetClick && widget && metric) {
+  const handleMetricClick = (metric, e) => {
+    if (!editMode && onWidgetClick && widget && metric && !isDragging) {
+      e.stopPropagation(); // Prevent bubbling to master div for metric-specific action
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
+  };
+
+  const handleDragStart = (e) => {
+    if (!editMode) return;
+    setIsDragging(true);
+    onDragStart(e, { dashboardId, index, widget, size, position: { row: style.gridRowStart - 1, col: style.gridColumnStart - 1 } });
+  };
+
+  const handleDragEnd = (e) => {
+    e.target.classList.remove(styles.dragging);
+    setIsDragging(false);
   };
 
   const isBlank = !widget?.category || !widget?.metrics || widget.metrics.length === 0;
@@ -41,16 +62,11 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
         transition: editMode && !isAnimating ? 'none' : 'transform 0.3s ease, opacity 0.2s ease',
       }}
       draggable={editMode}
-      onDragStart={(e) => {
-        if (editMode) {
-          onDragStart(e, { dashboardId, index, widget, size, position: { row: style.gridRowStart - 1, col: style.gridColumnStart - 1 } });
-        }
-      }}
-      onDragEnd={(e) => {
-        e.target.classList.remove(styles.dragging);
-      }}
-      onClick={handleClick}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
+      {!editMode && <div className={styles.titleClickArea} onClick={handleClick}/>}
+      {editMode && <div className={styles.metricCategoriesClickArea} onClick={handleClick}/>}
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
           {isBlank ? (
@@ -62,20 +78,15 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
               <div className={`${styles.widgetTitleContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <button
                   className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!editMode) handleClick();
-                  }}
                   disabled={editMode}
                 >
                   {widget?.title || widget?.category || 'Untitled'}
                 </button>
-                <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
+                <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <FaChevronRight />
+                </span>
               </div>
-              <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`} onClick={(e) => {
-                        e.stopPropagation();
-                        handleMetricClick(widget.metrics[0]);
-                      }}>
+              <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {widget?.metrics && widget.metrics.length > 0 ? (
                   widget.metrics.map((metric) => (
                     <button
@@ -83,6 +94,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                       className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       disabled={editMode}
                     >
+                      {!editMode &&<div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)}/>}
                       <span className={styles.metricName}>{metric.name}:</span>{' '}
                       <span className={styles.metricValue}>{metric.value}</span>
                     </button>
@@ -95,10 +107,13 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
           )}
         </div>
         {editMode && (
-          <button className={styles.removeButton} onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}>
+          <button
+            className={styles.removeButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
             <FaCircleMinus size={20} />
           </button>
         )}
@@ -321,13 +336,11 @@ const DashboardPlane = ({
         }
       }
       const newWindows = prev.filter((_, i) => i !== index);
-      // Update widgets without calling setDashboards directly
       updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
       return newWindows;
     });
   };
-  
-  // Add a useEffect to sync with dashboards context after windows change
+
   useEffect(() => {
     setDashboards((prev) => {
       const newDashboards = prev.map((dashboard) => {

@@ -207,8 +207,8 @@
 }
 
 .widgetTitle {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   margin: 0;
   background: none;
   border: none;
@@ -224,7 +224,7 @@
 .widgetData {
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 8px 16px;
   box-sizing: border-box;
 }
 
@@ -245,14 +245,15 @@
 .metricButton {
   background: none;
   border: none;
-  padding: 4px 0;
+  padding: 0;
   text-align: left;
   width: 100%;
+  height: 100%;
   color: #1d1d1f;
   font-size: inherit;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
 }
 
 .metricButton.darkTheme {
@@ -323,4 +324,35 @@
   height: 100%;
   color: #666;
   font-size: 14px;
+}
+
+.titleClickArea{
+  width: 100%;
+  height: 43px;
+  background-color: rgba(255, 0, 0, 0);
+  position: absolute;
+  z-index: 1;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
+.metricCategoriesClickArea{
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 0, 0, 0);
+  position: absolute;
+  z-index: 1;
+  border-radius: 24px;
+}
+
+.widgetClickArea{
+  width: 100%;
+  height: calc(100% - 43px);
+  background-color: rgba(255, 0, 0, 0);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
 }

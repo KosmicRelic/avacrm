@@ -12,8 +12,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
 
   useEffect(() => {
     const canCloseNow = selectedCategory !== "" && selectedMetric !== "";
-    console.log(tempData.metric);
-
+  
     setModalConfig({
       showTitle: true,
       showDoneButton: true,
@@ -41,7 +40,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   // Widget data update effect
   useEffect(() => {
     const currentSelections = { category: selectedCategory, metric: selectedMetric };
-    console.log(currentSelections)
     if (
       currentSelections.category === prevSelectionsRef.current.category &&
       currentSelections.metric === prevSelectionsRef.current.metric
@@ -50,7 +48,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     }
 
     if (!selectedCategory || !selectedMetric) {
-      console.log('Incomplete selections:', currentSelections);
       prevSelectionsRef.current = currentSelections;
       setTempData((prev) => ({
         ...prev,
@@ -69,7 +66,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
 
     if (!metricData) {
-      console.log('Invalid metric selected:', selectedMetric);
       prevSelectionsRef.current = currentSelections;
       setTempData((prev) => ({
         ...prev,
@@ -91,7 +87,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       metrics: [{ id: metricData.id, name: metricData.name, value: metricData.value }],
     };
 
-    console.log('Updating tempData with updatedWidget:', updatedWidget);
     const newTempData = {
       ...tempData,
       updatedWidget,

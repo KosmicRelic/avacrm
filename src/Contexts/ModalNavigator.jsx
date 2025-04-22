@@ -88,6 +88,7 @@ export const ModalNavigatorProvider = ({ children }) => {
         setModalConfig,
         modalSteps,
         currentStep,
+        setCurrentStep,
         registerModalSteps,
         goToStep,
         goBack,

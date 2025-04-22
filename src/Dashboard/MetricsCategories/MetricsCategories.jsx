@@ -4,9 +4,9 @@ import styles from './MetricsCategories.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 
-const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, setTempData, handleClose }) => {
+const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, setTempData }) => {
   const { isDarkTheme, metricsCategories } = useContext(MainContext);
-  const { registerModalSteps, goToStep, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
+  const { registerModalSteps, goToStep, currentStep, setCurrentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   // Local state to preserve widget and tempData
   const [localWidget, setLocalWidget] = useState(initialWidget);
@@ -33,7 +33,6 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
     }
   }, [localTempData, setTempData, initialTempData]);
 
-  // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
       const steps = [
@@ -51,27 +50,33 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
           leftButton: null,
         },
       ];
-
+  
+      // Register steps
       registerModalSteps({ steps });
+  
+      // Determine initial step from initialTempData
+      const initialStep = initialTempData?.step === 2 && initialTempData?.selectedMetric ? 2 : 1;
+  
+      // Set initial modal configuration based on the step
       const initialConfig = {
         showTitle: true,
-        showDoneButton: true,
-        showBackButton: false,
-        title: localWidget?.category || 'Unknown',
-        backButtonTitle: '',
-        leftButton: steps[0].leftButton,
+        showDoneButton: initialStep === 1,
+        showBackButton: initialStep > 1,
+        title: initialStep === 1 
+          ? localWidget?.category || 'Unknown' 
+          : initialTempData?.selectedMetric?.name || 'Metric Details',
+        backButtonTitle: initialStep > 1 ? localWidget?.category || 'Unknown' : '',
+        leftButton: initialStep === 1 ? steps[0].leftButton : null,
         rightButton: null,
       };
+  
+      // Set modal config and current step directly
       setModalConfig(initialConfig);
+      setCurrentStep(initialStep); // Directly set the step to avoid goToStep
       lastModalConfig.current = initialConfig;
       hasInitialized.current = true;
-
-      // Navigate to step 2 if specified in tempData
-      if (localTempData?.step === 2 && localTempData?.selectedMetric) {
-        goToStep(2, { selectedMetric: localTempData.selectedMetric });
-      }
     }
-  }, [registerModalSteps, setModalConfig, goToStep, localWidget?.category, localTempData?.step, localTempData?.selectedMetric]);
+  }, [registerModalSteps, setModalConfig, localWidget?.category, initialTempData, setCurrentStep]);
 
   const handleMetricClick = useCallback(
     (metric) => {
@@ -151,7 +156,6 @@ MetricsCategories.propTypes = {
     step: PropTypes.number,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  handleClose: PropTypes.func.isRequired,
 };
 
 export default MetricsCategories;

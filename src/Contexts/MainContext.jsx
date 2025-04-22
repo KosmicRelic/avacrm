@@ -598,10 +598,6 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  useEffect(() => {
-    console.log('Dashboards updated:', dashboards);
-  }, [dashboards]);
-
   return (
     <MainContext.Provider
       value={{
