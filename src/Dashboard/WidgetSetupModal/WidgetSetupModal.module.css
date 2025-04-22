@@ -1,48 +1,125 @@
-/* WidgetSetupModal.module.css */
 .modalContent {
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
-  border-radius: 12px;
-  width: 100%;
-  box-sizing: border-box;
+  background: transparent; /* Light mode: match HeadersModal */
   transition: background 0.3s ease, color 0.3s ease;
 }
 
 .modalContent.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: transparent; /* Dark mode: match HeadersModal */
   color: #ffffff;
 }
 
-.formContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.viewContainer {
   width: 100%;
 }
 
-.formGroup {
-  display: flex;
-  flex-direction: row;
-  background: rgb(255, 255, 255); /* Light mode, matches selectField */
-  border-radius: 12px;
-  padding: 12px 16px;
-  box-sizing: border-box;
+.view {
+  transition: opacity 0.3s ease;
+}
+
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fieldList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent; /* Light mode: match HeadersModal */
   transition: background 0.3s ease;
 }
 
-.formGroup.darkTheme {
-  background: rgba(58, 58, 60, 0.9); /* Dark mode, matches selectField */
+.fieldList.darkTheme {
+  background: transparent; /* Dark mode: match HeadersModal */
 }
 
-.formGroup label {
-  margin-bottom: 8px;
+.fieldItem {
+  padding: 13.5px 16px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  transition: background 0.2s ease, border-bottom 0.3s ease;
+}
+
+.fieldItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+}
+
+.fieldItem:last-child {
+  border-bottom: none;
+}
+
+.fieldItem:hover {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.fieldItem.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.fieldRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fieldNameType {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.fieldNameType span {
+  flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
+  letter-spacing: 0.02em;
   color: #1d1d1f; /* Light mode */
   transition: color 0.3s ease;
 }
 
-.formGroup.darkTheme label {
+.fieldNameType.darkTheme span {
   color: #ffffff; /* Dark mode */
+}
+
+.fieldValue {
+  display: flex;
+  align-items: center;
+}
+
+.fieldValueText {
+  color: #6e6e73; /* Light mode */
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.fieldValueText.darkTheme {
+  color: #8e8e93; /* Dark mode */
+}
+
+.editActions {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent; /* Match modal content */
+  padding: 16px 0;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.editActions.darkTheme {
+  background: transparent; /* Match dark modal content */
+}
+
+.editActionsButtons {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 12px;
 }
 
 .selectField {
@@ -53,12 +130,11 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode text */
-  background: rgb(243, 242, 248);
+  background: rgb(255, 255, 255) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
-  background: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
 }
 
 .selectField.darkTheme {
@@ -79,4 +155,28 @@
 .selectField:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: #ff453a; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.clearButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
+}
+
+.clearButton:hover {
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+}
+
+.clearButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
 }

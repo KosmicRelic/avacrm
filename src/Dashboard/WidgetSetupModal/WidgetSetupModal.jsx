@@ -1,54 +1,137 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import styles from './WidgetSetupModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 
 const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClose }) => {
   const { metricsCategories, isDarkTheme } = useContext(MainContext);
-  const { setModalConfig } = useContext(ModalNavigatorContext);
+  const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [selectedCategory, setSelectedCategory] = useState(tempData.category || '');
   const [selectedMetric, setSelectedMetric] = useState(tempData.metric || '');
+  const [activeFieldIndex, setActiveFieldIndex] = useState(null);
+  const hasInitialized = useRef(false);
   const prevSelectionsRef = useRef({ category: tempData.category, metric: tempData.metric });
+  const prevConfigRef = useRef(null); // Track previous modal config
 
-  useEffect(() => {
-    const canCloseNow = selectedCategory !== "" && selectedMetric !== "";
-  
-    setModalConfig({
-      showTitle: true,
-      showDoneButton: true,
-      title: "Setup Widget",
-      allowClose: canCloseNow,
-      rightButton: {
-        label: "Done",
-        onClick: () => {
-          if (!selectedCategory || !selectedMetric) {
-            alert('Please select both a category and a metric to proceed.');
-            return;
-          }
-          handleClose({ fromSave: true });
-        },
-        isActive: true,
-        isRemove: false,
-      },
-    });
-  
-    return () => {
-      setModalConfig({});
-    };
-  }, [selectedCategory, selectedMetric, setModalConfig]);
-
-  // Widget data update effect
-  useEffect(() => {
-    const currentSelections = { category: selectedCategory, metric: selectedMetric };
-    if (
-      currentSelections.category === prevSelectionsRef.current.category &&
-      currentSelections.metric === prevSelectionsRef.current.metric
-    ) {
+  // Memoize the Done button handler
+  const handleDoneClick = useCallback(() => {
+    if (!selectedCategory || !selectedMetric) {
+      alert('Please select both a category and a metric to proceed.');
       return;
     }
+    handleClose({ fromSave: true });
+  }, [selectedCategory, selectedMetric, handleClose]);
+
+  // Memoize the Save button handler
+  const handleSave = useCallback(() => {
+    setActiveFieldIndex(null);
+    goToStep(1);
+  }, [goToStep]);
+
+  // Memoize the title function for Step 2
+  const getStepTitle = useCallback(
+    (args = {}) => {
+      const index = args.activeFieldIndex ?? activeFieldIndex;
+      return index === 0 ? 'Select Category' : index === 1 ? 'Select Metric' : 'Edit Field';
+    },
+    [activeFieldIndex]
+  );
+
+  // Initialize modal steps (mimics HeadersModal)
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      registerModalSteps({
+        steps: [
+          {
+            title: 'Setup Widget',
+            rightButton: {
+              label: 'Done',
+              onClick: handleDoneClick,
+              isActive: true,
+              isRemove: false,
+            },
+          },
+          {
+            title: getStepTitle,
+            rightButton: {
+              label: 'Save',
+              onClick: handleSave,
+              isActive: true,
+              isRemove: false,
+            },
+          },
+        ],
+      });
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: 'Setup Widget',
+        backButtonTitle: '',
+        rightButton: {
+          label: 'Done',
+          onClick: handleDoneClick,
+          isActive: true,
+          isRemove: false,
+        },
+      });
+      hasInitialized.current = true;
+    }
+  }, [registerModalSteps, setModalConfig, handleDoneClick, handleSave, getStepTitle]);
+
+  // Update modal config based on step (mimics HeadersModal with config comparison)
+  useEffect(() => {
+    let newConfig;
+    if (currentStep === 1) {
+      newConfig = {
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: 'Setup Widget',
+        backButtonTitle: '',
+        rightButton: {
+          label: 'Done',
+          onClick: handleDoneClick,
+          isActive: true,
+          isRemove: false,
+        },
+      };
+    } else if (currentStep === 2) {
+      newConfig = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        title: getStepTitle({ activeFieldIndex }),
+        backButtonTitle: 'Setup Widget',
+        rightButton: {
+          label: 'Save',
+          onClick: handleSave,
+          isActive: true,
+          isRemove: false,
+        },
+      };
+    }
+
+    // Only update if config has changed
+    if (
+      !prevConfigRef.current ||
+      JSON.stringify(newConfig) !== JSON.stringify(prevConfigRef.current)
+    ) {
+      setModalConfig(newConfig);
+      prevConfigRef.current = newConfig;
+    }
+  }, [currentStep, activeFieldIndex, setModalConfig, handleDoneClick, handleSave, getStepTitle]);
+
+  // Sync selections to tempData (mimics HeadersModal)
+  useEffect(() => {
+    const currentSelections = { category: selectedCategory, metric: selectedMetric };
+    const selectionsChanged = JSON.stringify(currentSelections) !== JSON.stringify(prevSelectionsRef.current);
+    if (!selectionsChanged) return;
+
+    prevSelectionsRef.current = currentSelections;
 
     if (!selectedCategory || !selectedMetric) {
-      prevSelectionsRef.current = currentSelections;
       setTempData((prev) => ({
         ...prev,
         updatedWidget: null,
@@ -66,7 +149,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
 
     if (!metricData) {
-      prevSelectionsRef.current = currentSelections;
       setTempData((prev) => ({
         ...prev,
         updatedWidget: null,
@@ -95,56 +177,138 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     };
     setTempData(newTempData);
     setActiveModalData(newTempData);
-
-    prevSelectionsRef.current = currentSelections;
   }, [selectedCategory, selectedMetric, metricsCategories, setTempData, setActiveModalData, tempData]);
 
   const metrics = selectedCategory
     ? metricsCategories.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
 
+  const toggleEdit = useCallback(
+    (index) => {
+      setActiveFieldIndex(index);
+      goToStep(2);
+    },
+    [goToStep]
+  );
+
+  const clearSelection = useCallback(
+    (index) => {
+      if (index === 0) {
+        setSelectedCategory('');
+        setSelectedMetric('');
+      } else if (index === 1) {
+        setSelectedMetric('');
+      }
+      setActiveFieldIndex(null);
+      goToStep(1);
+    },
+    [goToStep]
+  );
+
+  const getFieldValue = (index) => {
+    if (index === 0) return selectedCategory || 'None';
+    if (index === 1) {
+      return selectedMetric ? metrics.find((m) => m.id === selectedMetric)?.name || 'None' : 'None';
+    }
+    return 'None';
+  };
+
   return (
     <div className={`${styles.modalContent} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={styles.formContainer}>
-        <div className={`${styles.formGroup} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <label htmlFor="category">Category</label>
-          <select
-            id="category"
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setSelectedMetric('');
-            }}
-            className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
+      <div className={styles.viewContainer}>
+        {[1, 2].map((step) => (
+          <div
+            key={step}
+            className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
+              step !== currentStep ? styles.hidden : ''
+            }`}
+            style={{ display: step !== currentStep ? 'none' : 'block' }}
           >
-            <option value="">Select a category</option>
-            {metricsCategories.map((cat) => (
-              <option key={cat.category} value={cat.category}>
-                {cat.category}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={`${styles.formGroup} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <label htmlFor="metric">Metric</label>
-          <select
-            id="metric"
-            value={selectedMetric}
-            onChange={(e) => setSelectedMetric(e.target.value)}
-            disabled={!selectedCategory}
-            className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
-          >
-            <option value="">Select a metric</option>
-            {metrics.map((metric) => (
-              <option key={metric.id} value={metric.id}>
-                {metric.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            {step === 1 && (
+              <div className={`${styles.fieldList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {[
+                  { name: 'Category', key: 'category' },
+                  { name: 'Metric', key: 'metric' },
+                ].map((field, index) => (
+                  <div
+                    key={field.key}
+                    className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => toggleEdit(index)}
+                  >
+                    <div className={styles.fieldRow}>
+                      <div className={`${styles.fieldNameType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <span>{field.name}</span>
+                      </div>
+                      <div className={styles.fieldValue}>
+                        <span className={`${styles.fieldValueText} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {getFieldValue(index)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {step === 2 && (
+              <div className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {activeFieldIndex === 0 ? (
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setSelectedMetric('');
+                    }}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    <option value="">Select a category</option>
+                    {metricsCategories.map((cat) => (
+                      <option key={cat.category} value={cat.category}>
+                        {cat.category}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={selectedMetric}
+                    onChange={(e) => setSelectedMetric(e.target.value)}
+                    disabled={!selectedCategory}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    <option value="">Select a metric</option>
+                    {metrics.map((metric) => (
+                      <option key={metric.id} value={metric.id}>
+                        {metric.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <div className={styles.editActionsButtons}>
+                  <button
+                    onClick={() => clearSelection(activeFieldIndex)}
+                    className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
+};
+
+WidgetSetupModal.propTypes = {
+  tempData: PropTypes.shape({
+    category: PropTypes.string,
+    metric: PropTypes.string,
+    widget: PropTypes.object,
+    dashboardId: PropTypes.string,
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
+  setActiveModalData: PropTypes.func.isRequired,
+  handleClose: PropTypes.func.isRequired,
 };
 
 export default WidgetSetupModal;
