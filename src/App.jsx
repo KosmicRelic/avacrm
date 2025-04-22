@@ -21,6 +21,7 @@ import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from './Modal/MetricsModal/MetricsModal';
+import SimpleBarChart from './test';
 
 function App() {
   const {
@@ -191,19 +192,15 @@ function App() {
 
   const handleModalSave = useCallback(
     (modalType, data) => {
-      console.log(`handleModalSave called for modalType: ${modalType}, data:`, JSON.stringify(data, null, 2));
       switch (modalType) {
         case 'headers':
           if (data?.currentHeaders) {
-            console.log("Saving headers:", data.currentHeaders);
             setHeaders([...data.currentHeaders]);
           } else {
-            console.log("No currentHeaders in data");
           }
           break;
         case 'filter':
           if (data?.filterValues) {
-            console.log("Saving filterValues:", data.filterValues);
             setSheets((prev) => ({
               ...prev,
               allSheets: prev.allSheets.map((sheet) =>
@@ -213,12 +210,10 @@ function App() {
               ),
             }));
           } else {
-            console.log("No filterValues in data");
           }
           break;
         case 'sheet':
           if (data?.sheetName && data.currentHeaders) {
-            console.log("Saving sheet:", data.sheetName, data.currentHeaders);
             handleSaveSheet(
               data.sheetName,
               data.currentHeaders,
@@ -227,31 +222,25 @@ function App() {
             );
             handleSheetChange(data.sheetName);
           } else {
-            console.log("Invalid sheet data:", data);
           }
           break;
         case 'sheets':
           if (data?.newOrder) {
-            console.log("Saving sheets newOrder:", data.newOrder);
             setSheets((prev) => ({
               ...prev,
               structure: [...data.newOrder],
             }));
           } else {
-            console.log("No newOrder in data");
           }
           break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-            console.log("Saving cardTemplates:", data.currentCardTemplates);
             setCardTemplates([...data.currentCardTemplates]);
           } else {
-            console.log("No currentCardTemplates in data");
           }
           break;
         case 'folderOperations':
           if (data?.tempData?.action === 'removeSheets' && data.tempData.selectedSheets && data.tempData.folderName) {
-            console.log("Removing sheets from folder:", data.tempData);
             setSheets((prev) => {
               const folder = prev.structure.find((item) => item.folderName === data.tempData.folderName);
               const folderSheets = folder?.sheets || [];
@@ -272,7 +261,6 @@ function App() {
               };
             });
           } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
-            console.log("Deleting folder:", data.tempData.folderName);
             setSheets((prev) => {
               const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
               const newStructure = [
@@ -285,12 +273,10 @@ function App() {
               };
             });
           } else {
-            console.log("Invalid folderOperations data:", data);
           }
           break;
         case 'widgetView':
           if (data?.updatedWidget && data?.dashboardId) {
-            console.log("Saving widgetView:", data.updatedWidget);
             setDashboards((prev) => {
               const newDashboards = prev.map((dashboard) =>
                 dashboard.id === data.dashboardId
@@ -307,7 +293,6 @@ function App() {
               return newDashboards;
             });
           } else {
-            console.log("Invalid widgetView data:", data);
           }
           break;
         case 'widgetSetup':
@@ -315,7 +300,6 @@ function App() {
             console.error('Invalid widget data or dashboardId:', data);
             break;
           }
-          console.log("Saving widgetSetup:", data.updatedWidget);
           setDashboards((prev) => {
             const newDashboards = prev.map((dashboard) =>
               dashboard.id === data.dashboardId
@@ -334,14 +318,11 @@ function App() {
           break;
         case 'metrics':
           if (data?.currentCategories) {
-            console.log("Saving metricsCategories:", JSON.stringify(data.currentCategories, null, 2));
             setMetricsCategories([...data.currentCategories]);
           } else {
-            console.log("No currentCategories in data:", data);
           }
           break;
         default:
-          console.log("Unknown modalType:", modalType);
           break;
       }
       setActiveModal(null);
@@ -371,22 +352,17 @@ function App() {
 
   const handleModalClose = useCallback(
     (options = {}) => {
-      console.log("handleModalClose called with options:", JSON.stringify(options, null, 2), "activeModal:", JSON.stringify(activeModal, null, 2));
       if (options.fromDelete && activeModal?.type === 'folderOperations' && activeModal?.data) {
-        console.log("Handling folderOperations delete");
         const dataToSave = {
           ...activeModal.data,
           tempData: options.tempData || activeModal.data.tempData,
         };
         handleModalSave(activeModal.type, dataToSave);
       } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
-        console.log("Calling handleModalSave for background click");
         handleModalSave(activeModal.type, activeModal.data);
       } else if (options.fromSave && activeModal?.data) {
-        console.log("Calling handleModalSave for fromSave");
         handleModalSave(activeModal.type, activeModal.data);
       } else {
-        console.log("No save triggered, closing modal");
       }
       setActiveModal(null);
       setEditMode(false);
@@ -772,6 +748,7 @@ function App() {
           onOpenMetricsModal={onManageMetrics}
         />
       </div>
+      {/* <SimpleBarChart /> */}
     </div>
   );
 }

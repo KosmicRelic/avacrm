@@ -86,7 +86,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       value: newMetricValue.trim(),
     };
 
-    console.log("Adding metric:", newMetric);
     setCurrentCategories((prev) =>
       prev.map((c, i) =>
         i === activeCategoryIndex
@@ -118,7 +117,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         value: newMetricValue.trim(),
       };
 
-      console.log("Updating metric:", updatedMetric);
       setCurrentCategories((prev) =>
         prev.map((c, i) =>
           i === activeCategoryIndex
@@ -137,7 +135,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   // Delete metric
   const deleteMetric = useCallback(
     (metricIndex) => {
-      console.log("Deleting metric at index:", metricIndex);
       setCurrentCategories((prev) =>
         prev.map((c, i) =>
           i === activeCategoryIndex
@@ -155,13 +152,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Save metric (add or update)
   const saveMetric = useCallback(() => {
-    console.log("saveMetric called", {
-      activeMetricIndex,
-      newMetricName,
-      newMetricType,
-      newMetricValue,
-      activeCategoryIndex,
-    });
     if (activeMetricIndex === -1) {
       addMetric();
     } else if (activeMetricIndex !== null) {
@@ -179,7 +169,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       category: newCategoryName.trim(),
       metrics: [],
     };
-    console.log("Adding category:", newCategory);
     setCurrentCategories((prev) => [...prev, { ...newCategory }]);
     setNewCategoryName("");
     setActiveCategoryIndex(currentCategories.length);
@@ -197,7 +186,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             rightButton: {
               label: "Done",
               onClick: () => {
-                console.log("Done button clicked, updating tempData and calling handleClose", currentCategories);
                 setTempData({ currentCategories });
                 handleClose({ fromSave: true });
               },
@@ -231,7 +219,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: "Done",
           onClick: () => {
-            console.log("Initial Done button clicked, updating tempData and calling handleClose", currentCategories);
             setTempData({ currentCategories });
             handleClose({ fromSave: true });
           },
@@ -256,7 +243,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: "Done",
           onClick: () => {
-            console.log("Step 1 Done button clicked, updating tempData and calling handleClose", currentCategories);
             setTempData({ currentCategories });
             handleClose({ fromSave: true });
           },
@@ -295,7 +281,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   useEffect(() => {
     const categoriesChanged = JSON.stringify(currentCategories) !== JSON.stringify(prevCategoriesRef.current);
     if (categoriesChanged) {
-      console.log("Updating tempData with currentCategories:", currentCategories);
       setTempData({ currentCategories });
       prevCategoriesRef.current = currentCategories;
     }
@@ -314,7 +299,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   const toggleEditMetric = useCallback(
     (categoryIndex, metricIndex = -1) => {
-      console.log("toggleEditMetric called", { categoryIndex, metricIndex });
       setActiveCategoryIndex(categoryIndex);
       setActiveMetricIndex(metricIndex);
       if (metricIndex !== -1 && metricIndex !== null) {
