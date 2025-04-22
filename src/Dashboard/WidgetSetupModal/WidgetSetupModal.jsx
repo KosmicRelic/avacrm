@@ -11,27 +11,37 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   const prevSelectionsRef = useRef({ category: tempData.category, metric: tempData.metric });
 
   useEffect(() => {
-    console.log('WidgetSetupModal opened with widget ID:', tempData.widget?.id, 'dashboardId:', tempData.dashboardId);
-    console.log('metricsCategories:', metricsCategories);
+    const canCloseNow = selectedCategory !== "" && selectedMetric !== "";
+    console.log(tempData.metric);
 
-    // Configure modal with Done button
     setModalConfig({
       showTitle: true,
       showDoneButton: true,
-      showBackButton: false,
       title: "Setup Widget",
-      backButtonTitle: "",
+      allowClose: canCloseNow,
       rightButton: {
         label: "Done",
-        onClick: attemptClose,
-        isActive: true, // Always active to allow clicking and showing the alert
+        onClick: () => {
+          if (!selectedCategory || !selectedMetric) {
+            alert('Please select both a category and a metric to proceed.');
+            return;
+          }
+          handleClose({ fromSave: true });
+        },
+        isActive: true,
         isRemove: false,
       },
     });
-  }, [metricsCategories, tempData.widget?.id, tempData.dashboardId, setModalConfig]);
+  
+    return () => {
+      setModalConfig({});
+    };
+  }, [selectedCategory, selectedMetric, setModalConfig]);
 
+  // Widget data update effect
   useEffect(() => {
     const currentSelections = { category: selectedCategory, metric: selectedMetric };
+    console.log(currentSelections)
     if (
       currentSelections.category === prevSelectionsRef.current.category &&
       currentSelections.metric === prevSelectionsRef.current.metric
@@ -42,7 +52,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     if (!selectedCategory || !selectedMetric) {
       console.log('Incomplete selections:', currentSelections);
       prevSelectionsRef.current = currentSelections;
-      // Update tempData with canClose: false
       setTempData((prev) => ({
         ...prev,
         updatedWidget: null,
@@ -87,7 +96,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       ...tempData,
       updatedWidget,
       dashboardId: tempData.dashboardId,
-      canClose: true, // Selections are valid, allow closing
+      canClose: true,
     };
     setTempData(newTempData);
     setActiveModalData(newTempData);
@@ -98,14 +107,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   const metrics = selectedCategory
     ? metricsCategories.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
-
-  const attemptClose = () => {
-    if (!selectedCategory || !selectedMetric) {
-      alert('Please select both a category and a metric to proceed.');
-      return;
-    }
-    handleClose();
-  };
 
   return (
     <div className={`${styles.modalContent} ${isDarkTheme ? styles.darkTheme : ''}`}>

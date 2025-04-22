@@ -636,7 +636,6 @@ function App() {
             tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null, dashboardId: activeDashboard.id }}
             setTempData={setActiveModalData}
             setActiveModalData={setActiveModalData}
-            handleClose={handleModalClose}
           />
         );
       default:
