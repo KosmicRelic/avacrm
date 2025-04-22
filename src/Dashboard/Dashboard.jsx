@@ -139,7 +139,6 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     const newWidget = {
       id: newWidgetId,
       size,
-      title: 'Untitled',
       metrics: [],
       category: null,
       position: { row: 0, col: 0 },
@@ -262,7 +261,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     ) {
       return null;
     }
-    newWidgets.push({ ...draggedWidgetData, size: draggedSize, position: targetPos });
+    newWidgets.push({ ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboard.id });
     const { width, height } = windowSizes[draggedSize];
     for (let r = targetPos.row; r < targetPos.row + height; r++) {
       for (let c = targetPos.col; c < targetPos.col + width; c++) {
@@ -289,7 +288,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       const size = widget.size;
       const freePos = findFreePosition({ dashboardWidgets: tempTargetWidgets }, size, targetSkipWidgets, targetTempGrid);
       if (freePos) {
-        tempTargetWidgets.push({ ...widget, position: freePos });
+        tempTargetWidgets.push({ ...widget, position: freePos, dashboardId: targetDashboard.id });
         targetSkipWidgets.push(widget);
         const { width: wWidth, height: wHeight } = windowSizes[size];
         for (let r = freePos.row; r < freePos.row + wHeight; r++) {
@@ -313,6 +312,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
             ...draggedWidgetData,
             size: draggedSize,
             position: targetPos,
+            dashboardId: dashboard.id,
           });
         return { targetWidgets: finalWidgets };
       }
@@ -330,7 +330,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       const size = widget.size;
       const freePos = findFreePosition({ dashboardWidgets: newWidgets }, size, skipWidgets, tempGrid);
       if (freePos) {
-        newWidgets.push({ ...widget, position: freePos });
+        newWidgets.push({ ...widget, position: freePos, dashboardId: dashboard.id });
         skipWidgets.push(widget);
         placedWidgets.push(widget);
         const { width: wWidth, height: wHeight } = windowSizes[size];
@@ -428,7 +428,15 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
 
           return cleanupEmptyDashboards(
             prev.map((dashboard) =>
-              dashboard.id === dashboardId ? { ...dashboard, dashboardWidgets: targetWidgets } : dashboard
+              dashboard.id === dashboardId
+                ? {
+                    ...dashboard,
+                    dashboardWidgets: targetWidgets.map((w) => ({
+                      ...w,
+                      dashboardId: dashboardId,
+                    })),
+                  }
+                : dashboard
             )
           );
         }
@@ -482,11 +490,11 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
           ) {
             const targetNewWidgets = [
               ...targetDashboard.dashboardWidgets.filter((w) => w.id !== overlappingWidget.id),
-              { ...draggedWidgetData, size: draggedSize, position: targetPos },
+              { ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboardId },
             ];
             const sourceNewWidgets = [
               ...sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id),
-              { ...overlappingWidget, size: overlappingWidget.size, position: pos },
+              { ...overlappingWidget, size: overlappingWidget.size, position: pos, dashboardId: sourceDashboardId },
             ];
 
             if (
@@ -516,11 +524,11 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
         if (freePos && !isNaN(freePos.row) && !isNaN(freePos.col)) {
           const targetNewWidgets = [
             ...targetDashboard.dashboardWidgets.filter((w) => w.id !== overlappingWidget.id),
-            { ...draggedWidgetData, size: draggedSize, position: targetPos },
+            { ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboardId },
           ];
           const sourceNewWidgets = [
             ...sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id),
-            { ...overlappingWidget, size: overlappingWidget.size, position: freePos },
+            { ...overlappingWidget, size: overlappingWidget.size, position: freePos, dashboardId: sourceDashboardId },
           ];
 
           if (
@@ -575,10 +583,22 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
           return cleanupEmptyDashboards(
             prev.map((dashboard) => {
               if (dashboard.id === sourceDashboardId && sourceWidgets) {
-                return { ...dashboard, dashboardWidgets: sourceWidgets };
+                return {
+                  ...dashboard,
+                  dashboardWidgets: sourceWidgets.map((w) => ({
+                    ...w,
+                    dashboardId: sourceDashboardId,
+                  })),
+                };
               }
               if (dashboard.id === dashboardId) {
-                return { ...dashboard, dashboardWidgets: targetWidgets };
+                return {
+                  ...dashboard,
+                  dashboardWidgets: targetWidgets.map((w) => ({
+                    ...w,
+                    dashboardId: dashboardId,
+                  })),
+                };
               }
               return dashboard;
             })
@@ -593,7 +613,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       if (sourceDashboardId !== dashboardId && overlappingWidgets.length === 0) {
         const targetNewWidgets = [
           ...targetDashboard.dashboardWidgets,
-          { ...draggedWidgetData, size: draggedSize, position: targetPos },
+          { ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboardId },
         ];
         const sourceNewWidgets = sourceDashboard.dashboardWidgets.filter((_, i) => i !== sourceIndex);
 
@@ -655,6 +675,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
         uniqueWidgets.push({
           ...widget,
           position: widget.position || { row: 0, col: 0 },
+          dashboardId: dashboardId,
         });
         seenIds.add(widget.id);
       }
@@ -726,7 +747,6 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
             Done
           </button>
         )}
-
       </div>
 
       <div className={styles.windowsSection}>

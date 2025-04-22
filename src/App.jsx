@@ -272,7 +272,9 @@ function App() {
                   ? {
                       ...dashboard,
                       dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                        w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
+                        w.id === data.updatedWidget.id
+                          ? { ...data.updatedWidget, dashboardId: data.dashboardId }
+                          : w
                       ),
                     }
                   : dashboard
@@ -292,7 +294,9 @@ function App() {
                 ? {
                     ...dashboard,
                     dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                      w.id === data.updatedWidget.id ? { ...data.updatedWidget } : w
+                      w.id === data.updatedWidget.id
+                        ? { ...data.updatedWidget, dashboardId: data.dashboardId }
+                        : w
                     ),
                   }
                 : dashboard
@@ -413,6 +417,9 @@ function App() {
 
   const handleWidgetClick = useCallback(
     ({ type, widget, metric, step }) => {
+      if (!widget.dashboardId) {
+        console.warn('Widget missing dashboardId:', widget);
+      }
       if (type === 'widgetSetup') {
         setActiveModal({
           type: 'widgetSetup',
@@ -427,13 +434,23 @@ function App() {
       } else if (type === 'category') {
         setActiveModal({
           type: 'widgetView',
-          data: { widget, selectedMetric: null, step: step || 1, dashboardId: widget.dashboardId || activeDashboard.id },
+          data: {
+            widget,
+            selectedMetric: null,
+            step: step || 1,
+            dashboardId: widget.dashboardId || activeDashboard.id,
+          },
         });
         widgetViewModal.open();
       } else if (type === 'metric') {
         setActiveModal({
           type: 'widgetView',
-          data: { widget, selectedMetric: metric, step: step || 2, dashboardId: widget.dashboardId || activeDashboard.id },
+          data: {
+            widget,
+            selectedMetric: metric,
+            step: step || 2,
+            dashboardId: widget.dashboardId || activeDashboard.id,
+          },
         });
         widgetViewModal.open();
       }
