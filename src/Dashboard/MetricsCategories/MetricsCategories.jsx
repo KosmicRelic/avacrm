@@ -122,7 +122,7 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
             )}
             {step === 2 && (
               <div className={styles.widgetBody}>
-                <div className={styles.metricDetails}>
+                <div className={`${styles.metricDetails} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   <p>Average: {localTempData?.selectedMetric?.value || 'N/A'}</p>
                   {/* Add more metric details as needed */}
                 </div>

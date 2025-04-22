@@ -72,16 +72,15 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                 </button>
                 <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}><FaChevronRight /></span>
               </div>
-              <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`} onClick={(e) => {
+                        e.stopPropagation();
+                        handleMetricClick(widget.metrics[0]);
+                      }}>
                 {widget?.metrics && widget.metrics.length > 0 ? (
                   widget.metrics.map((metric) => (
                     <button
                       key={metric.id}
                       className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMetricClick(metric);
-                      }}
                       disabled={editMode}
                     >
                       <span className={styles.metricName}>{metric.name}:</span>{' '}
@@ -96,7 +95,10 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
           )}
         </div>
         {editMode && (
-          <button className={styles.removeButton} onClick={onDelete}>
+          <button className={styles.removeButton} onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}>
             <FaCircleMinus size={20} />
           </button>
         )}
@@ -319,10 +321,27 @@ const DashboardPlane = ({
         }
       }
       const newWindows = prev.filter((_, i) => i !== index);
+      // Update widgets without calling setDashboards directly
       updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
       return newWindows;
     });
   };
+  
+  // Add a useEffect to sync with dashboards context after windows change
+  useEffect(() => {
+    setDashboards((prev) => {
+      const newDashboards = prev.map((dashboard) => {
+        if (dashboard.id === dashboardId) {
+          return {
+            ...dashboard,
+            dashboardWidgets: windows.map((win) => ({ ...win.originalWidget, position: win.position })),
+          };
+        }
+        return dashboard;
+      });
+      return [...newDashboards];
+    });
+  }, [windows, dashboardId, setDashboards]);
 
   const areWidgetsEqual = (prev, next) => {
     if (!prev || prev.length !== next.length) return false;
