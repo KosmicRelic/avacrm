@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./ProfileModal.module.css";
-import { FaAddressCard, FaFolder } from "react-icons/fa";
+import { FaAddressCard, FaFolder, FaChartBar } from "react-icons/fa"; // Added FaChartBar
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import { CgArrowsExchangeAlt } from "react-icons/cg";
+import PropTypes from "prop-types"; // Added for propTypes
 
 const ProfileModal = ({
   isOpen,
@@ -12,6 +13,7 @@ const ProfileModal = ({
   setActiveOption,
   onOpenCardsTemplateModal,
   onOpenSheetsModal,
+  onOpenMetricsModal, // Added prop
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -49,8 +51,8 @@ const ProfileModal = ({
     handleButtonClick(onOpenSheetsModal);
   };
 
-  const handleSheetFolderClick = () => {
-    handleButtonClick(onOpenSheetFolderModal);
+  const handleMetricsClick = () => {
+    handleButtonClick(onOpenMetricsModal); // Added handler
   };
 
   if (!isOpen && !isAnimating) return null;
@@ -89,10 +91,27 @@ const ProfileModal = ({
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
           </button>
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleMetricsClick}
+          >
+            <FaChartBar size={16} style={{ marginRight: "8px" }} />
+            Metrics
+          </button>
         </div>
       </div>
     </div>
   );
+};
+
+ProfileModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onOpenHeadersModal: PropTypes.func.isRequired,
+  setActiveOption: PropTypes.func.isRequired,
+  onOpenCardsTemplateModal: PropTypes.func.isRequired,
+  onOpenSheetsModal: PropTypes.func.isRequired,
+  onOpenMetricsModal: PropTypes.func.isRequired, // Added propType
 };
 
 export default ProfileModal;

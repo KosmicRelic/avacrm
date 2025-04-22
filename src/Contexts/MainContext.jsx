@@ -416,7 +416,7 @@ export const MainContextProvider = ({ children }) => {
     },
   ]);
 
-  const [metricsCategories] = useState([
+  const [metricsCategories, setMetricsCategories] = useState([
     {
       category: 'Financials',
       metrics: [
@@ -598,6 +598,11 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
+  useEffect(() => {
+    console.log(metricsCategories);
+  }
+  , [metricsCategories]);
+
   return (
     <MainContext.Provider
       value={{
@@ -623,6 +628,7 @@ export const MainContextProvider = ({ children }) => {
         dashboards,
         setDashboards,
         metricsCategories,
+        setMetricsCategories,
       }}
     >
       {children}

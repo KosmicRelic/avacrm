@@ -20,6 +20,7 @@ import Dashboard from './Dashboard/Dashboard';
 import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
+import MetricsModal from './Modal/MetricsModal/MetricsModal';
 
 function App() {
   const {
@@ -41,6 +42,8 @@ function App() {
     setCurrentSectionIndex,
     dashboards,
     setDashboards,
+    metricsCategories,
+    setMetricsCategories,
   } = useContext(MainContext);
 
   const sheetModal = useModal();
@@ -54,6 +57,7 @@ function App() {
   const widgetSizeModal = useModal();
   const widgetViewModal = useModal();
   const widgetSetupModal = useModal();
+  const metricsModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
@@ -187,14 +191,19 @@ function App() {
 
   const handleModalSave = useCallback(
     (modalType, data) => {
+      console.log(`handleModalSave called for modalType: ${modalType}, data:`, JSON.stringify(data, null, 2));
       switch (modalType) {
         case 'headers':
           if (data?.currentHeaders) {
+            console.log("Saving headers:", data.currentHeaders);
             setHeaders([...data.currentHeaders]);
+          } else {
+            console.log("No currentHeaders in data");
           }
           break;
         case 'filter':
           if (data?.filterValues) {
+            console.log("Saving filterValues:", data.filterValues);
             setSheets((prev) => ({
               ...prev,
               allSheets: prev.allSheets.map((sheet) =>
@@ -203,10 +212,13 @@ function App() {
                   : sheet
               ),
             }));
+          } else {
+            console.log("No filterValues in data");
           }
           break;
         case 'sheet':
           if (data?.sheetName && data.currentHeaders) {
+            console.log("Saving sheet:", data.sheetName, data.currentHeaders);
             handleSaveSheet(
               data.sheetName,
               data.currentHeaders,
@@ -214,23 +226,32 @@ function App() {
               isSheetModalEditMode
             );
             handleSheetChange(data.sheetName);
+          } else {
+            console.log("Invalid sheet data:", data);
           }
           break;
         case 'sheets':
           if (data?.newOrder) {
+            console.log("Saving sheets newOrder:", data.newOrder);
             setSheets((prev) => ({
               ...prev,
               structure: [...data.newOrder],
             }));
+          } else {
+            console.log("No newOrder in data");
           }
           break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
+            console.log("Saving cardTemplates:", data.currentCardTemplates);
             setCardTemplates([...data.currentCardTemplates]);
+          } else {
+            console.log("No currentCardTemplates in data");
           }
           break;
         case 'folderOperations':
           if (data?.tempData?.action === 'removeSheets' && data.tempData.selectedSheets && data.tempData.folderName) {
+            console.log("Removing sheets from folder:", data.tempData);
             setSheets((prev) => {
               const folder = prev.structure.find((item) => item.folderName === data.tempData.folderName);
               const folderSheets = folder?.sheets || [];
@@ -251,6 +272,7 @@ function App() {
               };
             });
           } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
+            console.log("Deleting folder:", data.tempData.folderName);
             setSheets((prev) => {
               const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
               const newStructure = [
@@ -262,10 +284,13 @@ function App() {
                 structure: newStructure,
               };
             });
+          } else {
+            console.log("Invalid folderOperations data:", data);
           }
           break;
         case 'widgetView':
           if (data?.updatedWidget && data?.dashboardId) {
+            console.log("Saving widgetView:", data.updatedWidget);
             setDashboards((prev) => {
               const newDashboards = prev.map((dashboard) =>
                 dashboard.id === data.dashboardId
@@ -281,6 +306,8 @@ function App() {
               );
               return newDashboards;
             });
+          } else {
+            console.log("Invalid widgetView data:", data);
           }
           break;
         case 'widgetSetup':
@@ -288,6 +315,7 @@ function App() {
             console.error('Invalid widget data or dashboardId:', data);
             break;
           }
+          console.log("Saving widgetSetup:", data.updatedWidget);
           setDashboards((prev) => {
             const newDashboards = prev.map((dashboard) =>
               dashboard.id === data.dashboardId
@@ -304,7 +332,16 @@ function App() {
             return newDashboards;
           });
           break;
+        case 'metrics':
+          if (data?.currentCategories) {
+            console.log("Saving metricsCategories:", JSON.stringify(data.currentCategories, null, 2));
+            setMetricsCategories([...data.currentCategories]);
+          } else {
+            console.log("No currentCategories in data:", data);
+          }
+          break;
         default:
+          console.log("Unknown modalType:", modalType);
           break;
       }
       setActiveModal(null);
@@ -328,6 +365,64 @@ function App() {
       handleSheetChange,
       setDashboards,
       activeDashboard,
+      setMetricsCategories,
+    ]
+  );
+
+  const handleModalClose = useCallback(
+    (options = {}) => {
+      console.log("handleModalClose called with options:", JSON.stringify(options, null, 2), "activeModal:", JSON.stringify(activeModal, null, 2));
+      if (options.fromDelete && activeModal?.type === 'folderOperations' && activeModal?.data) {
+        console.log("Handling folderOperations delete");
+        const dataToSave = {
+          ...activeModal.data,
+          tempData: options.tempData || activeModal.data.tempData,
+        };
+        handleModalSave(activeModal.type, dataToSave);
+      } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
+        console.log("Calling handleModalSave for background click");
+        handleModalSave(activeModal.type, activeModal.data);
+      } else if (options.fromSave && activeModal?.data) {
+        console.log("Calling handleModalSave for fromSave");
+        handleModalSave(activeModal.type, activeModal.data);
+      } else {
+        console.log("No save triggered, closing modal");
+      }
+      setActiveModal(null);
+      setEditMode(false);
+      setSelectedTemplateIndex(null);
+      setCurrentSectionIndex(null);
+      sheetModal.close();
+      filterModal.close();
+      headersModal.close();
+      sheetsModal.close();
+      transportModal.close();
+      cardsTemplateModal.close();
+      sheetFolderModal.close();
+      folderOperationsModal.close();
+      widgetSizeModal.close();
+      widgetViewModal.close();
+      widgetSetupModal.close();
+      metricsModal.close();
+    },
+    [
+      activeModal,
+      handleModalSave,
+      setEditMode,
+      setSelectedTemplateIndex,
+      setCurrentSectionIndex,
+      sheetModal,
+      filterModal,
+      headersModal,
+      sheetsModal,
+      transportModal,
+      cardsTemplateModal,
+      sheetFolderModal,
+      folderOperationsModal,
+      widgetSizeModal,
+      widgetViewModal,
+      widgetSetupModal,
+      metricsModal,
     ]
   );
 
@@ -361,6 +456,14 @@ function App() {
       headersModal.open();
     },
     [headersModal, headers]
+  );
+
+  const onManageMetrics = useCallback(
+    () => {
+      setActiveModal({ type: 'metrics', data: { currentCategories: [...metricsCategories] } });
+      metricsModal.open();
+    },
+    [metricsModal, metricsCategories]
   );
 
   const onOpenSheetsModal = useCallback(
@@ -401,8 +504,7 @@ function App() {
       });
       sheetFolderModal.open();
     },
-    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]
-  );
+    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]);
 
   const onOpenFolderOperationsModal = useCallback(
     (folderName) => {
@@ -463,53 +565,6 @@ function App() {
       }
     },
     [widgetViewModal, widgetSetupModal, activeDashboard]
-  );
-
-  const handleModalClose = useCallback(
-    (options = {}) => {
-      if (options.fromDelete && activeModal?.type === 'folderOperations' && activeModal?.data) {
-        const dataToSave = {
-          ...activeModal.data,
-          tempData: options.tempData || activeModal.data.tempData,
-        };
-        handleModalSave(activeModal.type, dataToSave);
-      } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
-        handleModalSave(activeModal.type, activeModal.data);
-      }
-      setActiveModal(null);
-      setEditMode(false);
-      setSelectedTemplateIndex(null);
-      setCurrentSectionIndex(null);
-      sheetModal.close();
-      filterModal.close();
-      headersModal.close();
-      sheetsModal.close();
-      transportModal.close();
-      cardsTemplateModal.close();
-      sheetFolderModal.close();
-      folderOperationsModal.close();
-      widgetSizeModal.close();
-      widgetViewModal.close();
-      widgetSetupModal.close();
-    },
-    [
-      activeModal,
-      handleModalSave,
-      setEditMode,
-      setSelectedTemplateIndex,
-      setCurrentSectionIndex,
-      sheetModal,
-      filterModal,
-      headersModal,
-      sheetsModal,
-      transportModal,
-      cardsTemplateModal,
-      sheetFolderModal,
-      folderOperationsModal,
-      widgetSizeModal,
-      widgetViewModal,
-      widgetSetupModal,
-    ]
   );
 
   const handleOpenProfileModal = useCallback(() => {
@@ -643,6 +698,15 @@ function App() {
             tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null, dashboardId: activeDashboard.id }}
             setTempData={setActiveModalData}
             setActiveModalData={setActiveModalData}
+            handleClose={handleModalClose} // Added handleClose
+          />
+        );
+      case 'metrics':
+        return (
+          <MetricsModal
+            tempData={activeModal.data || { currentCategories: [...metricsCategories] }}
+            setTempData={setActiveModalData}
+            handleClose={handleModalClose} // Fixed to pass handleClose
           />
         );
       default:
@@ -660,6 +724,7 @@ function App() {
         activeOption={activeOption}
         setActiveOption={setActiveOption}
         onOpenFolderModal={onOpenFolderOperationsModal}
+        onOpenMetricsModal={onManageMetrics}
       />
       <div className={styles.contentWrapper}>
         {activeOption === 'sheets' && activeSheetName && (
@@ -704,6 +769,7 @@ function App() {
           onOpenHeadersModal={onManageHeaders}
           setActiveOption={setActiveOption}
           onOpenCardsTemplateModal={onOpenCardsTemplateModal}
+          onOpenMetricsModal={onManageMetrics}
         />
       </div>
     </div>
