@@ -8,7 +8,7 @@
   }
   
   .viewContainer.darkTheme {
-    background-color: #1c1c1e;
+    background-color: rgb(28, 28, 30);
   }
   
   .view {
@@ -51,9 +51,9 @@
   }
   
   .topBackButton {
-    position: absolute;
-    top: 16px;
-    left: 16px;
+    position: relative;
+    top: 0px;
+    left: 0px;
     background: none;
     border: none;
     color: #007aff;
@@ -64,6 +64,8 @@
     border-radius: 12px;
     transition: all 0.2s ease, color 0.3s ease;
     z-index: 10;
+    margin-bottom: 48px;
+    width: fit-content;
   }
   
   .topBackButton.darkTheme {
@@ -80,11 +82,11 @@
   
   .metricList {
     margin-bottom: 20px;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     background: transparent;
     transition: background 0.3s ease;
-    padding-top: 48px; /* Space for top back button */
+    /* padding-top: 48px; */
   }
   
   .metricList.darkTheme {
@@ -93,14 +95,14 @@
   
   .metricItem {
     padding: 13px 16px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(243, 242, 248);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     cursor: pointer;
     transition: background 0.2s ease, border-bottom 0.3s ease;
   }
   
   .metricItem.darkTheme {
-    background: rgba(44, 44, 46, 0.95);
+    background: rgba(44, 44, 46);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   
@@ -135,8 +137,8 @@
     font-weight: 600;
     font-size: 14px;
     letter-spacing: 0.02em;
-    color: #1d1d1f;
-    transition: color 0.3s ease;
+    color: #1d1d1f; /* Light mode default */
+    transition: color 0.3s ease; /* Smooth theme transition */
   }
   
   .metricNameType.darkTheme span {
@@ -170,7 +172,6 @@
     flex-direction: column;
     gap: 12px;
     background: transparent;
-    padding: 48px 0 16px 0; /* Adjusted padding for top back button */
     border-radius: 12px;
     transition: background 0.3s ease;
   }
@@ -181,7 +182,7 @@
   
   .metricDetails {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(243, 242, 248, 0.95);
     border-radius: 12px;
     transition: background 0.3s ease;
   }

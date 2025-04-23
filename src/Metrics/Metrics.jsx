@@ -10,7 +10,7 @@ const Metrics = ({ selectedMetricData }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
 
-  const isMobile = windowWidth <= 1024;
+  const isMobile = windowWidth <= 767; // Adjusted to match 767px threshold
 
   // Update window width on resize
   useEffect(() => {
@@ -30,16 +30,6 @@ const Metrics = ({ selectedMetricData }) => {
     }
   }, [selectedMetricData, metricsCategories]);
 
-  // Reset selected category on mobile when closing
-  useEffect(() => {
-    if (isMobile && isClosing) {
-      setTimeout(() => {
-        setSelectedCategory(null);
-        setIsClosing(false); // Ensure isClosing is reset to allow reopening
-      }, 300); // Match animation duration
-    }
-  }, [isMobile, isClosing]);
-
   // Handle category click
   const handleCategoryClick = (category) => {
     if (selectedCategory?.category === category.category && isMobile) {
@@ -48,6 +38,12 @@ const Metrics = ({ selectedMetricData }) => {
       setSelectedCategory(category);
       setIsClosing(false); // Ensure slide-in for new category
     }
+  };
+
+  // Handle close from MetricsContent
+  const handleClose = () => {
+    setSelectedCategory(null);
+    setIsClosing(false); // Reset isClosing to allow reopening
   };
 
   return (
@@ -77,8 +73,9 @@ const Metrics = ({ selectedMetricData }) => {
         <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <MetricsContent
             selectedCategory={selectedCategory}
-            selectedMetric={null} // Ensure step 1 is shown
+            selectedMetric={selectedMetricData?.metric || null} // Pass metric for step 2
             previousTitle={selectedCategory?.category}
+            onClose={handleClose}
           />
         </div>
       )}
@@ -90,8 +87,9 @@ const Metrics = ({ selectedMetricData }) => {
         >
           <MetricsContent
             selectedCategory={selectedCategory}
-            selectedMetric={null} // Ensure step 1 is shown
+            selectedMetric={selectedMetricData?.metric || null} // Pass metric for step 2
             previousTitle={selectedCategory?.category}
+            onClose={handleClose}
           />
         </div>
       )}

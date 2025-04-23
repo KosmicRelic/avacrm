@@ -21,7 +21,6 @@ import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from './Modal/MetricsModal/MetricsModal';
-import MetricChart from './MetricChart';
 import Metrics from './Metrics/Metrics';
 
 function App() {
@@ -65,7 +64,7 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
-  const [selectedMetricData, setSelectedMetricData] = useState(null); // New state for metric navigation
+  const [selectedMetricData, setSelectedMetricData] = useState(null); // State for metric navigation
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -490,9 +489,10 @@ function App() {
   );
 
   const handleWidgetClick = useCallback(
-    ({ type, widget, metric, step }) => {
+    ({ type, widget, metric }) => {
       if (!widget.dashboardId) {
         console.warn('Widget missing dashboardId:', widget);
+        return;
       }
       if (type === 'widgetSetup') {
         // Handle click on title area in edit mode (open WidgetSetupModal in step 1)
@@ -513,7 +513,7 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (type === 'metric') {
-        // Handle click on metric or title in view mode
+        // Navigate to Metrics component, select category, and show metric details (Step 2)
         const categoryObj = metricsCategories.find((cat) =>
           cat.metrics.some((m) => m.id === metric.id)
         );
@@ -521,30 +521,14 @@ function App() {
           console.warn('Category not found for metric:', metric);
           return;
         }
-        if (step === 2) {
-          // Navigate to Metrics component, select category, and show metric details (Step 2)
-          setSelectedMetricData({
-            category: categoryObj,
-            metric: { ...metric },
-          });
-          setActiveOption('metrics');
-        } else {
-          // Existing behavior: Open MetricsCategories in specified step
-          const category = categoryObj?.category || widget.title || null;
-          setActiveModal({
-            type: 'widgetView',
-            data: {
-              widget: { ...widget, category },
-              selectedMetric: step === 2 ? { ...metric } : null,
-              step,
-              dashboardId: widget.dashboardId || activeDashboard.id,
-            },
-          });
-          widgetViewModal.open();
-        }
+        setSelectedMetricData({
+          category: categoryObj,
+          metric: { ...metric },
+        });
+        setActiveOption('metrics');
       }
     },
-    [widgetSetupModal, widgetViewModal, activeDashboard, metricsCategories, setActiveOption, setSelectedMetricData]
+    [widgetSetupModal, activeDashboard, metricsCategories, setActiveOption, setSelectedMetricData]
   );
 
   const handleOpenProfileModal = useCallback(() => {
