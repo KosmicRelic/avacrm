@@ -5,8 +5,15 @@ import { FaCircleMinus } from 'react-icons/fa6';
 import { FaChevronRight } from 'react-icons/fa';
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, metricsCategories } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Fetch metric data using metricId from metricsCategories
+  const metric = widget?.metricId
+    ? metricsCategories
+        .flatMap((category) => category.metrics)
+        .find((m) => m.id === widget.metricId)
+    : null;
 
   const sizeClasses = {
     verySmall: styles.verySmallWindow,
@@ -26,14 +33,16 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     }
     if (editMode && onWidgetClick && widget) {
       onWidgetClick({ type: 'widgetSetup', widget });
-    } else if (!editMode && onWidgetClick && widget && widget.category) {
-      onWidgetClick({ type: 'category', widget, step: 1 });
+    } else if (!editMode && onWidgetClick && widget && metric) {
+      // Title click opens MetricsCategories in step 1 (category metrics list)
+      onWidgetClick({ type: 'metric', widget, metric, step: 1 });
     }
   };
 
   const handleMetricClick = (metric, e) => {
     if (!editMode && onWidgetClick && widget && metric && !isDragging) {
       e.stopPropagation(); // Prevent bubbling to master div for metric-specific action
+      // Metric click opens MetricsCategories in step 2 (metric details)
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
   };
@@ -49,7 +58,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     setIsDragging(false);
   };
 
-  const isBlank = !widget?.category || !widget?.metrics || widget.metrics.length === 0;
+  const isBlank = !widget?.metricId || !metric;
 
   return (
     <div
@@ -65,8 +74,8 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      {!editMode && <div className={styles.titleClickArea} onClick={handleClick}/>}
-      {editMode && <div className={styles.metricCategoriesClickArea} onClick={handleClick}/>}
+      {!editMode && <div className={styles.titleClickArea} onClick={handleClick} />}
+      {editMode && <div className={styles.metricCategoriesClickArea} onClick={handleClick} />}
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
           {isBlank ? (
@@ -80,27 +89,26 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                   className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
                   disabled={editMode}
                 >
-                  {widget?.title || widget?.category || 'Untitled'}
+                  {widget?.title || 'Untitled'}
                 </button>
                 <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   <FaChevronRight />
                 </span>
               </div>
               <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {widget?.metrics && widget.metrics.length > 0 ? (
-                  widget.metrics.map((metric) => (
-                    <button
-                      key={metric.id}
-                      className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      disabled={editMode}
-                    >
-                      {!editMode &&<div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)}/>}
-                      <span className={styles.metricName}>{metric.name}:</span>{' '}
-                      <span className={styles.metricValue}>{metric.value}</span>
-                    </button>
-                  ))
+                {metric ? (
+                  <button
+                    className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    disabled={editMode}
+                  >
+                    {!editMode && (
+                      <div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)} />
+                    )}
+                    <span className={styles.metricName}>{metric.name}:</span>{' '}
+                    <span className={styles.metricValue}>{metric.value}</span>
+                  </button>
                 ) : (
-                  'No metrics assigned'
+                  <div className={styles.blankWidget}>Metric not found</div>
                 )}
               </div>
             </>
@@ -172,9 +180,9 @@ const DashboardPlane = ({
       id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       size: 'verySmall',
       title: '',
-      metrics: [],
-      category: '',
+      metricId: '',
       position: { row: 0, col: 0 },
+      dashboardId,
     };
     setDashboards((prev) => {
       const newDashboards = prev.map((dashboard) => {
@@ -364,8 +372,8 @@ const DashboardPlane = ({
         p.id === n.id &&
         p.size === n.size &&
         p.title === n.title &&
-        JSON.stringify(p.metrics) === JSON.stringify(n.metrics) &&
-        p.category === n.category &&
+        p.metricId === n.metricId &&
+        p.dashboardId === n.dashboardId &&
         JSON.stringify(p.position || {}) === JSON.stringify(n.position || {})
       );
     });

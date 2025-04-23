@@ -12,7 +12,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   const [activeFieldIndex, setActiveFieldIndex] = useState(null);
   const hasInitialized = useRef(false);
   const prevSelectionsRef = useRef({ category: tempData.category, metric: tempData.metric });
-  const prevConfigRef = useRef(null); // Track previous modal config
+  const prevConfigRef = useRef(null);
 
   // Memoize the Done button handler
   const handleDoneClick = useCallback(() => {
@@ -29,22 +29,36 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     goToStep(1);
   }, [goToStep]);
 
-  // Memoize the title function for Step 2
+  // Get the metric name for the title
+  const getMetricName = useCallback(() => {
+    if (!selectedCategory || !selectedMetric) return 'Select Metric';
+    const categoryData = metricsCategories.find((cat) => cat.category === selectedCategory);
+    const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
+    return metricData?.name || 'Select Metric';
+  }, [selectedCategory, selectedMetric, metricsCategories]);
+
+  // Memoize the title function
   const getStepTitle = useCallback(
     (args = {}) => {
       const index = args.activeFieldIndex ?? activeFieldIndex;
-      return index === 0 ? 'Select Category' : index === 1 ? 'Select Metric' : 'Edit Field';
+      if (currentStep === 1) {
+        return selectedCategory || 'Setup Widget';
+      }
+      if (currentStep === 2) {
+        return index === 0 ? 'Select Category' : getMetricName();
+      }
+      return 'Edit Field';
     },
-    [activeFieldIndex]
+    [activeFieldIndex, selectedCategory, getMetricName, currentStep]
   );
 
-  // Initialize modal steps (mimics HeadersModal)
+  // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
         steps: [
           {
-            title: 'Setup Widget',
+            title: getStepTitle,
             rightButton: {
               label: 'Done',
               onClick: handleDoneClick,
@@ -67,7 +81,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: 'Setup Widget',
+        title: getStepTitle(),
         backButtonTitle: '',
         rightButton: {
           label: 'Done',
@@ -76,11 +90,15 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
           isRemove: false,
         },
       });
+      // Set initial step based on tempData.initialStep
+      if (tempData.initialStep === 2) {
+        goToStep(2);
+      }
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, handleDoneClick, handleSave, getStepTitle]);
+  }, [registerModalSteps, setModalConfig, handleDoneClick, handleSave, getStepTitle, goToStep, tempData.initialStep]);
 
-  // Update modal config based on step (mimics HeadersModal with config comparison)
+  // Update modal config based on step
   useEffect(() => {
     let newConfig;
     if (currentStep === 1) {
@@ -88,7 +106,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: 'Setup Widget',
+        title: getStepTitle(),
         backButtonTitle: '',
         rightButton: {
           label: 'Done',
@@ -103,7 +121,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
         showDoneButton: false,
         showBackButton: true,
         title: getStepTitle({ activeFieldIndex }),
-        backButtonTitle: 'Setup Widget',
+        backButtonTitle: selectedCategory || 'Setup Widget',
         rightButton: {
           label: 'Save',
           onClick: handleSave,
@@ -121,9 +139,9 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       setModalConfig(newConfig);
       prevConfigRef.current = newConfig;
     }
-  }, [currentStep, activeFieldIndex, setModalConfig, handleDoneClick, handleSave, getStepTitle]);
+  }, [currentStep, activeFieldIndex, setModalConfig, handleDoneClick, handleSave, getStepTitle, selectedCategory]);
 
-  // Sync selections to tempData (mimics HeadersModal)
+  // Sync selections to tempData
   useEffect(() => {
     const currentSelections = { category: selectedCategory, metric: selectedMetric };
     const selectionsChanged = JSON.stringify(currentSelections) !== JSON.stringify(prevSelectionsRef.current);
@@ -164,9 +182,8 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
 
     const updatedWidget = {
       ...tempData.widget,
-      category: selectedCategory,
       title: selectedCategory,
-      metrics: [{ id: metricData.id, name: metricData.name, value: metricData.value }],
+      metricId: metricData.id,
     };
 
     const newTempData = {
@@ -179,6 +196,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     setActiveModalData(newTempData);
   }, [selectedCategory, selectedMetric, metricsCategories, setTempData, setActiveModalData, tempData]);
 
+  // Fixed: Changed 'category' to 'selectedCategory'
   const metrics = selectedCategory
     ? metricsCategories.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
@@ -305,6 +323,7 @@ WidgetSetupModal.propTypes = {
     metric: PropTypes.string,
     widget: PropTypes.object,
     dashboardId: PropTypes.string,
+    initialStep: PropTypes.number,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   setActiveModalData: PropTypes.func.isRequired,

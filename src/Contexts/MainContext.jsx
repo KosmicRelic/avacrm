@@ -444,7 +444,7 @@ export const MainContextProvider = ({ children }) => {
       ],
     },
   ]);
-
+  
   const [dashboards, setDashboards] = useState([
     {
       id: 'dashboard-1',
@@ -453,46 +453,41 @@ export const MainContextProvider = ({ children }) => {
           id: 'widget-leads-1',
           size: 'small',
           title: 'Leads',
-          metrics: [{ id: 'metric-leads-score', name: 'Leads Score', value: '74' }],
-          category: 'Leads',
+          metricId: 'metric-leads-score',
           position: { row: 1, col: 0 },
-          dashboardId: 'dashboard-1', // Add dashboardId
+          dashboardId: 'dashboard-1',
         },
         {
           id: 'widget-revenue-1',
           size: 'verySmall',
           title: 'Financials',
-          metrics: [{ id: 'metric-revenue', name: 'Total Revenue', value: '$10,000' }],
-          category: 'Financials',
+          metricId: 'metric-revenue',
           position: { row: 0, col: 1 },
-          dashboardId: 'dashboard-1', // Add dashboardId
+          dashboardId: 'dashboard-1',
         },
         {
           id: 'widget-revenue-3',
           size: 'small',
           title: 'Financials',
-          metrics: [{ id: 'metric-revenue', name: 'Total Revenue', value: '$10,000' }],
-          category: 'Financials',
+          metricId: 'metric-revenue',
           position: { row: 0, col: 0 },
-          dashboardId: 'dashboard-1', // Add dashboardId
+          dashboardId: 'dashboard-1',
         },
         {
           id: 'widget-pending-4',
           size: 'verySmall',
           title: 'Financials',
-          metrics: [{ id: 'metric-payouts', name: 'Pending Payouts', value: '$1,200' }],
-          category: 'Financials',
+          metricId: 'metric-payouts',
           position: { row: 1, col: 1 },
-          dashboardId: 'dashboard-1', // Add dashboardId
+          dashboardId: 'dashboard-1',
         },
         {
           id: 'widget-pending-2',
           size: 'medium',
           title: 'Financials',
-          metrics: { id: 'metric-revenue', name: 'Total Revenue', value: '$10,000' },
-          category: 'Financials',
+          metricId: 'metric-revenue',
           position: { row: 2, col: 0 },
-          dashboardId: 'dashboard-1', // Add dashboardId
+          dashboardId: 'dashboard-1',
         },
       ],
     },
@@ -503,28 +498,25 @@ export const MainContextProvider = ({ children }) => {
           id: 'widget-close-rate',
           size: 'medium',
           title: 'Leads',
-          metrics: [{ id: 'metric-close-rate', name: 'Close Rate', value: '15%' }],
-          category: 'Leads',
+          metricId: 'metric-close-rate',
           position: { row: 0, col: 0 },
-          dashboardId: 'dashboard-2', // Add dashboardId
+          dashboardId: 'dashboard-2',
         },
         {
           id: 'widget-cost-per-lead',
           size: 'small',
           title: 'Leads',
-          metrics: [{ id: 'metric-cost-per-lead', name: 'Cost Per Lead', value: '$25.00' }],
-          category: 'Leads',
+          metricId: 'metric-cost-per-lead',
           position: { row: 2, col: 0 },
-          dashboardId: 'dashboard-2', // Add dashboardId
+          dashboardId: 'dashboard-2',
         },
         {
           id: 'widget-bottleneck',
           size: 'verySmall',
           title: 'Leads',
-          metrics: [{ id: 'metric-bottleneck', name: 'Bottleneck', value: 'Low close rate' }],
-          category: 'Leads',
+          metricId: 'metric-bottleneck',
           position: { row: 2, col: 1 },
-          dashboardId: 'dashboard-2', // Add dashboardId
+          dashboardId: 'dashboard-2',
         },
       ],
     },
@@ -535,37 +527,33 @@ export const MainContextProvider = ({ children }) => {
           id: 'widget-campaign-roi',
           size: 'small',
           title: 'Marketing',
-          metrics: [{ id: 'metric-campaign-roi', name: 'Campaign ROI', value: '2.5x' }],
-          category: 'Marketing',
+          metricId: 'metric-campaign-roi',
           position: { row: 0, col: 0 },
-          dashboardId: 'dashboard-3', // Add dashboardId
+          dashboardId: 'dashboard-3',
         },
         {
           id: 'widget-top-campaign-1',
           size: 'small',
           title: 'Marketing',
-          metrics: [{ id: 'metric-fb-ad', name: 'FB Ad Leads', value: '5 leads, $20/lead' }],
-          category: 'Marketing',
+          metricId: 'metric-fb-ad',
           position: { row: 0, col: 1 },
-          dashboardId: 'dashboard-3', // Add dashboardId
+          dashboardId: 'dashboard-3',
         },
         {
           id: 'widget-top-campaign-2',
           size: 'small',
           title: 'Marketing',
-          metrics: [{ id: 'metric-google-ad', name: 'Google Ad Leads', value: '3 leads, $25/lead' }],
-          category: 'Marketing',
+          metricId: 'metric-google-ad',
           position: { row: 2, col: 0 },
-          dashboardId: 'dashboard-3', // Add dashboardId
+          dashboardId: 'dashboard-3',
         },
         {
           id: 'widget-campaign-status',
           size: 'verySmall',
           title: 'Marketing',
-          metrics: [{ id: 'metric-campaign-status', name: 'Campaign Status', value: 'Active' }],
-          category: 'Marketing',
+          metricId: 'metric-campaign-status',
           position: { row: 2, col: 1 },
-          dashboardId: 'dashboard-3', // Add dashboardId
+          dashboardId: 'dashboard-3',
         },
       ],
     },
@@ -598,10 +586,10 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  useEffect(() => {
-    console.log(metricsCategories);
-  }
-  , [metricsCategories]);
+  // useEffect(() => {
+  //   console.log(metricsCategories);
+  // }
+  // , [metricsCategories]);
 
   return (
     <MainContext.Provider

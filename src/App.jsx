@@ -276,28 +276,9 @@ function App() {
           }
           break;
         case 'widgetView':
-          if (data?.updatedWidget && data?.dashboardId) {
-            setDashboards((prev) => {
-              const newDashboards = prev.map((dashboard) =>
-                dashboard.id === data.dashboardId
-                  ? {
-                      ...dashboard,
-                      dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                        w.id === data.updatedWidget.id
-                          ? { ...data.updatedWidget, dashboardId: data.dashboardId }
-                          : w
-                      ),
-                    }
-                  : dashboard
-              );
-              return newDashboards;
-            });
-          } else {
-          }
           break;
         case 'widgetSetup':
           if (!data?.updatedWidget || !data?.dashboardId) {
-            console.error('Invalid widget data or dashboardId:', data);
             break;
           }
           setDashboards((prev) => {
@@ -358,10 +339,29 @@ function App() {
           tempData: options.tempData || activeModal.data.tempData,
         };
         handleModalSave(activeModal.type, dataToSave);
+      } else if (options.fromSave && options.openWidgetSetup) {
+        setActiveModal({
+          type: 'widgetSetup',
+          data: {
+            widget: options.openWidgetSetup.widget,
+            updatedWidget: {
+              ...options.openWidgetSetup.widget,
+              title: options.openWidgetSetup.widget.title || '',
+              metricId: options.openWidgetSetup.metric?.id || null,
+            },
+            category: options.openWidgetSetup.widget.title || null,
+            metric: options.openWidgetSetup.metric?.id || null,
+            dashboardId: options.openWidgetSetup.widget.dashboardId || activeDashboard.id,
+            initialStep: 1,
+          },
+        });
+        widgetSetupModal.open();
+      } else if (activeModal?.type === 'widgetView') {
+        // Skip handleModalSave for widgetView (metrics categories)
       } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
-        handleModalSave(activeModal.type, activeModal.data);
+        handleModalSave(activeModal.type, options.tempData || activeModal.data);
       } else if (options.fromSave && activeModal?.data) {
-        handleModalSave(activeModal.type, activeModal.data);
+        handleModalSave(activeModal.type, options.tempData || activeModal.data);
       } else {
       }
       setActiveModal(null);
@@ -399,6 +399,7 @@ function App() {
       widgetViewModal,
       widgetSetupModal,
       metricsModal,
+      activeDashboard,
     ]
   );
 
@@ -480,7 +481,8 @@ function App() {
       });
       sheetFolderModal.open();
     },
-    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]);
+    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]
+  );
 
   const onOpenFolderOperationsModal = useCallback(
     (folderName) => {
@@ -499,48 +501,41 @@ function App() {
         console.warn('Widget missing dashboardId:', widget);
       }
       if (type === 'widgetSetup') {
-        const initialMetric = widget.metrics?.[0] || { id: null, name: '', value: '' };
+        // Handle click on title area in edit mode (open WidgetSetupModal in step 1)
         setActiveModal({
           type: 'widgetSetup',
           data: {
             widget: { ...widget },
             updatedWidget: {
               ...widget,
-              category: widget.category || null,
-              title: widget.category || '',
-              metrics: [{ id: initialMetric.id, name: initialMetric.name, value: initialMetric.value }],
+              title: widget.title || '',
+              metricId: widget.metricId || null,
             },
-            category: widget.category || null,
-            metric: initialMetric.id || null,
+            category: widget.title || null,
+            metric: widget.metricId || null,
             dashboardId: widget.dashboardId || activeDashboard.id,
+            initialStep: 1,
           },
         });
         widgetSetupModal.open();
-      } else if (type === 'category') {
-        setActiveModal({
-          type: 'widgetView',
-          data: {
-            widget,
-            selectedMetric: null,
-            step: step || 1,
-            dashboardId: widget.dashboardId || activeDashboard.id,
-          },
-        });
-        widgetViewModal.open();
       } else if (type === 'metric') {
+        // Handle click on metric or title in view mode (open MetricsCategories in specified step)
+        const category = metricsCategories.find((cat) =>
+          cat.metrics.some((m) => m.id === metric.id)
+        )?.category || widget.title || null;
         setActiveModal({
           type: 'widgetView',
           data: {
-            widget,
-            selectedMetric: metric,
-            step: step || 2,
+            widget: { ...widget, category },
+            selectedMetric: step === 2 ? { ...metric } : null,
+            step,
             dashboardId: widget.dashboardId || activeDashboard.id,
           },
         });
         widgetViewModal.open();
       }
     },
-    [widgetViewModal, widgetSetupModal, activeDashboard]
+    [widgetSetupModal, widgetViewModal, activeDashboard, metricsCategories]
   );
 
   const handleOpenProfileModal = useCallback(() => {
@@ -560,7 +555,10 @@ function App() {
       return null;
     }
     const setActiveModalData = (newData) =>
-      setActiveModal((prev) => ({ ...prev, data: { ...prev.data, ...newData } }));
+      setActiveModal((prev) => {
+        if (!prev) return prev; // Prevent updates if activeModal is null
+        return { ...prev, data: { ...prev.data, ...newData } };
+      });
 
     switch (activeModal.type) {
       case 'sheet':
@@ -645,10 +643,10 @@ function App() {
             handleClose={handleModalClose}
             tempData={activeModal.data.tempData || {}}
             setTempData={(newData) =>
-              setActiveModal((prev) => ({
-                ...prev,
-                data: { ...prev.data, tempData: newData },
-              }))
+              setActiveModal((prev) => {
+                if (!prev) return prev;
+                return { ...prev, data: { ...prev.data, tempData: newData } };
+              })
             }
           />
         );
@@ -674,7 +672,7 @@ function App() {
             tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null, dashboardId: activeDashboard.id }}
             setTempData={setActiveModalData}
             setActiveModalData={setActiveModalData}
-            handleClose={handleModalClose} // Added handleClose
+            handleClose={handleModalClose}
           />
         );
       case 'metrics':
@@ -682,7 +680,7 @@ function App() {
           <MetricsModal
             tempData={activeModal.data || { currentCategories: [...metricsCategories] }}
             setTempData={setActiveModalData}
-            handleClose={handleModalClose} // Fixed to pass handleClose
+            handleClose={handleModalClose}
           />
         );
       default:
@@ -743,7 +741,6 @@ function App() {
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
           onOpenHeadersModal={onManageHeaders}
-          setActiveOption={setActiveOption}
           onOpenCardsTemplateModal={onOpenCardsTemplateModal}
           onOpenMetricsModal={onManageMetrics}
         />
