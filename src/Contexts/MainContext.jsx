@@ -422,6 +422,15 @@ export const MainContextProvider = ({ children }) => {
       metrics: [
         { id: 'metric-revenue', name: 'Total Revenue', type: 'currency', value: '$10,000' },
         { id: 'metric-payouts', name: 'Pending Payouts', type: 'currency', value: '$1,200' },
+        {
+          id: 'metric-revenue-trend',
+          name: 'Revenue Trend',
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            values: [8000, 9000, 8500, 10000, 9500, 11000],
+          },
+        },
       ],
     },
     {
@@ -431,6 +440,15 @@ export const MainContextProvider = ({ children }) => {
         { id: 'metric-fb-ad', name: 'FB Ad Leads', type: 'text', value: '5 leads, $20/lead' },
         { id: 'metric-google-ad', name: 'Google Ad Leads', type: 'text', value: '3 leads, $25/lead' },
         { id: 'metric-campaign-status', name: 'Campaign Status', type: 'text', value: 'Active' },
+        {
+          id: 'metric-ad-spend',
+          name: 'Ad Spend Distribution',
+          type: 'pie',
+          data: {
+            labels: ['Facebook', 'Google', 'LinkedIn', 'Other'],
+            values: [5000, 3000, 1500, 1000],
+          },
+        },
       ],
     },
     {
@@ -438,9 +456,23 @@ export const MainContextProvider = ({ children }) => {
       metrics: [
         { id: 'metric-leads-score', name: 'Leads Score', type: 'number', value: '74' },
         { id: 'metric-total-leads', name: 'Total Leads', type: 'number', value: '20' },
-        { id: 'metric-close-rate', name: 'Close Rate', type: 'percentage', value: '15%' },
+        {
+          id: 'metric-close-rate',
+          name: 'Close Rate',
+          type: 'speedometer',
+          data: { value: 75 },
+        },
         { id: 'metric-cost-per-lead', name: 'Cost Per Lead', type: 'currency', value: '$25.00' },
         { id: 'metric-bottleneck', name: 'Bottleneck', type: 'text', value: 'Low close rate' },
+        {
+          id: 'metric-lead-growth',
+          name: 'Lead Growth',
+          type: 'bar',
+          data: {
+            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+            values: [10, 15, 12, 20],
+          },
+        },
       ],
     },
   ]);
@@ -450,11 +482,11 @@ export const MainContextProvider = ({ children }) => {
       id: 'dashboard-1',
       dashboardWidgets: [
         {
-          id: 'widget-leads-1',
+          id: 'widget-revenue-3',
           size: 'small',
           title: 'Leads',
-          metricId: 'metric-leads-score',
-          position: { row: 1, col: 0 },
+          metricId: 'metric-close-rate',
+          position: { row: 0, col: 0 },
           dashboardId: 'dashboard-1',
         },
         {
@@ -463,14 +495,6 @@ export const MainContextProvider = ({ children }) => {
           title: 'Financials',
           metricId: 'metric-revenue',
           position: { row: 0, col: 1 },
-          dashboardId: 'dashboard-1',
-        },
-        {
-          id: 'widget-revenue-3',
-          size: 'small',
-          title: 'Financials',
-          metricId: 'metric-revenue',
-          position: { row: 0, col: 0 },
           dashboardId: 'dashboard-1',
         },
         {
@@ -484,8 +508,8 @@ export const MainContextProvider = ({ children }) => {
         {
           id: 'widget-pending-2',
           size: 'medium',
-          title: 'Financials',
-          metricId: 'metric-revenue',
+          title: 'Leads',
+          metricId: 'metric-revenue-trend',
           position: { row: 2, col: 0 },
           dashboardId: 'dashboard-1',
         },
@@ -496,26 +520,10 @@ export const MainContextProvider = ({ children }) => {
       dashboardWidgets: [
         {
           id: 'widget-close-rate',
-          size: 'medium',
-          title: 'Leads',
-          metricId: 'metric-close-rate',
+          size: 'large',
+          title: 'Marketing',
+          metricId: 'metric-ad-spend',
           position: { row: 0, col: 0 },
-          dashboardId: 'dashboard-2',
-        },
-        {
-          id: 'widget-cost-per-lead',
-          size: 'small',
-          title: 'Leads',
-          metricId: 'metric-cost-per-lead',
-          position: { row: 2, col: 0 },
-          dashboardId: 'dashboard-2',
-        },
-        {
-          id: 'widget-bottleneck',
-          size: 'verySmall',
-          title: 'Leads',
-          metricId: 'metric-bottleneck',
-          position: { row: 2, col: 1 },
           dashboardId: 'dashboard-2',
         },
       ],
@@ -541,18 +549,10 @@ export const MainContextProvider = ({ children }) => {
         },
         {
           id: 'widget-top-campaign-2',
-          size: 'small',
+          size: 'medium',
           title: 'Marketing',
-          metricId: 'metric-google-ad',
+          metricId: 'metric-lead-growth',
           position: { row: 2, col: 0 },
-          dashboardId: 'dashboard-3',
-        },
-        {
-          id: 'widget-campaign-status',
-          size: 'verySmall',
-          title: 'Marketing',
-          metricId: 'metric-campaign-status',
-          position: { row: 2, col: 1 },
           dashboardId: 'dashboard-3',
         },
       ],

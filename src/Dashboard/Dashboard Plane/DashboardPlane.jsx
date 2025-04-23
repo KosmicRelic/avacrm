@@ -3,6 +3,7 @@ import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 import { FaChevronRight } from 'react-icons/fa';
+import MetricChart from '../../MetricChart';
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme, metricsCategories } = useContext(MainContext);
@@ -27,22 +28,19 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       setIsDragging(false);
       return;
     }
-    // Ignore clicks on the remove button
     if (e.target.closest(`.${styles.removeButton}`)) {
       return;
     }
     if (editMode && onWidgetClick && widget) {
       onWidgetClick({ type: 'widgetSetup', widget });
     } else if (!editMode && onWidgetClick && widget && metric) {
-      // Title click opens MetricsCategories in step 1 (category metrics list)
       onWidgetClick({ type: 'metric', widget, metric, step: 1 });
     }
   };
 
   const handleMetricClick = (metric, e) => {
     if (!editMode && onWidgetClick && widget && metric && !isDragging) {
-      e.stopPropagation(); // Prevent bubbling to master div for metric-specific action
-      // Metric click opens MetricsCategories in step 2 (metric details)
+      e.stopPropagation();
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
   };
@@ -59,6 +57,9 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   };
 
   const isBlank = !widget?.metricId || !metric;
+
+  // Determine if the metric is a chart type
+  const isChartType = metric && ['line', 'pie', 'speedometer', 'bar'].includes(metric.type);
 
   return (
     <div
@@ -97,16 +98,26 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
               </div>
               <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {metric ? (
-                  <button
-                    className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    disabled={editMode}
-                  >
-                    {!editMode && (
-                      <div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)} />
-                    )}
-                    <span className={styles.metricName}>{metric.name}:</span>{' '}
-                    <span className={styles.metricValue}>{metric.value}</span>
-                  </button>
+                  isChartType ? (
+                    <div className={styles.chartWrapper}>
+                      <MetricChart
+                        metric={metric}
+                        isDarkTheme={isDarkTheme}
+                        chartType={metric.type}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      disabled={editMode}
+                    >
+                      {!editMode && (
+                        <div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)} />
+                      )}
+                      <span className={styles.metricName}>{metric.name}:</span>{' '}
+                      <span className={styles.metricValue}>{metric.value}</span>
+                    </button>
+                  )
                 ) : (
                   <div className={styles.blankWidget}>Metric not found</div>
                 )}

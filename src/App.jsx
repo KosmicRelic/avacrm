@@ -21,7 +21,7 @@ import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from './Modal/MetricsModal/MetricsModal';
-import SimpleBarChart from './test';
+import MetricChart from './MetricChart';
 
 function App() {
   const {
@@ -745,7 +745,6 @@ function App() {
           onOpenMetricsModal={onManageMetrics}
         />
       </div>
-      {/* <SimpleBarChart /> */}
     </div>
   );
 }

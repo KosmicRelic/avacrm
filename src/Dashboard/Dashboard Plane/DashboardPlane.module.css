@@ -31,6 +31,7 @@
   box-sizing: border-box;
   border-radius: 16px;
   position: relative;
+  overflow: hidden; /* Prevent grid expansion */
 }
 
 .dashboardWrapper.darkTheme {
@@ -61,12 +62,15 @@
 .largeWindow {
   width: 100%;
   height: 100%;
+  max-width: 100%; /* Strictly enforce grid width */
+  max-height: 100%; /* Strictly enforce grid height */
   box-sizing: border-box;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   cursor: default;
+  overflow: hidden; /* Prevent content from expanding widget */
 }
 
 .verySmallWindow.darkTheme,
@@ -174,7 +178,7 @@
   width: 100%;
   padding: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  /* border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
@@ -182,16 +186,16 @@
   color: white;
 }
 
-.widgetTitleContainer span{
+.widgetTitleContainer span {
   color: rgb(0, 0, 0);
 }
 
-.widgetTitleContainer span.darkTheme{
+.widgetTitleContainer span.darkTheme {
   color: #ffffff;
 }
 
-.widgetTitleContainer.darkTheme{
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+.widgetTitleContainer.darkTheme {
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.2); */
   color: black;
 }
 
@@ -207,7 +211,7 @@
 }
 
 .widgetTitle {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   margin: 0;
   background: none;
@@ -224,8 +228,15 @@
 .widgetData {
   width: 100%;
   height: 100%;
-  padding: 8px 16px;
+  padding: 16px;
   box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Prevent chart overflow */
+  max-height: calc(100% - 43px); /* Account for title height */
 }
 
 .verySmallWindow .widgetData {
@@ -315,7 +326,7 @@
   transform: scale(0.98);
 }
 
-/* Existing styles unchanged, add the following */
+/* Blank widget */
 .blankWidget {
   display: flex;
   align-items: center;
@@ -326,7 +337,8 @@
   font-size: 14px;
 }
 
-.titleClickArea{
+/* Click areas */
+.titleClickArea {
   width: 100%;
   height: 43px;
   background-color: rgba(255, 0, 0, 0);
@@ -336,7 +348,7 @@
   border-top-right-radius: 24px;
 }
 
-.metricCategoriesClickArea{
+.metricCategoriesClickArea {
   width: 100%;
   height: 100%;
   background-color: rgba(255, 0, 0, 0);
@@ -345,7 +357,7 @@
   border-radius: 24px;
 }
 
-.widgetClickArea{
+.widgetClickArea {
   width: 100%;
   height: calc(100% - 43px);
   background-color: rgba(255, 0, 0, 0);
@@ -355,4 +367,47 @@
   z-index: 1;
   border-bottom-left-radius: 24px;
   border-bottom-right-radius: 24px;
+}
+
+/* Chart-specific styles */
+.chartWrapper {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%; /* Prevent stretching */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Clip any overflow */
+}
+
+.speedometerWrapper {
+  width: 100%;
+  max-width: calc(100% - 12px); /* Account for 6px padding on each side in small */
+  height: auto; /* Adjust height based on aspect ratio */
+  max-height: calc(100% - 12px); /* Account for 6px padding top/bottom in small */
+  aspect-ratio: 2 / 1; /* Rectangular semicircle */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: scale(0.55); /* Compact scaling */
+}
+
+.verySmallWindow .speedometerWrapper {
+  max-width: calc(100% - 8px); /* Account for 4px padding on each side */
+  max-height: calc(100% - 8px); /* Account for 4px padding top/bottom */
+  transform: scale(0.5); /* Extra compact */
+}
+
+.smallWindow .speedometerWrapper {
+  max-width: calc(100% - 12px); /* Account for 6px padding on each side */
+  max-height: calc(100% - 12px); /* Account for 6px padding top/bottom */
+  transform: scale(0.53); /* Fit small widget */
+}
+
+.mediumWindow .speedometerWrapper,
+.largeWindow .speedometerWrapper {
+  max-width: calc(100% - 16px); /* Account for 8px padding on each side */
+  max-height: calc(100% - 16px); /* Account for 8px padding top/bottom */
+  transform: scale(0.6); /* Slightly larger for medium/large */
 }
