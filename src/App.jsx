@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useContext } from 'react';
+import React, { useState, useCallback, useMemo, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Sheets from './Sheets/Sheets';
 import AppHeader from './App Header/AppHeader';
@@ -22,6 +22,7 @@ import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from './Modal/MetricsModal/MetricsModal';
 import MetricChart from './MetricChart';
+import Metrics from './Metrics/Metrics';
 
 function App() {
   const {
@@ -64,6 +65,7 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
+  const [selectedMetricData, setSelectedMetricData] = useState(null); // New state for metric navigation
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -196,7 +198,6 @@ function App() {
         case 'headers':
           if (data?.currentHeaders) {
             setHeaders([...data.currentHeaders]);
-          } else {
           }
           break;
         case 'filter':
@@ -209,7 +210,6 @@ function App() {
                   : sheet
               ),
             }));
-          } else {
           }
           break;
         case 'sheet':
@@ -221,7 +221,6 @@ function App() {
               isSheetModalEditMode
             );
             handleSheetChange(data.sheetName);
-          } else {
           }
           break;
         case 'sheets':
@@ -230,13 +229,11 @@ function App() {
               ...prev,
               structure: [...data.newOrder],
             }));
-          } else {
           }
           break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
             setCardTemplates([...data.currentCardTemplates]);
-          } else {
           }
           break;
         case 'folderOperations':
@@ -272,7 +269,6 @@ function App() {
                 structure: newStructure,
               };
             });
-          } else {
           }
           break;
         case 'widgetView':
@@ -300,7 +296,6 @@ function App() {
         case 'metrics':
           if (data?.currentCategories) {
             setMetricsCategories([...data.currentCategories]);
-          } else {
           }
           break;
         default:
@@ -362,7 +357,6 @@ function App() {
         handleModalSave(activeModal.type, options.tempData || activeModal.data);
       } else if (options.fromSave && activeModal?.data) {
         handleModalSave(activeModal.type, options.tempData || activeModal.data);
-      } else {
       }
       setActiveModal(null);
       setEditMode(false);
@@ -519,23 +513,38 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (type === 'metric') {
-        // Handle click on metric or title in view mode (open MetricsCategories in specified step)
-        const category = metricsCategories.find((cat) =>
+        // Handle click on metric or title in view mode
+        const categoryObj = metricsCategories.find((cat) =>
           cat.metrics.some((m) => m.id === metric.id)
-        )?.category || widget.title || null;
-        setActiveModal({
-          type: 'widgetView',
-          data: {
-            widget: { ...widget, category },
-            selectedMetric: step === 2 ? { ...metric } : null,
-            step,
-            dashboardId: widget.dashboardId || activeDashboard.id,
-          },
-        });
-        widgetViewModal.open();
+        );
+        if (!categoryObj) {
+          console.warn('Category not found for metric:', metric);
+          return;
+        }
+        if (step === 2) {
+          // Navigate to Metrics component, select category, and show metric details (Step 2)
+          setSelectedMetricData({
+            category: categoryObj,
+            metric: { ...metric },
+          });
+          setActiveOption('metrics');
+        } else {
+          // Existing behavior: Open MetricsCategories in specified step
+          const category = categoryObj?.category || widget.title || null;
+          setActiveModal({
+            type: 'widgetView',
+            data: {
+              widget: { ...widget, category },
+              selectedMetric: step === 2 ? { ...metric } : null,
+              step,
+              dashboardId: widget.dashboardId || activeDashboard.id,
+            },
+          });
+          widgetViewModal.open();
+        }
       }
     },
-    [widgetSetupModal, widgetViewModal, activeDashboard, metricsCategories]
+    [widgetSetupModal, widgetViewModal, activeDashboard, metricsCategories, setActiveOption, setSelectedMetricData]
   );
 
   const handleOpenProfileModal = useCallback(() => {
@@ -550,13 +559,20 @@ function App() {
     setActiveDashboardId(dashboardId);
   }, []);
 
+  // Clear selectedMetricData when switching away from metrics
+  useEffect(() => {
+    if (activeOption !== 'metrics') {
+      setSelectedMetricData(null);
+    }
+  }, [activeOption]);
+
   const renderModalContent = () => {
     if (!activeModal) {
       return null;
     }
     const setActiveModalData = (newData) =>
       setActiveModal((prev) => {
-        if (!prev) return prev; // Prevent updates if activeModal is null
+        if (!prev) return prev;
         return { ...prev, data: { ...prev.data, ...newData } };
       });
 
@@ -726,6 +742,9 @@ function App() {
             activeDashboardId={activeDashboardId}
             onDashboardChange={handleDashboardChange}
           />
+        )}
+        {activeOption === 'metrics' && (
+          <Metrics selectedMetricData={selectedMetricData} />
         )}
         {activeModal && (
           <Modal

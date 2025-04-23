@@ -34,13 +34,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     if (editMode && onWidgetClick && widget) {
       onWidgetClick({ type: 'widgetSetup', widget });
     } else if (!editMode && onWidgetClick && widget && metric) {
-      onWidgetClick({ type: 'metric', widget, metric, step: 1 });
-    }
-  };
-
-  const handleMetricClick = (metric, e) => {
-    if (!editMode && onWidgetClick && widget && metric && !isDragging) {
-      e.stopPropagation();
+      // Navigate to Metrics component, select category, show metric details (Step 2)
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
   };
@@ -76,7 +70,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragEnd={handleDragEnd}
     >
       {!editMode && <div className={styles.titleClickArea} onClick={handleClick} />}
-      {editMode && <div className={styles.metricCategoriesClickArea} onClick={handleClick} />}
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
           {isBlank ? (
@@ -89,8 +82,9 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                 <button
                   className={`${styles.widgetTitle} ${isDarkTheme ? styles.darkTheme : ''}`}
                   disabled={editMode}
+                  onClick={handleClick}
                 >
-                  {widget?.title || 'Untitled'}
+                  {metric ? metric.name : 'Untitled'}
                 </button>
                 <span className={`${styles.TitleChevron} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   <FaChevronRight />
@@ -111,9 +105,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                       className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       disabled={editMode}
                     >
-                      {!editMode && (
-                        <div className={styles.widgetClickArea} onClick={(e) => handleMetricClick(metric, e)} />
-                      )}
                       <span className={styles.metricName}>{metric.name}:</span>{' '}
                       <span className={styles.metricValue}>{metric.value}</span>
                     </button>

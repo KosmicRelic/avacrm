@@ -77,12 +77,12 @@ const ProfileModal = ({
           </button>
         </div>
         <div className={styles.section}>
-          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Templates</h3>
+          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             onClick={() => handleButtonClick(onOpenHeadersModal)}
           >
-            Manage Headers
+            Headers
           </button>
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
