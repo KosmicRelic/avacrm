@@ -32,7 +32,17 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       return;
     }
     if (editMode && onWidgetClick && widget) {
-      onWidgetClick({ type: 'widgetSetup', widget });
+      // For both blank and existing widgets, open WidgetSetupModal with the current widget
+      onWidgetClick({
+        type: 'widgetSetup',
+        widget: {
+          ...widget,
+          size: size,
+          dashboardId,
+          position: { row: style.gridRowStart - 1, col: style.gridColumnStart - 1 },
+        },
+        initialStep: 1,
+      });
     } else if (!editMode && onWidgetClick && widget && metric) {
       // Navigate to Metrics component, select category, show metric details (Step 2)
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
@@ -68,6 +78,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       draggable={editMode}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onClick={handleClick}
     >
       {!editMode && <div className={styles.titleClickArea} onClick={handleClick} />}
       <div className={styles.windowContent}>

@@ -274,6 +274,7 @@ function App() {
           break;
         case 'widgetSetup':
           if (!data?.updatedWidget || !data?.dashboardId) {
+            console.error('Invalid widget data or dashboardId:', data);
             break;
           }
           setDashboards((prev) => {
@@ -282,9 +283,7 @@ function App() {
                 ? {
                     ...dashboard,
                     dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
-                      w.id === data.updatedWidget.id
-                        ? { ...data.updatedWidget, dashboardId: data.dashboardId }
-                        : w
+                      w.id === data.updatedWidget.id ? { ...data.updatedWidget, dashboardId: data.dashboardId } : w
                     ),
                   }
                 : dashboard
@@ -351,7 +350,7 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (activeModal?.type === 'widgetView') {
-        // Skip handleModalSave for widgetView (metrics categories)
+        // Skip handleModalSave for widgetView
       } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
         handleModalSave(activeModal.type, options.tempData || activeModal.data);
       } else if (options.fromSave && activeModal?.data) {
@@ -489,13 +488,13 @@ function App() {
   );
 
   const handleWidgetClick = useCallback(
-    ({ type, widget, metric }) => {
+    ({ type, widget, metric, initialStep }) => {
       if (!widget.dashboardId) {
         console.warn('Widget missing dashboardId:', widget);
         return;
       }
       if (type === 'widgetSetup') {
-        // Handle click on title area in edit mode (open WidgetSetupModal in step 1)
+        // Handle click on title area or blank widget in edit mode (open WidgetSetupModal in step 1)
         setActiveModal({
           type: 'widgetSetup',
           data: {
@@ -508,7 +507,7 @@ function App() {
             category: widget.title || null,
             metric: widget.metricId || null,
             dashboardId: widget.dashboardId || activeDashboard.id,
-            initialStep: 1,
+            initialStep: initialStep || 1,
           },
         });
         widgetSetupModal.open();

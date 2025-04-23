@@ -12,6 +12,7 @@ import {
   BarElement,
   Tooltip,
   Legend,
+  Filler, // Add Filler plugin import
 } from 'chart.js';
 import styles from './MetricChart.module.css';
 import dashboardStyles from './Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
@@ -25,7 +26,8 @@ ChartJS.register(
   ArcElement,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler // Register Filler plugin
 );
 
 // Error Boundary Component
