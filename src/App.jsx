@@ -64,7 +64,7 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
-  const [selectedMetricData, setSelectedMetricData] = useState(null); // State for metric navigation
+  const [selectedMetricData, setSelectedMetricData] = useState(null);
 
   const activeSheet = useMemo(() => sheets?.allSheets?.find((sheet) => sheet.isActive) || null, [sheets]);
   const activeSheetName = activeSheet?.sheetName;
@@ -177,16 +177,40 @@ function App() {
 
   const handleFolderSave = useCallback(
     (newFolderName, selectedSheets) => {
-      setSheets((prevSheets) => ({
-        ...prevSheets,
-        structure: [
-          ...prevSheets.structure,
-          {
-            folderName: newFolderName,
-            sheets: selectedSheets,
-          },
-        ],
-      }));
+      setSheets((prevSheets) => {
+        const existingFolder = prevSheets.structure.find(
+          (item) => item.folderName === newFolderName
+        );
+        if (existingFolder) {
+          // Update existing folder, filter out duplicates
+          const existingSheets = existingFolder.sheets || [];
+          const newSheets = selectedSheets.filter(
+            (sheet) => !existingSheets.includes(sheet)
+          );
+          if (newSheets.length === 0) {
+            return prevSheets; // No new sheets to add
+          }
+          return {
+            ...prevSheets,
+            structure: prevSheets.structure.map((item) =>
+              item.folderName === newFolderName
+                ? { ...item, sheets: [...existingSheets, ...newSheets] }
+                : item
+            ),
+          };
+        }
+        // Create new folder
+        return {
+          ...prevSheets,
+          structure: [
+            ...prevSheets.structure,
+            {
+              folderName: newFolderName,
+              sheets: selectedSheets,
+            },
+          ],
+        };
+      });
     },
     [setSheets]
   );
@@ -230,6 +254,11 @@ function App() {
             }));
           }
           break;
+        case 'transport':
+          if (data?.onComplete) {
+            data.onComplete();
+          }
+          break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
             setCardTemplates([...data.currentCardTemplates]);
@@ -248,7 +277,7 @@ function App() {
               );
               const newStructure = [
                 ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
-                { folderName: data.tempData.folderName, sheets: remainingSheets },
+                ...(remainingSheets.length > 0 ? [{ folderName: data.tempData.folderName, sheets: remainingSheets }] : []),
                 ...removedSheets.map((sheetName) => ({ sheetName })),
               ];
               return {
@@ -266,6 +295,25 @@ function App() {
               return {
                 ...prev,
                 structure: newStructure,
+              };
+            });
+          } else if (data?.tempData?.action === 'addSheets' && data.tempData.selectedSheets && data.tempData.folderName) {
+            setSheets((prev) => {
+              const folder = prev.structure.find((item) => item.folderName === data.tempData.folderName);
+              const existingSheets = folder?.sheets || [];
+              const newSheets = data.tempData.selectedSheets.filter(
+                (sheet) => !existingSheets.includes(sheet)
+              );
+              if (newSheets.length === 0) {
+                return prev; // No new sheets to add
+              }
+              return {
+                ...prev,
+                structure: prev.structure.map((item) =>
+                  item.folderName === data.tempData.folderName
+                    ? { ...item, sheets: [...existingSheets, ...newSheets] }
+                    : item
+                ),
               };
             });
           }
@@ -326,12 +374,10 @@ function App() {
 
   const handleModalClose = useCallback(
     (options = {}) => {
-      if (options.fromDelete && activeModal?.type === 'folderOperations' && activeModal?.data) {
-        const dataToSave = {
-          ...activeModal.data,
-          tempData: options.tempData || activeModal.data.tempData,
-        };
-        handleModalSave(activeModal.type, dataToSave);
+      if (options.fromDelete && activeModal?.type === 'folderOperations') {
+        handleModalSave(activeModal.type, { ...activeModal.data, tempData: options.tempData });
+      } else if (options.fromSave && activeModal?.type === 'folderOperations') {
+        handleModalSave(activeModal.type, { ...activeModal.data, tempData: options.tempData });
       } else if (options.fromSave && options.openWidgetSetup) {
         setActiveModal({
           type: 'widgetSetup',
@@ -349,13 +395,10 @@ function App() {
           },
         });
         widgetSetupModal.open();
-      } else if (activeModal?.type === 'widgetView') {
-        // Skip handleModalSave for widgetView
-      } else if (!options.fromDelete && activeModal?.data && !options.fromSave) {
-        handleModalSave(activeModal.type, options.tempData || activeModal.data);
-      } else if (options.fromSave && activeModal?.data) {
-        handleModalSave(activeModal.type, options.tempData || activeModal.data);
+      } else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
+        handleModalSave(activeModal.type, activeModal.data);
       }
+
       setActiveModal(null);
       setEditMode(false);
       setSelectedTemplateIndex(null);
@@ -494,7 +537,6 @@ function App() {
         return;
       }
       if (type === 'widgetSetup') {
-        // Handle click on title area or blank widget in edit mode (open WidgetSetupModal in step 1)
         setActiveModal({
           type: 'widgetSetup',
           data: {
@@ -512,7 +554,6 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (type === 'metric') {
-        // Navigate to Metrics component, select category, and show metric details (Step 2)
         const categoryObj = metricsCategories.find((cat) =>
           cat.metrics.some((m) => m.id === metric.id)
         );
@@ -542,7 +583,6 @@ function App() {
     setActiveDashboardId(dashboardId);
   }, []);
 
-  // Clear selectedMetricData when switching away from metrics
   useEffect(() => {
     if (activeOption !== 'metrics') {
       setSelectedMetricData(null);

@@ -43,11 +43,15 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
         },
         initialStep: 1,
       });
-    } else if (!editMode && onWidgetClick && widget && metric) {
+    }
+  };
+
+  const goToMetric = () => {
+    if(!editMode && onWidgetClick && widget && metric) {
       // Navigate to Metrics component, select category, show metric details (Step 2)
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
-  };
+  }
 
   const handleDragStart = (e) => {
     if (!editMode) return;
@@ -80,7 +84,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       onDragEnd={handleDragEnd}
       onClick={handleClick}
     >
-      {!editMode && <div className={styles.titleClickArea} onClick={handleClick} />}
+      {!editMode && <div className={styles.titleClickArea} onClick={goToMetric} />}
       <div className={styles.windowContent}>
         <div className={styles.widgetWrapper}>
           {isBlank ? (

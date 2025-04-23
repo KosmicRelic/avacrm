@@ -1,195 +1,195 @@
 .folderModal {
-    background: transparent; /* Light mode: no additional background */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .folderModal.darkTheme {
-    background: transparent; /* Dark mode: keep transparent to match modal */
-  }
-  
-  .sheetList {
-    margin-bottom: 20px;
-    border-radius: 10px;
-    overflow: hidden;
-    background: transparent; /* Light mode: no additional background */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .sheetList.darkTheme {
-    background: transparent; /* Dark mode: keep transparent */
-  }
-  
-  .sheetItem {
-    padding: 13.5px 16px;
-    background: rgba(255, 255, 255, 0.95); /* Light mode */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
-    transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
-    cursor: pointer;
-  }
-  
-  .sheetItem.darkTheme {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
-  }
-  
-  .sheetItem:last-child {
-    border-bottom: none;
-  }
-  
-  .sheetItem:hover {
-    background: rgba(0, 0, 0, 0.05); /* Light mode hover */
-  }
-  
-  .sheetItem.darkTheme:hover {
-    background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
-  }
-  
-  .sheetRow {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .sheetName {
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    color: #1d1d1f; /* Light mode default */
-    transition: color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .sheetName.darkTheme {
-    color: #ffffff; /* Dark mode override */
-  }
-  
-  .selectionCircle {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #007aff; /* Light mode border */
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.3s ease;
-  }
-  
-  .selectionCircle.darkTheme {
-    border-color: #0a84ff; /* Dark mode border */
-  }
-  
-  .selectionCircle.selected {
-    background: #007aff; /* Light mode fill */
-  }
-  
-  .selectionCircle.darkTheme.selected {
-    background: #0a84ff; /* Dark mode fill */
-  }
-  
-  .checkmark {
-    color: #ffffff;
-    font-size: 18px;
-    transition: opacity 0.2s ease;
-  }
-  
-  
-  .deleteButton {
-    width: 100%; /* Changed to auto for consistency with deleteSectionButton */
-    padding: 13.5px 16px; /* Updated to match deleteSectionButton */
-    margin-top: 16px; /* Added for spacing consistency */
-    border-radius: 12px; /* Updated to match deleteSectionButton */
-    background: #ffffff; /* Changed from none to match deleteSectionButton */
-    border: none; /* Updated to match deleteSectionButton */
-    color: #ff453a; /* Unchanged */
-    font-size: 14px; /* Unchanged */
-    font-weight: 600; /* Updated to match deleteSectionButton */
-    cursor: pointer; /* Unchanged */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Added to match deleteSectionButton */
-    transition: background 0.2s ease, color 0.3s ease; /* Updated for smoother transitions */
-  }
-  
-  .deleteButton.darkTheme {
-    background: #2c2c2e; /* Changed to match deleteSectionButton.darkTheme */
-    color: #ff453a; /* Unchanged */
-  }
-  
-  .deleteButton:hover {
-    background: #f5f5f5; /* Changed to match deleteSectionButton:hover */
-  }
-  
-  .deleteButton.darkTheme:hover {
-    background: #3a3a3c; /* Changed to match deleteSectionButton.darkTheme:hover */
-  }
-  
-  /* For reference: deleteSectionButton from CardsTemplate.module.css */
-  .deleteSectionButton {
-    width: 100%;
-    padding: 13.5px 16px;
-    margin-top: 16px;
-    margin-bottom: 24px;
-    margin-left: auto;
-    border-radius: 12px;
-    background: #ffffff;
-    border: none;
-    color: #ff453a;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    flex: 0 0 auto;
-    letter-spacing: 0.02em;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .deleteSectionButton.darkTheme {
-    background: #2c2c2e;
-    color: #ff453a;
-  }
-  
-  .deleteSectionButton:hover {
-    background: #f5f5f5;
-  }
-  
-  .deleteSectionButton.darkTheme:hover {
-    background: #3a3a3c;
-  }
-  
-  .actionButton {
-    background: none;
-    border: none;
-    color: #007aff; /* Light mode */
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .actionButton.darkTheme {
-    color: #0a84ff; /* Dark mode */
-  }
-  
-  .actionButton:hover {
-    background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-  }
-  
-  .actionButton.darkTheme:hover {
-    background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-  }
-  
-  .editButton {
-    /* Inherits from actionButton */
-  }
-  
-  .noSheets {
-    padding: 16px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: #666; /* Light mode */
-    transition: color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .noSheets.darkTheme {
-    color: #aaa; /* Dark mode */
-  }
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.folderModal.darkTheme {
+  background: transparent; /* Dark mode: keep transparent to match modal */
+}
+
+.sheetList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.sheetList.darkTheme {
+  background: transparent; /* Dark mode: keep transparent */
+}
+
+.sheetItem {
+  padding: 13.5px 16px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
+  cursor: pointer;
+}
+
+.sheetItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+}
+
+.sheetItem:last-child {
+  border-bottom: none;
+}
+
+.sheetItem:hover {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.sheetItem.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.sheetRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sheetName {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #1d1d1f; /* Light mode default */
+  transition: color 0.3s ease; /* Smooth theme transition */
+}
+
+.sheetName.darkTheme {
+  color: #ffffff; /* Dark mode override */
+}
+
+.selectionCircle {
+  color: #0a84ff;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent; /* Ensure no background interference */
+  transition: background 0.2s ease, border-color 0.3s ease;
+}
+
+.selectionCircle.darkTheme {
+  border-color: #0a84ff; /* Dark mode: blue border */
+}
+
+.selectionCircle.selected {
+  background: #007aff; /* Light mode: blue fill */
+}
+
+.selectionCircle.darkTheme.selected {
+  background: #0a84ff; /* Dark mode: blue fill */
+}
+
+.checkmark {
+  color: #0a84ff;
+  font-size: 18px;
+  transition: opacity 0.2s ease;
+}
+
+/* NEW: Styles for checkbox icons in add mode */
+.customCheckbox {
+  color: #007aff;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.customCheckbox.darkTheme {
+  color: #0a84ff; /* Dark mode: blue color */
+}
+
+.customCheckbox:hover {
+  transform: scale(1.1);
+}
+
+.customCheckbox.checked {
+  color: #0a84ff; /* White for checked state to contrast with filled background */
+}
+
+.customCheckbox.checked.darkTheme {
+  color: #0a84ff; /* White for dark mode checked state */
+}
+
+.deleteButton {
+  width: 100%;
+  padding: 13.5px 16px;
+  margin-top: 16px;
+  border-radius: 12px;
+  background: #ffffff; /* Light mode */
+  border: none;
+  color: #ff453a; /* Red for delete */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s ease, color 0.3s ease;
+}
+
+.deleteButton.darkTheme {
+  background: #2c2c2e; /* Dark mode */
+  color: #ff453a;
+}
+
+.deleteButton:hover {
+  background: #f5f5f5; /* Light mode hover */
+}
+
+.deleteButton.darkTheme:hover {
+  background: #3a3a3c; /* Dark mode hover */
+}
+
+/* NEW: Container for footer buttons (Add Sheets and Delete Folder) */
+.buttonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* NEW: Style for Add Sheets button, replacing original .actionButton */
+.actionButton {
+  width: 100%;
+  padding: 13.5px 16px;
+  border-radius: 12px;
+  background: #ffffff; /* Light mode */
+  border: none;
+  color: #007aff; /* Light mode text */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s ease, color 0.3s ease;
+}
+
+.actionButton.darkTheme {
+  background: #2c2c2e; /* Dark mode */
+  color: #0a84ff; /* Dark mode text */
+}
+
+.actionButton:hover {
+  background: #f5f5f5; /* Light mode hover */
+}
+
+.actionButton.darkTheme:hover {
+  background: #3a3a3c; /* Dark mode hover */
+}
+
+.noSheets {
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666; /* Light mode */
+  transition: color 0.3s ease; /* Smooth theme transition */
+}
+
+.noSheets.darkTheme {
+  color: #aaa; /* Dark mode */
+}

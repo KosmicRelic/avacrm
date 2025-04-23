@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import GaugeComponent from 'react-gauge-component';
@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import styles from './MetricChart.module.css';
 import dashboardStyles from './Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
+import { debounce } from 'lodash';
 
 // Register Chart.js components
 ChartJS.register(
@@ -27,7 +28,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Filler // Register Filler plugin
+  Filler
 );
 
 // Error Boundary Component
@@ -50,6 +51,33 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
   const appleBlue = '#007AFF';
   const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
   const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
+  const chartContainerRef = useRef(null);
+  const resizeObserverRef = useRef(null);
+
+  // Debounce resize handler to prevent rapid resize events
+  const debouncedResize = debounce(() => {
+    if (chartContainerRef.current) {
+      // Force a layout recalculation only when necessary
+      chartContainerRef.current.style.width = '100%';
+      chartContainerRef.current.style.height = '100%';
+    }
+  }, 100);
+
+  useEffect(() => {
+    // Set up ResizeObserver with debouncing
+    if (chartContainerRef.current) {
+      resizeObserverRef.current = new ResizeObserver(debouncedResize);
+      resizeObserverRef.current.observe(chartContainerRef.current);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+      debouncedResize.cancel();
+    };
+  }, []);
 
   const getDefaultMetric = (type) => {
     switch (type) {
@@ -126,7 +154,11 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
 
   return (
     <ChartErrorBoundary>
-      <div className={styles.chartContainer}>
+      <div
+        ref={chartContainerRef}
+        className={styles.chartContainer}
+        style={{ contain: 'layout' }}
+      >
         {(() => {
           switch (effectiveMetric.type) {
             case 'line':
@@ -180,27 +212,27 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
                     type="semicircle"
                     arc={{
                       colorArray: [`${appleBlue}33`, appleBlue],
-                      padding: 0.01, // Thinner padding
-                      width: 0.2, // Very thin arc
+                      padding: 0.01,
+                      width: 0.2,
                     }}
                     pointer={{
                       color: isDarkTheme ? '#666' : '#999',
-                      length: 0.7, // Shorter pointer
-                      width: 8, // Thinner pointer
+                      length: 0.7,
+                      width: 8,
                       elastic: true,
                     }}
                     labels={{
                       valueLabel: {
-                        style: { fontSize: '12px', fill: textColor }, // Tiny value label
+                        style: { fontSize: '12px', fill: textColor },
                         formatTextValue: (value) => `${value}%`,
                       },
                       tickLabels: {
                         defaultTickValueConfig: {
-                          style: { fontSize: '6px', fill: textColor }, // Tiny tick labels
+                          style: { fontSize: '6px', fill: textColor },
                         },
                       },
                     }}
-                    style={{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%' }}
+                    style={{ width: '100%', height: '100%' }}
                     minValue={0}
                     maxValue={100}
                   />
