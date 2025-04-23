@@ -50,6 +50,7 @@ const Metrics = ({ selectedMetricData }) => {
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={`${styles.categoryList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <h3 className = {`${styles.titleMetrics} ${isDarkTheme ? styles.darkTheme : ''}`}>Metrics</h3>
           {metricsCategories.length > 0 ? (
             metricsCategories.map((category, index) => (
               <button

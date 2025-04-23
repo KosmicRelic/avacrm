@@ -3,7 +3,8 @@ import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 import { FaChevronRight } from 'react-icons/fa';
-import MetricChart from '../../MetricChart';
+import MetricChart from '../../Metrics/MetricChart/MetricChart';
+
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme, metricsCategories } = useContext(MainContext);

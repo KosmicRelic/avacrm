@@ -66,7 +66,7 @@
   max-height: 100%; /* Strictly enforce grid height */
   box-sizing: border-box;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   cursor: default;
@@ -77,7 +77,7 @@
 .smallWindow.darkTheme,
 .mediumWindow.darkTheme,
 .largeWindow.darkTheme {
-  background: rgba(44, 44, 46, 0.95);
+  background: rgba(28, 28, 30);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -314,14 +314,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  top: -0.5em;
-  left: -0.5em;
+  top: 0.5em;
+  left: 0.5em;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   transition: background 0.2s ease;
   padding: 0;
-  color: rgb(99, 99, 99);
+  color: rgb(235, 0, 0);
 }
 
 /* Dragging state */

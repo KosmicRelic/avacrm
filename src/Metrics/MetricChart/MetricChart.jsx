@@ -15,7 +15,7 @@ import {
   Filler, // Add Filler plugin import
 } from 'chart.js';
 import styles from './MetricChart.module.css';
-import dashboardStyles from './Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
+import dashboardStyles from '../../Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
 import { debounce } from 'lodash';
 
 // Register Chart.js components

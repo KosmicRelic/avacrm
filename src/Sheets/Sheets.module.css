@@ -32,7 +32,7 @@
 }
 
 .tableContainer.darkTheme {
-  background: rgb(44, 44, 46);
+  background: rgb(28, 28, 30);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
@@ -59,7 +59,7 @@
 }
 
 .cardDetailsContainer.darkTheme {
-  background: rgb(44, 44, 46);
+  background: rgb(28, 28, 30);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 

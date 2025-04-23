@@ -485,7 +485,7 @@ export const MainContextProvider = ({ children }) => {
           id: 'widget-revenue-3',
           size: 'small',
           title: 'Leads',
-          metricId: 'metric-close-rate',
+          metricId: 'metric-lead-growth',
           position: { row: 0, col: 0 },
           dashboardId: 'dashboard-1',
         },
