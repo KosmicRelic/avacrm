@@ -850,8 +850,8 @@
     margin: 0;
     padding: 0;
     border-radius: 0;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
   }
 
   .cardDetailsContainer {

@@ -18,7 +18,7 @@ import TransportModal from './Modal/Cards Transportaion Modal/TransportModal';
 import FolderOperations from './Modal/Folder Modal/FolderModal';
 import Dashboard from './Dashboard/Dashboard';
 import WidgetSizeModal from './Modal/WidgetSizeModal/WidgetSizeModal';
-import MetricsCategories from './Dashboard/MetricsCategories/MetricsCategories';
+import MetricsCategories from './Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from './Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from './Modal/MetricsModal/MetricsModal';
 import Metrics from './Metrics/Metrics';
@@ -43,8 +43,8 @@ function App() {
     setCurrentSectionIndex,
     dashboards,
     setDashboards,
-    metricsCategories,
-    setMetricsCategories,
+    metrics,
+    setMetrics,
   } = useContext(MainContext);
 
   const sheetModal = useModal();
@@ -319,6 +319,11 @@ function App() {
           }
           break;
         case 'widgetView':
+          if (data?.action === 'deleteCategories' && data?.deletedCategories) {
+            setMetrics((prev) =>
+              prev.filter((category) => !data.deletedCategories.includes(category.category))
+            );
+          }
           break;
         case 'widgetSetup':
           if (!data?.updatedWidget || !data?.dashboardId) {
@@ -341,7 +346,7 @@ function App() {
           break;
         case 'metrics':
           if (data?.currentCategories) {
-            setMetricsCategories([...data.currentCategories]);
+            setMetrics([...data.currentCategories]);
           }
           break;
         default:
@@ -368,7 +373,7 @@ function App() {
       handleSheetChange,
       setDashboards,
       activeDashboard,
-      setMetricsCategories,
+      setMetrics,
     ]
   );
 
@@ -472,10 +477,10 @@ function App() {
 
   const onManageMetrics = useCallback(
     () => {
-      setActiveModal({ type: 'metrics', data: { currentCategories: [...metricsCategories] } });
+      setActiveModal({ type: 'metrics', data: { currentCategories: [...metrics] } });
       metricsModal.open();
     },
-    [metricsModal, metricsCategories]
+    [metricsModal, metrics]
   );
 
   const onOpenSheetsModal = useCallback(
@@ -554,7 +559,7 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (type === 'metric') {
-        const categoryObj = metricsCategories.find((cat) =>
+        const categoryObj = metrics.find((cat) =>
           cat.metrics.some((m) => m.id === metric.id)
         );
         if (!categoryObj) {
@@ -568,7 +573,14 @@ function App() {
         setActiveOption('metrics');
       }
     },
-    [widgetSetupModal, activeDashboard, metricsCategories, setActiveOption, setSelectedMetricData]
+    [widgetSetupModal, activeDashboard, metrics, setActiveOption, setSelectedMetricData]
+  );
+
+  const handleMetricDataChange = useCallback(
+    (newMetricData) => {
+      setSelectedMetricData(newMetricData);
+    },
+    [setSelectedMetricData]
   );
 
   const handleOpenProfileModal = useCallback(() => {
@@ -717,7 +729,7 @@ function App() {
       case 'metrics':
         return (
           <MetricsModal
-            tempData={activeModal.data || { currentCategories: [...metricsCategories] }}
+            tempData={activeModal.data || { currentCategories: [...metrics] }}
             setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
@@ -767,7 +779,11 @@ function App() {
           />
         )}
         {activeOption === 'metrics' && (
-          <Metrics selectedMetricData={selectedMetricData} />
+          <Metrics
+            selectedMetricData={selectedMetricData}
+            onEditMetrics={onManageMetrics}
+            onMetricDataChange={handleMetricDataChange} // Pass the handler
+          />
         )}
         {activeModal && (
           <Modal

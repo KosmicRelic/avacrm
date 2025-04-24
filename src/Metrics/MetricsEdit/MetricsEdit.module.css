@@ -211,7 +211,7 @@
   margin-top: 20px;
 }
 
-/* New styles for metrics display */
+/* Styles for metrics display */
 .metricsList {
   display: flex;
   flex-direction: column;
@@ -223,23 +223,38 @@
 
 .metricItem {
   padding: 16px;
-  /* border-bottom: 1px solid rgba(0, 0, 0, 0.08); */
-  background: rgba(255, 255, 255, 0.95); /* Dark mode */
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
   cursor: pointer;
   height: 150px;
   border-radius: 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
 .metricItem.darkTheme {
-  background: rgba(44, 44, 46); /* Dark mode */
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .metricItem:last-child {
   border-bottom: none;
 }
 
-.metricButton{
+.metricItem:hover {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.metricItem.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metricButton {
   text-align: left;
   width: 100%;
   background-color: transparent;
@@ -293,6 +308,56 @@
   background: rgba(44, 44, 46); /* Dark mode */
   color: #ffffff;
 }
-.metricDetails p{
-  margin:0;
+
+.metricDetails p {
+  margin: 0;
+}
+
+/* New styles for checkbox icons in edit mode */
+.selectionCircle {
+  color: #0a84ff;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.2s ease, border-color 0.3s ease;
+}
+
+.selectionCircle.darkTheme {
+  border-color: #0a84ff;
+}
+
+.selectionCircle.selected {
+  background: #007aff;
+}
+
+.selectionCircle.darkTheme.selected {
+  background: #0a84ff;
+}
+
+.customCheckbox {
+  color: #007aff;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.customCheckbox.darkTheme {
+  color: #0a84ff;
+}
+
+.customCheckbox:hover {
+  transform: scale(1.1);
+}
+
+.customCheckbox.checked {
+  color: #0a84ff;
+}
+
+.customCheckbox.checked.darkTheme {
+  color: #0a84ff;
 }

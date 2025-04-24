@@ -5,7 +5,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 
 const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClose }) => {
-  const { metricsCategories, isDarkTheme } = useContext(MainContext);
+  const { metrics, isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [selectedCategory, setSelectedCategory] = useState(tempData.category || '');
   const [selectedMetric, setSelectedMetric] = useState(tempData.metric || '');
@@ -32,10 +32,10 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   // Get the metric name for the title
   const getMetricName = useCallback(() => {
     if (!selectedCategory || !selectedMetric) return 'Select Metric';
-    const categoryData = metricsCategories.find((cat) => cat.category === selectedCategory);
+    const categoryData = metrics.find((cat) => cat.category === selectedCategory);
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
     return metricData?.name || 'Select Metric';
-  }, [selectedCategory, selectedMetric, metricsCategories]);
+  }, [selectedCategory, selectedMetric, metrics]);
 
   // Memoize the title function
   const getStepTitle = useCallback(
@@ -163,7 +163,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       return;
     }
 
-    const categoryData = metricsCategories.find((cat) => cat.category === selectedCategory);
+    const categoryData = metrics.find((cat) => cat.category === selectedCategory);
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
 
     if (!metricData) {
@@ -194,11 +194,11 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     };
     setTempData(newTempData);
     setActiveModalData(newTempData);
-  }, [selectedCategory, selectedMetric, metricsCategories, setTempData, setActiveModalData, tempData]);
+  }, [selectedCategory, selectedMetric, metrics, setTempData, setActiveModalData, tempData]);
 
   // Fixed: Changed 'category' to 'selectedCategory'
-  const metrics = selectedCategory
-    ? metricsCategories.find((cat) => cat.category === selectedCategory)?.metrics || []
+  const selectedMetrics = selectedCategory
+    ? metrics.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
 
   const toggleEdit = useCallback(
@@ -226,7 +226,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
   const getFieldValue = (index) => {
     if (index === 0) return selectedCategory || 'None';
     if (index === 1) {
-      return selectedMetric ? metrics.find((m) => m.id === selectedMetric)?.name || 'None' : 'None';
+      return selectedMetric ? selectedMetrics.find((m) => m.id === selectedMetric)?.name || 'None' : 'None';
     }
     return 'None';
   };
@@ -279,7 +279,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <option value="">Select a category</option>
-                    {metricsCategories.map((cat) => (
+                    {metrics.map((cat) => (
                       <option key={cat.category} value={cat.category}>
                         {cat.category}
                       </option>
@@ -293,7 +293,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <option value="">Select a metric</option>
-                    {metrics.map((metric) => (
+                    {selectedMetrics.map((metric) => (
                       <option key={metric.id} value={metric.id}>
                         {metric.name}
                       </option>

@@ -54,18 +54,19 @@
   left: 100%; /* Start off-screen to the right */
   width: 400px;
   height: 100%;
-  background: rgba(243, 242, 248);
-  backdrop-filter: blur(20px);
+  background: rgba(243, 242, 248, 0.7);
+  backdrop-filter: blur(4px);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   padding: 20px;
   border-radius: 14px 0 0 14px; /* Rounded left corners */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  z-index: 1000;
 }
 
 .profileContent.darkTheme {
-  background: rgb(28, 28, 30);
+  background: rgb(28, 28, 30, 0.7);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 

@@ -416,7 +416,7 @@ export const MainContextProvider = ({ children }) => {
     },
   ]);
 
-  const [metricsCategories, setMetricsCategories] = useState([
+  const [metrics, setMetrics] = useState([
     {
       category: 'Financials',
       metrics: [
@@ -615,8 +615,8 @@ export const MainContextProvider = ({ children }) => {
         setEditMode,
         dashboards,
         setDashboards,
-        metricsCategories,
-        setMetricsCategories,
+        metrics,
+        setMetrics,
       }}
     >
       {children}

@@ -7,12 +7,12 @@ import MetricChart from '../../Metrics/MetricChart/MetricChart';
 
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
-  const { isDarkTheme, metricsCategories } = useContext(MainContext);
+  const { isDarkTheme, metrics } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Fetch metric data using metricId from metricsCategories
+  // Fetch metric data using metricId from metrics
   const metric = widget?.metricId
-    ? metricsCategories
+    ? metrics
         .flatMap((category) => category.metrics)
         .find((m) => m.id === widget.metricId)
     : null;

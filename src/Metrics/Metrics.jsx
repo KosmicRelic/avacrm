@@ -4,22 +4,20 @@ import styles from './Metrics.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import MetricsContent from './MetricsContent/MetricsContent';
 
-const Metrics = ({ selectedMetricData }) => {
-  const { isDarkTheme, metricsCategories } = useContext(MainContext);
+const Metrics = ({ selectedMetricData, onEditMetrics, onMetricDataChange }) => {
+  const { isDarkTheme, metrics } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
 
-  const isMobile = windowWidth <= 767; // Adjusted to match 767px threshold
+  const isMobile = windowWidth <= 767;
 
-  // Update window width on resize
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Set selectedCategory from selectedMetricData or reset when metricsCategories changes
   useEffect(() => {
     if (selectedMetricData?.category) {
       setSelectedCategory(selectedMetricData.category);
@@ -28,31 +26,47 @@ const Metrics = ({ selectedMetricData }) => {
       setSelectedCategory(null);
       setIsClosing(false);
     }
-  }, [selectedMetricData, metricsCategories]);
+  }, [selectedMetricData]);
 
-  // Handle category click
   const handleCategoryClick = (category) => {
     if (selectedCategory?.category === category.category && isMobile) {
-      setIsClosing(true); // Trigger slide-out on mobile if same category
+      setIsClosing(true);
     } else {
       setSelectedCategory(category);
-      setIsClosing(false); // Ensure slide-in for new category
+      setIsClosing(false);
+      // Clear the selected metric when changing categories
+      if (selectedMetricData?.metric && onMetricDataChange) {
+        onMetricDataChange({ category, metric: null });
+      }
     }
   };
 
-  // Handle close from MetricsContent
   const handleClose = () => {
     setSelectedCategory(null);
-    setIsClosing(false); // Reset isClosing to allow reopening
+    setIsClosing(false);
+  };
+
+  const handleEditMetrics = () => {
+    onEditMetrics();
   };
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={`${styles.categoryList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <h3 className = {`${styles.titleMetrics} ${isDarkTheme ? styles.darkTheme : ''}`}>Metrics</h3>
-          {metricsCategories.length > 0 ? (
-            metricsCategories.map((category, index) => (
+          <div className={styles.titleContainer}>
+            <h3 className={`${styles.titleMetrics} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              Metrics
+            </h3>
+            <button
+              className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleEditMetrics}
+            >
+              Edit
+            </button>
+          </div>
+          {metrics.length > 0 ? (
+            metrics.map((category, index) => (
               <button
                 key={`${category.category}-${index}`}
                 className={`${styles.categoryItem} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -74,7 +88,7 @@ const Metrics = ({ selectedMetricData }) => {
         <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <MetricsContent
             selectedCategory={selectedCategory}
-            selectedMetric={selectedMetricData?.metric || null} // Pass metric for step 2
+            selectedMetric={selectedMetricData?.metric || null}
             previousTitle={selectedCategory?.category}
             onClose={handleClose}
           />
@@ -88,7 +102,7 @@ const Metrics = ({ selectedMetricData }) => {
         >
           <MetricsContent
             selectedCategory={selectedCategory}
-            selectedMetric={selectedMetricData?.metric || null} // Pass metric for step 2
+            selectedMetric={selectedMetricData?.metric || null}
             previousTitle={selectedCategory?.category}
             onClose={handleClose}
           />
@@ -120,6 +134,8 @@ Metrics.propTypes = {
       data: PropTypes.object,
     }),
   }),
+  onEditMetrics: PropTypes.func.isRequired,
+  onMetricDataChange: PropTypes.func, // New prop for updating selectedMetricData
 };
 
 export default Metrics;

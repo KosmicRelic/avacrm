@@ -21,7 +21,7 @@
 .view {
   width: 100%;
   box-sizing: border-box;
-  background: #f2f2f7;
+  /* background: #f2f2f7; */
   border-radius: 16px;
   position: static; /* Changed from absolute to flow naturally */
   /* Removed top: 0, left: 0 as no longer positioned absolutely */
@@ -34,7 +34,6 @@
 }
 
 .view.darkTheme {
-  background: rgba(28, 28, 30);
 }
 
 .hidden {

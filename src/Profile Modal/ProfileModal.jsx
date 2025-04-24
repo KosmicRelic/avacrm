@@ -13,7 +13,6 @@ const ProfileModal = ({
   setActiveOption,
   onOpenCardsTemplateModal,
   onOpenSheetsModal,
-  onOpenMetricsModal, // Added prop
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -45,14 +44,6 @@ const ProfileModal = ({
 
   const handleCardsClick = () => {
     handleButtonClick(onOpenCardsTemplateModal);
-  };
-
-  const handleSheetsOrderClick = () => {
-    handleButtonClick(onOpenSheetsModal);
-  };
-
-  const handleMetricsClick = () => {
-    handleButtonClick(onOpenMetricsModal); // Added handler
   };
 
   if (!isOpen && !isAnimating) return null;
@@ -90,13 +81,6 @@ const ProfileModal = ({
           >
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
-          </button>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleMetricsClick}
-          >
-            <FaChartBar size={16} style={{ marginRight: "8px" }} />
-            Metrics
           </button>
         </div>
       </div>

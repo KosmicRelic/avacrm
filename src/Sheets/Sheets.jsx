@@ -226,15 +226,6 @@ const Sheets = ({
     [rows, setSheets, setCards, onCardSave, sheets.allSheets]
   );
 
-  const handleCardDelete = useCallback(
-    (rowData) => {
-      onCardDelete(rowData);
-      setSelectedRow(null);
-      setIsEditorOpen(false);
-    },
-    [onCardDelete]
-  );
-
   const handleFolderClick = useCallback(
     (folderName) => {
       onOpenFolderModal(folderName);

@@ -21,6 +21,8 @@ const MetricsContent = ({ selectedCategory, selectedMetric, previousTitle, onClo
       setLocalSelectedMetric(null);
       setIsClosing(false);
     } else {
+      setCurrentStep(1);
+      setLocalSelectedMetric(null);
       setIsClosing(true);
     }
   }, [selectedMetric, selectedCategory]);

@@ -71,8 +71,8 @@
 }
 
 .modalContent {
-  background: rgba(243, 242, 248);
-  backdrop-filter: blur(20px);
+  background: rgba(243, 242, 248, 0.7);
+  backdrop-filter: blur(4px);
   padding: 20px;
   border-radius: 20px;
   width: 100%;
@@ -89,7 +89,7 @@
 }
 
 .modalContent.darkTheme {
-  background: rgba(28, 28, 30);
+  background: rgba(28, 28, 30, 0.7);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
