@@ -2,8 +2,8 @@
   position: fixed;
   top: 0;
   width: 100%;
-  background: rgba(243, 242, 248);
-  backdrop-filter: blur(20px);
+  background: rgba(243, 242, 248, 0.7);
+  backdrop-filter: blur(4px);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   z-index: 1000;
   padding: 0 16px;
@@ -13,7 +13,7 @@
 }
 
 .headerContainer.darkTheme {
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .headerTop {
@@ -226,10 +226,10 @@
     flex-direction: column;
     align-items: stretch;
     min-height: 56px;
-    background: rgba(243, 242, 248);
+    background: rgba(243, 242, 248, 0.7);
   }
   .headerContainer.darkTheme {
-    background-color: rgba(0, 0, 0, 0.95);
+    background-color: rgba(0, 0, 0, 0.7);
   }
   .headerTop {
     justify-content: space-between;

@@ -3,9 +3,9 @@
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 64px;
+  margin-top: 0px;
   padding: 16px;
-  padding-top: 0;
+  padding-top: 64px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -111,7 +111,8 @@
 @media (max-width: 768px) {
   .dashboardWrapper {
     max-width: 100%;
-    margin-top: 56px;
+    margin-top: 0;
+    padding-top: 56px;
     overflow-x: auto;
   }
 
