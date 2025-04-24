@@ -60,7 +60,7 @@ function App() {
   const widgetSetupModal = useModal();
   const metricsModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
-  const [activeOption, setActiveOption] = useState('metrics');
+  const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');

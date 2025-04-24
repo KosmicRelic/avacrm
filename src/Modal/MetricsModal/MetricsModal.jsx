@@ -1,4 +1,3 @@
-// components/Modal/MetricsModal/MetricsModal.js
 import { useContext, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import PropTypes from "prop-types";
 import styles from "./MetricsModal.module.css";
@@ -45,15 +44,17 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const [metricForm, setMetricForm] = useState({
     name: "",
     cardTemplates: [],
-    field: "",
-    aggregation: "count",
+    fields: [], // Changed from field to fields (array)
+    aggregation: "average",
     visualizationType: "line",
-    dateRange: { start: "2025-01-01", end: "2025-04-24" },
+    dateRange: { start: "2023-01-01", end: "2025-04-24" },
     filter: { key: "", value: "" },
-    groupBy: "", // e.g., "cardType" or filter.key
+    groupBy: "",
+    includeHistory: true, // New: Toggle for including history
+    granularity: "monthly", // New: Default to monthly
   });
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
-  const [activeMetricIndex, setActiveMetricIndex] = useState(-1); // Default to -1 for adding
+  const [activeMetricIndex, setActiveMetricIndex] = useState(-1);
   const hasInitialized = useRef(false);
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
@@ -78,10 +79,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     []
   );
 
-  // Validation function for dynamic metric
+  // Validation function for metric
   const validateMetric = useCallback(
     (form) => {
-      const { name, cardTemplates, field } = form;
+      const { name, cardTemplates, fields } = form;
       const trimmedName = name.trim();
       if (!trimmedName) {
         alert("Metric name must be non-empty.");
@@ -91,8 +92,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         alert("Please select at least one card template.");
         return false;
       }
-      if (!field) {
-        alert("Please select a field.");
+      if (fields.length === 0) {
+        alert("Please select at least one field.");
         return false;
       }
       const nameConflict = currentCategories[activeCategoryIndex]?.metrics.some(
@@ -112,12 +113,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setMetricForm({
       name: "",
       cardTemplates: [],
-      field: "",
-      aggregation: "count",
+      fields: [],
+      aggregation: "average",
       visualizationType: "line",
-      dateRange: { start: "2025-01-01", end: "2025-04-24" },
+      dateRange: { start: "2023-01-01", end: "2025-04-24" },
       filter: { key: "", value: "" },
       groupBy: "",
+      includeHistory: true,
+      granularity: "monthly",
     });
   }, []);
 
@@ -128,7 +131,17 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       cardTemplates: prev.cardTemplates.includes(template)
         ? prev.cardTemplates.filter((t) => t !== template)
         : [...prev.cardTemplates, template],
-      field: "", // Reset field when templates change
+      fields: [], // Reset fields when templates change
+    }));
+  }, []);
+
+  // Toggle field selection
+  const toggleField = useCallback((field) => {
+    setMetricForm((prev) => ({
+      ...prev,
+      fields: prev.fields.includes(field)
+        ? prev.fields.filter((f) => f !== field)
+        : [...prev.fields, field],
     }));
   }, []);
 
@@ -141,7 +154,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           .filter((t) => t.typeOfCards === type)
           .flatMap((t) => t.sections.flatMap((s) => s.keys))
       )
-      .filter((key, index, self) => self.indexOf(key) === index); // Unique keys
+      .filter((key, index, self) => self.indexOf(key) === index);
     return headers
       .filter((header) => validKeys.includes(header.key))
       .map((header) => ({
@@ -162,20 +175,20 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const addMetric = useCallback(() => {
     if (!validateMetric(metricForm)) return;
 
-    const { name, cardTemplates, field, aggregation, visualizationType, dateRange, filter, groupBy } = metricForm;
-    const config = { cardTemplates, field, aggregation, dateRange, filter, groupBy, visualizationType };
+    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filter, groupBy, includeHistory, granularity } = metricForm;
+    const config = { cardTemplates, fields, aggregation, dateRange, filter, groupBy, visualizationType, includeHistory, granularity };
     const data = computeMetricData(cards, config);
 
     const newMetric = {
       id: `metric-${uuidv4()}`,
-      name: name.trim(),
+      name: name.trim(), // Ensure full name is saved
       type: visualizationType,
       config,
       data,
       value: visualizationType === "number" ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
     };
 
-    console.log('Adding metric:', newMetric); // Debug: Log saved metric
+    console.log('Adding metric:', newMetric);
 
     setCurrentCategories((prev) =>
       prev.map((c, i) =>
@@ -192,29 +205,22 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   // Update existing metric
   const updateMetric = useCallback(
     (metricIndex) => {
-      if (
-        !validateMetric(
-          { name: metricForm.name, cardTemplates: metricForm.cardTemplates, field: metricForm.field },
-          true,
-          metricIndex
-        )
-      )
-        return;
+      if (!validateMetric(metricForm)) return;
 
-      const { name, cardTemplates, field, aggregation, visualizationType, dateRange, filter, groupBy } = metricForm;
-      const config = { cardTemplates, field, aggregation, dateRange, filter, groupBy, visualizationType };
+      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filter, groupBy, includeHistory, granularity } = metricForm;
+      const config = { cardTemplates, fields, aggregation, dateRange, filter, groupBy, visualizationType, includeHistory, granularity };
       const data = computeMetricData(cards, config);
 
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
-        name: name.trim(),
+        name: name.trim(), // Ensure full name is saved
         type: visualizationType,
         config,
         data,
         value: visualizationType === "number" ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
       };
 
-      console.log('Updating metric:', updatedMetric); // Debug: Log updated metric
+      console.log('Updating metric:', updatedMetric);
 
       setCurrentCategories((prev) =>
         prev.map((c, i) =>
@@ -312,7 +318,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             rightButton: {
               label: "Save",
               onClick: saveMetric,
-              isActive: metricForm.name && metricForm.field && metricForm.cardTemplates.length > 0,
+              isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
             },
             leftButton: {
               label: "Cancel",
@@ -388,7 +394,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: "Save",
           onClick: saveMetric,
-          isActive: metricForm.name && metricForm.field && metricForm.cardTemplates.length > 0,
+          isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
         },
         leftButton: {
           label: "Cancel",
@@ -435,12 +441,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         setMetricForm({
           name: metric.name,
           cardTemplates: metric.config?.cardTemplates || [],
-          field: metric.config?.field || "",
-          aggregation: metric.config?.aggregation || "count",
+          fields: metric.config?.fields || [], // Changed from field
+          aggregation: metric.config?.aggregation || "average",
           visualizationType: metric.type || "line",
-          dateRange: metric.config?.dateRange || { start: "2025-01-01", end: "2025-04-24" },
+          dateRange: metric.config?.dateRange || { start: "2023-01-01", end: "2025-04-24" },
           filter: metric.config?.filter || { key: "", value: "" },
           groupBy: metric.config?.groupBy || "",
+          includeHistory: metric.config?.includeHistory !== undefined ? metric.config.includeHistory : true,
+          granularity: metric.config?.granularity || "monthly",
         });
       } else {
         resetForm();
@@ -452,16 +460,18 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Render chart preview
   const renderChartPreview = () => {
-    if (!metricForm.field || metricForm.cardTemplates.length === 0) return null;
+    if (!metricForm.fields.length || metricForm.cardTemplates.length === 0) return null;
 
     const config = {
-      field: metricForm.field,
+      fields: metricForm.fields,
       aggregation: metricForm.aggregation,
       dateRange: metricForm.dateRange,
       cardTemplates: metricForm.cardTemplates,
       filter: metricForm.filter.key && metricForm.filter.value ? metricForm.filter : null,
       groupBy: metricForm.groupBy || "cardType",
       visualizationType: metricForm.visualizationType,
+      includeHistory: metricForm.includeHistory,
+      granularity: metricForm.granularity,
     };
 
     const data = computeMetricData(cards, config);
@@ -476,6 +486,15 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       plugins: {
         legend: { position: "top" },
         title: { display: true, text: metricForm.name || "Metric Preview" },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+          },
+        },
+      },
+      scales: {
+        x: { stacked: metricForm.visualizationType === "bar" },
+        y: { stacked: metricForm.visualizationType === "bar" },
       },
     };
 
@@ -487,7 +506,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         {metricForm.visualizationType === "number" && (
           <div className={styles.numberMetric}>
             <h3>{metricForm.name || "Preview"}</h3>
-            <p>{chartData.datasets[0]?.data[chartData.datasets[0].data.length - 1] || 0}</p>
+            <p>{chartData.datasets[0]?.data[chartData.datasets[0].data.length - 1]?.toFixed(2) || 0}</p>
           </div>
         )}
       </div>
@@ -509,9 +528,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           >
             {step === 1 && (
               <>
-                <div
-                  className={`${styles.createHeader} ${isDarkTheme ? styles.darkTheme : ""}`}
-                >
+                <div className={`${styles.createHeader} ${isDarkTheme ? styles.darkTheme : ""}`}>
                   <div className={styles.headerRow}>
                     <input
                       type="text"
@@ -619,20 +636,29 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   </div>
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Select Field</label>
-                  <select
-                    value={metricForm.field}
-                    onChange={(e) => setMetricForm((prev) => ({ ...prev, field: e.target.value }))}
-                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    disabled={metricForm.cardTemplates.length === 0}
-                  >
-                    <option value="">Select a field</option>
+                  <label>Select Fields</label>
+                  <div className={styles.cardList}>
                     {fieldOptions.map((field) => (
-                      <option key={field.key} value={field.key}>
-                        {field.name}
-                      </option>
+                      <div key={field.key} className={styles.cardItem}>
+                        <input
+                          type="checkbox"
+                          checked={metricForm.fields.includes(field.key)}
+                          onChange={() => toggleField(field.key)}
+                          disabled={metricForm.cardTemplates.length === 0}
+                        />
+                        <span>{field.name}</span>
+                      </div>
                     ))}
-                  </select>
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Include Field History</label>
+                  <input
+                    type="checkbox"
+                    checked={metricForm.includeHistory}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, includeHistory: e.target.checked }))}
+                  />
+                  <span>{metricForm.includeHistory ? "Include history" : "Use latest value only"}</span>
                 </div>
                 <div className={styles.formGroup}>
                   <label>Filter (Optional)</label>
@@ -678,6 +704,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   >
                     <option value="">None</option>
                     <option value="cardType">Card Template</option>
+                    <option value="field">Field</option>
                     {metricForm.filter.key && (
                       <option value={metricForm.filter.key}>
                         {filterKeyOptions.find((f) => f.key === metricForm.filter.key)?.name}
@@ -696,6 +723,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     <option value="count">Count</option>
                     <option value="average">Average</option>
                     <option value="sum">Sum</option>
+                    <option value="min">Min</option>
+                    <option value="max">Max</option>
+                    <option value="median">Median</option>
+                    <option value="stddev">Standard Deviation</option>
                   </select>
                 </div>
                 <div className={styles.formGroup}>
@@ -706,9 +737,20 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
                     <option value="line">Line Graph</option>
-                    <option value="bar">Bar Chart</option>
+                    <option value="bar">Bar Chart (Stacked)</option>
                     <option value="pie">Pie Chart</option>
                     <option value="number">Number</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Granularity</label>
+                  <select
+                    value={metricForm.granularity}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, granularity: e.target.value }))}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
                   </select>
                 </div>
                 <div className={styles.formGroup}>

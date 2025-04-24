@@ -3,7 +3,7 @@ import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 import { FaChevronRight } from 'react-icons/fa';
-import MetricChart from '../../Metrics/MetricChart/MetricChart';
+import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 
 
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
@@ -110,7 +110,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                 {metric ? (
                   isChartType ? (
                     <div className={styles.chartWrapper}>
-                      <MetricChart
+                      <CustomMetricChart
                         metric={metric}
                         isDarkTheme={isDarkTheme}
                         chartType={metric.type}

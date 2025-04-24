@@ -1,57 +1,160 @@
-// utils/metricsUtils.js
-import { format, startOfDay, addDays } from 'date-fns';
+import { format, startOfDay, addDays, startOfMonth, addMonths } from 'date-fns';
 
-// Convert Firebase timestamp to JavaScript Date
-const timestampToDate = (timestamp) => {
-  return new Date(timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000);
+// Helper to convert timestamp to Date
+export const timestampToDate = (timestamp) => {
+  if (typeof timestamp === 'object' && timestamp._seconds) {
+    return new Date(timestamp._seconds * 1000);
+  }
+  return new Date(timestamp);
 };
 
-// Get history entries for a specific field, filtered by cardTemplates and key-value filter
-export const getFieldChanges = (cards, field, dateRange, cardTemplates, filter = null) => {
+// Helper to calculate median
+const median = (values) => {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+// Helper to calculate standard deviation
+const stddev = (values) => {
+  if (!values.length) return 0;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+  return Math.sqrt(variance);
+};
+
+// Get field changes for multiple fields
+export const getFieldChanges = (cards, fields, dateRange, cardTemplates, filter = null, includeHistory = true) => {
+  console.log('getFieldChanges input:', { fields, dateRange, cardTemplates, filter, includeHistory });
   const { start, end } = dateRange;
   const startDate = startOfDay(new Date(start));
   const endDate = startOfDay(new Date(end));
 
-  return cards
-    .filter((card) => {
-      // Filter by cardTemplates
-      if (!cardTemplates.includes(card.type)) return false;
+  const filteredCards = cards.filter((card) => {
+    if (!cardTemplates.includes(card.typeOfCards)) return false;
+    if (filter && filter.key) {
+      if (card[filter.key]?.toString() === filter.value) return true;
+      const historyEntry = card.history?.find(
+        (entry) => entry.field === filter.key && (entry.value || entry.newValue) === filter.value
+      );
+      return !!historyEntry;
+    }
+    return true;
+  });
+  console.log('Filtered cards:', filteredCards);
 
-      // Apply key-value filter if provided
-      if (filter && filter.key) {
-        const historyEntry = card.history?.find(
-          (entry) => entry.field === filter.key && entry.newValue === filter.value
-        );
-        return !!historyEntry;
-      }
-      return true;
-    })
-    .flatMap((card) =>
+  let history = [];
+  let currentValues = [];
+
+  // Include history entries if enabled
+  if (includeHistory) {
+    history = filteredCards.flatMap((card) =>
       card.history
         .filter(
           (entry) =>
-            entry.field === field &&
+            fields.includes(entry.field) &&
             timestampToDate(entry.timestamp) >= startDate &&
             timestampToDate(entry.timestamp) <= endDate
         )
         .map((entry) => ({
           cardId: card.id,
-          cardType: card.type,
+          cardType: card.typeOfCards,
           field: entry.field,
-          oldValue: entry.oldValue,
-          newValue: entry.newValue,
+          oldValue: entry.oldValue || null,
+          newValue: entry.value || entry.newValue,
           timestamp: timestampToDate(entry.timestamp),
         }))
     );
+  }
+
+  // Include current field values
+  const latestHistoryTimestamp = history.length
+    ? Math.max(...history.map((h) => new Date(h.timestamp).getTime()))
+    : new Date(end).getTime();
+
+  currentValues = filteredCards.flatMap((card) =>
+    fields.map((field) => ({
+      cardId: card.id,
+      cardType: card.typeOfCards,
+      field,
+      oldValue: null,
+      newValue: card[field]?.toString(),
+      timestamp: new Date(latestHistoryTimestamp),
+    }))
+  );
+
+  const result = includeHistory ? [...currentValues, ...history] : currentValues;
+  const filteredResult = result.filter((entry) => entry.newValue !== undefined);
+  console.log('History and current entries:', filteredResult);
+  return filteredResult;
 };
 
-// Aggregate history data by day for line, bar, number, grouped by cardTemplate or filter
-export const aggregateByDay = (history, aggregation, groupBy = null) => {
-  if (!history.length) return { labels: [], datasets: [] };
-
-  // Group by date and optionally by groupBy (e.g., cardType or filter value)
+// Aggregate data for pie chart
+export const aggregateForPie = (history, groupBy) => {
   const grouped = history.reduce((acc, entry) => {
-    const date = format(entry.timestamp, 'yyyy-MM-dd');
+    const groupKey = groupBy ? entry[groupBy] : entry.cardType;
+    acc[groupKey] = (acc[groupKey] || 0) + 1;
+    return acc;
+  }, {});
+
+  const labels = Object.keys(grouped);
+  const values = Object.values(grouped);
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Count',
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${(i * 360) / labels.length}, 70%, 50%)`),
+        borderColor: '#fff',
+        borderWidth: 1,
+      },
+    ],
+  };
+};
+
+// Aggregate data by day or month
+export const aggregateByDay = (history, aggregation, groupBy = 'cardType', dateRange = null, granularity = 'monthly') => {
+  if (!history.length) {
+    console.log('No history entries, returning default dataset');
+    const defaultLabel = granularity === 'monthly' ? format(new Date(), 'yyyy-MM') : format(new Date(), 'yyyy-MM-dd');
+    return {
+      labels: [defaultLabel],
+      datasets: [
+        {
+          label: 'No Data',
+          data: [0],
+          borderColor: 'rgba(0, 122, 255, 1)',
+          backgroundColor: 'rgba(0, 122, 255, 0.2)',
+          fill: false,
+        },
+      ],
+    };
+  }
+
+  // Sort history by timestamp
+  const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  // Use dateRange if provided, otherwise derive from history
+  let startDate, endDate;
+  if (dateRange && dateRange.start && dateRange.end) {
+    startDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.start)) : startOfDay(new Date(dateRange.start));
+    endDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.end)) : startOfDay(new Date(dateRange.end));
+  } else {
+    startDate = granularity === 'monthly' ? startOfMonth(new Date(sortedHistory[0].timestamp)) : startOfDay(new Date(sortedHistory[0].timestamp));
+    endDate = granularity === 'monthly' ? startOfMonth(new Date(sortedHistory[sortedHistory.length - 1].timestamp)) : startOfDay(new Date(sortedHistory[sortedHistory.length - 1].timestamp));
+  }
+
+  if (startDate > endDate) {
+    console.log('startDate after endDate, swapping:', { startDate, endDate });
+    [startDate, endDate] = [endDate, startDate];
+  }
+
+  // Group by date and groupBy (cardType or field)
+  const grouped = history.reduce((acc, entry) => {
+    const date = format(entry.timestamp, granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
     const groupKey = groupBy ? entry[groupBy] : entry.cardType;
     if (!acc[date]) acc[date] = {};
     if (!acc[date][groupKey]) acc[date][groupKey] = [];
@@ -61,30 +164,42 @@ export const aggregateByDay = (history, aggregation, groupBy = null) => {
 
   // Generate labels
   const labels = [];
-  const startDate = startOfDay(new Date(history[0].timestamp));
-  const endDate = startOfDay(new Date(history[history.length - 1].timestamp));
-  for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
-    labels.push(format(date, 'yyyy-MM-dd'));
+  const addUnit = granularity === 'monthly' ? addMonths : addDays;
+  const startUnit = granularity === 'monthly' ? startOfMonth : startOfDay;
+  for (let date = startDate; date <= endDate; date = addUnit(date, 1)) {
+    labels.push(format(date, granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd'));
   }
 
   // Generate datasets
   const groups = [...new Set(history.map((entry) => (groupBy ? entry[groupBy] : entry.cardType)))];
-  const datasets = groups.map((group) => {
+  const datasets = groups.map((group, i) => {
     const values = labels.map((date) => {
       const entries = grouped[date]?.[group] || [];
+      const numericValues = entries
+        .map((e) => parseFloat(e.newValue))
+        .filter((v) => !isNaN(v));
       let value;
       switch (aggregation) {
         case 'count':
           value = entries.length;
           break;
         case 'average':
-          value =
-            entries.length > 0
-              ? entries.reduce((sum, e) => sum + parseFloat(e.newValue || 0), 0) / entries.length
-              : 0;
+          value = numericValues.length > 0 ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length : 0;
           break;
         case 'sum':
-          value = entries.reduce((sum, e) => sum + parseFloat(e.newValue || 0), 0);
+          value = numericValues.reduce((sum, v) => sum + v, 0);
+          break;
+        case 'min':
+          value = numericValues.length > 0 ? Math.min(...numericValues) : 0;
+          break;
+        case 'max':
+          value = numericValues.length > 0 ? Math.max(...numericValues) : 0;
+          break;
+        case 'median':
+          value = median(numericValues);
+          break;
+        case 'stddev':
+          value = stddev(numericValues);
           break;
         default:
           value = 0;
@@ -95,62 +210,40 @@ export const aggregateByDay = (history, aggregation, groupBy = null) => {
     return {
       label: group,
       data: values,
-      borderColor: getColor(group),
-      backgroundColor: getColor(group, 0.2),
-      fill: false,
+      borderColor: `hsl(${(i * 360) / groups.length}, 70%, 50%)`,
+      backgroundColor: `hsl(${(i * 360) / groups.length}, 70%, 50%, 0.2)`,
+      fill: aggregation === 'average',
+      stack: groupBy, // Enable stacking for bar charts
     };
   });
 
+  console.log('aggregateByDay output:', { labels, datasets });
   return { labels, datasets };
 };
 
-// Aggregate history data for pie charts (count unique values, grouped by cardTemplate or filter)
-export const aggregateForPie = (history, groupBy = null) => {
-  if (!history.length) return { labels: [], datasets: [] };
-
-  // Group by unique values and optionally by groupBy
-  const grouped = history.reduce((acc, entry) => {
-    const value = entry.newValue || 'Unknown';
-    const groupKey = groupBy ? entry[groupBy] : entry.cardType;
-    if (!acc[groupKey]) acc[groupKey] = {};
-    acc[groupKey][value] = (acc[groupKey][value] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Generate datasets
-  const groups = Object.keys(grouped);
-  const datasets = groups.map((group) => {
-    const labels = Object.keys(grouped[group]);
-    const values = Object.values(grouped[group]);
-    return {
-      label: group,
-      data: values,
-      backgroundColor: labels.map((_, i) => getColor(i)),
-    };
-  });
-
-  return { labels: Object.keys(grouped[groups[0]] || {}), datasets };
-};
-
-// Generate metric data based on config
+// Compute metric data
 export const computeMetricData = (cards, config) => {
-  const { field, dateRange, aggregation, cardTemplates, filter, visualizationType, groupBy } = config;
-  const history = getFieldChanges(cards, field, dateRange, cardTemplates, filter);
+  console.log('computeMetricData config:', config);
+  const { fields, dateRange, aggregation, cardTemplates, filter, visualizationType, groupBy, includeHistory, granularity } = config;
+  const history = getFieldChanges(cards, fields, dateRange, cardTemplates, filter, includeHistory);
+  console.log('History from getFieldChanges:', history);
 
   if (visualizationType === 'pie') {
-    return aggregateForPie(history, groupBy);
+    const result = aggregateForPie(history, groupBy);
+    console.log('Pie chart data:', result);
+    return result;
   }
-  return aggregateByDay(history, aggregation, groupBy);
+  const result = aggregateByDay(history, aggregation, groupBy, dateRange, granularity);
+  console.log('Line/Bar/Number chart data:', result);
+  return result;
 };
 
-// Helper to generate colors
-const getColor = (key, alpha = 1) => {
-  const colors = [
-    `rgba(0, 122, 255, ${alpha})`,
-    `rgba(255, 45, 85, ${alpha})`,
-    `rgba(52, 199, 89, ${alpha})`,
-    `rgba(255, 149, 0, ${alpha})`,
-    `rgba(88, 86, 214, ${alpha})`,
-  ];
-  return colors[typeof key === 'number' ? key % colors.length : key.charCodeAt(0) % colors.length];
+// Color helper
+export const getColor = (key, opacity = 1) => {
+  const colors = {
+    Leads: `rgba(255, 45, 85, ${opacity})`,
+    Deals: `rgba(0, 122, 255, ${opacity})`,
+    default: `rgba(0, 122, 255, ${opacity})`,
+  };
+  return colors[key] || colors.default;
 };

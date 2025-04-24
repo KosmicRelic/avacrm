@@ -12,9 +12,9 @@ import {
   BarElement,
   Tooltip,
   Legend,
-  Filler, // Add Filler plugin import
+  Filler,
 } from 'chart.js';
-import styles from './MetricChart.module.css';
+import styles from './CustomMetricChart.module.css';
 import dashboardStyles from '../../Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
 import { debounce } from 'lodash';
 
@@ -30,6 +30,9 @@ ChartJS.register(
   Legend,
   Filler
 );
+
+// Apple color palette for solid colors
+const appleColors = ['#5856D6', '#007AFF', '#34C759', '#FF2D55', '#AF52DE'];
 
 // Error Boundary Component
 class ChartErrorBoundary extends Component {
@@ -47,30 +50,27 @@ class ChartErrorBoundary extends Component {
   }
 }
 
-const MetricChart = ({ metric, isDarkTheme, chartType }) => {
+const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
   const appleBlue = '#007AFF';
   const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
   const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
   const chartContainerRef = useRef(null);
   const resizeObserverRef = useRef(null);
 
-  // Debounce resize handler to prevent rapid resize events
+  // Debounce resize handler
   const debouncedResize = debounce(() => {
     if (chartContainerRef.current) {
-      // Force a layout recalculation only when necessary
       chartContainerRef.current.style.width = '100%';
       chartContainerRef.current.style.height = '100%';
     }
   }, 100);
 
   useEffect(() => {
-    // Set up ResizeObserver with debouncing
     if (chartContainerRef.current) {
       resizeObserverRef.current = new ResizeObserver(debouncedResize);
       resizeObserverRef.current.observe(chartContainerRef.current);
     }
 
-    // Cleanup on unmount
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
@@ -88,7 +88,16 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
           type: 'line',
           data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            values: [12000, 19000, 15000, 22000, 18000, 25000],
+            datasets: [
+              {
+                label: 'Example Sales',
+                data: [12000, 19000, 15000, 22000, 18000, 25000],
+                borderColor: appleBlue,
+                backgroundColor: `${appleBlue}33`,
+                fill: true,
+                tension: 0.4, // Smooth lines
+              },
+            ],
           },
         };
       case 'pie':
@@ -98,7 +107,15 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
           type: 'pie',
           data: {
             labels: ['Product A', 'Product B', 'Product C', 'Product D'],
-            values: [30000, 20000, 15000, 10000],
+            datasets: [
+              {
+                label: 'Example Revenue',
+                data: [30000, 20000, 15000, 10000],
+                backgroundColor: [appleBlue, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`], // Fading effect
+                borderColor: backgroundColor,
+                borderWidth: 1,
+              },
+            ],
           },
         };
       case 'speedometer':
@@ -115,7 +132,15 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
           type: 'bar',
           data: {
             labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-            values: [50, 75, 60, 90],
+            datasets: [
+              {
+                label: 'Example Growth',
+                data: [50, 75, 60, 90],
+                backgroundColor: appleBlue, // Solid color
+                borderColor: appleBlue,
+                borderWidth: 1,
+              },
+            ],
           },
         };
       default:
@@ -128,10 +153,82 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
     }
   };
 
-  const effectiveMetric =
-    metric && metric.id && metric.name && metric.type && metric.data
-      ? metric
-      : getDefaultMetric(chartType || 'speedometer');
+  // Generate fading colors for pie charts
+  const getPieColors = (baseColor, numSegments) => {
+    const opacities = ['FF', 'CC', '99', '66']; // Fading effect
+    return Array.from({ length: numSegments }, (_, i) => `${baseColor}${opacities[i % opacities.length]}`);
+  };
+
+  // Normalize metric data to Chart.js format
+  const normalizeMetricData = (metric) => {
+    console.log('Received metric:', metric); // Debug
+    if (!metric || !metric.id || !metric.name || !metric.type || !metric.data) {
+      return getDefaultMetric(chartType || 'speedometer');
+    }
+
+    const { data, type, name } = metric;
+
+    if (type === 'speedometer') {
+      return metric;
+    }
+
+    if (data.datasets && Array.isArray(data.datasets)) {
+      return {
+        ...metric,
+        data: {
+          labels: data.labels || [],
+          datasets: data.datasets.map((dataset, i) => {
+            const baseColor = dataset.borderColor || appleColors[i % appleColors.length];
+            return {
+              ...dataset,
+              label: dataset.label || name,
+              borderColor: baseColor,
+              backgroundColor:
+                type === 'bar'
+                  ? baseColor // Solid color for bars
+                  : type === 'pie'
+                  ? getPieColors(baseColor, data.labels.length) // Fading colors for pie
+                  : `${baseColor}33`, // Transparent for line
+              fill: dataset.fill !== undefined ? dataset.fill : type === 'line',
+              borderWidth: dataset.borderWidth || (type === 'pie' ? 1 : undefined),
+              stack: dataset.stack || (type === 'bar' ? 'stack' : undefined),
+              tension: type === 'line' ? 0.4 : undefined, // Smooth lines for line charts
+            };
+          }),
+        },
+      };
+    }
+
+    if (data.labels && data.values) {
+      return {
+        ...metric,
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: name,
+              data: data.values,
+              borderColor: appleBlue,
+              backgroundColor:
+                type === 'bar'
+                  ? appleBlue // Solid color for bars
+                  : type === 'pie'
+                  ? getPieColors(appleBlue, data.labels.length) // Fading colors for pie
+                  : `${appleBlue}33`, // Transparent for line
+              fill: type === 'line',
+              borderWidth: type === 'pie' ? 1 : undefined,
+              stack: type === 'bar' ? 'stack' : undefined,
+              tension: type === 'line' ? 0.4 : undefined, // Smooth lines
+            },
+          ],
+        },
+      };
+    }
+
+    return getDefaultMetric(type || chartType || 'speedometer');
+  };
+
+  const effectiveMetric = normalizeMetricData(metric);
 
   const chartOptions = {
     responsive: true,
@@ -144,13 +241,26 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
         backgroundColor: isDarkTheme ? '#333' : '#FFF',
         titleColor: textColor,
         bodyColor: textColor,
+        callbacks: {
+          label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+        },
       },
     },
     scales: {
-      x: { ticks: { color: textColor }, grid: { color: isDarkTheme ? '#444' : '#DDD' } },
-      y: { ticks: { color: textColor }, grid: { color: isDarkTheme ? '#444' : '#DDD' } },
+      x: {
+        stacked: effectiveMetric.type === 'bar',
+        ticks: { color: textColor },
+        grid: { color: isDarkTheme ? '#444' : '#DDD' },
+      },
+      y: {
+        stacked: effectiveMetric.type === 'bar',
+        ticks: { color: textColor },
+        grid: { color: isDarkTheme ? '#444' : '#DDD' },
+      },
     },
   };
+
+  console.log('Effective metric data:', effectiveMetric.data); // Debug
 
   return (
     <ChartErrorBoundary>
@@ -164,36 +274,20 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
             case 'line':
               return (
                 <Line
-                  data={{
-                    labels: effectiveMetric.data.labels,
-                    datasets: [
-                      {
-                        label: effectiveMetric.name,
-                        data: effectiveMetric.data.values,
-                        borderColor: appleBlue,
-                        backgroundColor: `${appleBlue}33`,
-                        fill: true,
-                        tension: 0.4,
-                      },
-                    ],
+                  data={effectiveMetric.data}
+                  options={{
+                    ...chartOptions,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      legend: { position: 'top', labels: { color: textColor } },
+                    },
                   }}
-                  options={chartOptions}
                 />
               );
             case 'pie':
               return (
                 <Pie
-                  data={{
-                    labels: effectiveMetric.data.labels,
-                    datasets: [
-                      {
-                        data: effectiveMetric.data.values,
-                        backgroundColor: [appleBlue, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`],
-                        borderColor: backgroundColor,
-                        borderWidth: 1,
-                      },
-                    ],
-                  }}
+                  data={effectiveMetric.data}
                   options={{
                     ...chartOptions,
                     plugins: {
@@ -241,19 +335,14 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
             case 'bar':
               return (
                 <Bar
-                  data={{
-                    labels: effectiveMetric.data.labels,
-                    datasets: [
-                      {
-                        label: effectiveMetric.name,
-                        data: effectiveMetric.data.values,
-                        backgroundColor: appleBlue,
-                        borderColor: appleBlue,
-                        borderWidth: 1,
-                      },
-                    ],
+                  data={effectiveMetric.data}
+                  options={{
+                    ...chartOptions,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      legend: { position: 'top', labels: { color: textColor } },
+                    },
                   }}
-                  options={chartOptions}
                 />
               );
             default:
@@ -265,7 +354,7 @@ const MetricChart = ({ metric, isDarkTheme, chartType }) => {
   );
 };
 
-MetricChart.propTypes = {
+CustomMetricChart.propTypes = {
   metric: PropTypes.shape({
     id: PropTypes.string,
     name: PropTypes.string,
@@ -276,6 +365,20 @@ MetricChart.propTypes = {
         values: PropTypes.arrayOf(PropTypes.number),
       }),
       PropTypes.shape({
+        labels: PropTypes.arrayOf(PropTypes.string),
+        datasets: PropTypes.arrayOf(
+          PropTypes.shape({
+            label: PropTypes.string,
+            data: PropTypes.arrayOf(PropTypes.number),
+            borderColor: PropTypes.string,
+            backgroundColor: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+            fill: PropTypes.bool,
+            borderWidth: PropTypes.number,
+            stack: PropTypes.string,
+          })
+        ),
+      }),
+      PropTypes.shape({
         value: PropTypes.number,
       }),
     ]),
@@ -284,9 +387,9 @@ MetricChart.propTypes = {
   chartType: PropTypes.oneOf(['line', 'pie', 'speedometer', 'bar']),
 };
 
-MetricChart.defaultProps = {
+CustomMetricChart.defaultProps = {
   metric: null,
   chartType: 'speedometer',
 };
 
-export default MetricChart;
+export default CustomMetricChart;
