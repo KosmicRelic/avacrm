@@ -1,26 +1,64 @@
-import { useContext, useState, useCallback, useEffect, useRef } from "react";
+// components/Modal/MetricsModal/MetricsModal.js
+import { useContext, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import PropTypes from "prop-types";
 import styles from "./MetricsModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
+import { v4 as uuidv4 } from "uuid";
+import { computeMetricData } from "../../Metrics/metricsUtils";
+import { Line, Bar, Pie } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  PieController,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  PieController,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const MetricsModal = ({ tempData, setTempData, handleClose }) => {
-  const { metricsCategories = [], isDarkTheme } = useContext(MainContext);
+  const { metrics = [], isDarkTheme, cards, cardTemplates, headers } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [currentCategories, setCurrentCategories] = useState(() =>
-    (tempData.currentCategories || metricsCategories).map((c) => ({ ...c, metrics: [...c.metrics] }))
+    (tempData.currentCategories || metrics).map((c) => ({ ...c, metrics: [...c.metrics] }))
   );
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newMetricName, setNewMetricName] = useState("");
-  const [newMetricType, setNewMetricType] = useState("text");
-  const [newMetricValue, setNewMetricValue] = useState("");
+  const [metricForm, setMetricForm] = useState({
+    name: "",
+    cardTemplates: [],
+    field: "",
+    aggregation: "count",
+    visualizationType: "line",
+    dateRange: { start: "2025-01-01", end: "2025-04-24" },
+    filter: { key: "", value: "" },
+    groupBy: "", // e.g., "cardType" or filter.key
+  });
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
   const [activeMetricIndex, setActiveMetricIndex] = useState(-1); // Default to -1 for adding
   const hasInitialized = useRef(false);
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
 
-  // Validation function for category and metric
+  // Validation function for category
   const validateCategory = useCallback(
     (name, existingCategories, isUpdate = false, index = null) => {
       const trimmedName = name.trim();
@@ -40,16 +78,25 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     []
   );
 
+  // Validation function for dynamic metric
   const validateMetric = useCallback(
-    (name, value, existingMetrics, isUpdate = false, index = null) => {
+    (form) => {
+      const { name, cardTemplates, field } = form;
       const trimmedName = name.trim();
-      const trimmedValue = value.trim();
-      if (!trimmedName || !trimmedValue) {
-        alert("Metric name and value must be non-empty.");
+      if (!trimmedName) {
+        alert("Metric name must be non-empty.");
         return false;
       }
-      const nameConflict = existingMetrics.some(
-        (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && (!isUpdate || i !== index)
+      if (cardTemplates.length === 0) {
+        alert("Please select at least one card template.");
+        return false;
+      }
+      if (!field) {
+        alert("Please select a field.");
+        return false;
+      }
+      const nameConflict = currentCategories[activeCategoryIndex]?.metrics.some(
+        (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && i !== activeMetricIndex
       );
       if (nameConflict) {
         alert(`A metric with the name "${trimmedName}" already exists in this category.`);
@@ -57,79 +104,133 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       }
       return true;
     },
-    []
+    [activeCategoryIndex, currentCategories, activeMetricIndex]
   );
 
   // Reset form fields
   const resetForm = useCallback(() => {
-    setNewMetricName("");
-    setNewMetricType("text");
-    setNewMetricValue("");
+    setMetricForm({
+      name: "",
+      cardTemplates: [],
+      field: "",
+      aggregation: "count",
+      visualizationType: "line",
+      dateRange: { start: "2025-01-01", end: "2025-04-24" },
+      filter: { key: "", value: "" },
+      groupBy: "",
+    });
   }, []);
 
-  // Add new metric to a category
-  const addMetric = useCallback(() => {
-    if (
-      !validateMetric(
-        newMetricName,
-        newMetricValue,
-        currentCategories[activeCategoryIndex]?.metrics || [],
-        false
+  // Toggle card template selection
+  const toggleCardTemplate = useCallback((template) => {
+    setMetricForm((prev) => ({
+      ...prev,
+      cardTemplates: prev.cardTemplates.includes(template)
+        ? prev.cardTemplates.filter((t) => t !== template)
+        : [...prev.cardTemplates, template],
+      field: "", // Reset field when templates change
+    }));
+  }, []);
+
+  // Get fields for selected cardTemplates
+  const fieldOptions = useMemo(() => {
+    if (metricForm.cardTemplates.length === 0) return [];
+    const validKeys = metricForm.cardTemplates
+      .flatMap((type) =>
+        cardTemplates
+          .filter((t) => t.typeOfCards === type)
+          .flatMap((t) => t.sections.flatMap((s) => s.keys))
       )
-    )
-      return;
+      .filter((key, index, self) => self.indexOf(key) === index); // Unique keys
+    return headers
+      .filter((header) => validKeys.includes(header.key))
+      .map((header) => ({
+        key: header.key,
+        name: header.name,
+      }));
+  }, [metricForm.cardTemplates, cardTemplates, headers]);
+
+  // Get filter key options
+  const filterKeyOptions = useMemo(() => {
+    return headers.map((header) => ({
+      key: header.key,
+      name: header.name,
+    }));
+  }, [headers]);
+
+  // Add new dynamic metric
+  const addMetric = useCallback(() => {
+    if (!validateMetric(metricForm)) return;
+
+    const { name, cardTemplates, field, aggregation, visualizationType, dateRange, filter, groupBy } = metricForm;
+    const config = { cardTemplates, field, aggregation, dateRange, filter, groupBy, visualizationType };
+    const data = computeMetricData(cards, config);
 
     const newMetric = {
-      id: `metric-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: newMetricName.trim(),
-      type: newMetricType,
-      value: newMetricValue.trim(),
+      id: `metric-${uuidv4()}`,
+      name: name.trim(),
+      type: visualizationType,
+      config,
+      data,
+      value: visualizationType === "number" ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
     };
+
+    console.log('Adding metric:', newMetric); // Debug: Log saved metric
 
     setCurrentCategories((prev) =>
       prev.map((c, i) =>
         i === activeCategoryIndex
-          ? { ...c, metrics: [...c.metrics, { ...newMetric }] }
+          ? { ...c, metrics: [...c.metrics, newMetric] }
           : { ...c }
       )
     );
+    setTempData({ currentCategories });
     resetForm();
-  }, [newMetricName, newMetricValue, newMetricType, activeCategoryIndex, validateMetric, resetForm]);
+    goToStep(2);
+  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]);
 
   // Update existing metric
   const updateMetric = useCallback(
     (metricIndex) => {
       if (
         !validateMetric(
-          newMetricName,
-          newMetricValue,
-          currentCategories[activeCategoryIndex]?.metrics || [],
+          { name: metricForm.name, cardTemplates: metricForm.cardTemplates, field: metricForm.field },
           true,
           metricIndex
         )
       )
         return;
 
+      const { name, cardTemplates, field, aggregation, visualizationType, dateRange, filter, groupBy } = metricForm;
+      const config = { cardTemplates, field, aggregation, dateRange, filter, groupBy, visualizationType };
+      const data = computeMetricData(cards, config);
+
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
-        name: newMetricName.trim(),
-        type: newMetricType,
-        value: newMetricValue.trim(),
+        name: name.trim(),
+        type: visualizationType,
+        config,
+        data,
+        value: visualizationType === "number" ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
       };
+
+      console.log('Updating metric:', updatedMetric); // Debug: Log updated metric
 
       setCurrentCategories((prev) =>
         prev.map((c, i) =>
           i === activeCategoryIndex
             ? {
                 ...c,
-                metrics: c.metrics.map((m, j) => (j === metricIndex ? { ...updatedMetric } : { ...m })),
+                metrics: c.metrics.map((m, j) => (j === metricIndex ? updatedMetric : m)),
               }
             : { ...c }
         )
       );
+      setTempData({ currentCategories });
       resetForm();
+      goToStep(2);
     },
-    [newMetricName, newMetricValue, newMetricType, activeCategoryIndex, validateMetric, resetForm]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]
   );
 
   // Delete metric
@@ -142,12 +243,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             : { ...c }
         )
       );
-      setActiveMetricIndex(-1); // Reset to add mode
+      setTempData({ currentCategories });
+      setActiveMetricIndex(-1);
       if (currentCategories[activeCategoryIndex].metrics.length === 1) {
         goToStep(1);
       }
     },
-    [activeCategoryIndex, goToStep]
+    [activeCategoryIndex, goToStep, setTempData]
   );
 
   // Save metric (add or update)
@@ -157,9 +259,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     } else if (activeMetricIndex !== null) {
       updateMetric(activeMetricIndex);
     }
-    setActiveMetricIndex(-1); // Reset to add mode
-    goToStep(1);
-  }, [activeMetricIndex, addMetric, updateMetric, goToStep]);
+    setActiveMetricIndex(-1);
+  }, [activeMetricIndex, addMetric, updateMetric]);
 
   // Add new category
   const addCategory = useCallback(() => {
@@ -169,12 +270,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       category: newCategoryName.trim(),
       metrics: [],
     };
-    setCurrentCategories((prev) => [...prev, { ...newCategory }]);
+    setCurrentCategories((prev) => [...prev, newCategory]);
+    setTempData({ currentCategories: [...currentCategories, newCategory] });
     setNewCategoryName("");
     setActiveCategoryIndex(currentCategories.length);
-    setActiveMetricIndex(-1); // Set to add mode for new category
+    setActiveMetricIndex(-1);
     goToStep(2);
-  }, [newCategoryName, currentCategories, validateCategory, goToStep]);
+  }, [newCategoryName, currentCategories, validateCategory, goToStep, setTempData]);
 
   // Initialize modal steps
   useEffect(() => {
@@ -199,14 +301,23 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 ? currentCategories[activeCategoryIndex]?.category || "Manage Metrics"
                 : "Manage Metrics",
             rightButton: {
-              label: "Save",
-              onClick: saveMetric,
-              isActive: newMetricName.trim() && newMetricValue.trim(),
+              label: "Create Dynamic Metric",
+              onClick: () => goToStep(3),
+              isActive: true,
+              isRemove: false,
             },
           },
           {
-            title: "Step 3",
-            rightButton: null,
+            title: "Create New Metric",
+            rightButton: {
+              label: "Save",
+              onClick: saveMetric,
+              isActive: metricForm.name && metricForm.field && metricForm.cardTemplates.length > 0,
+            },
+            leftButton: {
+              label: "Cancel",
+              onClick: () => goToStep(2),
+            },
           },
         ],
       });
@@ -228,7 +339,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       });
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, activeCategoryIndex, currentCategories, saveMetric, handleClose, setTempData, newMetricName, newMetricValue]);
+  }, [registerModalSteps, setModalConfig, activeCategoryIndex, currentCategories, saveMetric, handleClose, setTempData, goToStep]);
 
   // Update modal config based on step
   useEffect(() => {
@@ -261,9 +372,27 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             : "Manage Metrics",
         backButtonTitle: "Metrics",
         rightButton: {
+          label: "Create Dynamic Metric",
+          onClick: () => goToStep(3),
+          isActive: true,
+          isRemove: false,
+        },
+      };
+    } else if (currentStep === 3) {
+      newConfig = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        title: "Create New Metric",
+        backButtonTitle: currentCategories[activeCategoryIndex]?.category || "Manage Metrics",
+        rightButton: {
           label: "Save",
           onClick: saveMetric,
-          isActive: newMetricName.trim() && newMetricValue.trim(),
+          isActive: metricForm.name && metricForm.field && metricForm.cardTemplates.length > 0,
+        },
+        leftButton: {
+          label: "Cancel",
+          onClick: () => goToStep(2),
         },
       };
     }
@@ -275,7 +404,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setModalConfig(newConfig);
       prevConfigRef.current = newConfig;
     }
-  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, newMetricName, newMetricValue]);
+  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, currentCategories, goToStep, metricForm]);
 
   // Sync currentCategories to tempData
   useEffect(() => {
@@ -288,7 +417,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   const handleKeyPress = useCallback(
     (e) => {
-      if (e.key === "Enter" && currentStep === 2) {
+      if (e.key === "Enter" && currentStep === 3) {
         saveMetric();
       } else if (e.key === "Enter" && currentStep === 1 && newCategoryName.trim()) {
         addCategory();
@@ -303,16 +432,67 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setActiveMetricIndex(metricIndex);
       if (metricIndex !== -1 && metricIndex !== null) {
         const metric = currentCategories[categoryIndex].metrics[metricIndex];
-        setNewMetricName(metric.name);
-        setNewMetricType(metric.type);
-        setNewMetricValue(metric.value);
+        setMetricForm({
+          name: metric.name,
+          cardTemplates: metric.config?.cardTemplates || [],
+          field: metric.config?.field || "",
+          aggregation: metric.config?.aggregation || "count",
+          visualizationType: metric.type || "line",
+          dateRange: metric.config?.dateRange || { start: "2025-01-01", end: "2025-04-24" },
+          filter: metric.config?.filter || { key: "", value: "" },
+          groupBy: metric.config?.groupBy || "",
+        });
       } else {
         resetForm();
       }
-      goToStep(2);
+      goToStep(3);
     },
     [currentCategories, resetForm, goToStep]
   );
+
+  // Render chart preview
+  const renderChartPreview = () => {
+    if (!metricForm.field || metricForm.cardTemplates.length === 0) return null;
+
+    const config = {
+      field: metricForm.field,
+      aggregation: metricForm.aggregation,
+      dateRange: metricForm.dateRange,
+      cardTemplates: metricForm.cardTemplates,
+      filter: metricForm.filter.key && metricForm.filter.value ? metricForm.filter : null,
+      groupBy: metricForm.groupBy || "cardType",
+      visualizationType: metricForm.visualizationType,
+    };
+
+    const data = computeMetricData(cards, config);
+
+    const chartData = {
+      labels: data.labels || [],
+      datasets: data.datasets || [],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: metricForm.name || "Metric Preview" },
+      },
+    };
+
+    return (
+      <div className={styles.chartPreview}>
+        {metricForm.visualizationType === "line" && <Line data={chartData} options={options} />}
+        {metricForm.visualizationType === "bar" && <Bar data={chartData} options={options} />}
+        {metricForm.visualizationType === "pie" && <Pie data={chartData} options={options} />}
+        {metricForm.visualizationType === "number" && (
+          <div className={styles.numberMetric}>
+            <h3>{metricForm.name || "Preview"}</h3>
+            <p>{chartData.datasets[0]?.data[chartData.datasets[0].data.length - 1] || 0}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={`${styles.metricsModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -354,7 +534,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     <div
                       key={`${category.category}-${index}`}
                       className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => toggleEditMetric(index)}
+                      onClick={() => toggleEditMetric(index, -1)}
                     >
                       <div className={styles.headerRow}>
                         <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -371,33 +551,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <input
-                  type="text"
-                  value={newMetricName}
-                  onChange={(e) => setNewMetricName(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Metric Name"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
-                <select
-                  value={newMetricType}
-                  onChange={(e) => setNewMetricType(e.target.value)}
-                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                <button
+                  onClick={() => toggleEditMetric(activeCategoryIndex, -1)}
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
-                  <option value="text">Text</option>
-                  <option value="number">Number</option>
-                  <option value="currency">Currency</option>
-                  <option value="percentage">Percentage</option>
-                  <option value="multiplier">Multiplier</option>
-                </select>
-                <input
-                  type="text"
-                  value={newMetricValue}
-                  onChange={(e) => setNewMetricValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Metric Value"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
+                  Add Dynamic Metric
+                </button>
                 <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
                   {currentCategories[activeCategoryIndex]?.metrics.map((metric, index) => (
                     <div
@@ -429,8 +588,157 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               </div>
             )}
             {step === 3 && (
-              <div className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <p>Step 3: To be implemented</p>
+              <div
+                className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.formGroup}>
+                  <label>Metric Name</label>
+                  <input
+                    type="text"
+                    value={metricForm.name}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, name: e.target.value }))}
+                    onKeyPress={handleKeyPress}
+                    placeholder="e.g., Leads per Business"
+                    className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Card Templates</label>
+                  <div className={styles.cardList}>
+                    {cardTemplates.map((template) => (
+                      <div key={template.typeOfCards} className={styles.cardItem}>
+                        <input
+                          type="checkbox"
+                          checked={metricForm.cardTemplates.includes(template.typeOfCards)}
+                          onChange={() => toggleCardTemplate(template.typeOfCards)}
+                        />
+                        <span>{template.typeOfCards}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Select Field</label>
+                  <select
+                    value={metricForm.field}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, field: e.target.value }))}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    disabled={metricForm.cardTemplates.length === 0}
+                  >
+                    <option value="">Select a field</option>
+                    {fieldOptions.map((field) => (
+                      <option key={field.key} value={field.key}>
+                        {field.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Filter (Optional)</label>
+                  <div className={styles.filterGroup}>
+                    <select
+                      value={metricForm.filter.key}
+                      onChange={(e) =>
+                        setMetricForm((prev) => ({
+                          ...prev,
+                          filter: { ...prev.filter, key: e.target.value },
+                        }))
+                      }
+                      className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="">Select filter key</option>
+                      {filterKeyOptions.map((field) => (
+                        <option key={field.key} value={field.key}>
+                          {field.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={metricForm.filter.value}
+                      onChange={(e) =>
+                        setMetricForm((prev) => ({
+                          ...prev,
+                          filter: { ...prev.filter, value: e.target.value },
+                        }))
+                      }
+                      placeholder="Filter value (e.g., Example Business)"
+                      className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      disabled={!metricForm.filter.key}
+                    />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Group By (Optional)</label>
+                  <select
+                    value={metricForm.groupBy}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, groupBy: e.target.value }))}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    <option value="">None</option>
+                    <option value="cardType">Card Template</option>
+                    {metricForm.filter.key && (
+                      <option value={metricForm.filter.key}>
+                        {filterKeyOptions.find((f) => f.key === metricForm.filter.key)?.name}
+                      </option>
+                    )}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Aggregation</label>
+                  <select
+                    value={metricForm.aggregation}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, aggregation: e.target.value }))}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    disabled={metricForm.visualizationType === "pie"}
+                  >
+                    <option value="count">Count</option>
+                    <option value="average">Average</option>
+                    <option value="sum">Sum</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Visualization Type</label>
+                  <select
+                    value={metricForm.visualizationType}
+                    onChange={(e) => setMetricForm((prev) => ({ ...prev, visualizationType: e.target.value }))}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    <option value="line">Line Graph</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="number">Number</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Date Range</label>
+                  <div className={styles.dateRange}>
+                    <input
+                      type="date"
+                      value={metricForm.dateRange.start}
+                      onChange={(e) =>
+                        setMetricForm((prev) => ({
+                          ...prev,
+                          dateRange: { ...prev.dateRange, start: e.target.value },
+                        }))
+                      }
+                      className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                    <input
+                      type="date"
+                      value={metricForm.dateRange.end}
+                      onChange={(e) =>
+                        setMetricForm((prev) => ({
+                          ...prev,
+                          dateRange: { ...prev.dateRange, end: e.target.value },
+                        }))
+                      }
+                      className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                  </div>
+                </div>
+                {renderChartPreview()}
               </div>
             )}
           </div>
@@ -450,7 +758,9 @@ MetricsModal.propTypes = {
             id: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
             type: PropTypes.string.isRequired,
-            value: PropTypes.string.isRequired,
+            value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            config: PropTypes.object,
+            data: PropTypes.object,
           })
         ),
       })

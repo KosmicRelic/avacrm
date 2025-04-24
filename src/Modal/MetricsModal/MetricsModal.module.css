@@ -378,3 +378,103 @@
   .deleteButton.darkTheme:hover {
     background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
   }
+
+  /* ... existing styles ... */
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1d1d1f;
+}
+
+.darkTheme .formGroup label {
+  color: #ffffff;
+}
+
+.inputField, .selectField {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+.darkTheme .inputField, .darkTheme .selectField {
+  background: #2c2c2e;
+  border-color: #3c3c3e;
+  color: #ffffff;
+}
+
+.cardList {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.darkTheme .cardList {
+  background: #2c2c2e;
+  border-color: #3c3c3e;
+}
+
+.cardItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: #1d1d1f;
+}
+
+.darkTheme .cardItem {
+  color: #ffffff;
+}
+
+.filterGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.dateRange {
+  display: flex;
+  gap: 12px;
+}
+
+.chartPreview {
+  margin-top: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.darkTheme .chartPreview {
+  background: #2c2c2e;
+}
+
+.numberMetric {
+  text-align: center;
+}
+
+.numberMetric h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1d1d1f;
+}
+
+.darkTheme .numberMetric h3 {
+  color: #ffffff;
+}
+
+.numberMetric p {
+  font-size: 24px;
+  font-weight: 600;
+  color: #007aff;
+}

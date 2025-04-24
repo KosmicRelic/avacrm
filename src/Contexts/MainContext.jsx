@@ -113,15 +113,33 @@ export const MainContextProvider = ({ children }) => {
       history: [
         {
           field: 'leadScore',
-          oldValue: '75',
-          newValue: '80',
+          value: '80',
           timestamp: { _seconds: 1737417600, _nanoseconds: 0 }, // January 21, 2025
         },
         {
           field: 'nextActions',
-          oldValue: 'Send email',
-          newValue: 'Call back',
+          value: 'Call back',
           timestamp: { _seconds: 1741651200, _nanoseconds: 0 }, // March 10, 2025
+        },
+        {
+          field: 'name',
+          value: 'Periklis Papadopoulous',
+          timestamp: { _seconds: 1677657600, _nanoseconds: 0 }, // March 1, 2023
+        },
+        {
+          field: 'phone',
+          value: '6986600024',
+          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'periklis.pap@example.com',
+          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '70',
+          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
         },
       ],
     },
@@ -137,9 +155,23 @@ export const MainContextProvider = ({ children }) => {
       history: [
         {
           field: 'phone',
-          oldValue: '6977550000',
-          newValue: '6977554321',
+          value: '6977554321',
           timestamp: { _seconds: 1739577600, _nanoseconds: 0 }, // February 15, 2025
+        },
+        {
+          field: 'email',
+          value: 'maria.ioannou@example.com',
+          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '85',
+          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Follow-up call',
+          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
         },
       ],
     },
@@ -155,9 +187,23 @@ export const MainContextProvider = ({ children }) => {
       history: [
         {
           field: 'email',
-          oldValue: 'dimitris.old@example.com',
-          newValue: 'dimitris@example.com',
+          value: 'dimitris@example.com',
           timestamp: { _seconds: 1745107200, _nanoseconds: 0 }, // April 21, 2025
+        },
+        {
+          field: 'phone',
+          value: '6999887765',
+          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '70',
+          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-03-15',
+          timestamp: { _seconds: 1710460800, _nanoseconds: 0 }, // March 15, 2024
         },
       ],
     },
@@ -170,7 +216,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '85',
       nextActions: 'Schedule meeting',
       followUpDate: '2025-04-08',
-      history: [],
+      history: [
+        {
+          field: 'name',
+          value: 'Eleni Christodoulous',
+          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
+        },
+        {
+          field: 'email',
+          value: 'eleni.c@example.com',
+          timestamp: { _seconds: 1688169600, _nanoseconds: 0 }, // July 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '80',
+          timestamp: { _seconds: 1706745600, _nanoseconds: 0 }, // February 1, 2024
+        },
+        {
+          field: 'nextActions',
+          value: 'Send proposal',
+          timestamp: { _seconds: 1725148800, _nanoseconds: 0 }, // September 1, 2024
+        },
+      ],
     },
     {
       id: '100005',
@@ -181,7 +248,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '60',
       nextActions: 'Send reminder',
       followUpDate: '2025-04-09',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6955332210',
+          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '55',
+          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Initial outreach',
+          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
+        },
+      ],
     },
     {
       id: '100006',
@@ -192,7 +275,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '95',
       nextActions: 'Close deal',
       followUpDate: '2025-04-10',
-      history: [],
+      history: [
+        {
+          field: 'email',
+          value: 'georgia.alexiou@example.com',
+          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '90',
+          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Negotiate terms',
+          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-12-01',
+          timestamp: { _seconds: 1733011200, _nanoseconds: 0 }, // December 1, 2024
+        },
+      ],
     },
     {
       id: '100007',
@@ -203,7 +307,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '70',
       nextActions: 'Cold call',
       followUpDate: '2025-04-11',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6999001123',
+          timestamp: { _seconds: 1677657600, _nanoseconds: 0 }, // March 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '65',
+          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'kostas.l@example.com',
+          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
+        },
+      ],
     },
     {
       id: '100008',
@@ -214,7 +334,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '88',
       nextActions: 'Send brochure',
       followUpDate: '2025-04-12',
-      history: [],
+      history: [
+        {
+          field: 'name',
+          value: 'Sofia Karamanous',
+          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '85',
+          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Initial contact',
+          timestamp: { _seconds: 1714521600, _nanoseconds: 0 }, // May 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-06-15',
+          timestamp: { _seconds: 1718409600, _nanoseconds: 0 }, // June 15, 2024
+        },
+      ],
     },
     {
       id: '100009',
@@ -225,7 +366,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '78',
       nextActions: 'Call and pitch',
       followUpDate: '2025-04-13',
-      history: [],
+      history: [
+        {
+          field: 'email',
+          value: 'michalis.x@example.com',
+          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
+        },
+        {
+          field: 'phone',
+          value: '6933556678',
+          timestamp: { _seconds: 1690934400, _nanoseconds: 0 }, // August 2, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '75',
+          timestamp: { _seconds: 1706745600, _nanoseconds: 0 }, // February 1, 2024
+        },
+      ],
     },
     {
       id: '100010',
@@ -236,7 +393,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '92',
       nextActions: 'Confirm interest',
       followUpDate: '2025-04-14',
-      history: [],
+      history: [
+        {
+          field: 'leadScore',
+          value: '90',
+          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Send details',
+          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
+        },
+        {
+          field: 'email',
+          value: 'vasiliki.a@example.com',
+          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-09-01',
+          timestamp: { _seconds: 1725148800, _nanoseconds: 0 }, // September 1, 2024
+        },
+      ],
     },
     {
       id: '100011',
@@ -247,7 +425,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '73',
       nextActions: 'Send follow-up',
       followUpDate: '2025-04-15',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6901122335',
+          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '70',
+          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Cold outreach',
+          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
+        },
+      ],
     },
     {
       id: '100012',
@@ -258,7 +452,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '81',
       nextActions: 'Call again',
       followUpDate: '2025-04-16',
-      history: [],
+      history: [
+        {
+          field: 'email',
+          value: 'katerina.l@example.com',
+          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '78',
+          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Send email',
+          timestamp: { _seconds: 1714521600, _nanoseconds: 0 }, // May 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-07-01',
+          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
+        },
+      ],
     },
     {
       id: '100013',
@@ -266,10 +481,28 @@ export const MainContextProvider = ({ children }) => {
       name: 'Panagiotis Rizos',
       phone: '6988112233',
       email: 'panagiotis@example.com',
-      leadScore: '68',
+     
+  
+   leadScore: '68',
       nextActions: 'Schedule call',
       followUpDate: '2025-04-17',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6988112234',
+          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '65',
+          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'panagiotis.r@example.com',
+          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
+        },
+      ],
     },
     {
       id: '100014',
@@ -280,7 +513,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '94',
       nextActions: 'Close deal',
       followUpDate: '2025-04-18',
-      history: [],
+      history: [
+        {
+          field: 'name',
+          value: 'Anna Petridous',
+          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '90',
+          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Negotiate deal',
+          timestamp: { _seconds: 1717200000, _nanoseconds: 0 }, // June 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-10-01',
+          timestamp: { _seconds: 1727740800, _nanoseconds: 0 }, // October 1, 2024
+        },
+      ],
     },
     {
       id: '100015',
@@ -291,7 +545,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '76',
       nextActions: 'Final meeting',
       followUpDate: '2025-04-19',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6977223345',
+          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '72',
+          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'stelios.n@example.com',
+          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
+        },
+      ],
     },
     {
       id: '100016',
@@ -302,7 +572,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '89',
       nextActions: 'Confirm schedule',
       followUpDate: '2025-04-20',
-      history: [],
+      history: [
+        {
+          field: 'email',
+          value: 'eirini.v@example.com',
+          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '85',
+          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Send reminder',
+          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-11-01',
+          timestamp: { _seconds: 1730419200, _nanoseconds: 0 }, // November 1, 2024
+        },
+      ],
     },
     {
       id: '100017',
@@ -313,7 +604,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '84',
       nextActions: 'Send contract',
       followUpDate: '2025-04-21',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6900332212',
+          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '80',
+          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'apostolos.z@example.com',
+          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
+        },
+      ],
     },
     {
       id: '100018',
@@ -324,7 +631,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '91',
       nextActions: 'Onboard',
       followUpDate: '2025-04-22',
-      history: [],
+      history: [
+        {
+          field: 'name',
+          value: 'Ioanna Michous',
+          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '88',
+          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Sign contract',
+          timestamp: { _seconds: 1717200000, _nanoseconds: 0 }, // June 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-12-01',
+          timestamp: { _seconds: 1733011200, _nanoseconds: 0 }, // December 1, 2024
+        },
+      ],
     },
     {
       id: '100019',
@@ -335,7 +663,23 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '67',
       nextActions: 'Check-in call',
       followUpDate: '2025-04-23',
-      history: [],
+      history: [
+        {
+          field: 'phone',
+          value: '6988776656',
+          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '62',
+          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
+        },
+        {
+          field: 'email',
+          value: 'christos.m@example.com',
+          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
+        },
+      ],
     },
     {
       id: '100020',
@@ -346,7 +690,28 @@ export const MainContextProvider = ({ children }) => {
       leadScore: '86',
       nextActions: 'Upsell offer',
       followUpDate: '2025-04-24',
-      history: [],
+      history: [
+        {
+          field: 'email',
+          value: 'zoi.karra@example.com',
+          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
+        },
+        {
+          field: 'leadScore',
+          value: '82',
+          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
+        },
+        {
+          field: 'nextActions',
+          value: 'Follow-up offer',
+          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
+        },
+        {
+          field: 'followUpDate',
+          value: '2024-11-15',
+          timestamp: { _seconds: 1731628800, _nanoseconds: 0 }, // November 15, 2024
+        },
+      ],
     },
   ]);
 
@@ -559,6 +924,34 @@ export const MainContextProvider = ({ children }) => {
     },
   ]);
 
+  useEffect(() => {
+    setMetrics((prevMetrics) =>
+      prevMetrics.map((category) => ({
+        ...category,
+        metrics: category.metrics.map((metric) => {
+          if (metric.config) {
+            // Check for cardTemplates or cards
+            const filteredCards = metric.config.cardTemplates
+              ? cards.filter((card) => metric.config.cardTemplates.includes(card.typeOfCards))
+              : metric.config.cards
+              ? cards.filter((card) => metric.config.cards.includes(card.id))
+              : cards; // Fallback to all cards
+            const data = computeMetricData(filteredCards, metric.config);
+            return {
+              ...metric,
+              data,
+              value:
+                metric.type === 'number'
+                  ? data.datasets?.[0]?.data?.[data.datasets[0].data.length - 1] || 0
+                  : metric.value, // Preserve existing value for non-number metrics
+            };
+          }
+          return metric;
+        }),
+      }))
+    );
+  }, [cards]);
+
   const [tempData, setTempData] = useState(null);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
@@ -586,10 +979,10 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  // useEffect(() => {
-  //   console.log(metricsCategories);
-  // }
-  // , [metricsCategories]);
+  useEffect(() => {
+    console.log(metrics[2]);
+  }
+  , [metrics]);
 
   return (
     <MainContext.Provider

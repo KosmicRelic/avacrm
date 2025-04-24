@@ -61,7 +61,7 @@ const CardsEditor = ({
     const fieldValues = {};
     historyUpToDate.reverse().forEach((entry) => {
       if (!fieldValues[entry.field]) {
-        fieldValues[entry.field] = entry.newValue;
+        fieldValues[entry.field] = entry.value;
       }
     });
 
@@ -175,8 +175,7 @@ const CardsEditor = ({
         ) {
           newHistory.push({
             field: key,
-            oldValue: existingCard[key] || '',
-            newValue: historicalFormData[key] || '',
+            value: historicalFormData[key] || '',
             timestamp,
           });
         }
@@ -199,8 +198,7 @@ const CardsEditor = ({
           ) {
             newHistory.push({
               field: key,
-              oldValue: existingCard[key] || '',
-              newValue: formData[key] || '',
+              value: formData[key] || '',
               timestamp,
             });
           }
@@ -220,8 +218,7 @@ const CardsEditor = ({
         ) {
           newHistory.push({
             field: key,
-            oldValue: '',
-            newValue: formData[key],
+            value: formData[key],
             timestamp,
           });
         }
