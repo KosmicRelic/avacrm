@@ -27,13 +27,13 @@
   padding: 13.5px 16px;
   margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   transition: background 0.2s ease; /* Smooth theme transition */
   box-sizing: border-box;
 }
 
 .createHeader.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .createHeader:hover:not(.activeItem) {
@@ -68,13 +68,13 @@
 /* Header Item */
 .headerItem {
   padding: 13px 16px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
   transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
 }
 
 .headerItem.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
@@ -163,27 +163,22 @@
 
 /* Step 3, 4, 5, 6: Metric Form */
 .metricForm {
-  border-radius: 18px;
+  border-radius: 12px;
   overflow-y: auto;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   animation: slideUp 0.3s ease-out;
 }
 
-.darkTheme.metricForm {
-  background: #1c2526;
-}
-
 /* Section */
 .section {
-  margin-bottom: 24px;
-  background: rgb(255, 255, 255);
+  background: rgb(255, 255, 255, 0.6);
   border-radius: 12px;
   padding: 12px;
 }
 
-.darkTheme.section {
-  background: #2c2c2e;
+.section.darkTheme {
+  background: rgb(58, 58, 60, 0.6);
 }
 
 /* Label */
@@ -191,7 +186,6 @@
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  margin-bottom: 8px;
   display: block;
 }
 
@@ -207,8 +201,8 @@
   padding: 10px 12px;
   font-size: 17px;
   border: 1px solid #d2d2d7;
-  border-radius: 10px;
-  background: #fff;
+  border-radius: 12px;
+  background: rgb(255, 255, 255, 0.6);
   box-sizing: border-box;
   transition: border-color 0.2s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
@@ -219,7 +213,7 @@
 .darkTheme.textField,
 .darkTheme.select {
   border-color: #3a3a3c;
-  background: #2c2c2e;
+  background: rgb(58, 58, 60, 0.6);
   color: #fff;
 }
 
@@ -461,6 +455,7 @@
   border: none;
   border-radius: 8px;
   background: #007aff;
+  background: rgb(255, 255, 255, 0.6);
   color: #fff;
   cursor: pointer;
   font-size: 16px;
@@ -839,6 +834,13 @@
   background: rgba(255, 69, 58, 0.2);
 }
 
+.cardTemplateButton, .metricDetailsButton{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
 /* Animation */
 @keyframes slideUp {
   from {
@@ -849,4 +851,23 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.headerName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.darkTheme .headerName {
+  color: #ffffff;
+}
+
+.headerSummary {
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.darkTheme .headerSummary {
+  color: #8e8e93;
 }
