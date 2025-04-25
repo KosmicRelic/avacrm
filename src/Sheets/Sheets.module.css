@@ -598,7 +598,7 @@
   color: #6e6e73;
   background: rgba(245, 245, 247, 0.9);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
   display: flex;

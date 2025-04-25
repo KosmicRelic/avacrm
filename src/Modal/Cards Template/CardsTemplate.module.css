@@ -44,7 +44,7 @@
   padding: 12px 16px;
   margin-bottom: 24px;
   border-radius: 12px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   border: none;
   color: #007aff;
   font-size: 14px;
@@ -61,7 +61,7 @@
 }
 
 .addButton.darkTheme {
-  background: #2c2c2e;
+  background: rgba(56, 56, 60, 0.6);
   color: #0a84ff;
 }
 
@@ -83,7 +83,7 @@
 .templateButton {
   width: 100%;
   padding: 13.5px 16px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.6);
   border: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   text-align: left;
@@ -92,7 +92,7 @@
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #1d1d1f;
+  color: #000000;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -100,7 +100,7 @@
 }
 
 .templateButton.darkTheme {
-  background: rgba(44, 44, 46, 0.95);
+  background: rgba(56, 56, 60, 0.6);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
@@ -141,12 +141,12 @@
   padding: 13.5px 16px;
   border: none;
   border-radius: 12px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   margin-bottom: 16px;
   box-sizing: border-box;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   letter-spacing: 0.02em;
-  color: #1d1d1f;
+  color: #000000;
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
@@ -155,7 +155,7 @@
 
 .input.darkTheme {
   color: #ffffff;
-  background: #2c2c2e;
+  background: rgba(56, 56, 60, 0.6);
 }
 
 .input:focus {
@@ -175,10 +175,10 @@
   padding-left: 44px;
   border: none;
   border-radius: 12px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   box-sizing: border-box;
   letter-spacing: 0.02em;
-  color: #1d1d1f;
+  color: #000000;
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 14px;
@@ -188,7 +188,7 @@
 
 .searchInput.darkTheme {
   color: #ffffff;
-  background: #2c2c2e;
+  background: rgba(56, 56, 60, 0.6);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
@@ -252,7 +252,7 @@
 .keyItem {
   padding: 6px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   user-select: none;
   display: flex;
@@ -263,7 +263,7 @@
 
 .keyItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(44, 44, 46, 0.95);
+  background: rgba(56, 56, 60, 0.6);
 }
 
 .section .keyItem:first-child {
@@ -373,7 +373,7 @@
   margin-top: 24px;
   margin-bottom: 24px;
   border-radius: 12px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   border: none;
   color: #007aff;
   font-size: 14px;
@@ -390,7 +390,7 @@
 }
 
 .addSectionButton.darkTheme {
-  background: #2c2c2e;
+  background: rgba(56, 56, 60, 0.6);
   color: #0a84ff;
 }
 
@@ -470,7 +470,7 @@
   padding: 13.5px 16px;
   margin-top: 24px; /* Added to match deleteSectionButton spacing */
   border-radius: 12px;
-  background: #ffffff; /* Changed from transparent to match deleteSectionButton */
+  background: rgba(255, 255, 255, 0.6); /* Changed from transparent to match deleteSectionButton */
   border: none; /* Added to match deleteSectionButton */
   color: #ff453a;
   font-size: 14px;
@@ -482,7 +482,7 @@
 }
 
 .deleteButton.darkTheme {
-  background: #2c2c2e; /* Changed to match deleteSectionButton.darkTheme */
+  background: rgba(56, 56, 60, 0.6);
   color: #ff453a;
 }
 
@@ -501,7 +501,7 @@
   margin-bottom: 24px;
   margin-left: auto; /* Aligns button to the right */
   border-radius: 12px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   border: none;
   color: #ff453a;
   font-size: 14px;
@@ -514,7 +514,7 @@
 }
 
 .deleteSectionButton.darkTheme {
-  background: #2c2c2e;
+  background: rgba(56, 56, 60, 0.6);
   color: #ff453a;
 }
 

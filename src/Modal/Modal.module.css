@@ -4,8 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -52,27 +52,27 @@
 
 @keyframes fadeInMobile {
   from { background: rgba(0, 0, 0, 0); }
-  to { background: rgba(0, 0, 0, 0.4); }
+  to { background: rgba(0, 0, 0, 0.35); }
 }
 
 @keyframes fadeInMobileDark {
   from { background: rgba(0, 0, 0, 0); }
-  to { background: rgba(0, 0, 0, 0.6); }
+  to { background: rgba(0, 0, 0, 0.35); }
 }
 
 @keyframes fadeOutMobile {
-  from { background: rgba(0, 0, 0, 0.4); }
+  from { background: rgba(0, 0, 0, 0.35); }
   to { background: rgba(0, 0, 0, 0); }
 }
 
 @keyframes fadeOutMobileDark {
-  from { background: rgba(0, 0, 0, 0.6); }
+  from { background: rgba(0, 0, 0, 0.35); }
   to { background: rgba(0, 0, 0, 0); }
 }
 
 .modalContent {
-  background: rgba(243, 242, 248);
-  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 20px;
   width: 100%;
@@ -89,7 +89,7 @@
 }
 
 .modalContent.darkTheme {
-  background: rgba(28, 28, 30);
+  background: rgba(44, 44, 46, 0.7);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 

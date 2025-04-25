@@ -14,7 +14,7 @@
   border: none;
   border-radius: 12px;
   color: #1d1d1f; /* Light mode */
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Added theme transition */
   -webkit-appearance: none;
@@ -30,29 +30,29 @@
 .sheetNameInput.darkTheme,
 .addHeaderSelect.darkTheme {
   color: #ffffff; /* Dark mode */
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .sheetNameInput:focus,
 .addHeaderSelect:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .sheetNameInput.darkTheme:focus,
 .addHeaderSelect.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.95); /* Dark mode */
+  background: rgba(72, 72, 74, 0.6); /* Dark mode */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .addHeaderSelect {
   padding-right: 32px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
 }
 
 .addHeaderSelect.darkTheme {
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .headerList {
@@ -64,13 +64,13 @@
 }
 
 .headerList.darkTheme {
-  background: rgba(28, 28, 30, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .headerItem {
   padding: 6px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease; /* Added theme transition */
   cursor: default;
   user-select: none;
@@ -82,7 +82,7 @@
 
 .headerItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .headerItem:last-child {
@@ -94,7 +94,7 @@
 }
 
 .headerItem.darkTheme:hover {
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .headerItem.dragging {

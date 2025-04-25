@@ -21,14 +21,14 @@
 
 .sheetItem {
   padding: 13.5px 16px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
   transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
   cursor: pointer;
 }
 
 .sheetItem.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
@@ -122,7 +122,7 @@
   padding: 13.5px 16px;
   margin-top: 16px;
   border-radius: 12px;
-  background: #ffffff; /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   border: none;
   color: #ff453a; /* Red for delete */
   font-size: 14px;
@@ -133,7 +133,7 @@
 }
 
 .deleteButton.darkTheme {
-  background: #2c2c2e; /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
   color: #ff453a;
 }
 
@@ -158,7 +158,7 @@
   width: 100%;
   padding: 13.5px 16px;
   border-radius: 12px;
-  background: #ffffff; /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   border: none;
   color: #007aff; /* Light mode text */
   font-size: 14px;
@@ -169,7 +169,7 @@
 }
 
 .actionButton.darkTheme {
-  background: #2c2c2e; /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
   color: #0a84ff; /* Dark mode text */
 }
 

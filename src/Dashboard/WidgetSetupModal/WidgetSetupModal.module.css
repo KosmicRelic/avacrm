@@ -35,13 +35,13 @@
 
 .fieldItem {
   padding: 13.5px 16px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
 .fieldItem.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
 }
 
@@ -130,7 +130,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode text */
-  background: rgb(255, 255, 255) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+  background: rgb(255, 255, 255, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
@@ -139,7 +139,7 @@
 
 .selectField.darkTheme {
   color: #ffffff; /* Dark mode text */
-  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+  background: rgba(58, 58, 60, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
 }
 
 .selectField:focus {
@@ -148,7 +148,7 @@
 }
 
 .selectField.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.95);
+  background: rgba(72, 72, 74, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 

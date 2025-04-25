@@ -4,8 +4,6 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0); /* Fully transparent initially */
-  backdrop-filter: blur(4px); /* No blur initially */
   display: none; /* Hidden by default */
   z-index: 1000;
 }
@@ -30,21 +28,21 @@
 
 @keyframes fadeIn {
   from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
-  to { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); } /* Light mode, match Modal */
+  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } /* Light mode, match Modal */
 }
 
 @keyframes fadeInDark {
   from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
-  to { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); } /* Dark mode, match Modal */
+  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } /* Dark mode, match Modal */
 }
 
 @keyframes fadeOut {
-  from { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); }
+  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
   to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Light mode */
 }
 
 @keyframes fadeOutDark {
-  from { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); }
+  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
   to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Dark mode */
 }
 
@@ -55,7 +53,7 @@
   width: 400px;
   height: 100%;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(10px);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
@@ -66,7 +64,7 @@
 }
 
 .profileContent.darkTheme {
-  background: rgb(28, 28, 30, 0.7);
+  background: rgba(44, 44, 46, 0.7);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -157,7 +155,7 @@
   font-size: 15px;
   font-weight: 500;
   color: #000000;
-  background: rgba(255, 255, 255, 0.35); /* Light mode button */
+  background: rgba(255, 255, 255, 0.6); /* Light mode button */
   border: none;
   border-radius: 10px;
   cursor: pointer;
@@ -167,7 +165,7 @@
 
 .actionButton.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.4);
+  background: rgba(56, 56, 60, 0.6);
 }
 
 .actionButton:hover {

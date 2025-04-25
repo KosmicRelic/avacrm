@@ -2,12 +2,12 @@
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.95); /* Light mode: iOS white */
+  background: rgba(255, 255, 255, 0.6); /* Light mode: iOS white */
   transition: background 0.3s ease;
 }
 
 .filterList.darkTheme {
-  background: rgba(28, 28, 30, 0.95); /* Dark mode: iOS deep gray-black */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .filterItem {
@@ -18,7 +18,7 @@
 
 .filterItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
-  background-color: rgb(44, 44, 46, 0.9);
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .filterItem:last-child {
@@ -34,12 +34,12 @@
 }
 
 .activeItem {
-  background: rgba(255, 255, 255); /* Light mode */
+  background: rgba(255, 255, 255, 0.6); /* Light mode */
   transition: background 0.3s ease;
 }
 
 .activeItem.darkTheme {
-  background: rgba(44, 44, 46); /* Dark mode: slightly lighter gray */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .filterRow {
@@ -61,7 +61,7 @@
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #1d1d1f; /* Light mode */
+  color: #000000; /* Light mode */
   transition: color 0.3s ease;
 }
 
@@ -111,7 +111,7 @@
 .filterSelect.darkTheme,
 .filterSelectNoChevron.darkTheme {
   color: #ffffff; /* Dark mode */
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  background: rgba(72, 72, 74, 0.6); /* Dark mode */
 }
 
 .filterSelect {
@@ -122,7 +122,7 @@
 }
 
 .filterSelect.darkTheme {
-  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; /* Dark mode */
+  background: rgba(72, 72, 74, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; /* Dark mode */
 }
 
 .filterSelectNoChevron {
@@ -141,7 +141,7 @@
 .filterInput.darkTheme:focus,
 .filterSelect.darkTheme:focus,
 .filterSelectNoChevron.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.95); /* Dark mode */
+  background: rgba(72, 72, 74, 0.6); /* Dark mode */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -172,7 +172,7 @@
 .filterMultiSelect.darkTheme {
   border: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
   color: #ffffff; /* Dark mode */
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6); /* Dark mode */
 }
 
 .filterMultiSelect:focus {

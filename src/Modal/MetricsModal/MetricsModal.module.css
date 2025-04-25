@@ -1,12 +1,28 @@
-.headersModal {
+/* Base Modal Styles */
+.metricsModal {
   background: transparent; /* Light mode: no additional background */
   transition: background 0.3s ease; /* Smooth theme transition */
 }
 
-.headersModal.darkTheme {
+.metricsModal.darkTheme {
   background: transparent; /* Dark mode: keep transparent to match modal */
 }
 
+/* View Container */
+.viewContainer {
+  width: 100%;
+}
+
+.view {
+  transition: opacity 0.3s ease;
+}
+
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Step 1: Create Header */
 .createHeader {
   padding: 13.5px 16px;
   margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
@@ -36,6 +52,7 @@
   background: rgba(44, 44, 46, 0.95); /* Dark mode active */
 }
 
+/* Header List */
 .headerList {
   margin-bottom: 20px;
   border-radius: 10px;
@@ -48,6 +65,7 @@
   background: transparent; /* Dark mode: keep transparent */
 }
 
+/* Header Item */
 .headerItem {
   padding: 13px 16px;
   background: rgba(255, 255, 255, 0.95); /* Light mode */
@@ -81,12 +99,14 @@
   background: rgba(44, 44, 46, 0.95); /* Dark mode active */
 }
 
+/* Header Row */
 .headerRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+/* Header Name and Type */
 .headerNameType {
   display: flex;
   align-items: center;
@@ -118,246 +138,31 @@
   color: #8e8e93; /* Dark mode */
 }
 
-.editActions {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode, matches headerItem */
-  padding: 16px 0; /* Consistent padding */
-  border-radius: 12px; /* Rounded corners */
-  transition: background 0.3s ease; /* Smooth theme transition */
+/* Step 2: Metrics List */
+.metricsList {
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease;
 }
 
-.editActions.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode, matches headerItem */
+.metricsList.darkTheme {
+  background: transparent; /* Dark mode: keep transparent */
 }
 
-.editActionsButtons {
-  display: flex;
-  gap: 12px;
-}
-
-.inputField,
-.selectField {
-  width: 100%;
-  padding: 13.5px 16px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #1d1d1f; /* Light mode text */
-  background: rgb(255, 255, 255);
-  box-sizing: border-box;
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.inputField.darkTheme,
-.selectField.darkTheme {
-  color: #ffffff; /* Dark mode text */
-  background: rgba(58, 58, 60, 0.9); /* Dark mode background */
-}
-
-.inputField:focus,
-.selectField:focus {
-  outline: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.inputField.darkTheme:focus,
-.selectField.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.95); /* Dark mode focus */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.selectField {
-  padding-right: 32px;
-}
-
-.selectField.darkTheme {
-  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Dark mode */
-}
-
-.optionsSection {
-  margin-top: 8px;
-}
-
-.optionInputRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.addOptionButton {
-  background: none;
-  border: none;
-  color: #007aff; /* Light mode */
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-}
-
-.addOptionButton.darkTheme {
-  color: #0a84ff; /* Dark mode */
-}
-
-.addOptionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-}
-
-.addOptionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-}
-
-.optionsList {
-  margin-top: 8px;
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.optionItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.02); /* Light mode */
-  border-radius: 8px;
-  margin-bottom: 4px;
-  transition: background 0.3s ease; /* Smooth theme transition */
-}
-
-.optionItem.darkTheme {
-  background: rgba(58, 58, 60, 0.9); /* Dark mode */
-}
-
-.optionItem span {
-  color: #1d1d1f; /* Light mode */
-  font-size: 14px;
-  transition: color 0.3s ease; /* Smooth theme transition */
-}
-
-.optionItem.darkTheme span {
-  color: #ffffff; /* Dark mode */
-}
-
-.removeOptionButton {
-  background: none;
-  border: none;
-  color: #ff453a; /* Light mode */
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-}
-
-.removeOptionButton.darkTheme {
-  color: #ff453a; /* Dark mode: keep same red */
-}
-
-.removeOptionButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-}
-
-.removeOptionButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
-}
-
-.deleteButton {
-  background: none;
-  border: none;
-  color: #ff453a; /* Light mode */
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-}
-
-.deleteButton.darkTheme {
-  color: #ff453a; /* Dark mode: keep same red */
-}
-
-.deleteButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-}
-
-.deleteButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
-}
-
-.actionButton {
-  background: none;
-  border: none;
-  color: #007aff; /* Light mode */
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-}
-
-.actionButton.darkTheme {
-  color: #0a84ff; /* Dark mode */
-}
-
-.actionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-}
-
-.actionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-}
-
-.viewContainer {
-  width: 100%;
-}
-
-.view {
-  transition: opacity 0.3s ease;
-}
-
-.view.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.editActions {
-  margin-top: 0; /* Remove top margin since it's a full step */
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: transparent; /* Match modal content background */
-  padding: 16px 0;
-  border-radius: 12px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.editActions.darkTheme {
-  background: transparent; /* Match dark modal content */
-}
-
-.editActionsButtons {
-  display: flex;
-  justify-content: center; /* Center the button horizontally */
-  margin-top: 16px; /* Add spacing above the button */
-  gap: 12px;
-}
-
-/* Step 3: Metric Form */
-.metricForm {
+.noMetrics {
+  font-size: 16px;
+  color: #6e6e73;
+  text-align: center;
   padding: 16px;
-  background: #fff;
+}
+
+.noMetrics.darkTheme {
+  color: #8e8e93;
+}
+
+/* Step 3, 4, 5, 6: Metric Form */
+.metricForm {
   border-radius: 18px;
   overflow-y: auto;
   height: 100%;
@@ -369,9 +174,10 @@
   background: #1c2526;
 }
 
+/* Section */
 .section {
   margin-bottom: 24px;
-  background: #f2f2f7;
+  background: rgb(255, 255, 255);
   border-radius: 12px;
   padding: 12px;
 }
@@ -380,6 +186,7 @@
   background: #2c2c2e;
 }
 
+/* Label */
 .label {
   font-size: 17px;
   font-weight: 600;
@@ -392,7 +199,10 @@
   color: #fff;
 }
 
-.textField, .select {
+/* Input Fields */
+.inputField,
+.textField,
+.select {
   width: 100%;
   padding: 10px 12px;
   font-size: 17px;
@@ -400,18 +210,22 @@
   border-radius: 10px;
   background: #fff;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
 }
 
-.darkTheme.textField, .darkTheme.select {
+.darkTheme.inputField,
+.darkTheme.textField,
+.darkTheme.select {
   border-color: #3a3a3c;
   background: #2c2c2e;
   color: #fff;
 }
 
-.textField:focus, .select:focus {
+.inputField:focus,
+.textField:focus,
+.select:focus {
   border-color: #007aff;
   outline: none;
 }
@@ -426,6 +240,7 @@
   background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
 }
 
+/* Card List (for fields in Step 5) */
 .cardList {
   max-height: 150px;
   overflow-y: auto;
@@ -453,6 +268,18 @@
   color: #fff;
 }
 
+.noFields {
+  font-size: 16px;
+  color: #6e6e73;
+  text-align: center;
+  padding: 16px;
+}
+
+.darkTheme.noFields {
+  color: #8e8e93;
+}
+
+/* Toggle Switch */
 .toggle {
   position: relative;
   display: inline-block;
@@ -497,6 +324,7 @@
   transform: translateX(20px);
 }
 
+/* Segmented Control */
 .segmentedControl {
   display: flex;
   background: #f2f2f7;
@@ -532,15 +360,18 @@
   background: #2c2c2e;
 }
 
+/* Date Range */
 .dateRange {
   display: flex;
   gap: 12px;
 }
 
+/* Chart Preview */
 .chartPreview {
   margin-top: 16px;
   background: #fff;
   border-radius: 12px;
+  padding: 16px;
 }
 
 .darkTheme.chartPreview {
@@ -568,9 +399,35 @@
   color: #007aff;
 }
 
+/* Delete Section */
 .deleteSection {
   margin-top: 24px;
   text-align: center;
+}
+
+/* Buttons */
+.actionButton {
+  background: none;
+  border: none;
+  color: #007aff; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+.actionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
+}
+
+.actionButton:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
 }
 
 .deleteButton {
@@ -594,6 +451,395 @@
   background: #ff3b3010;
 }
 
+.darkTheme.deleteButton:hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+/* Chart Button */
+.chartButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #007aff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  text-align: center;
+}
+
+.chartButton:hover {
+  background: #005bb5;
+}
+
+.darkTheme.chartButton {
+  background: #4da8ff;
+}
+
+.darkTheme.chartButton:hover {
+  background: #3b82f6;
+}
+
+/* Card Template List (Step 4) */
+.cardTemplateList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  transition: background 0.3s ease;
+}
+
+.cardTemplateList.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+}
+
+.cardTemplateItem {
+  padding: 12.5px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease, border-bottom 0.3s ease;
+}
+
+.cardTemplateItem.darkTheme {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(44, 44, 46, 0.9);
+}
+
+.cardTemplateItem:last-child {
+  border-bottom: none;
+}
+
+.cardTemplateItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.cardTemplateItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cardTemplateItem.activeItem {
+  background: rgba(255, 255, 255);
+}
+
+.cardTemplateItem.darkTheme.activeItem {
+  background: rgba(44, 44, 46);
+}
+
+.cardTemplateRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardTemplateNameType {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.cardTemplateNameType span {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+}
+
+.cardTemplateList.darkTheme .cardTemplateNameType span {
+  color: #ffffff;
+}
+
+.cardTemplateSummary {
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  color: #6e6e73;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.cardTemplateSummary.darkTheme {
+  color: #8e8e93;
+}
+
+/* Filter Button (Step 4) */
+.filterButton {
+  padding: 12.5px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  transition: background 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.filterButton.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+}
+
+.filterButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.filterButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.filterButtonName {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+}
+
+.filterButton.darkTheme .filterButtonName {
+  color: #ffffff;
+}
+
+.filterButtonSummary {
+  letter-spacing: 0.02em;
+  color: #6e6e73;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.filterButton.darkTheme .filterButtonSummary {
+  color: #8e8e93;
+}
+
+/* Filter List (Step 6) */
+.filterList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  transition: background 0.3s ease;
+}
+
+.filterList.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+}
+
+.filterItem {
+  padding: 12.5px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease, border-bottom 0.3s ease;
+}
+
+.filterItem.darkTheme {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(44, 44, 46, 0.9);
+}
+
+.filterItem:last-child {
+  border-bottom: none;
+}
+
+.filterItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.filterItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.filterItem.activeItem {
+  background: rgba(255, 255, 255);
+}
+
+.filterItem.darkTheme.activeItem {
+  background: rgba(44, 44, 46);
+}
+
+.filterRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filterNameType {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.filterNameType span {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+}
+
+.filterList.darkTheme .filterNameType span {
+  color: #ffffff;
+}
+
+.filterSummary {
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  color: #6e6e73;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.filterSummary.darkTheme {
+  color: #8e8e93;
+}
+
+/* Filter Actions */
+.filterActions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Filter Inputs and Selects */
+.filterInput,
+.filterSelect,
+.filterSelectNoChevron {
+  width: auto;
+  flex: 1;
+  padding: 13.5px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(243, 242, 248);
+  box-sizing: border-box;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.filterInput.darkTheme,
+.filterSelect.darkTheme,
+.filterSelectNoChevron.darkTheme {
+  color: #ffffff;
+  background: rgba(58, 58, 60, 0.9);
+}
+
+.filterSelect {
+  padding-right: 28px;
+  background: rgba(243, 242, 248);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.filterSelect.darkTheme {
+  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+
+.filterSelectNoChevron {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.filterInput:focus,
+.filterSelect:focus,
+.filterSelectNoChevron:focus {
+  outline: none;
+  background: rgba(243, 242, 248);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.filterInput.darkTheme:focus,
+.filterSelect.darkTheme:focus,
+.filterSelectNoChevron.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.filterInput[type="number"]::-webkit-inner-spin-button,
+.filterInput[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.filterInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Separator */
+.separator {
+  color: #6e6e73;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.separator.darkTheme {
+  color: #8e8e93;
+}
+
+/* Clear Button */
+.clearButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.clearButton.darkTheme {
+  color: #0a84ff;
+}
+
+.clearButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.clearButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 0px;
+}
+
+/* Reset Button */
+.resetButton {
+  background: none;
+  border: none;
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.resetButton.darkTheme {
+  color: #ff453a;
+}
+
+.resetButton:hover {
+  background: rgba(255, 69, 58, 0.1);
+}
+
+.resetButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+/* Animation */
 @keyframes slideUp {
   from {
     opacity: 0;
