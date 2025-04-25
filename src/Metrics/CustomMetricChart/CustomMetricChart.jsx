@@ -31,9 +31,6 @@ ChartJS.register(
   Filler
 );
 
-// Apple color palette for solid colors
-const appleColors = ['#5856D6', '#007AFF', '#34C759', '#FF2D55', '#AF52DE'];
-
 // Error Boundary Component
 class ChartErrorBoundary extends Component {
   state = { hasError: false };
@@ -111,7 +108,7 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
               {
                 label: 'Example Revenue',
                 data: [30000, 20000, 15000, 10000],
-                backgroundColor: [appleBlue, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`], // Fading effect
+                backgroundColor: [appleBlue, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`],
                 borderColor: backgroundColor,
                 borderWidth: 1,
               },
@@ -131,12 +128,12 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
           name: 'Example Growth',
           type: 'bar',
           data: {
-            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+            labels: ['Jan', 'Feb', 'Mar', 'Apr'],
             datasets: [
               {
                 label: 'Example Growth',
                 data: [50, 75, 60, 90],
-                backgroundColor: appleBlue, // Solid color
+                backgroundColor: appleBlue,
                 borderColor: appleBlue,
                 borderWidth: 1,
               },
@@ -155,13 +152,12 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
 
   // Generate fading colors for pie charts
   const getPieColors = (baseColor, numSegments) => {
-    const opacities = ['FF', 'CC', '99', '66']; // Fading effect
+    const opacities = ['FF', 'CC', '99', '66'];
     return Array.from({ length: numSegments }, (_, i) => `${baseColor}${opacities[i % opacities.length]}`);
   };
 
   // Normalize metric data to Chart.js format
   const normalizeMetricData = (metric) => {
-    console.log('Received metric:', metric); // Debug
     if (!metric || !metric.id || !metric.name || !metric.type || !metric.data) {
       return getDefaultMetric(chartType || 'speedometer');
     }
@@ -172,60 +168,74 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
       return metric;
     }
 
-    if (data.datasets && Array.isArray(data.datasets)) {
-      return {
-        ...metric,
-        data: {
-          labels: data.labels || [],
-          datasets: data.datasets.map((dataset, i) => {
-            const baseColor = dataset.borderColor || appleColors[i % appleColors.length];
-            return {
-              ...dataset,
-              label: dataset.label || name,
-              borderColor: baseColor,
-              backgroundColor:
-                type === 'bar'
-                  ? baseColor // Solid color for bars
-                  : type === 'pie'
-                  ? getPieColors(baseColor, data.labels.length) // Fading colors for pie
-                  : `${baseColor}33`, // Transparent for line
-              fill: dataset.fill !== undefined ? dataset.fill : type === 'line',
-              borderWidth: dataset.borderWidth || (type === 'pie' ? 1 : undefined),
-              stack: dataset.stack || (type === 'bar' ? 'stack' : undefined),
-              tension: type === 'line' ? 0.4 : undefined, // Smooth lines for line charts
-            };
-          }),
-        },
-      };
-    }
+    // Format labels as three-letter month abbreviations
+    const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+    const formattedLabels = (data.labels || []).map((label) => {
+      try {
+        const date = new Date(label);
+        return monthFormatter.format(date);
+      } catch {
+        return label.slice(0, 3); // Fallback for invalid dates
+      }
+    });
 
-    if (data.labels && data.values) {
-      return {
-        ...metric,
-        data: {
-          labels: data.labels,
-          datasets: [
-            {
-              label: name,
-              data: data.values,
-              borderColor: appleBlue,
-              backgroundColor:
-                type === 'bar'
-                  ? appleBlue // Solid color for bars
-                  : type === 'pie'
-                  ? getPieColors(appleBlue, data.labels.length) // Fading colors for pie
-                  : `${appleBlue}33`, // Transparent for line
-              fill: type === 'line',
-              borderWidth: type === 'pie' ? 1 : undefined,
-              stack: type === 'bar' ? 'stack' : undefined,
-              tension: type === 'line' ? 0.4 : undefined, // Smooth lines
-            },
-          ],
-        },
-      };
-    }
+    // Ensure unique labels and aggregate data by month
+    const uniqueLabels = [];
+    const labelSet = new Set();
+    formattedLabels.forEach((label) => {
+      if (!labelSet.has(label)) {
+        labelSet.add(label);
+        uniqueLabels.push(label);
+      }
+    });
 
-    return getDefaultMetric(type || chartType || 'speedometer');
+    const datasets = (data.datasets || (data.values ? [{ data: data.values, label: name }] : [])).map(
+      (dataset, i) => {
+        // Aggregate data by month
+        const aggregatedData = [];
+        const dataMap = new Map();
+
+        dataset.data.forEach((value, index) => {
+          const label = formattedLabels[index];
+          if (dataMap.has(label)) {
+            const existing = dataMap.get(label);
+            dataMap.set(label, existing + (value || 0));
+          } else {
+            dataMap.set(label, value || 0);
+          }
+        });
+
+        uniqueLabels.forEach((label) => {
+          aggregatedData.push(dataMap.get(label) || 0);
+        });
+
+        const baseColor = appleBlue; // Use Apple's blue
+        return {
+          ...dataset,
+          label: dataset.label || name,
+          data: aggregatedData,
+          borderColor: baseColor,
+          backgroundColor:
+            type === 'bar'
+              ? baseColor // Solid color for bars
+              : type === 'pie'
+              ? getPieColors(baseColor, uniqueLabels.length) // Fading colors for pie
+              : `${baseColor}33`, // Transparent for line
+          fill: dataset.fill !== undefined ? dataset.fill : type === 'line',
+          borderWidth: dataset.borderWidth || (type === 'pie' ? 1 : undefined),
+          stack: dataset.stack || (type === 'bar' ? 'stack' : undefined),
+          tension: type === 'line' ? 0.4 : undefined, // Smooth lines for line charts
+        };
+      }
+    );
+
+    return {
+      ...metric,
+      data: {
+        labels: uniqueLabels,
+        datasets,
+      },
+    };
   };
 
   const effectiveMetric = normalizeMetricData(metric);
@@ -259,8 +269,6 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
       },
     },
   };
-
-  console.log('Effective metric data:', effectiveMetric.data); // Debug
 
   return (
     <ChartErrorBoundary>

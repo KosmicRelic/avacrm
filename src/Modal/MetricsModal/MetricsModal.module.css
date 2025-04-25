@@ -1,446 +1,535 @@
 .headersModal {
-    background: transparent; /* Light mode: no additional background */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .headersModal.darkTheme {
-    background: transparent; /* Dark mode: keep transparent to match modal */
-  }
-  
-  .createHeader {
-    padding: 13.5px 16px;
-    margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.95); /* Light mode */
-    transition: background 0.2s ease; /* Smooth theme transition */
-    box-sizing: border-box;
-  }
-  
-  .createHeader.darkTheme {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode */
-  }
-  
-  .createHeader:hover:not(.activeItem) {
-    background: rgba(0, 0, 0, 0.05); /* Light mode hover */
-  }
-  
-  .createHeader.darkTheme:hover:not(.activeItem) {
-    background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
-  }
-  
-  .createHeader.activeItem {
-    background: rgba(255, 255, 255, 0.95); /* Light mode active */
-  }
-  
-  .createHeader.darkTheme.activeItem {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode active */
-  }
-  
-  .headerList {
-    margin-bottom: 20px;
-    border-radius: 10px;
-    overflow: hidden;
-    background: transparent; /* Light mode: no additional background */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .headerList.darkTheme {
-    background: transparent; /* Dark mode: keep transparent */
-  }
-  
-  .headerItem {
-    padding: 13px 16px;
-    background: rgba(255, 255, 255, 0.95); /* Light mode */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
-    transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .headerItem.darkTheme {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
-  }
-  
-  .headerItem:last-child {
-    border-bottom: none;
-  }
-  
-  .headerItem:hover:not(.activeItem) {
-    background: rgba(0, 0, 0, 0.05); /* Light mode hover */
-  }
-  
-  .headerItem.darkTheme:hover:not(.activeItem) {
-    background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
-  }
-  
-  .activeItem {
-    background: rgba(255, 255, 255, 0.95); /* Light mode active */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .activeItem.darkTheme {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode active */
-  }
-  
-  .headerRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .headerNameType {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex: 1;
-  }
-  
-  .headerNameType span {
-    flex: 0 0 auto;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    color: #1d1d1f; /* Light mode default */
-    transition: color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .headerNameType.darkTheme span {
-    color: #ffffff; /* Dark mode override */
-  }
-  
-  .headerType {
-    color: #6e6e73; /* Light mode */
-    font-size: 14px;
-    transition: color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .headerType.darkTheme {
-    color: #8e8e93; /* Dark mode */
-  }
-  
-  .editActions {
-    margin-top: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.95); /* Light mode, matches headerItem */
-    padding: 16px 0; /* Consistent padding */
-    border-radius: 12px; /* Rounded corners */
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .editActions.darkTheme {
-    background: rgba(44, 44, 46, 0.95); /* Dark mode, matches headerItem */
-  }
-  
-  .editActionsButtons {
-    display: flex;
-    gap: 12px;
-  }
-  
-  .inputField,
-  .selectField {
-    width: 100%;
-    padding: 13.5px 16px;
-    border: none;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 400;
-    color: #1d1d1f; /* Light mode text */
-    background: rgb(255, 255, 255);
-    box-sizing: border-box;
-    transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  
-  .inputField.darkTheme,
-  .selectField.darkTheme {
-    color: #ffffff; /* Dark mode text */
-    background: rgba(58, 58, 60, 0.9); /* Dark mode background */
-  }
-  
-  .inputField:focus,
-  .selectField:focus {
-    outline: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-  
-  .inputField.darkTheme:focus,
-  .selectField.darkTheme:focus {
-    background: rgba(72, 72, 74, 0.95); /* Dark mode focus */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  
-  .selectField {
-    padding-right: 32px;
-  }
-  
-  .selectField.darkTheme {
-    background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Dark mode */
-  }
-  
-  .optionsSection {
-    margin-top: 8px;
-  }
-  
-  .optionInputRow {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  
-  .addOptionButton {
-    background: none;
-    border: none;
-    color: #007aff; /* Light mode */
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .addOptionButton.darkTheme {
-    color: #0a84ff; /* Dark mode */
-  }
-  
-  .addOptionButton:hover {
-    background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-  }
-  
-  .addOptionButton.darkTheme:hover {
-    background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-  }
-  
-  .optionsList {
-    margin-top: 8px;
-    max-height: 150px;
-    overflow-y: auto;
-  }
-  
-  .optionItem {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.02); /* Light mode */
-    border-radius: 8px;
-    margin-bottom: 4px;
-    transition: background 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .optionItem.darkTheme {
-    background: rgba(58, 58, 60, 0.9); /* Dark mode */
-  }
-  
-  .optionItem span {
-    color: #1d1d1f; /* Light mode */
-    font-size: 14px;
-    transition: color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .optionItem.darkTheme span {
-    color: #ffffff; /* Dark mode */
-  }
-  
-  .removeOptionButton {
-    background: none;
-    border: none;
-    color: #ff453a; /* Light mode */
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .removeOptionButton.darkTheme {
-    color: #ff453a; /* Dark mode: keep same red */
-  }
-  
-  .removeOptionButton:hover {
-    background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-  }
-  
-  .removeOptionButton.darkTheme:hover {
-    background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
-  }
-  
-  .deleteButton {
-    background: none;
-    border: none;
-    color: #ff453a; /* Light mode */
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .deleteButton.darkTheme {
-    color: #ff453a; /* Dark mode: keep same red */
-  }
-  
-  .deleteButton:hover {
-    background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-  }
-  
-  .deleteButton.darkTheme:hover {
-    background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
-  }
-  
-  .actionButton {
-    background: none;
-    border: none;
-    color: #007aff; /* Light mode */
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
-  }
-  
-  .actionButton.darkTheme {
-    color: #0a84ff; /* Dark mode */
-  }
-  
-  .actionButton:hover {
-    background: rgba(0, 122, 255, 0.1); /* Light mode hover */
-  }
-  
-  .actionButton.darkTheme:hover {
-    background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
-  }
-  
-  .viewContainer {
-    width: 100%;
-  }
-  
-  .view {
-    transition: opacity 0.3s ease;
-  }
-  
-  .view.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-  
-  .editActions {
-    margin-top: 0; /* Remove top margin since it's a full step */
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    background: transparent; /* Match modal content background */
-    padding: 16px 0;
-    border-radius: 12px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  .editActions.darkTheme {
-    background: transparent; /* Match dark modal content */
-  }
-  
-  .editActionsButtons {
-    display: flex;
-    justify-content: center; /* Center the button horizontally */
-    margin-top: 16px; /* Add spacing above the button */
-    gap: 12px;
-  }
-  
-  /* Ensure the delete button looks consistent */
-  .deleteButton {
-    background: none;
-    border: none;
-    color: #ff453a; /* Light mode */
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease, color 0.3s ease;
-  }
-  
-  .deleteButton.darkTheme {
-    color: #ff453a; /* Dark mode: keep same red */
-  }
-  
-  .deleteButton:hover {
-    background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-  }
-  
-  .deleteButton.darkTheme:hover {
-    background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
-  }
-
-  /* ... existing styles ... */
-
-.formGroup {
-  margin-bottom: 16px;
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
-.formGroup label {
-  display: block;
+.headersModal.darkTheme {
+  background: transparent; /* Dark mode: keep transparent to match modal */
+}
+
+.createHeader {
+  padding: 13.5px 16px;
+  margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  transition: background 0.2s ease; /* Smooth theme transition */
+  box-sizing: border-box;
+}
+
+.createHeader.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+}
+
+.createHeader:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.createHeader.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.createHeader.activeItem {
+  background: rgba(255, 255, 255, 0.95); /* Light mode active */
+}
+
+.createHeader.darkTheme.activeItem {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode active */
+}
+
+.headerList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent; /* Light mode: no additional background */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.headerList.darkTheme {
+  background: transparent; /* Dark mode: keep transparent */
+}
+
+.headerItem {
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
+  transition: background 0.2s ease, border-bottom 0.3s ease; /* Smooth theme transition */
+}
+
+.headerItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+}
+
+.headerItem:last-child {
+  border-bottom: none;
+}
+
+.headerItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+}
+
+.headerItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+}
+
+.activeItem {
+  background: rgba(255, 255, 255, 0.95); /* Light mode active */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.activeItem.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode active */
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerNameType {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 1;
+}
+
+.headerNameType span {
+  flex: 0 0 auto;
   font-weight: 600;
-  margin-bottom: 8px;
-  color: #1d1d1f;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #1d1d1f; /* Light mode default */
+  transition: color 0.3s ease; /* Smooth theme transition */
 }
 
-.darkTheme .formGroup label {
-  color: #ffffff;
+.headerNameType.darkTheme span {
+  color: #ffffff; /* Dark mode override */
 }
 
-.inputField, .selectField {
+.headerType {
+  color: #6e6e73; /* Light mode */
+  font-size: 14px;
+  transition: color 0.3s ease; /* Smooth theme transition */
+}
+
+.headerType.darkTheme {
+  color: #8e8e93; /* Dark mode */
+}
+
+.editActions {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.95); /* Light mode, matches headerItem */
+  padding: 16px 0; /* Consistent padding */
+  border-radius: 12px; /* Rounded corners */
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.editActions.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode, matches headerItem */
+}
+
+.editActionsButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.inputField,
+.selectField {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 16px;
-  background: #ffffff;
-  color: #1d1d1f;
+  padding: 13.5px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f; /* Light mode text */
+  background: rgb(255, 255, 255);
+  box-sizing: border-box;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.darkTheme .inputField, .darkTheme .selectField {
+.inputField.darkTheme,
+.selectField.darkTheme {
+  color: #ffffff; /* Dark mode text */
+  background: rgba(58, 58, 60, 0.9); /* Dark mode background */
+}
+
+.inputField:focus,
+.selectField:focus {
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inputField.darkTheme:focus,
+.selectField.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.95); /* Dark mode focus */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.selectField {
+  padding-right: 32px;
+}
+
+.selectField.darkTheme {
+  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center; /* Dark mode */
+}
+
+.optionsSection {
+  margin-top: 8px;
+}
+
+.optionInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.addOptionButton {
+  background: none;
+  border: none;
+  color: #007aff; /* Light mode */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+.addOptionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
+}
+
+.addOptionButton:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+}
+
+.addOptionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
+}
+
+.optionsList {
+  margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.02); /* Light mode */
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: background 0.3s ease; /* Smooth theme transition */
+}
+
+.optionItem.darkTheme {
+  background: rgba(58, 58, 60, 0.9); /* Dark mode */
+}
+
+.optionItem span {
+  color: #1d1d1f; /* Light mode */
+  font-size: 14px;
+  transition: color 0.3s ease; /* Smooth theme transition */
+}
+
+.optionItem.darkTheme span {
+  color: #ffffff; /* Dark mode */
+}
+
+.removeOptionButton {
+  background: none;
+  border: none;
+  color: #ff453a; /* Light mode */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+.removeOptionButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
+}
+
+.removeOptionButton:hover {
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+}
+
+.removeOptionButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: #ff453a; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+.deleteButton.darkTheme {
+  color: #ff453a; /* Dark mode: keep same red */
+}
+
+.deleteButton:hover {
+  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
+}
+
+.deleteButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  color: #007aff; /* Light mode */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+.actionButton.darkTheme {
+  color: #0a84ff; /* Dark mode */
+}
+
+.actionButton:hover {
+  background: rgba(0, 122, 255, 0.1); /* Light mode hover */
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2); /* Dark mode hover */
+}
+
+.viewContainer {
+  width: 100%;
+}
+
+.view {
+  transition: opacity 0.3s ease;
+}
+
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.editActions {
+  margin-top: 0; /* Remove top margin since it's a full step */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent; /* Match modal content background */
+  padding: 16px 0;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.editActions.darkTheme {
+  background: transparent; /* Match dark modal content */
+}
+
+.editActionsButtons {
+  display: flex;
+  justify-content: center; /* Center the button horizontally */
+  margin-top: 16px; /* Add spacing above the button */
+  gap: 12px;
+}
+
+/* Step 3: Metric Form */
+.metricForm {
+  padding: 16px;
+  background: #fff;
+  border-radius: 18px;
+  overflow-y: auto;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  animation: slideUp 0.3s ease-out;
+}
+
+.darkTheme.metricForm {
+  background: #1c2526;
+}
+
+.section {
+  margin-bottom: 24px;
+  background: #f2f2f7;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.darkTheme.section {
   background: #2c2c2e;
-  border-color: #3c3c3e;
-  color: #ffffff;
+}
+
+.label {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.darkTheme.label {
+  color: #fff;
+}
+
+.textField, .select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 17px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.darkTheme.textField, .darkTheme.select {
+  border-color: #3a3a3c;
+  background: #2c2c2e;
+  color: #fff;
+}
+
+.textField:focus, .select:focus {
+  border-color: #007aff;
+  outline: none;
+}
+
+.select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.darkTheme.select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
 }
 
 .cardList {
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
-  border: 1px solid #ccc;
-  border-radius: 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
   padding: 8px;
-  background: #ffffff;
+  background: #fff;
 }
 
-.darkTheme .cardList {
+.darkTheme.cardList {
+  border-color: #3a3a3c;
   background: #2c2c2e;
-  border-color: #3c3c3e;
 }
 
 .cardItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 6px 0;
+  font-size: 17px;
   color: #1d1d1f;
 }
 
-.darkTheme .cardItem {
-  color: #ffffff;
+.darkTheme.cardItem {
+  color: #fff;
 }
 
-.filterGroup {
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 51px;
+  height: 31px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #d2d2d7;
+  border-radius: 31px;
+  transition: background 0.2s ease;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: '';
+  height: 27px;
+  width: 27px;
+  left: 2px;
+  bottom: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle input:checked + .toggleSlider {
+  background: #34c759;
+}
+
+.toggle input:checked + .toggleSlider:before {
+  transform: translateX(20px);
+}
+
+.segmentedControl {
   display: flex;
-  gap: 12px;
+  background: #f2f2f7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.darkTheme.segmentedControl {
+  background: #3a3a3c;
+}
+
+.segment {
+  flex: 1;
+  padding: 10px;
+  font-size: 15px;
+  color: #1d1d1f;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.darkTheme.segment {
+  color: #fff;
+}
+
+.segment.active {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.darkTheme.segment.active {
+  background: #2c2c2e;
 }
 
 .dateRange {
@@ -450,12 +539,11 @@
 
 .chartPreview {
   margin-top: 16px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
+  background: #fff;
+  border-radius: 12px;
 }
 
-.darkTheme .chartPreview {
+.darkTheme.chartPreview {
   background: #2c2c2e;
 }
 
@@ -464,18 +552,55 @@
 }
 
 .numberMetric h3 {
-  margin: 0;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 8px;
   color: #1d1d1f;
 }
 
-.darkTheme .numberMetric h3 {
-  color: #ffffff;
+.darkTheme.numberMetric h3 {
+  color: #fff;
 }
 
 .numberMetric p {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 34px;
+  font-weight: 700;
   color: #007aff;
 }
 
+.deleteSection {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.deleteButton {
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #ff3b30;
+  background: #f2f2f7;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.darkTheme.deleteButton {
+  color: #ff453a;
+  background: #2c2c2e;
+}
+
+.deleteButton:hover {
+  background: #ff3b3010;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
