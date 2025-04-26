@@ -978,12 +978,7 @@ export const MainContextProvider = ({ children }) => {
       localStorage.setItem('theme', themeRef.current);
     }
   }, [isDarkTheme]);
-
-  // useEffect(() => {
-  //   console.log(metrics[2]);
-  // }
-  // , [metrics]);
-
+  
   return (
     <MainContext.Provider
       value={{

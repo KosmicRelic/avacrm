@@ -45,6 +45,7 @@ function App() {
     setDashboards,
     metrics,
     setMetrics,
+    isDarkTheme,
   } = useContext(MainContext);
 
   const sheetModal = useModal();
@@ -751,7 +752,7 @@ function App() {
         onOpenFolderModal={onOpenFolderOperationsModal}
         onOpenMetricsModal={onManageMetrics}
       />
-      <div className={styles.contentWrapper}>
+      <div className={`${styles.contentWrapper} ${isDarkTheme?styles.darkTheme:""}`}>
         {activeOption === 'sheets' && activeSheetName && (
           <Sheets
             headers={resolvedHeaders}

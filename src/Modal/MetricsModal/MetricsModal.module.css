@@ -173,7 +173,6 @@
   border-radius: 12px;
   overflow-y: auto;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 
 /* Section */
@@ -939,7 +938,6 @@
 
 /* Optional: Customize Step 2 appearance */
 .createCategoryStep {
-  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -947,7 +945,6 @@
 
 .createCategoryStep .createHeader {
   width: 100%;
-  max-width: 400px;
 }
 
 .addButton {

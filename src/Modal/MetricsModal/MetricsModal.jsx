@@ -4,7 +4,7 @@ import styles from './MetricsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
-import { computeMetricData } from '../../Metrics/metricsUtils';
+import { computeMetricData, computeCorrelation } from '../../Metrics/metricsUtils';
 import { FaRegCircle, FaRegCheckCircle, FaPlus } from 'react-icons/fa';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
@@ -47,7 +47,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const [metricForm, setMetricForm] = useState({
     name: '',
     cardTemplates: [],
-    fields: [],
+    fields: {},
     aggregation: 'average',
     visualizationType: 'line',
     dateRange: { start: '2023-01-01', end: '2025-04-24' },
@@ -55,21 +55,26 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     groupBy: '',
     includeHistory: true,
     granularity: 'monthly',
+    comparisonFields: [],
   });
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
   const [activeMetricIndex, setActiveMetricIndex] = useState(-1);
-  const [showOutputData, setShowOutputData] = useState(false);
   const [selectedCardTemplate, setSelectedCardTemplate] = useState(null);
   const [dateRangeMode, setDateRangeMode] = useState({});
   const [numberRangeMode, setNumberRangeMode] = useState({});
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const [activeSectionIndex, setActiveSectionIndex] = useState(null);
-  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
+  const [navigationDirection, setNavigationDirection] = useState(null);
   const filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
-  const prevStepRef = useRef(currentStep); // Track previous step
+  const prevStepRef = useRef(currentStep);
+
+  // Colors for Apple-inspired UI
+  const appleBlue = '#007AFF';
+  const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
+  const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
 
   // Validation functions
   const validateCategory = useCallback((name, existingCategories, isUpdate = false, index = null) => {
@@ -90,7 +95,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   const validateMetric = useCallback(
     (form) => {
-      const { name, cardTemplates, fields } = form;
+      const { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation } = form;
       const trimmedName = name.trim();
       if (!trimmedName) {
         alert('Metric name cannot be empty.');
@@ -100,9 +105,26 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         alert('Select at least one card template.');
         return false;
       }
-      if (fields.length === 0) {
-        alert('Select at least one field.');
+      const hasFields = comparisonFields.length > 0 || cardTemplates.some((template) => fields[template]?.length > 0);
+      if (!hasFields) {
+        alert('Select at least one field or two comparison fields.');
         return false;
+      }
+      if (comparisonFields.length > 0 && comparisonFields.length !== 2) {
+        alert('Select exactly two fields for comparison.');
+        return false;
+      }
+      // Validate numeric fields for non-pie visualizations (except count)
+      if (visualizationType !== 'pie' && aggregation !== 'count') {
+        const allFields = comparisonFields.length > 0 ? comparisonFields : cardTemplates.flatMap((t) => fields[t] || []);
+        const invalidFields = allFields.filter((field) => {
+          const header = headers.find((h) => h.key === field);
+          return !header || header.type !== 'number';
+        });
+        if (invalidFields.length > 0) {
+          alert(`Non-numeric fields selected: ${invalidFields.join(', ')}. Please select numeric fields for ${aggregation} aggregation.`);
+          return false;
+        }
       }
       const nameConflict = currentCategories[activeCategoryIndex]?.metrics.some(
         (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && i !== activeMetricIndex
@@ -113,7 +135,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       }
       return true;
     },
-    [activeCategoryIndex, currentCategories, activeMetricIndex]
+    [activeCategoryIndex, currentCategories, activeMetricIndex, headers]
   );
 
   // Reset form
@@ -121,7 +143,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setMetricForm({
       name: '',
       cardTemplates: [],
-      fields: [],
+      fields: {},
       aggregation: 'average',
       visualizationType: 'line',
       dateRange: { start: '2023-01-01', end: '2025-04-24' },
@@ -129,8 +151,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       groupBy: '',
       includeHistory: true,
       granularity: 'monthly',
+      comparisonFields: [],
     });
-    setShowOutputData(false);
     setDateRangeMode({});
     setNumberRangeMode({});
     setActiveFilterIndex(null);
@@ -139,41 +161,49 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Toggle card template
   const toggleCardTemplate = useCallback((template) => {
-    setMetricForm((prev) => ({
-      ...prev,
-      cardTemplates: prev.cardTemplates.includes(template)
+    setMetricForm((prev) => {
+      const isSelected = prev.cardTemplates.includes(template);
+      const newCardTemplates = isSelected
         ? prev.cardTemplates.filter((t) => t !== template)
-        : [...prev.cardTemplates, template],
-    }));
+        : [...prev.cardTemplates, template];
+      const newFields = { ...prev.fields };
+      if (!isSelected) {
+        newFields[template] = [];
+      } else {
+        delete newFields[template];
+      }
+      return {
+        ...prev,
+        cardTemplates: newCardTemplates,
+        fields: newFields,
+      };
+    });
   }, []);
 
-  // Updated toggleField to auto-select card template
+  // Toggle field
   const toggleField = useCallback(
     (field) => {
       setMetricForm((prev) => {
-        const newFields = prev.fields.includes(field)
-          ? prev.fields.filter((f) => f !== field)
-          : [...prev.fields, field];
-
-        // Find the card template associated with the field
-        const associatedTemplate = cardTemplates.find((template) =>
-          template.sections.some((section) => section.keys.includes(field))
-        );
-
-        // If a field is being added and a template is found, add the template to cardTemplates
-        let newCardTemplates = [...prev.cardTemplates];
-        if (!prev.fields.includes(field) && associatedTemplate && !prev.cardTemplates.includes(associatedTemplate.typeOfCards)) {
-          newCardTemplates = [...prev.cardTemplates, associatedTemplate.typeOfCards];
+        const currentFields = prev.fields[selectedCardTemplate] || [];
+        const newFields = currentFields.includes(field)
+          ? currentFields.filter((f) => f !== field)
+          : [...currentFields, field];
+        const updatedFields = {
+          ...prev.fields,
+          [selectedCardTemplate]: newFields,
+        };
+        let newCardTemplates = prev.cardTemplates;
+        if (!prev.cardTemplates.includes(selectedCardTemplate) && newFields.length > 0) {
+          newCardTemplates = [...prev.cardTemplates, selectedCardTemplate];
         }
-
         return {
           ...prev,
-          fields: newFields,
+          fields: updatedFields,
           cardTemplates: newCardTemplates,
         };
       });
     },
-    [cardTemplates]
+    [selectedCardTemplate]
   );
 
   // Field options for selected card template in Step 7
@@ -182,13 +212,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     const validKeys = cardTemplates
       .filter((t) => t.typeOfCards === selectedCardTemplate)
       .flatMap((t) => t.sections.flatMap((s) => s.keys));
+    const isNumericRequired = metricForm.visualizationType !== 'pie' && metricForm.aggregation !== 'count';
     return headers
-      .filter((header) => validKeys.includes(header.key))
+      .filter((header) => validKeys.includes(header.key) && (!isNumericRequired || header.type === 'number'))
       .map((header) => ({
         key: header.key,
         name: header.name,
       }));
-  }, [selectedCardTemplate, cardTemplates, headers]);
+  }, [selectedCardTemplate, cardTemplates, headers, metricForm.visualizationType, metricForm.aggregation]);
 
   // Get card template button summary
   const getCardTemplateButtonSummary = useCallback(() => {
@@ -198,7 +229,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Get metric details button summary
   const getMetricDetailsButtonSummary = useCallback(() => {
-    return metricForm.front
+    return metricForm.visualizationType
       ? metricForm.visualizationType.charAt(0).toUpperCase() + metricForm.visualizationType.slice(1)
       : 'No visualization selected';
   }, [metricForm.visualizationType]);
@@ -221,7 +252,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
   };
 
-  // Get filter button summary
+  // Get filter summary
   const getFilterButtonSummary = useCallback(() => {
     const selectedFilters = Object.keys(metricForm.filterValues).filter(
       (key) => !isFilterEmpty(metricForm.filterValues[key])
@@ -357,9 +388,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const addMetric = useCallback(() => {
     if (!validateMetric(metricForm)) return;
 
-    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity } = metricForm;
-    const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity };
-    const data = computeMetricData(cards, config);
+    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
+    const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
+    const data = computeMetricData(cards, config, headers);
 
     const newMetric = {
       id: `metric-${uuidv4()}`,
@@ -388,9 +419,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     (metricIndex) => {
       if (!validateMetric(metricForm)) return;
 
-      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity } = metricForm;
-      const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity };
-      const data = computeMetricData(cards, config);
+      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
+      const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
+      const data = computeMetricData(cards, config, headers);
 
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
@@ -529,7 +560,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             rightButton: {
               label: 'Save',
               onClick: saveMetric,
-              isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
+              isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
             },
           },
           {
@@ -537,7 +568,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             rightButton: {
               label: 'Save',
               onClick: saveMetric,
-              isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
+              isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
             },
           },
           {
@@ -592,6 +623,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   // Update modal config and set navigation direction
   useEffect(() => {
     let newConfig;
+
     if (currentStep === 1) {
       newConfig = {
         showTitle: true,
@@ -643,7 +675,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: 'Save',
           onClick: saveMetric,
-          isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
+          isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
         },
       };
     } else if (currentStep === 5) {
@@ -656,7 +688,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: 'Save',
           onClick: saveMetric,
-          isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
+          isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
         },
       };
     } else if (currentStep === 6) {
@@ -693,7 +725,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       prevConfigRef.current = newConfig;
     }
 
-    // Set navigation direction based on step change
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
       prevStepRef.current = currentStep;
@@ -733,11 +764,16 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setActiveMetricIndex(metricIndex);
       if (metricIndex !== -1) {
         const metric = currentCategories[categoryIndex].metrics[metricIndex];
+        const fields = Array.isArray(metric.config?.fields)
+          ? metric.config.cardTemplates.reduce((acc, template) => {
+              acc[template] = metric.config.fields;
+              return acc;
+            }, {})
+          : metric.config?.fields || {};
         setMetricForm({
           name: metric.name,
-          card_tenant_id: metric.config?.card_tenant_id || '',
           cardTemplates: metric.config?.cardTemplates || [],
-          fields: metric.config?.fields || [],
+          fields,
           aggregation: metric.config?.aggregation || 'average',
           visualizationType: metric.type || 'line',
           dateRange: metric.config?.dateRange || { start: '2023-01-01', end: '2025-04-24' },
@@ -745,6 +781,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           groupBy: metric.config?.groupBy || '',
           includeHistory: metric.config?.includeHistory !== undefined ? metric.config.includeHistory : true,
           granularity: metric.config?.granularity || 'monthly',
+          comparisonFields: metric.config?.comparisonFields || [],
         });
       } else {
         resetForm();
@@ -767,7 +804,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Render chart preview
   const renderChartPreview = () => {
-    if (!metricForm.fields.length || metricForm.cardTemplates.length === 0 || !showOutputData) return null;
+    // Show preview only if there are selected templates with fields or comparison fields
+    if (
+      !metricForm.cardTemplates.some((template) => metricForm.fields[template]?.length > 0) &&
+      metricForm.comparisonFields.length !== 2
+    ) {
+      return null;
+    }
 
     const config = {
       fields: metricForm.fields,
@@ -779,74 +822,70 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       visualizationType: metricForm.visualizationType,
       includeHistory: metricForm.includeHistory,
       granularity: metricForm.granularity,
+      comparisonFields: metricForm.comparisonFields,
     };
 
-    const data = computeMetricData(cards, config);
+    const data = computeMetricData(cards, config, headers);
+
+    // Compute correlation if two fields are selected
+    let correlation = null;
+    if (metricForm.comparisonFields.length === 2 && data.datasets.length === 2 && metricForm.visualizationType !== 'scatter') {
+      const data1 = data.datasets[0].data;
+      const data2 = data.datasets[1].data;
+      if (data1.length === data2.length && data1.length > 0) {
+        correlation = computeCorrelation(data1, data2);
+      }
+    }
 
     // Format labels based on granularity
     const formatter = new Intl.DateTimeFormat('en-US', {
       month: metricForm.granularity === 'monthly' ? 'short' : undefined,
       day: metricForm.granularity === 'daily' ? 'numeric' : undefined,
-      week: metricForm.granularity === 'weekly' ? 'numeric' : undefined,
+      year: 'numeric',
     });
     const formattedLabels = (data.labels || []).map((label) => {
       try {
         const date = new Date(label);
         return formatter.format(date);
       } catch {
-        return label.slice(0, 3);
+        return label;
       }
     });
 
-    // Ensure unique labels
-    const uniqueLabels = [];
-    const labelSet = new Set();
-    formattedLabels.forEach((label) => {
-      if (!labelSet.has(label)) {
-        labelSet.add(label);
-        uniqueLabels.push(label);
-      }
-    });
+    const uniqueLabels = [...new Set(formattedLabels)];
 
-    // Aggregate datasets by granularity
-    const aggregatedDatasets = (data.datasets || []).map((dataset) => {
-      const aggregatedData = [];
-      const dataMap = new Map();
-
-      dataset.data.forEach((value, index) => {
-        const label = formattedLabels[index];
-        if (dataMap.has(label)) {
-          const existing = dataMap.get(label);
-          dataMap.set(label, existing + (value || 0));
-        } else {
-          dataMap.set(label, value || 0);
-        }
-      });
-
-      uniqueLabels.forEach((label) => {
-        aggregatedData.push(dataMap.get(label) || 0);
-      });
-
-      return {
-        ...dataset,
-        label: dataset.label || metricForm.name,
-        data: aggregatedData,
-        borderColor: '#007AFF',
-        backgroundColor:
-          metricForm.visualizationType === 'pie'
-            ? ['#007AFF', '#007AFFCC', '#007AFF99', '#007AFF66']
-            : metricForm.visualizationType === 'bar'
-            ? '#007AFF'
-            : '#007AFF33',
-        fill: metricForm.visualizationType === 'line',
-        tension: metricForm.visualizationType === 'line' ? 0.4 : undefined,
-      };
-    });
+    const aggregatedDatasets = (data.datasets || []).map((dataset, index) => ({
+      ...dataset,
+      label: dataset.label || metricForm.comparisonFields[index] || metricForm.name,
+      data: dataset.data,
+      borderColor: index === 0 ? appleBlue : '#FF2D55',
+      backgroundColor:
+        metricForm.visualizationType === 'pie'
+          ? [`${appleBlue}FF`, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`][index % 4]
+          : metricForm.visualizationType === 'bar'
+          ? index === 0 ? appleBlue : '#FF2D55'
+          : index === 0 ? `${appleBlue}33` : 'rgba(255, 45, 85, 0.2)',
+      fill: metricForm.visualizationType === 'line' && dataset.fill !== false,
+      tension: metricForm.visualizationType === 'line' ? 0.4 : undefined,
+      stack: dataset.stack,
+      borderWidth: metricForm.visualizationType === 'pie' ? 1 : undefined,
+      pointRadius: metricForm.visualizationType === 'scatter' ? 5 : undefined,
+      showLine: metricForm.visualizationType === 'scatter' ? true : undefined,
+    }));
 
     const chartData = {
       labels: uniqueLabels,
       datasets: aggregatedDatasets,
     };
+
+    // Validate chart data
+    if (!chartData.labels.length || !chartData.datasets.some((ds) => ds.data.length > 0)) {
+      return (
+        <div className={styles.chartContainer}>
+          <p>No valid data available for preview.</p>
+        </div>
+      );
+    }
 
     const options = {
       responsive: true,
@@ -854,46 +893,84 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       plugins: {
         legend: {
           position: 'top',
-          labels: { font: { family: '-apple-system', size: 14 }, color: isDarkTheme ? '#FFF' : '#000' },
+          labels: {
+            font: { family: '-apple-system', size: 14 },
+            color: textColor,
+          },
         },
         title: {
           display: true,
           text: metricForm.name || 'Preview',
           font: { family: '-apple-system', size: 16 },
-          color: isDarkTheme ? '#FFF' : '#000',
+          color: textColor,
         },
         tooltip: {
-          backgroundColor: isDarkTheme ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
-          titleFont: { family: '-apple-system' },
-          bodyFont: { family: '-apple-system' },
+          backgroundColor: isDarkTheme ? '#333' : '#FFF',
+          titleColor: textColor,
+          bodyColor: textColor,
           callbacks: {
-            label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+            label: (context) => {
+              if (metricForm.visualizationType === 'scatter') {
+                return `(${context.raw.x.toFixed(2)}, ${context.raw.y.toFixed(2)})`;
+              }
+              return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+            },
           },
         },
       },
-      scales: {
+      scales: metricForm.visualizationType === 'scatter' ? {
         x: {
-          stacked: metricForm.visualizationType === 'bar',
-          ticks: { font: { family: '-apple-system' }, color: isDarkTheme ? '#FFF' : '#000' },
-          grid: { color: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+          type: 'linear',
+          title: {
+            display: true,
+            text: metricForm.comparisonFields[0] || 'X',
+            color: textColor,
+          },
+          ticks: { color: textColor },
+          grid: { color: isDarkTheme ? '#444' : '#DDD' },
         },
         y: {
-          stacked: metricForm.visualizationType === 'bar',
-          ticks: { font: { family: '-apple-system' }, color: isDarkTheme ? '#FFF' : '#000' },
-          grid: { color: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+          title: {
+            display: true,
+            text: metricForm.comparisonFields[1] || 'Y',
+            color: textColor,
+          },
+          ticks: { color: textColor },
+          grid: { color: isDarkTheme ? '#444' : '#DDD' },
+        },
+      } : {
+        x: {
+          stacked: metricForm.visualizationType === 'bar' && metricForm.groupBy !== 'field',
+          ticks: { font: { family: '-apple-system' }, color: textColor },
+          grid: { color: isDarkTheme ? '#444' : '#DDD' },
+        },
+        y: {
+          stacked: metricForm.visualizationType === 'bar' && metricForm.groupBy !== 'field',
+          ticks: { font: { family: '-apple-system' }, color: textColor },
+          grid: { color: isDarkTheme ? '#444' : '#DDD' },
         },
       },
     };
 
     return (
-      <div className={styles.chartPreview}>
+      <div className={styles.chartContainer}>
         {metricForm.visualizationType === 'line' && <Line data={chartData} options={options} />}
         {metricForm.visualizationType === 'bar' && <Bar data={chartData} options={options} />}
         {metricForm.visualizationType === 'pie' && <Pie data={chartData} options={options} />}
+        {metricForm.visualizationType === 'scatter' && <Line data={chartData} options={options} />}
         {metricForm.visualizationType === 'number' && (
           <div className={styles.numberMetric}>
             <h3>{metricForm.name || 'Preview'}</h3>
-            <p>{chartData.datasets[0]?.data[chartData.datasets[0].data.length - 1]?.toFixed(2) || 0}</p>
+            <p>
+              {chartData.datasets
+                .map((ds) => `${ds.label}: ${ds.data[ds.data.length - 1]?.toFixed(2) || 0}`)
+                .join(', ')}
+            </p>
+          </div>
+        )}
+        {correlation !== null && (
+          <div className={styles.correlation}>
+            <p>Correlation: {correlation.toFixed(2)}</p>
           </div>
         )}
       </div>
@@ -1157,7 +1234,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     {activeSectionIndex === 1 && (
                       <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <div className={styles.segmentedControl}>
-                          {['line', 'bar', 'pie', 'number'].map((type) => (
+                          {['line', 'bar', 'pie', 'number', 'scatter'].map((type) => (
                             <button
                               key={type}
                               className={`${styles.segment} ${metricForm.visualizationType === type ? styles.active : ''}`}
@@ -1298,29 +1375,42 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       </div>
                     </div>
                   </div>
-                  {/* Show Output Data */}
+                  {/* Comparison Fields */}
                   <div
                     className={`${styles.filterItem} ${activeSectionIndex === 6 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => toggleSection(6)}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
-                        <span>Show Output Data</span>
+                        <span>Comparison Fields</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>{showOutputData ? 'Enabled' : 'Disabled'}</span>
+                        <span className={styles.filterSummary}>
+                          {metricForm.comparisonFields.length > 0 ? metricForm.comparisonFields.join(', ') : 'None'}
+                        </span>
                       </div>
                     </div>
                     {activeSectionIndex === 6 && (
                       <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <label className={styles.toggle}>
-                          <input
-                            type="checkbox"
-                            checked={showOutputData}
-                            onChange={(e) => setShowOutputData(e.target.checked)}
-                          />
-                          <span className={styles.toggleSlider}></span>
-                        </label>
+                        <select
+                          multiple
+                          value={metricForm.comparisonFields}
+                          onChange={(e) => {
+                            const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+                            if (selected.length <= 2) {
+                              setMetricForm((prev) => ({ ...prev, comparisonFields: selected }));
+                            } else {
+                              alert('Please select up to two fields for comparison.');
+                            }
+                          }}
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          {fieldOptions.map((field) => (
+                            <option key={field.key} value={field.key}>
+                              {field.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </div>
@@ -1347,7 +1437,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           </div>
                           <div className={styles.primaryButtons}>
                             <span className={styles.filterSummary}>
-                              {metricForm.cardTemplates.includes(template.typeOfCards) ? metricForm.fields.join(', ') : 'None'}
+                              {metricForm.cardTemplates.includes(template.typeOfCards)
+                                ? (metricForm.fields[template.typeOfCards] || [])
+                                    .map((fieldKey) => {
+                                      const header = headers.find((h) => h.key === fieldKey);
+                                      return header ? header.name : fieldKey;
+                                    })
+                                    .join(', ') || 'None'
+                                : 'None'}
                             </span>
                           </div>
                         </div>
@@ -1381,7 +1478,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       >
                         <div className={styles.filterRow}>
                           <span className={styles.selectionCircle}>
-                            {metricForm.fields.includes(field.key) ? (
+                            {(metricForm.fields[selectedCardTemplate] || []).includes(field.key) ? (
                               <FaRegCheckCircle
                                 className={`${styles.customCheckbox} ${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`}
                                 size={18}
@@ -1622,7 +1719,21 @@ MetricsModal.propTypes = {
             name: PropTypes.string.isRequired,
             type: PropTypes.string.isRequired,
             value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-            config: PropTypes.object,
+            config: PropTypes.shape({
+              cardTemplates: PropTypes.arrayOf(PropTypes.string),
+              fields: PropTypes.oneOfType([
+                PropTypes.arrayOf(PropTypes.string),
+                PropTypes.object,
+              ]),
+              aggregation: PropTypes.string,
+              dateRange: PropTypes.object,
+              filterValues: PropTypes.object,
+              groupBy: PropTypes.string,
+              visualizationType: PropTypes.string,
+              includeHistory: PropTypes.bool,
+              granularity: PropTypes.string,
+              comparisonFields: PropTypes.arrayOf(PropTypes.string),
+            }),
             data: PropTypes.object,
           })
         ),
