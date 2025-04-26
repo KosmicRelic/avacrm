@@ -1,9 +1,7 @@
 .templateWrapper {
   background: transparent;
   width: 100%;
-  /* Removed height: 100vh to allow natural sizing */
   box-sizing: border-box;
-  /* Removed overflow: hidden to allow content to flow */
 }
 
 .templateWrapper.darkTheme {
@@ -13,31 +11,35 @@
 .viewContainer {
   position: relative;
   width: 100%;
-  /* Removed height: 100% to allow natural sizing */
-  /* Removed overflow-y: auto to prevent internal scrolling */
   box-sizing: border-box;
 }
 
 .view {
   width: 100%;
   box-sizing: border-box;
-  /* background: #f2f2f7; */
   border-radius: 16px;
-  position: static; /* Changed from absolute to flow naturally */
-  /* Removed top: 0, left: 0 as no longer positioned absolutely */
-  /* Removed height: 100% to allow content-driven height */
+  position: static;
   overflow: visible;
   display: flex;
   flex-direction: column;
   padding: 0;
-  /* Removed min-height: 100% as no longer needed */
+  transition: opacity 0.3s ease, transform 0.3s ease; /* Added for animations */
 }
 
 .view.darkTheme {
 }
 
-.hidden {
-  display: none;
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.view.animateForward {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.view.animateBackward {
+  animation: slideBack 0.3s ease-out forwards;
 }
 
 .addButton {
@@ -468,38 +470,7 @@
 .deleteButton {
   width: 100%;
   padding: 13.5px 16px;
-  margin-top: 24px; /* Added to match deleteSectionButton spacing */
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6); /* Changed from transparent to match deleteSectionButton */
-  border: none; /* Added to match deleteSectionButton */
-  color: #ff453a;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 0 0 auto;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Added to match deleteSectionButton */
-}
-
-.deleteButton.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
-  color: #ff453a;
-}
-
-.deleteButton:hover {
-  background: #f5f5f5; /* Added to match deleteSectionButton:hover */
-}
-
-.deleteButton.darkTheme:hover {
-  background: #3a3a3c; /* Added to match deleteSectionButton.darkTheme:hover */
-}
-
-.deleteSectionButton {
-  width: 100%; /* Changed to auto for right alignment */
-  padding: 13.5px 16px;
-  margin-top: 16px; /* Reduced for tighter spacing below headers */
-  margin-bottom: 24px;
-  margin-left: auto; /* Aligns button to the right */
+  margin-top: 24px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.6);
   border: none;
@@ -510,7 +481,37 @@
   flex: 0 0 auto;
   letter-spacing: 0.02em;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.deleteButton.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #ff453a;
+}
+
+.deleteButton:hover {
+  background: #f5f5f5;
+}
+
+.deleteButton.darkTheme:hover {
+  background: #3a3a3c;
+}
+
+.deleteSectionButton {
+  width: 100%;
+  padding: 13.5px 16px;
+  margin-top: 16px;
+  margin-bottom: 24px;
   margin-left: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .deleteSectionButton.darkTheme {
@@ -581,4 +582,27 @@
 
 .confirmButton.darkTheme:hover {
   background: #0073e6;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

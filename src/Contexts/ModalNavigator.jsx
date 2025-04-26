@@ -14,6 +14,7 @@ export const ModalNavigatorProvider = ({ children }) => {
   });
   const [modalSteps, setModalSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
+  const [history, setHistory] = useState([1]); // Initialize history with step 1
 
   const getStepTitle = useCallback(
     (stepIndex, args) => {
@@ -35,6 +36,7 @@ export const ModalNavigatorProvider = ({ children }) => {
     (stepsConfig) => {
       setModalSteps(stepsConfig.steps);
       setCurrentStep(1);
+      setHistory([1]); // Reset history when registering new steps
       const newConfig = {
         showTitle: true,
         showDoneButton: true,
@@ -53,7 +55,7 @@ export const ModalNavigatorProvider = ({ children }) => {
       if (step < 1 || step > modalSteps.length) return;
 
       const currentStepIndex = step - 1;
-      const previousStepIndex = step - 2;
+      const previousStepIndex = history.length > 1 ? history[history.length - 2] - 1 : 0;
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
@@ -62,23 +64,49 @@ export const ModalNavigatorProvider = ({ children }) => {
       const newConfig = {
         showTitle: true,
         showDoneButton: step === 1,
-        showBackButton: step > 1,
+        showBackButton: history.length > 0, // Show back button if there's history
         title: newTitle,
         backButtonTitle: previousStepTitle,
         rightButton,
       };
+
       setModalConfig(newConfig);
       setCurrentStep(step);
+      setHistory((prev) => [...prev, step]); // Add new step to history
     },
-    [modalSteps, getStepTitle, getStepButton]
+    [modalSteps, getStepTitle, getStepButton, history]
   );
 
   const goBack = useCallback(
     (args = {}) => {
-      if (currentStep <= 1) return;
-      goToStep(currentStep - 1, args);
+      if (history.length <= 1) return; // No previous step to go back to
+
+      // Pop the current step and get the previous step
+      const newHistory = [...history];
+      newHistory.pop(); // Remove current step
+      const previousStep = newHistory[newHistory.length - 1]; // Get previous step
+
+      const currentStepIndex = previousStep - 1;
+      const previousStepIndex = newHistory.length > 1 ? newHistory[newHistory.length - 2] - 1 : 0;
+      const newTitle = getStepTitle(currentStepIndex, args);
+      const previousStepTitle =
+        previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
+      const rightButton = getStepButton(currentStepIndex);
+
+      const newConfig = {
+        showTitle: true,
+        showDoneButton: previousStep === 1,
+        showBackButton: newHistory.length > 1, // Show back button if there's still history
+        title: newTitle,
+        backButtonTitle: previousStepTitle,
+        rightButton,
+      };
+
+      setModalConfig(newConfig);
+      setCurrentStep(previousStep);
+      setHistory(newHistory); // Update history
     },
-    [currentStep, goToStep]
+    [history, modalSteps, getStepTitle, getStepButton]
   );
 
   return (

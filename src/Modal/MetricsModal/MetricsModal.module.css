@@ -14,7 +14,7 @@
 }
 
 .view {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth transition for animation */
 }
 
 .view.hidden {
@@ -22,9 +22,16 @@
   pointer-events: none;
 }
 
+.view.animateForward {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.view.animateBackward {
+  animation: slideBack 0.3s ease-out forwards;
+}
+
 /* Step 1: Create Header */
 .createHeader {
-  padding: 13.5px 16px;
   margin-bottom: 40px; /* Increased spacing between createHeader and headerList */
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.6); /* Light mode */
@@ -167,7 +174,6 @@
   overflow-y: auto;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-  animation: slideUp 0.3s ease-out;
 }
 
 /* Section */
@@ -198,7 +204,7 @@
 .textField,
 .select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 12px;
   font-size: 17px;
   border: 1px solid #d2d2d7;
   border-radius: 12px;
@@ -613,7 +619,7 @@
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.6);
   transition: background 0.3s ease;
 }
 
@@ -629,7 +635,7 @@
 
 .filterItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background-color: rgba(44, 44, 46, 0.9);
+  background-color: rgba(58, 58, 60, 0.6);
 }
 
 .filterItem:last-child {
@@ -645,11 +651,11 @@
 }
 
 .filterItem.activeItem {
-  background: rgba(255, 255, 255);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .filterItem.darkTheme.activeItem {
-  background: rgba(44, 44, 46);
+  background: rgba(58, 58, 60, 0.6);
 }
 
 .filterRow {
@@ -671,7 +677,7 @@
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #1d1d1f;
+  color: #000000;
   transition: color 0.3s ease;
 }
 
@@ -722,7 +728,7 @@
 .filterSelect.darkTheme,
 .filterSelectNoChevron.darkTheme {
   color: #ffffff;
-  background: rgba(58, 58, 60, 0.9);
+  background: rgba(58, 58, 60);
 }
 
 .filterSelect {
@@ -834,22 +840,33 @@
   background: rgba(255, 69, 58, 0.2);
 }
 
-.cardTemplateButton, .metricDetailsButton{
+.cardTemplateButton, .metricDetailsButton {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
 }
 
-/* Animation */
+/* Animations */
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateX(100%);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -870,4 +887,97 @@
 
 .darkTheme .headerSummary {
   color: #8e8e93;
+}
+
+.selectionCircle {
+  color: #0a84ff;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent; /* Ensure no background interference */
+  transition: background 0.2s ease, border-color 0.3s ease;
+}
+
+.selectionCircle.darkTheme {
+  border-color: #0a84ff; /* Dark mode: blue border */
+}
+
+.selectionCircle.selected {
+  background: #007aff; /* Light mode: blue fill */
+}
+
+.selectionCircle.darkTheme.selected {
+  background: #0a84ff; /* Dark mode: blue fill */
+}
+
+.customCheckbox {
+  color: #007aff;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.customCheckbox.darkTheme {
+  color: #0a84ff; /* Dark mode: blue color */
+}
+
+.customCheckbox:hover {
+  transform: scale(1.1);
+}
+
+.customCheckbox.checked {
+  color: #0a84ff; /* White for checked state to contrast with filled background */
+}
+
+.customCheckbox.checked.darkTheme {
+  color: #0a84ff; /* White for dark mode checked state */
+}
+
+/* Optional: Customize Step 2 appearance */
+.createCategoryStep {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.createCategoryStep .createHeader {
+  width: 100%;
+  max-width: 400px;
+}
+
+.addButton {
+  padding: 13.5px 16px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  color: #007aff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.addButton.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #0a84ff;
+}
+
+.addButton:hover {
+  background: #f5f5f5;
+}
+
+.addButton.darkTheme:hover {
+  background: #3a3a3c;
 }

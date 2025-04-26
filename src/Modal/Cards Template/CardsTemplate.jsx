@@ -23,10 +23,12 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [newTemplateName, setNewTemplateName] = useState("");
+  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
   const keyRefs = useRef(new Map());
   const inputRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
+  const prevStepRef = useRef(currentStep); // Track previous step
 
   // Sync currentCardTemplates to tempData
   useEffect(() => {
@@ -132,7 +134,13 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         rightButton: null,
       }));
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, goToStep]);
+
+    // Set navigation direction based on step change
+    if (prevStepRef.current !== currentStep) {
+      setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
+      prevStepRef.current = currentStep;
+    }
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig]);
 
   const handleDeleteSection = useCallback(
     (index) => {
@@ -145,6 +153,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           newTemplates[selectedTemplateIndex] = currentTemplate;
           return newTemplates;
         });
+        setNavigationDirection("backward");
         goToStep(2);
       }
     },
@@ -261,6 +270,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         if (existingIndex >= 0) {
           setSelectedTemplateIndex(existingIndex);
           setEditMode(false);
+          setNavigationDirection("forward");
           goToStep(2);
           return;
         }
@@ -269,6 +279,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setSelectedTemplateIndex(currentCardTemplates.length);
       setNewTemplateName("");
       setEditMode(false);
+      setNavigationDirection("forward");
       goToStep(2);
     },
     [currentCardTemplates, goToStep]
@@ -296,6 +307,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setEditMode(false);
       return newTemplates;
     });
+    setNavigationDirection("forward");
     goToStep(2);
   }, [newTemplateName, currentCardTemplates, goToStep]);
 
@@ -361,6 +373,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleEditSection = useCallback(
     (index) => {
       setCurrentSectionIndex(index);
+      setNavigationDirection("forward");
       goToStep(3);
     },
     [goToStep]
@@ -428,8 +441,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         const newTemplates = prev.filter((_, i) => i !== selectedTemplateIndex);
         setSelectedTemplateIndex(null);
         setEditMode(false);
+        setNavigationDirection("backward");
         goToStep(1);
-        return newTemplates;
       });
     }
   }, [selectedTemplateIndex, currentCardTemplates, goToStep]);
@@ -442,6 +455,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
               step !== currentStep ? styles.hidden : ""
+            } ${
+              step === currentStep && navigationDirection === "forward" ? styles.animateForward : ""
+            } ${
+              step === currentStep && navigationDirection === "backward" ? styles.animateBackward : ""
             }`}
             style={{
               display: step !== currentStep ? "none" : "block",

@@ -5,6 +5,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
 import { computeMetricData } from '../../Metrics/metricsUtils';
+import { FaRegCircle, FaRegCheckCircle, FaPlus } from 'react-icons/fa';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -63,10 +64,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const [numberRangeMode, setNumberRangeMode] = useState({});
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const [activeSectionIndex, setActiveSectionIndex] = useState(null);
+  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
   const filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
+  const prevStepRef = useRef(currentStep); // Track previous step
 
   // Validation functions
   const validateCategory = useCallback((name, existingCategories, isUpdate = false, index = null) => {
@@ -173,7 +176,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     [cardTemplates]
   );
 
-  // Field options for selected card template in Step 6
+  // Field options for selected card template in Step 7
   const fieldOptions = useMemo(() => {
     if (!selectedCardTemplate) return [];
     const validKeys = cardTemplates
@@ -195,7 +198,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Get metric details button summary
   const getMetricDetailsButtonSummary = useCallback(() => {
-    return metricForm.visualizationType
+    return metricForm.front
       ? metricForm.visualizationType.charAt(0).toUpperCase() + metricForm.visualizationType.slice(1)
       : 'No visualization selected';
   }, [metricForm.visualizationType]);
@@ -278,12 +281,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const toggleDateRangeMode = (headerKey) => toggleRangeMode(headerKey, true);
   const toggleNumberRangeMode = (headerKey) => toggleRangeMode(headerKey, false);
 
-  // Updated toggleFilter (from previous request)
   const toggleFilter = useCallback((index) => {
     setActiveFilterIndex(index);
   }, []);
 
-  // Updated toggleSection (from previous request)
   const toggleSection = useCallback((index) => {
     setActiveSectionIndex(index);
   }, []);
@@ -378,7 +379,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     );
     setTempData({ currentCategories });
     resetForm();
-    goToStep(2);
+    setNavigationDirection('forward');
+    goToStep(3);
   }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]);
 
   // Update metric
@@ -411,8 +413,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       );
       setTempData({ currentCategories });
       resetForm();
-      goToStep(2);
-    }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]);
+      setNavigationDirection('forward');
+      goToStep(3);
+    },
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]
+  );
 
   // Delete metric
   const deleteMetric = useCallback(
@@ -426,7 +431,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       );
       setTempData({ currentCategories });
       setActiveMetricIndex(-1);
-      goToStep(2);
+      setNavigationDirection('forward');
+      goToStep(3);
     },
     [activeCategoryIndex, goToStep, setTempData]
   );
@@ -453,14 +459,23 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setNewCategoryName('');
     setActiveCategoryIndex(currentCategories.length);
     setActiveMetricIndex(-1);
-    goToStep(2);
+    setNavigationDirection('forward');
+    goToStep(3);
   }, [newCategoryName, currentCategories, validateCategory, goToStep, setTempData]);
+
+  // Navigate to create category step
+  const goToCreateCategory = useCallback(() => {
+    setNewCategoryName('');
+    setNavigationDirection('forward');
+    goToStep(2);
+  }, [goToStep]);
 
   // Select category
   const selectCategory = useCallback((categoryIndex) => {
     setActiveCategoryIndex(categoryIndex);
     setActiveMetricIndex(-1);
-    goToStep(2);
+    setNavigationDirection('forward');
+    goToStep(3);
   }, [goToStep]);
 
   // Initialize modal steps
@@ -480,10 +495,33 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             },
           },
           {
+            title: 'Create Category',
+            leftButton: {
+              label: 'Metrics',
+              onClick: () => {
+                setNavigationDirection('backward');
+                goToStep(1);
+              },
+            },
+            rightButton: {
+              label: 'Create',
+              onClick: addCategory,
+              isActive: newCategoryName.trim() !== '',
+            },
+          },
+          {
             title: () => currentCategories[activeCategoryIndex]?.category || 'Metrics',
             leftButton: {
               label: 'Metrics',
-              onClick: () => goToStep(1),
+              onClick: () => {
+                setNavigationDirection('backward');
+                goToStep(1);
+              },
+            },
+            rightButton: {
+              label: 'New Metric',
+              onClick: () => toggleEditMetric(activeCategoryIndex, -1),
+              isActive: true,
             },
           },
           {
@@ -506,21 +544,30 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             title: () => 'Select Card Templates',
             leftButton: {
               label: 'Back',
-              onClick: () => goToStep(3),
+              onClick: () => {
+                setNavigationDirection('backward');
+                goToStep(4);
+              },
             },
           },
           {
             title: () => `Fields for ${selectedCardTemplate}`,
             leftButton: {
               label: 'Back',
-              onClick: () => goToStep(4),
+              onClick: () => {
+                setNavigationDirection('backward');
+                goToStep(5);
+              },
             },
           },
           {
             title: () => 'Configure Filters',
             leftButton: {
               label: 'Back',
-              onClick: () => goToStep(4),
+              onClick: () => {
+                setNavigationDirection('backward');
+                goToStep(5);
+              },
             },
           },
         ],
@@ -542,7 +589,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     }
   }, [registerModalSteps, setModalConfig, handleClose, setTempData, goToStep]);
 
-  // Update modal config
+  // Update modal config and set navigation direction
   useEffect(() => {
     let newConfig;
     if (currentStep === 1) {
@@ -565,6 +612,19 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
+        title: 'Create Category',
+        backButtonTitle: 'Metrics',
+        rightButton: {
+          label: 'Create',
+          onClick: addCategory,
+          isActive: newCategoryName.trim() !== '',
+        },
+      };
+    } else if (currentStep === 3) {
+      newConfig = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
         title: currentCategories[activeCategoryIndex]?.category || 'Metrics',
         backButtonTitle: 'Metrics',
         rightButton: {
@@ -573,7 +633,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           isActive: true,
         },
       };
-    } else if (currentStep === 3) {
+    } else if (currentStep === 4) {
       newConfig = {
         showTitle: true,
         showDoneButton: false,
@@ -586,7 +646,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
         },
       };
-    } else if (currentStep === 4) {
+    } else if (currentStep === 5) {
       newConfig = {
         showTitle: true,
         showDoneButton: false,
@@ -599,7 +659,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           isActive: metricForm.name && metricForm.fields.length > 0 && metricForm.cardTemplates.length > 0,
         },
       };
-    } else if (currentStep === 5) {
+    } else if (currentStep === 6) {
       newConfig = {
         showTitle: true,
         showDoneButton: false,
@@ -607,7 +667,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         title: 'Select Card Templates',
         backButtonTitle: activeMetricIndex === -1 ? 'New Metric' : 'Edit Metric',
       };
-    } else if (currentStep === 6) {
+    } else if (currentStep === 7) {
       newConfig = {
         showTitle: true,
         showDoneButton: false,
@@ -615,7 +675,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         title: `Fields for ${selectedCardTemplate}`,
         backButtonTitle: 'Metric Details',
       };
-    } else if (currentStep === 7) {
+    } else if (currentStep === 8) {
       newConfig = {
         showTitle: true,
         showDoneButton: false,
@@ -632,7 +692,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setModalConfig(newConfig);
       prevConfigRef.current = newConfig;
     }
-  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, currentCategories, goToStep, metricForm, selectedCardTemplate]);
+
+    // Set navigation direction based on step change
+    if (prevStepRef.current !== currentStep) {
+      setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
+      prevStepRef.current = currentStep;
+    }
+  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, currentCategories, goToStep, metricForm, selectedCardTemplate, newCategoryName, addCategory]);
 
   // Sync categories
   useEffect(() => {
@@ -651,9 +717,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   // Handle key press
   const handleKeyPress = useCallback(
     (e) => {
-      if (e.key === 'Enter' && (currentStep === 3 || currentStep === 4)) {
+      if (e.key === 'Enter' && (currentStep === 4 || currentStep === 5)) {
         saveMetric();
-      } else if (e.key === 'Enter' && currentStep === 1 && newCategoryName.trim()) {
+      } else if (e.key === 'Enter' && currentStep === 2 && newCategoryName.trim()) {
         addCategory();
       }
     },
@@ -683,7 +749,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       } else {
         resetForm();
       }
-      goToStep(3);
+      setNavigationDirection('forward');
+      goToStep(4);
     },
     [currentCategories, resetForm, goToStep]
   );
@@ -692,7 +759,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const selectCardTemplateForFields = useCallback(
     (template) => {
       setSelectedCardTemplate(template);
-      goToStep(6);
+      setNavigationDirection('forward');
+      goToStep(7);
     },
     [goToStep]
   );
@@ -835,33 +903,22 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   return (
     <div className={`${styles.metricsModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
               step !== currentStep ? styles.hidden : ''
+            } ${step === currentStep && navigationDirection === 'forward' ? styles.animateForward : ''} ${
+              step === currentStep && navigationDirection === 'backward' ? styles.animateBackward : ''
             }`}
             style={{ display: step !== currentStep ? 'none' : 'block' }}
           >
             {step === 1 && (
               <>
-                <div className={`${styles.createHeader} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  <div className={styles.headerRow}>
-                    <input
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="New Category"
-                      className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <button
-                      onClick={addCategory}
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      Add
-                    </button>
-                  </div>
+                <div className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ''}`} onClick={goToCreateCategory}>
+                  <span>
+                    <FaPlus /> Create a Category
+                  </span>
                 </div>
                 <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentCategories.map((category, index) => (
@@ -881,6 +938,23 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               </>
             )}
             {step === 2 && (
+              <div className={`${styles.metricForm} ${styles.createCategoryStep} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={`${styles.createHeader} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <div className={styles.headerRow}>
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Enter category name"
+                      className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {step === 3 && (
               <div className={`${styles.metricsList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {currentCategories[activeCategoryIndex]?.metrics.length > 0 ? (
                   currentCategories[activeCategoryIndex].metrics.map((metric, index) => (
@@ -904,7 +978,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 )}
               </div>
             )}
-            {step === 3 && (
+            {step === 4 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {/* Metric Name */}
@@ -972,7 +1046,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     className={`${styles.filterItem} ${activeSectionIndex === 2 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
                       toggleSection(2);
-                      if (activeSectionIndex !== 2) goToStep(5);
+                      if (activeSectionIndex !== 2) {
+                        setNavigationDirection('forward');
+                        goToStep(6);
+                      }
                     }}
                   >
                     <div className={styles.filterRow}>
@@ -989,7 +1066,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     className={`${styles.filterItem} ${activeSectionIndex === 3 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
                       toggleSection(3);
-                      if (activeSectionIndex !== 3) goToStep(4);
+                      if (activeSectionIndex !== 3) {
+                        setNavigationDirection('forward');
+                        goToStep(5);
+                      }
                     }}
                   >
                     <div className={styles.filterRow}>
@@ -1030,7 +1110,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 </div>
               </div>
             )}
-            {step === 4 && (
+            {step === 5 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {/* Include History */}
@@ -1203,7 +1283,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     className={`${styles.filterItem} ${activeSectionIndex === 5 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
                       toggleSection(5);
-                      if (activeSectionIndex !== 5) goToStep(7);
+                      if (activeSectionIndex !== 5) {
+                        setNavigationDirection('forward');
+                        goToStep(8);
+                      }
                     }}
                   >
                     <div className={styles.filterRow}>
@@ -1245,7 +1328,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 {renderChartPreview()}
               </div>
             )}
-            {step === 5 && (
+            {step === 6 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {cardTemplates.length > 0 ? (
@@ -1264,7 +1347,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           </div>
                           <div className={styles.primaryButtons}>
                             <span className={styles.filterSummary}>
-                              {metricForm.cardTemplates.includes(template.typeOfCards) ? 'Selected' : 'Not Selected'}
+                              {metricForm.cardTemplates.includes(template.typeOfCards) ? metricForm.fields.join(', ') : 'None'}
                             </span>
                           </div>
                         </div>
@@ -1286,38 +1369,34 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 </div>
               </div>
             )}
-            {step === 6 && (
+            {step === 7 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {fieldOptions.length > 0 ? (
-                    fieldOptions.map((field, index) => (
+                    fieldOptions.map((field) => (
                       <div
                         key={field.key}
-                        className={`${styles.filterItem} ${activeSectionIndex === index ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleSection(index)}
+                        className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => toggleField(field.key)}
                       >
                         <div className={styles.filterRow}>
+                          <span className={styles.selectionCircle}>
+                            {metricForm.fields.includes(field.key) ? (
+                              <FaRegCheckCircle
+                                className={`${styles.customCheckbox} ${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                size={18}
+                              />
+                            ) : (
+                              <FaRegCircle
+                                className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                size={18}
+                              />
+                            )}
+                          </span>
                           <div className={styles.filterNameType}>
                             <span>{field.name}</span>
                           </div>
-                          <div className={styles.primaryButtons}>
-                            <span className={styles.filterSummary}>
-                              {metricForm.fields.includes(field.key) ? 'Selected' : 'Not Selected'}
-                            </span>
-                          </div>
                         </div>
-                        {activeSectionIndex === index && (
-                          <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={metricForm.fields.includes(field.key)}
-                                onChange={() => toggleField(field.key)}
-                              />
-                              <span>Select</span>
-                            </label>
-                          </div>
-                        )}
                       </div>
                     ))
                   ) : (
@@ -1326,7 +1405,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 </div>
               </div>
             )}
-            {step === 7 && (
+            {step === 8 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {visibleHeaders.map((header, index) => (

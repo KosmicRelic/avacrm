@@ -12,6 +12,8 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
   const [isAddMode, setIsAddMode] = useState(false);
   const [selectedSheets, setSelectedSheets] = useState(tempData?.selectedSheets || []);
   const [displayedSheets, setDisplayedSheets] = useState([]);
+  const [navigationDirection, setNavigationDirection] = useState(null); // Track transition direction
+  const prevModeRef = useRef("normal"); // Track previous mode
   const hasInitialized = useRef(false);
 
   const folder = sheets.structure.find((item) => item.folderName === folderName);
@@ -33,23 +35,22 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
       setIsEditMode(false);
       setSelectedSheets([]);
       setTempData({});
+      setNavigationDirection("backward");
+      prevModeRef.current = "normal";
       return;
     }
 
-    const confirmMessage = `Are you sure you want to remove the following sheet${
-      selectedSheets.length > 1 ? "s" : ""
-    }: ${selectedSheets.join(", ")}?`;
-    if (window.confirm(confirmMessage)) {
-      const newTempData = {
-        selectedSheets,
-        action: "removeSheets",
-        folderName,
-      };
-      setTempData(newTempData);
-      setDisplayedSheets((prev) => prev.filter((sheet) => !selectedSheets.includes(sheet)));
-      setSelectedSheets([]);
-      setIsEditMode(false);
-    }
+    const newTempData = {
+      selectedSheets,
+      action: "removeSheets",
+      folderName,
+    };
+    setTempData(newTempData);
+    setDisplayedSheets((prev) => prev.filter((sheet) => !selectedSheets.includes(sheet)));
+    setSelectedSheets([]);
+    setIsEditMode(false);
+    setNavigationDirection("backward");
+    prevModeRef.current = "normal";
   }, [selectedSheets, folderName, setTempData]);
 
   const handleAddSheets = useCallback(() => {
@@ -57,15 +58,10 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
       setIsAddMode(false);
       setSelectedSheets([]);
       setTempData({});
+      setNavigationDirection("backward");
+      prevModeRef.current = "normal";
       return;
     }
-
-    const confirmMessage = `Are you sure you want to add the following sheet${
-      selectedSheets.length > 1 ? "s" : ""
-    } to "${folderName}"?`;
-
-    const confirmed = window.confirm(confirmMessage);
-    if (!confirmed) return;
 
     const newTempData = {
       selectedSheets,
@@ -74,9 +70,11 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
     };
 
     setTempData(newTempData);
-    setDisplayedSheets((prev) => [...new Set([...prev, ...selectedSheets])]); // Avoid duplicates
+    setDisplayedSheets((prev) => [...new Set([...prev, ...selectedSheets])]);
     setSelectedSheets([]);
     setIsAddMode(false);
+    setNavigationDirection("backward");
+    prevModeRef.current = "normal";
   }, [selectedSheets, folderName, setTempData]);
 
   const toggleSheetSelection = useCallback(
@@ -114,7 +112,11 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
     if (!hasInitialized.current) {
       const editButton = {
         label: "Edit",
-        onClick: () => setIsEditMode(true),
+        onClick: () => {
+          setIsEditMode(true);
+          setNavigationDirection("forward");
+          prevModeRef.current = "edit";
+        },
       };
 
       registerModalSteps({
@@ -148,7 +150,9 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
             setIsEditMode(false);
             setSelectedSheets([]);
             setTempData({});
-            setDisplayedSheets(folderSheets); // Reset to original
+            setDisplayedSheets(folderSheets);
+            setNavigationDirection("backward");
+            prevModeRef.current = "normal";
           },
         },
         rightButton: {
@@ -170,6 +174,8 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
             setIsAddMode(false);
             setSelectedSheets([]);
             setTempData({});
+            setNavigationDirection("backward");
+            prevModeRef.current = "normal";
           },
         },
         rightButton: {
@@ -186,7 +192,11 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
         rightButton: null,
         leftButton: {
           label: "Edit",
-          onClick: () => setIsEditMode(true),
+          onClick: () => {
+            setIsEditMode(true);
+            setNavigationDirection("forward");
+            prevModeRef.current = "edit";
+          },
         },
       });
     }
@@ -201,95 +211,116 @@ const FolderModal = ({ folderName, onSheetSelect, handleClose, tempData, setTemp
     setModalConfig,
   ]);
 
-  useEffect(() => {
-    console.log(tempData);
-  }, [tempData]);
+  // Determine current mode for rendering
+  const currentMode = isAddMode ? "add" : isEditMode ? "edit" : "normal";
 
   return (
     <div className={`${styles.folderModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      <div className={styles.sheetList}>
-        {isAddMode ? (
-          availableSheets.length === 0 ? (
-            <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              No sheets available to add
-            </div>
-          ) : (
-            availableSheets.map((sheetName, index) => (
-              <div
-                key={`${sheetName}-${index}`}
-                className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={() => handleSheetClick(sheetName)}
-              >
-                <div className={styles.sheetRow}>
-                  <span className={styles.selectionCircle}>
-                    {selectedSheets.includes(sheetName) ? (
-                      <FaRegCheckCircle
-                        className={`${styles.customCheckbox} ${styles.checked} ${
-                          isDarkTheme ? styles.darkTheme : ""
-                        }`}
-                        size={18}
-                      />
-                    ) : (
-                      <FaRegCircle
-                        className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        size={18}
-                      />
-                    )}
-                  </span>
-                  <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    {sheetName}
-                  </span>
+      {["normal", "edit", "add"].map((mode) => (
+        <div
+          key={mode}
+          className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
+            mode !== currentMode ? styles.hidden : ""
+          } ${
+            mode === currentMode && navigationDirection === "forward" ? styles.animateForward : ""
+          } ${
+            mode === currentMode && navigationDirection === "backward" ? styles.animateBackward : ""
+          }`}
+          style={{ display: mode !== currentMode ? "none" : "block" }}
+        >
+          <div className={styles.sheetList}>
+            {mode === "add" ? (
+              availableSheets.length === 0 ? (
+                <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  No sheets available to add
                 </div>
+              ) : (
+                availableSheets.map((sheetName, index) => (
+                  <div
+                    key={`${sheetName}-${index}`}
+                    className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={() => handleSheetClick(sheetName)}
+                  >
+                    <div className={styles.sheetRow}>
+                      <span className={styles.selectionCircle}>
+                        {selectedSheets.includes(sheetName) ? (
+                          <FaRegCheckCircle
+                            className={`${styles.customCheckbox} ${styles.checked} ${
+                              isDarkTheme ? styles.darkTheme : ""
+                            }`}
+                            size={18}
+                          />
+                        ) : (
+                          <FaRegCircle
+                            className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            size={18}
+                          />
+                        )}
+                      </span>
+                      <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        {sheetName}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )
+            ) : displayedSheets.length === 0 ? (
+              <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                No sheets in this folder
               </div>
-            ))
-          )
-        ) : displayedSheets.length === 0 ? (
-          <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            No sheets in this folder
-          </div>
-        ) : (
-          displayedSheets.map((sheetName, index) => (
-            <div
-              key={`${sheetName}-${index}`}
-              className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={() => handleSheetClick(sheetName)}
-            >
-              <div className={styles.sheetRow}>
-                {isEditMode && (
-                  <>
-                    {selectedSheets.includes(sheetName) ? (
-                      <FaRegCheckCircle
-                        className={`${styles.customCheckbox} ${styles.checked} ${
-                          isDarkTheme ? styles.darkTheme : ""
-                        }`}
-                        size={18}
-                      />
-                    ) : (
-                      <FaRegCircle
-                        className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        size={18}
-                      />
+            ) : (
+              displayedSheets.map((sheetName, index) => (
+                <div
+                  key={`${sheetName}-${index}`}
+                  className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={() => handleSheetClick(sheetName)}
+                >
+                  <div className={styles.sheetRow}>
+                    {(mode === "edit" || mode === "normal") && (
+                      <>
+                        {mode === "edit" && (
+                          <>
+                            {selectedSheets.includes(sheetName) ? (
+                              <FaRegCheckCircle
+                                className={`${styles.customCheckbox} ${styles.checked} ${
+                                  isDarkTheme ? styles.darkTheme : ""
+                                }`}
+                                size={18}
+                              />
+                            ) : (
+                              <FaRegCircle
+                                className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                size={18}
+                              />
+                            )}
+                          </>
+                        )}
+                        <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          {sheetName}
+                        </span>
+                      </>
                     )}
-                  </>
-                )}
-                <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  {sheetName}
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      <div className={styles.buttonContainer}>
-        {!isEditMode && !isAddMode && availableSheets.length > 0 && (
-          <button
-            onClick={() => setIsAddMode(true)}
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-          >
-            Add Sheets
-          </button>
-        )}
-      </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className={styles.buttonContainer}>
+            {mode === "normal" && availableSheets.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsAddMode(true);
+                  setNavigationDirection("forward");
+                  prevModeRef.current = "add";
+                }}
+                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                Add Sheets
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

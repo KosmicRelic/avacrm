@@ -23,8 +23,10 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [orderedFolderSheets, setOrderedFolderSheets] = useState([]);
+  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
   const dragItemRef = useRef(null);
   const hasInitialized = useRef(false);
+  const prevStepRef = useRef(currentStep); // Track previous step
 
   // Initialize modal steps
   useEffect(() => {
@@ -52,7 +54,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
     }
   }, [registerModalSteps, setModalConfig, selectedFolder]);
 
-  // Update modal config based on step
+  // Update modal config and navigation direction
   useEffect(() => {
     setModalConfig((prev) => ({
       ...prev,
@@ -61,6 +63,12 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       showBackButton: currentStep === 2,
       rightButton: null,
     }));
+
+    // Set navigation direction based on step change
+    if (prevStepRef.current !== currentStep) {
+      setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
+      prevStepRef.current = currentStep;
+    }
   }, [currentStep, selectedFolder, setModalConfig]);
 
   // Initialize folder sheets when entering step 2
@@ -172,6 +180,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const handleFolderClick = useCallback(
     (folderName) => {
       setSelectedFolder(folderName);
+      setNavigationDirection("forward");
       goToStep(2);
     },
     [goToStep]
@@ -260,6 +269,10 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
           key={step}
           className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
             step !== currentStep ? styles.hidden : ""
+          } ${
+            step === currentStep && navigationDirection === "forward" ? styles.animateForward : ""
+          } ${
+            step === currentStep && navigationDirection === "backward" ? styles.animateBackward : ""
           }`}
           style={{ display: step !== currentStep ? "none" : "block" }}
         >
@@ -285,8 +298,8 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                       </>
                     ) : (
                       <>
-                      <BiSolidSpreadsheet className={styles.folderIcon} />
-                      {item.displayName}
+                        <BiSolidSpreadsheet className={styles.folderIcon} />
+                        {item.displayName}
                       </>
                     )}
                   </span>
@@ -320,7 +333,8 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                     <div className={styles.sheetRow}>
                       <span className={styles.sheetName}>
                         <BiSolidSpreadsheet className={styles.folderIcon} />
-                        {sheet.displayName || sheet.sheetName}</span>
+                        {sheet.displayName || sheet.sheetName}
+                      </span>
                       <span
                         className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
                         draggable

@@ -109,7 +109,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
                   if (currentStep === 1) {
                     handleClose();
                   } else {
-                    goBack();
+                    goBack(); // Use goBack to navigate to the previous step in history
                   }
                 }}
               >

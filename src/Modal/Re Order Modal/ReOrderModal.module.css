@@ -2,29 +2,48 @@
   margin: 16px 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.6); /* Light mode: semi-transparent */
-  backdrop-filter: blur(20px); /* Apple-style blur */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
   transition: background 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
 .sheetList.darkTheme {
-  background: rgba(58, 58, 60, 0.6); /* Dark mode: semi-transparent */
+  background: rgba(58, 58, 60, 0.6);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.view {
+  width: 100%;
+  box-sizing: border-box;
+  transition: opacity 0.3s ease, transform 0.3s ease; /* Added for animations */
+}
+
+.view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.view.animateForward {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.view.animateBackward {
+  animation: slideBack 0.3s ease-out forwards;
 }
 
 .sheetItem {
   padding: 0 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Light mode */
-  background: transparent; /* Relies on sheetList background */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease;
   cursor: default;
   user-select: none;
 }
 
 .sheetItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12); /* Dark mode */
-  background: rgba(58, 58, 60, 0.6); /* Dark mode: semi-transparent */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(58, 58, 60, 0.6);
 }
 
 .sheetItem:last-child {
@@ -32,15 +51,15 @@
 }
 
 .sheetItem:hover {
-  background: rgba(0, 0, 0, 0.02); /* Light mode: subtle hover */
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .sheetItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.05); /* Dark mode: subtle hover */
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sheetItem.dragging {
-  background: rgba(0, 122, 255, 0.15); /* Light mode: blue tint */
+  background: rgba(0, 122, 255, 0.15);
   opacity: 0.85;
   transform: scale(1.01);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -48,29 +67,29 @@
 }
 
 .sheetItem.darkTheme.dragging {
-  background: rgba(10, 132, 255, 0.25); /* Dark mode: blue tint */
+  background: rgba(10, 132, 255, 0.25);
 }
 
 .sheetSubList {
   margin-left: 24px;
-  background: rgba(0, 0, 0, 0.03); /* Light mode: nested background */
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 8px;
   overflow: hidden;
   transition: background 0.3s ease;
 }
 
 .sheetSubList.darkTheme {
-  background: rgba(255, 255, 255, 0.05); /* Dark mode: nested background */
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sheetSubItem {
   padding: 0 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease;
 }
 
 .sheetSubItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sheetSubItem:last-child {
@@ -78,15 +97,15 @@
 }
 
 .sheetSubItem:hover {
-  background: rgba(0, 0, 0, 0.02); /* Light mode: subtle hover */
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .sheetSubItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.05); /* Dark mode: subtle hover */
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sheetSubItem.dragging {
-  background: rgba(0, 122, 255, 0.15); /* Light mode: blue tint */
+  background: rgba(0, 122, 255, 0.15);
   opacity: 0.85;
   transform: scale(1.01);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -94,22 +113,22 @@
 }
 
 .sheetSubItem.darkTheme.dragging {
-  background: rgba(10, 132, 255, 0.25); /* Dark mode: blue tint */
+  background: rgba(10, 132, 255, 0.25);
 }
 
 .sheetRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 44px; /* Apple-standard touch target size */
+  height: 44px;
 }
 
 .sheetName {
   flex: 1;
-  font-weight: 500; /* Medium weight for Apple aesthetic */
-  font-size: 16px; /* Slightly larger for readability */
+  font-weight: 500;
+  font-size: 16px;
   letter-spacing: -0.01em;
-  color: #000; /* Light mode */
+  color: #000;
   transition: color 0.3s ease;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -117,13 +136,13 @@
 }
 
 .sheetList.darkTheme .sheetName {
-  color: #fff; /* Dark mode */
+  color: #fff;
 }
 
 .folderToggle {
   width: 24px;
   font-size: 12px;
-  color: #666; /* Light mode */
+  color: #666;
   cursor: pointer;
   transition: color 0.3s ease, transform 0.2s ease;
   display: flex;
@@ -132,15 +151,15 @@
 }
 
 .sheetList.darkTheme .folderToggle {
-  color: #aaa; /* Dark mode */
+  color: #aaa;
 }
 
 .folderToggle:hover {
-  color: #007aff; /* Apple blue */
+  color: #007aff;
 }
 
 .sheetList.darkTheme .folderToggle:hover {
-  color: #0a84ff; /* Dark mode Apple blue */
+  color: #0a84ff;
 }
 
 .actions {
@@ -151,7 +170,7 @@
 
 .dragIcon {
   font-size: 18px;
-  color: #8e8e93; /* Light mode: Apple gray */
+  color: #8e8e93;
   cursor: grab;
   padding: 4px;
   user-select: none;
@@ -159,21 +178,21 @@
 }
 
 .dragIcon.darkTheme {
-  color: #6e6e73; /* Dark mode: Apple gray */
+  color: #6e6e73;
 }
 
 .dragIcon:active {
   cursor: grabbing;
-  color: #007aff; /* Apple blue */
+  color: #007aff;
 }
 
 .dragIcon.darkTheme:active {
-  color: #0a84ff; /* Dark mode Apple blue */
+  color: #0a84ff;
 }
 
 .removeIcon {
   font-size: 16px;
-  color: #ff3b30; /* Apple red */
+  color: #ff3b30;
   cursor: pointer;
   padding: 4px;
   user-select: none;
@@ -181,7 +200,7 @@
 }
 
 .removeIcon.darkTheme {
-  color: #ff453a; /* Dark mode Apple red */
+  color: #ff453a;
 }
 
 .removeIcon:hover {
@@ -194,27 +213,27 @@
 
 .folderChevron {
   font-size: 14px;
-  margin-left: 6px; /* Space between folder name and chevron */
-  color: #8e8e93; /* Light mode: Apple gray */
+  margin-left: 6px;
+  color: #8e8e93;
   transition: color 0.3s ease;
   vertical-align: middle;
 }
 
 .sheetList.darkTheme .folderChevron {
-  color: #6e6e73; /* Dark mode: Apple gray */
+  color: #6e6e73;
 }
 
 .folderChevron:hover {
-  color: #007aff; /* Apple blue on hover */
+  color: #007aff;
 }
 
 .sheetList.darkTheme .folderChevron:hover {
-  color: #0a84ff; /* Dark mode Apple blue */
+  color: #0a84ff;
 }
 
 .folderIcon {
-  font-size: 16px; /* Matches sheetName */
-  margin-right: 6px; /* Space before folder name */
+  font-size: 16px;
+  margin-right: 6px;
   margin-bottom: 4px;
   color: #6e6e73;
   transition: color 0.3s ease;
@@ -222,30 +241,55 @@
 }
 
 .sheetList.darkTheme .folderIcon {
-  color: #fff; /* Dark mode: same as sheetName */
-}
-
-.folderChevron {
-  font-size: 16px; /* Matches sheetName */
-  font-weight: 500; /* Matches sheetName */
-  margin-left: 6px; /* Space after folder name */
-  color: #000; /* Light mode: same as sheetName */
-  transition: color 0.3s ease;
-  vertical-align: middle;
-}
-
-.sheetList.darkTheme .folderChevron {
-  color: #fff; /* Dark mode: same as sheetName */
+  color: #fff;
 }
 
 .folderRow:hover .folderIcon,
 .folderRow:hover .sheetName,
 .folderRow:hover .folderChevron {
-  color: #007aff; /* Apple blue on hover */
+  color: #007aff;
 }
 
 .sheetList.darkTheme .folderRow:hover .folderIcon,
 .sheetList.darkTheme .folderRow:hover .sheetName,
 .sheetList.darkTheme .folderRow:hover .folderChevron {
-  color: #0a84ff; /* Dark mode Apple blue */
+  color: #0a84ff;
+}
+
+.folderSheetsContainer {
+  margin-top: 16px;
+}
+
+.emptyMessage {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.emptyMessage.darkTheme {
+  color: #aaa;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

@@ -40,7 +40,7 @@
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: transparent; /* Light mode: no additional bacputkground */
+  background: transparent; /* Light mode: no additional background */
   transition: background 0.3s ease; /* Smooth theme transition */
 }
 
@@ -119,22 +119,26 @@
 }
 
 .editActions {
-  margin-top: 12px;
+  margin-top: 0; /* Remove top margin since it's a full step */
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.6); /* Light mode, matches headerItem */
-  padding: 16px 0; /* Consistent padding */
-  border-radius: 12px; /* Rounded corners */
+  background: transparent; /* Match modal content background */
+  padding: 16px 0;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
   transition: background 0.3s ease; /* Smooth theme transition */
 }
 
 .editActions.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
+  background: transparent; /* Match dark modal content */
 }
 
 .editActionsButtons {
   display: flex;
+  justify-content: center; /* Center the button horizontally */
+  margin-top: 16px; /* Add spacing above the button */
   gap: 12px;
 }
 
@@ -147,7 +151,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f; /* Light mode text */
-  background: rgb(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.6);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
   -webkit-appearance: none;
@@ -323,7 +327,7 @@
 }
 
 .view {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth transition for animation */
 }
 
 .view.hidden {
@@ -331,50 +335,33 @@
   pointer-events: none;
 }
 
-.editActions {
-  margin-top: 0; /* Remove top margin since it's a full step */
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: transparent; /* Match modal content background */
-  padding: 16px 0;
-  border-radius: 12px;
-  width: 100%;
-  box-sizing: border-box;
+.view.animateForward {
+  animation: slideUp 0.3s ease-out forwards;
 }
 
-.editActions.darkTheme {
-  background: transparent; /* Match dark modal content */
+.view.animateBackward {
+  animation: slideBack 0.3s ease-out forwards;
 }
 
-.editActionsButtons {
-  display: flex;
-  justify-content: center; /* Center the button horizontally */
-  margin-top: 16px; /* Add spacing above the button */
-  gap: 12px;
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-/* Ensure the delete button looks consistent */
-.deleteButton {
-  background: none;
-  border: none;
-  color: #ff453a; /* Light mode */
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease;
-}
-
-.deleteButton.darkTheme {
-  color: #ff453a; /* Dark mode: keep same red */
-}
-
-.deleteButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode hover */
-}
-
-.deleteButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode hover */
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

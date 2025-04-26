@@ -16,8 +16,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
+  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
   const hasInitialized = useRef(false);
   const prevHeadersRef = useRef(currentHeaders);
+  const prevStepRef = useRef(currentStep); // Track previous step
 
   // Validation and utility functions
   const validateHeader = useCallback(
@@ -99,6 +101,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
     (index) => {
       setCurrentHeaders((prev) => prev.filter((_, i) => i !== index));
       setActiveIndex(null);
+      setNavigationDirection("backward");
       goToStep(1);
     },
     [goToStep]
@@ -111,6 +114,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
       updateHeader(activeIndex);
     }
     setActiveIndex(null);
+    setNavigationDirection("backward");
     goToStep(1);
   }, [activeIndex, addHeader, updateHeader, goToStep]);
 
@@ -147,7 +151,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
     }
   }, [registerModalSteps, setModalConfig, activeIndex, currentHeaders, saveHeader]);
 
-  // Update modal config based on step
+  // Update modal config based on step and set navigation direction
   useEffect(() => {
     if (currentStep === 1) {
       setModalConfig({
@@ -172,6 +176,12 @@ const HeadersModal = ({ tempData, setTempData }) => {
           isRemove: false,
         },
       });
+    }
+
+    // Set navigation direction based on step change
+    if (prevStepRef.current !== currentStep) {
+      setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
+      prevStepRef.current = currentStep;
     }
   }, [currentStep, activeIndex, currentHeaders, setModalConfig, saveHeader]);
 
@@ -205,6 +215,7 @@ const HeadersModal = ({ tempData, setTempData }) => {
       } else if (index === -1) {
         resetForm();
       }
+      setNavigationDirection("forward");
       goToStep(2);
     },
     [currentHeaders, resetForm, goToStep]
@@ -229,6 +240,10 @@ const HeadersModal = ({ tempData, setTempData }) => {
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
               step !== currentStep ? styles.hidden : ""
+            } ${
+              step === currentStep && navigationDirection === "forward" ? styles.animateForward : ""
+            } ${
+              step === currentStep && navigationDirection === "backward" ? styles.animateBackward : ""
             }`}
             style={{
               display: step !== currentStep ? "none" : "block",

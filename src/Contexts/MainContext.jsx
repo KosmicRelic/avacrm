@@ -979,10 +979,10 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  useEffect(() => {
-    console.log(metrics[2]);
-  }
-  , [metrics]);
+  // useEffect(() => {
+  //   console.log(metrics[2]);
+  // }
+  // , [metrics]);
 
   return (
     <MainContext.Provider
