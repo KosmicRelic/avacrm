@@ -284,6 +284,7 @@
   display: inline-block;
   width: 51px;
   height: 31px;
+  flex-shrink: 0;
 }
 
 .toggle input {
@@ -365,18 +366,37 @@
   gap: 12px;
 }
 
-/* Chart Preview */
-.chartPreview {
+/* Chart Container (New for Step 6 Chart Preview) */
+.chartContainer {
   margin-top: 16px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95); /* Light mode: semi-transparent white */
   border-radius: 12px;
   padding: 16px;
+  min-height: 200px; /* Ensure sufficient space for charts */
+  max-height: 400px; /* Limit height to prevent overflow */
+  overflow: hidden; /* Prevent overflow issues */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease; /* Smooth theme transition */
 }
 
-.darkTheme.chartPreview {
-  background: #2c2c2e;
+.chartContainer.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* Dark mode: semi-transparent dark */
 }
 
+.chartContainer p {
+  font-size: 16px;
+  color: #6e6e73; /* Light mode text */
+  text-align: center;
+}
+
+.chartContainer.darkTheme p {
+  color: #8e8e93; /* Dark mode text */
+}
+
+/* Number Metric (for visualizationType: 'number') */
 .numberMetric {
   text-align: center;
 }
@@ -396,6 +416,21 @@
   font-size: 34px;
   font-weight: 700;
   color: #007aff;
+}
+
+/* Correlation (for comparison fields) */
+.correlation {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.correlation p {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.darkTheme.correlation p {
+  color: #fff;
 }
 
 /* Delete Section */
@@ -630,6 +665,9 @@
   padding: 12.5px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease, border-bottom 0.3s ease;
+  display: flex;
+  flex-direction: column; /* Ensure content stacks vertically */
+  align-items: stretch;
 }
 
 .filterItem.darkTheme {
@@ -650,11 +688,11 @@
 }
 
 .filterItem.activeItem {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .filterItem.darkTheme.activeItem {
-  background: rgba(58, 58, 60, 0.6);
+  background: rgba(44, 44, 46, 0.95);
 }
 
 .filterRow {
@@ -731,14 +769,26 @@
 }
 
 .filterSelect {
-  padding-right: 28px;
-  background: rgba(243, 242, 248);
+  padding: 8px 28px 8px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(243, 242, 248, 0.95);
+  border: none;
+  border-radius: 10px;
   -webkit-appearance: none;
   appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  min-width: 120px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.3s ease;
 }
 
 .filterSelect.darkTheme {
-  background: rgba(58, 58, 60, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  color: #ffffff;
+  background: rgba(58, 58, 60, 0.95) url("data:image/svg+xml;utf8,<svg fill='white' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") no-repeat right 8px center;
 }
 
 .filterSelectNoChevron {
@@ -839,7 +889,8 @@
   background: rgba(255, 69, 58, 0.2);
 }
 
-.cardTemplateButton, .metricDetailsButton {
+.cardTemplateButton,
+.metricDetailsButton {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -936,7 +987,7 @@
   color: #0a84ff; /* White for dark mode checked state */
 }
 
-/* Optional: Customize Step 2 appearance */
+/* Optional: Customize Step 2 and Step 4 appearance */
 .createCategoryStep {
   display: flex;
   flex-direction: column;
@@ -977,4 +1028,12 @@
 
 .addButton.darkTheme:hover {
   background: #3a3a3c;
+}
+
+/* Ensure primaryButtons aligns content properly */
+.primaryButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap; /* Allow wrapping for multiple selectors */
 }

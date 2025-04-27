@@ -51,6 +51,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     aggregation: 'average',
     visualizationType: 'line',
     dateRange: { start: '2023-01-01', end: '2025-04-24' },
+    dateMode: 'range', // NEW: Added dateMode for single/range selection
     filterValues: {},
     groupBy: '',
     includeHistory: true,
@@ -147,6 +148,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       aggregation: 'average',
       visualizationType: 'line',
       dateRange: { start: '2023-01-01', end: '2025-04-24' },
+      dateMode: 'range', // NEW: Reset dateMode to range
       filterValues: {},
       groupBy: '',
       includeHistory: true,
@@ -227,7 +229,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     return selectedTemplates.length > 0 ? selectedTemplates.join(', ') : 'No card templates selected';
   }, [metricForm.cardTemplates]);
 
-  // Get metric details button summary
+  // Get Data Visualization button summary
   const getMetricDetailsButtonSummary = useCallback(() => {
     return metricForm.visualizationType
       ? metricForm.visualizationType.charAt(0).toUpperCase() + metricForm.visualizationType.slice(1)
@@ -384,9 +386,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     [metricForm.filterValues, numberRangeMode, dateRangeMode]
   );
 
-  // Add metric
+  // MODIFIED: Add metric with debug logging
   const addMetric = useCallback(() => {
     if (!validateMetric(metricForm)) return;
+
+    console.log('Adding metric with name:', metricForm.name); // DEBUG: Log name to verify
 
     const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
     const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
@@ -414,10 +418,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     goToStep(3);
   }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]);
 
-  // Update metric
+  // MODIFIED: Update metric with debug logging
   const updateMetric = useCallback(
     (metricIndex) => {
       if (!validateMetric(metricForm)) return;
+
+      console.log('Updating metric with name:', metricForm.name); // DEBUG: Log name to verify
 
       const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
       const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
@@ -564,7 +570,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             },
           },
           {
-            title: () => (activeMetricIndex === -1 ? 'Metric Details' : 'Edit Metric Details'),
+            title: () => (activeMetricIndex === -1 ? 'Data Visualization' : 'Edit Data Visualization'),
             rightButton: {
               label: 'Save',
               onClick: saveMetric,
@@ -683,7 +689,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        title: activeMetricIndex === -1 ? 'Metric Details' : 'Edit Metric Details',
+        title: activeMetricIndex === -1 ? 'Data Visualization' : 'Edit Data Visualization',
         backButtonTitle: activeMetricIndex === -1 ? 'New Metric' : 'Edit Metric',
         rightButton: {
           label: 'Save',
@@ -705,7 +711,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: `Fields for ${selectedCardTemplate}`,
-        backButtonTitle: 'Metric Details',
+        backButtonTitle: 'Data Visualization',
       };
     } else if (currentStep === 8) {
       newConfig = {
@@ -713,7 +719,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: 'Configure Filters',
-        backButtonTitle: 'Metric Details',
+        backButtonTitle: 'Data Visualization',
       };
     }
 
@@ -777,6 +783,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           aggregation: metric.config?.aggregation || 'average',
           visualizationType: metric.type || 'line',
           dateRange: metric.config?.dateRange || { start: '2023-01-01', end: '2025-04-24' },
+          dateMode: metric.config?.dateRange?.end ? 'range' : 'single', // NEW: Set dateMode based on existing config
           filterValues: metric.config?.filterValues || {},
           groupBy: metric.config?.groupBy || '',
           includeHistory: metric.config?.includeHistory !== undefined ? metric.config.includeHistory : true,
@@ -802,7 +809,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     [goToStep]
   );
 
-  // Render chart preview
+  // MODIFIED: Render chart preview with dateMode handling
   const renderChartPreview = () => {
     // Show preview only if there are selected templates with fields or comparison fields
     if (
@@ -812,10 +819,18 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       return null;
     }
 
+    // Validate date input
+    if (metricForm.dateMode === 'single' && !metricForm.dateRange.start) {
+      return <div className={styles.chartContainer}>Please select a date.</div>;
+    }
+    if (metricForm.dateMode === 'range' && (!metricForm.dateRange.start || !metricForm.dateRange.end)) {
+      return <div className={styles.chartContainer}>Please select a date range.</div>;
+    }
+
     const config = {
       fields: metricForm.fields,
       aggregation: metricForm.aggregation,
-      dateRange: metricForm.dateRange,
+      dateRange: metricForm.dateMode === 'single' ? { start: metricForm.dateRange.start, end: metricForm.dateRange.start } : metricForm.dateRange,
       cardTemplates: metricForm.cardTemplates,
       filterValues: metricForm.filterValues,
       groupBy: metricForm.groupBy || 'cardType',
@@ -1138,7 +1153,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       </div>
                     </div>
                   </div>
-                  {/* Metric Details */}
+                  {/* Data Visualization */}
                   <div
                     className={`${styles.filterItem} ${activeSectionIndex === 3 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
@@ -1151,7 +1166,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
-                        <span>Metric Details</span>
+                        <span>Data Visualization</span>
                       </div>
                       <div className={styles.primaryButtons}>
                         <span className={styles.filterSummary}>{getMetricDetailsButtonSummary()}</span>
@@ -1192,19 +1207,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {/* Include History */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 0 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(0)}
+                    className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Include History</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>{metricForm.includeHistory ? 'Enabled' : 'Disabled'}</span>
-                      </div>
-                    </div>
-                    {activeSectionIndex === 0 && (
-                      <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <label className={styles.toggle}>
                           <input
                             type="checkbox"
@@ -1214,85 +1223,63 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           <span className={styles.toggleSlider}></span>
                         </label>
                       </div>
-                    )}
+                    </div>
                   </div>
                   {/* Visualization */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 1 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(1)}
+                    className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Visualization</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>
-                          {metricForm.visualizationType.charAt(0).toUpperCase() + metricForm.visualizationType.slice(1)}
-                        </span>
+                        <select
+                          value={metricForm.visualizationType}
+                          onChange={(e) => setMetricForm((prev) => ({ ...prev, visualizationType: e.target.value }))}
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          {['line', 'bar', 'pie', 'number', 'scatter'].map((type) => (
+                            <option key={type} value={type}>
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                    {activeSectionIndex === 1 && (
-                      <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <div className={styles.segmentedControl}>
-                          {['line', 'bar', 'pie', 'number', 'scatter'].map((type) => (
-                            <button
-                              key={type}
-                              className={`${styles.segment} ${metricForm.visualizationType === type ? styles.active : ''}`}
-                              onClick={() => setMetricForm((prev) => ({ ...prev, visualizationType: type }))}
-                            >
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                   {/* Granularity */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 2 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(2)}
+                    className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Granularity</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>
-                          {metricForm.granularity.charAt(0).toUpperCase() + metricForm.granularity.slice(1)}
-                        </span>
+                        <select
+                          value={metricForm.granularity}
+                          onChange={(e) => setMetricForm((prev) => ({ ...prev, granularity: e.target.value }))}
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          {['daily', 'weekly', 'monthly'].map((granularity) => (
+                            <option key={granularity} value={granularity}>
+                              {granularity.charAt(0).toUpperCase() + granularity.slice(1)}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                    {activeSectionIndex === 2 && (
-                      <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <div className={styles.segmentedControl}>
-                          {['daily', 'weekly', 'monthly'].map((granularity) => (
-                            <button
-                              key={granularity}
-                              className={`${styles.segment} ${metricForm.granularity === granularity ? styles.active : ''}`}
-                              onClick={() => setMetricForm((prev) => ({ ...prev, granularity }))}
-                            >
-                              {granularity.charAt(0).toUpperCase() + granularity.slice(1)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                   {/* Group By */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 3 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(3)}
+                    className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Group By</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>{metricForm.groupBy || 'None'}</span>
-                      </div>
-                    </div>
-                    {activeSectionIndex === 3 && (
-                      <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <select
                           value={metricForm.groupBy}
                           onChange={(e) => setMetricForm((prev) => ({ ...prev, groupBy: e.target.value }))}
@@ -1308,59 +1295,91 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           ))}
                         </select>
                       </div>
-                    )}
+                    </div>
                   </div>
-                  {/* Date Range */}
+                  {/* MODIFIED: Date Range with single/range mode */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 4 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(4)}
+                    className={`${styles.filterItem} ${activeSectionIndex === 0 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => toggleSection(0)}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Date Range</span>
                       </div>
                       <div className={styles.primaryButtons}>
+                        <select
+                          value={metricForm.dateMode}
+                          onChange={(e) =>
+                            setMetricForm((prev) => ({
+                              ...prev,
+                              dateMode: e.target.value,
+                              dateRange: { start: prev.dateRange.start, end: e.target.value === 'single' ? '' : prev.dateRange.end },
+                            }))
+                          }
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          <option value="single">Single Date</option>
+                          <option value="range">Date Range</option>
+                        </select>
                         <span className={styles.filterSummary}>
-                          {metricForm.dateRange.start && metricForm.dateRange.end
+                          {metricForm.dateMode === 'single' && metricForm.dateRange.start
+                            ? metricForm.dateRange.start
+                            : metricForm.dateRange.start && metricForm.dateRange.end
                             ? `${metricForm.dateRange.start} – ${metricForm.dateRange.end}`
                             : 'None'}
                         </span>
                       </div>
                     </div>
-                    {activeSectionIndex === 4 && (
+                    {activeSectionIndex === 0 && (
                       <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <input
-                          type="date"
-                          value={metricForm.dateRange.start}
-                          onChange={(e) =>
-                            setMetricForm((prev) => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, start: e.target.value },
-                            }))
-                          }
-                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        />
-                        <span className={styles.separator}>–</span>
-                        <input
-                          type="date"
-                          value={metricForm.dateRange.end}
-                          onChange={(e) =>
-                            setMetricForm((prev) => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, end: e.target.value },
-                            }))
-                          }
-                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        />
+                        {metricForm.dateMode === 'single' ? (
+                          <input
+                            type="date"
+                            value={metricForm.dateRange.start}
+                            onChange={(e) =>
+                              setMetricForm((prev) => ({
+                                ...prev,
+                                dateRange: { start: e.target.value, end: '' },
+                              }))
+                            }
+                            className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          />
+                        ) : (
+                          <>
+                            <input
+                              type="date"
+                              value={metricForm.dateRange.start}
+                              onChange={(e) =>
+                                setMetricForm((prev) => ({
+                                  ...prev,
+                                  dateRange: { ...prev.dateRange, start: e.target.value },
+                                }))
+                              }
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                            <span className={styles.separator}>–</span>
+                            <input
+                              type="date"
+                              value={metricForm.dateRange.end}
+                              onChange={(e) =>
+                                setMetricForm((prev) => ({
+                                  ...prev,
+                                  dateRange: { ...prev.dateRange, end: e.target.value },
+                                }))
+                              }
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
                   {/* Filters */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 5 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    className={`${styles.filterItem} ${activeSectionIndex === 1 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => {
-                      toggleSection(5);
-                      if (activeSectionIndex !== 5) {
+                      toggleSection(1);
+                      if (activeSectionIndex !== 1) {
                         setNavigationDirection('forward');
                         goToStep(8);
                       }
@@ -1377,8 +1396,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   </div>
                   {/* Comparison Fields */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 6 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(6)}
+                    className={`${styles.filterItem} ${activeSectionIndex === 2 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => toggleSection(2)}
                   >
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
@@ -1390,7 +1409,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         </span>
                       </div>
                     </div>
-                    {activeSectionIndex === 6 && (
+                    {activeSectionIndex === 2 && (
                       <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <select
                           multiple

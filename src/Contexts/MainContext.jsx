@@ -15,702 +15,706 @@ export const MainContextProvider = ({ children }) => {
   const [sheets, setSheets] = useState({
     allSheets: [
       {
-        id: 'primarySheet',
-        sheetName: 'All Cards',
+        id: 'leadsSheet',
+        sheetName: 'Leads',
         headers: [
           { key: 'id', visible: true, hidden: false },
           { key: 'name', visible: true, hidden: false },
           { key: 'phone', visible: true, hidden: false },
           { key: 'email', visible: true, hidden: false },
-          { key: 'leadScore', visible: true, hidden: false },
-          { key: 'nextActions', visible: true, offcanvas: true },
+          { key: 'leadStatus', visible: true, hidden: false },
+          { key: 'leadSource', visible: true, hidden: false },
           { key: 'followUpDate', visible: true, hidden: false },
+          { key: 'conversionValue', visible: true, hidden: false },
         ],
         pinnedHeaders: ['id', 'name'],
         rows: [
-          '100001',
-          '100002',
-          '100003',
-          '100004',
-          '100005',
-          '100006',
-          '100007',
-          '100008',
-          '100009',
-          '100010',
-          '100011',
-          '100012',
-          '100013',
-          '100014',
-          '100015',
-          '100016',
-          '100017',
-          '100018',
-          '100019',
-          '100020',
+          '100001', '100002', '100003', '100004', '100005', '100006', '100007', '100008', '100009', '100010',
+          '100011', '100012', '100013', '100014', '100015', '100016', '100017', '100018', '100019', '100020',
         ],
         isActive: true,
       },
       {
-        id: 'sheet2',
-        sheetName: 'Business Partners',
+        id: 'campaignsSheet',
+        sheetName: 'Ad Campaigns',
         headers: [
           { key: 'id', visible: true, hidden: false },
-          { key: 'fullName', visible: true, hidden: false },
-          { key: 'address', visible: true, hidden: false },
+          { key: 'campaignName', visible: true, hidden: false },
+          { key: 'platform', visible: true, hidden: false },
+          { key: 'adSpend', visible: true, hidden: false },
+          { key: 'leadsGenerated', visible: true, hidden: false },
+          { key: 'costPerLead', visible: true, hidden: false },
+          { key: 'startDate', visible: true, hidden: false },
           { key: 'status', visible: true, hidden: false },
         ],
         pinnedHeaders: ['id'],
-        rows: [],
+        rows: ['200001', '200002', '200003', '200004', '200005', '200006'],
         isActive: false,
       },
       {
-        id: 'sheet3',
-        sheetName: 'Vendors',
+        id: 'partnersSheet',
+        sheetName: 'Business Partners',
         headers: [
           { key: 'id', visible: true, hidden: false },
-          { key: 'name', visible: true, hidden: false },
+          { key: 'businessName', visible: true, hidden: false },
           { key: 'contact', visible: true, hidden: false },
+          { key: 'negotiatedRate', visible: true, hidden: false },
+          { key: 'status', visible: true, hidden: false },
         ],
         pinnedHeaders: ['id'],
-        rows: [],
+        rows: ['300001', '300002', '300003', '300004'],
         isActive: false,
       },
       {
-        id: 'sheet4',
-        sheetName: 'Tasks',
+        id: 'paymentsSheet',
+        sheetName: 'Payments',
         headers: [
           { key: 'id', visible: true, hidden: false },
-          { key: 'description', visible: true, hidden: false },
-          { key: 'dueDate', visible: true, hidden: false },
-          { key: 'priority', visible: true, hidden: false },
+          { key: 'leadId', visible: true, hidden: false },
+          { key: 'clientPayment', visible: true, hidden: false },
+          { key: 'partnerPayment', visible: true, hidden: false },
+          { key: 'paymentDate', visible: true, hidden: false },
+          { key: 'status', visible: true, hidden: false },
         ],
         pinnedHeaders: ['id'],
-        rows: [],
+        rows: ['400001', '400002', '400003', '400004', '400005', '400006', '400007', '400008', '400009', '400010'],
         isActive: false,
       },
     ],
     structure: [
-      { sheetName: 'All Cards' },
-      {
-        folderName: 'Partners',
-        sheets: ['Business Partners', 'Vendors'],
-      },
-      { sheetName: 'Tasks' },
+      { sheetName: 'Leads' },
+      { sheetName: 'Ad Campaigns' },
+      { sheetName: 'Business Partners' },
+      { sheetName: 'Payments' },
     ],
   });
 
   const [cards, setCards] = useState([
+    // Lead Cards (20)
     {
       id: '100001',
       typeOfCards: 'Leads',
-      name: 'Periklis Papadopoulos',
-      phone: '6986600023',
-      email: 'periklis@example.com',
-      leadScore: '80',
-      nextActions: 'Call back',
-      followUpDate: '2025-04-05',
+      name: 'John Smith',
+      phone: '555-0101',
+      email: 'john.smith@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-10',
+      conversionValue: 5000,
       history: [
-        {
-          field: 'leadScore',
-          value: '80',
-          timestamp: { _seconds: 1737417600, _nanoseconds: 0 }, // January 21, 2025
-        },
-        {
-          field: 'nextActions',
-          value: 'Call back',
-          timestamp: { _seconds: 1741651200, _nanoseconds: 0 }, // March 10, 2025
-        },
-        {
-          field: 'name',
-          value: 'Periklis Papadopoulous',
-          timestamp: { _seconds: 1677657600, _nanoseconds: 0 }, // March 1, 2023
-        },
-        {
-          field: 'phone',
-          value: '6986600024',
-          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'periklis.pap@example.com',
-          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '70',
-          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'followUpDate', value: '2025-04-10', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1743984000, _nanoseconds: 0 } }, // Apr 8, 2025
+        { field: 'conversionValue', value: 5000, timestamp: { _seconds: 1744070400, _nanoseconds: 0 } }, // Apr 9, 2025
       ],
     },
     {
       id: '100002',
       typeOfCards: 'Leads',
-      name: 'Maria Ioannou',
-      phone: '6977554321',
-      email: 'maria@example.com',
-      leadScore: '90',
-      nextActions: 'Send offer',
-      followUpDate: '2025-04-06',
+      name: 'Emily Johnson',
+      phone: '555-0102',
+      email: 'emily.problematic@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-15',
+      conversionValue: 0,
       history: [
-        {
-          field: 'phone',
-          value: '6977554321',
-          timestamp: { _seconds: 1739577600, _nanoseconds: 0 }, // February 15, 2025
-        },
-        {
-          field: 'email',
-          value: 'maria.ioannou@example.com',
-          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '85',
-          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Follow-up call',
-          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+        { field: 'followUpDate', value: '2025-04-15', timestamp: { _seconds: 1736035200, _nanoseconds: 0 } }, // Jan 5, 2025
       ],
     },
     {
       id: '100003',
       typeOfCards: 'Leads',
-      name: 'Dimitris Georgiou',
-      phone: '6999887766',
-      email: 'dimitris@example.com',
-      leadScore: '75',
-      nextActions: 'Follow-up email',
-      followUpDate: '2025-04-07',
+      name: 'Michael Chen',
+      phone: '555-0103',
+      email: 'michael.chen@example.com',
+      leadStatus: 'New',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-12',
+      conversionValue: 0,
       history: [
-        {
-          field: 'email',
-          value: 'dimitris@example.com',
-          timestamp: { _seconds: 1745107200, _nanoseconds: 0 }, // April 21, 2025
-        },
-        {
-          field: 'phone',
-          value: '6999887765',
-          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '70',
-          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-03-15',
-          timestamp: { _seconds: 1710460800, _nanoseconds: 0 }, // March 15, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'followUpDate', value: '2025-04-12', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
       ],
     },
     {
       id: '100004',
       typeOfCards: 'Leads',
-      name: 'Eleni Christodoulou',
-      phone: '6933445566',
-      email: 'eleni@example.com',
-      leadScore: '85',
-      nextActions: 'Schedule meeting',
+      name: 'Sarah Davis',
+      phone: '555-0104',
+      email: 'sarah.davis@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Google Ads',
       followUpDate: '2025-04-08',
+      conversionValue: 7500,
       history: [
-        {
-          field: 'name',
-          value: 'Eleni Christodoulous',
-          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
-        },
-        {
-          field: 'email',
-          value: 'eleni.c@example.com',
-          timestamp: { _seconds: 1688169600, _nanoseconds: 0 }, // July 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '80',
-          timestamp: { _seconds: 1706745600, _nanoseconds: 0 }, // February 1, 2024
-        },
-        {
-          field: 'nextActions',
-          value: 'Send proposal',
-          timestamp: { _seconds: 1725148800, _nanoseconds: 0 }, // September 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'followUpDate', value: '2025-04-08', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1743724800, _nanoseconds: 0 } }, // Apr 5, 2025
+        { field: 'conversionValue', value: 7500, timestamp: { _seconds: 1743811200, _nanoseconds: 0 } }, // Apr 6, 2025
       ],
     },
     {
       id: '100005',
       typeOfCards: 'Leads',
-      name: 'Nikos Pappas',
-      phone: '6955332211',
-      email: 'nikos@example.com',
-      leadScore: '60',
-      nextActions: 'Send reminder',
-      followUpDate: '2025-04-09',
+      name: 'David Wilson',
+      phone: '555-0105',
+      email: 'david.w@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-20',
+      conversionValue: 0,
       history: [
-        {
-          field: 'phone',
-          value: '6955332210',
-          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '55',
-          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Initial outreach',
-          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1736035200, _nanoseconds: 0 } }, // Jan 5, 2025
+        { field: 'followUpDate', value: '2025-04-20', timestamp: { _seconds: 1736121600, _nanoseconds: 0 } }, // Jan 6, 2025
       ],
     },
     {
       id: '100006',
       typeOfCards: 'Leads',
-      name: 'Georgia Alexiou',
-      phone: '6900112233',
-      email: 'georgia@example.com',
-      leadScore: '95',
-      nextActions: 'Close deal',
-      followUpDate: '2025-04-10',
+      name: 'Laura Martinez',
+      phone: '555-0106',
+      email: 'laura.m@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-11',
+      conversionValue: 6000,
       history: [
-        {
-          field: 'email',
-          value: 'georgia.alexiou@example.com',
-          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '90',
-          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Negotiate terms',
-          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-12-01',
-          timestamp: { _seconds: 1733011200, _nanoseconds: 0 }, // December 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'followUpDate', value: '2025-04-11', timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1743897600, _nanoseconds: 0 } }, // Apr 7, 2025
+        { field: 'conversionValue', value: 6000, timestamp: { _seconds: 1743984000, _nanoseconds: 0 } }, // Apr 8, 2025
       ],
     },
     {
       id: '100007',
       typeOfCards: 'Leads',
-      name: 'Kostas Leventis',
-      phone: '6999001122',
-      email: 'kostas@example.com',
-      leadScore: '70',
-      nextActions: 'Cold call',
-      followUpDate: '2025-04-11',
+      name: 'James Brown',
+      phone: '555-0107',
+      email: 'james.b@example.com',
+      leadStatus: 'New',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-18',
+      conversionValue: 0,
       history: [
-        {
-          field: 'phone',
-          value: '6999001123',
-          timestamp: { _seconds: 1677657600, _nanoseconds: 0 }, // March 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '65',
-          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'kostas.l@example.com',
-          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1736035200, _nanoseconds: 0 } }, // Jan 5, 2025
+        { field: 'followUpDate', value: '2025-04-18', timestamp: { _seconds: 1736121600, _nanoseconds: 0 } }, // Jan 6, 2025
       ],
     },
     {
       id: '100008',
       typeOfCards: 'Leads',
-      name: 'Sofia Karamanou',
-      phone: '6977889900',
-      email: 'sofia@example.com',
-      leadScore: '88',
-      nextActions: 'Send brochure',
-      followUpDate: '2025-04-12',
+      name: 'Olivia Taylor',
+      phone: '555-0108',
+      email: 'olivia.t@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-16',
+      conversionValue: 0,
       history: [
-        {
-          field: 'name',
-          value: 'Sofia Karamanous',
-          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '85',
-          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Initial contact',
-          timestamp: { _seconds: 1714521600, _nanoseconds: 0 }, // May 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-06-15',
-          timestamp: { _seconds: 1718409600, _nanoseconds: 0 }, // June 15, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+        { field: 'followUpDate', value: '2025-04-16', timestamp: { _seconds: 1736035200, _nanoseconds: 0 } }, // Jan 5, 2025
       ],
     },
     {
       id: '100009',
       typeOfCards: 'Leads',
-      name: 'Michalis Xanthopoulos',
-      phone: '6933556677',
-      email: 'michalis@example.com',
-      leadScore: '78',
-      nextActions: 'Call and pitch',
-      followUpDate: '2025-04-13',
+      name: 'William Lee',
+      phone: '555-0109',
+      email: 'william.l@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-09',
+      conversionValue: 8000,
       history: [
-        {
-          field: 'email',
-          value: 'michalis.x@example.com',
-          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
-        },
-        {
-          field: 'phone',
-          value: '6933556678',
-          timestamp: { _seconds: 1690934400, _nanoseconds: 0 }, // August 2, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '75',
-          timestamp: { _seconds: 1706745600, _nanoseconds: 0 }, // February 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'followUpDate', value: '2025-04-09', timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1743811200, _nanoseconds: 0 } }, // Apr 6, 2025
+        { field: 'conversionValue', value: 8000, timestamp: { _seconds: 1743897600, _nanoseconds: 0 } }, // Apr 7, 2025
       ],
     },
     {
       id: '100010',
       typeOfCards: 'Leads',
-      name: 'Vasiliki Antoniou',
-      phone: '6911223344',
-      email: 'vasiliki@example.com',
-      leadScore: '92',
-      nextActions: 'Confirm interest',
-      followUpDate: '2025-04-14',
+      name: 'Sophia Anderson',
+      phone: '555-0110',
+      email: 'sophia.a@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-17',
+      conversionValue: 0,
       history: [
-        {
-          field: 'leadScore',
-          value: '90',
-          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Send details',
-          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
-        },
-        {
-          field: 'email',
-          value: 'vasiliki.a@example.com',
-          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-09-01',
-          timestamp: { _seconds: 1725148800, _nanoseconds: 0 }, // September 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1736035200, _nanoseconds: 0 } }, // Jan 5, 2025
+        { field: 'followUpDate', value: '2025-04-17', timestamp: { _seconds: 1736121600, _nanoseconds: 0 } }, // Jan 6, 2025
       ],
     },
     {
       id: '100011',
       typeOfCards: 'Leads',
-      name: 'Giannis Korres',
-      phone: '6901122334',
-      email: 'giannis@example.com',
-      leadScore: '73',
-      nextActions: 'Send follow-up',
-      followUpDate: '2025-04-15',
+      name: 'Daniel Kim',
+      phone: '555-0111',
+      email: 'daniel.k@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'LinkedIn Ads',
+      followUpDate: '2025-04-14',
+      conversionValue: 9000,
       history: [
-        {
-          field: 'phone',
-          value: '6901122335',
-          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '70',
-          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Cold outreach',
-          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1736294400, _nanoseconds: 0 } }, // Jan 8, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1736380800, _nanoseconds: 0 } }, // Jan 9, 2025
+        { field: 'followUpDate', value: '2025-04-14', timestamp: { _seconds: 1736467200, _nanoseconds: 0 } }, // Jan 10, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744156800, _nanoseconds: 0 } }, // Apr 10, 2025
+        { field: 'conversionValue', value: 9000, timestamp: { _seconds: 1744243200, _nanoseconds: 0 } }, // Apr 11, 2025
       ],
     },
     {
       id: '100012',
       typeOfCards: 'Leads',
-      name: 'Katerina Liosi',
-      phone: '6944332211',
-      email: 'katerina@example.com',
-      leadScore: '81',
-      nextActions: 'Call again',
-      followUpDate: '2025-04-16',
+      name: 'Emma White',
+      phone: '555-0112',
+      email: 'emma.w@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-22',
+      conversionValue: 0,
       history: [
-        {
-          field: 'email',
-          value: 'katerina.l@example.com',
-          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '78',
-          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Send email',
-          timestamp: { _seconds: 1714521600, _nanoseconds: 0 }, // May 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-07-01',
-          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1736553600, _nanoseconds: 0 } }, // Jan 12, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1736640000, _nanoseconds: 0 } }, // Jan 13, 2025
+        { field: 'followUpDate', value: '2025-04-22', timestamp: { _seconds: 1736726400, _nanoseconds: 0 } }, // Jan 14, 2025
       ],
     },
     {
       id: '100013',
       typeOfCards: 'Leads',
-      name: 'Panagiotis Rizos',
-      phone: '6988112233',
-      email: 'panagiotis@example.com',
-     
-  
-   leadScore: '68',
-      nextActions: 'Schedule call',
-      followUpDate: '2025-04-17',
+      name: 'Liam Harris',
+      phone: '555-0113',
+      email: 'liam.h@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-13',
+      conversionValue: 6500,
       history: [
-        {
-          field: 'phone',
-          value: '6988112234',
-          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '65',
-          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'panagiotis.r@example.com',
-          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1736812800, _nanoseconds: 0 } }, // Jan 15, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1736899200, _nanoseconds: 0 } }, // Jan 16, 2025
+        { field: 'followUpDate', value: '2025-04-13', timestamp: { _seconds: 1736985600, _nanoseconds: 0 } }, // Jan 17, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744070400, _nanoseconds: 0 } }, // Apr 9, 2025
+        { field: 'conversionValue', value: 6500, timestamp: { _seconds: 1744156800, _nanoseconds: 0 } }, // Apr 10, 2025
       ],
     },
     {
       id: '100014',
       typeOfCards: 'Leads',
-      name: 'Anna Petridou',
-      phone: '6990001122',
-      email: 'anna@example.com',
-      leadScore: '94',
-      nextActions: 'Close deal',
-      followUpDate: '2025-04-18',
+      name: 'Ava Clark',
+      phone: '555-0114',
+      email: 'ava.c@example.com',
+      leadStatus: 'New',
+      leadSource: 'LinkedIn Ads',
+      followUpDate: '2025-04-19',
+      conversionValue: 0,
       history: [
-        {
-          field: 'name',
-          value: 'Anna Petridous',
-          timestamp: { _seconds: 1680307200, _nanoseconds: 0 }, // April 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '90',
-          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Negotiate deal',
-          timestamp: { _seconds: 1717200000, _nanoseconds: 0 }, // June 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-10-01',
-          timestamp: { _seconds: 1727740800, _nanoseconds: 0 }, // October 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1737072000, _nanoseconds: 0 } }, // Jan 18, 2025
+        { field: 'followUpDate', value: '2025-04-19', timestamp: { _seconds: 1737158400, _nanoseconds: 0 } }, // Jan 19, 2025
       ],
     },
     {
       id: '100015',
       typeOfCards: 'Leads',
-      name: 'Stelios Nikas',
-      phone: '6977223344',
-      email: 'stelios@example.com',
-      leadScore: '76',
-      nextActions: 'Final meeting',
-      followUpDate: '2025-04-19',
+      name: 'Noah Lewis',
+      phone: '555-0115',
+      email: 'noah.l@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-15',
+      conversionValue: 7000,
       history: [
-        {
-          field: 'phone',
-          value: '6977223345',
-          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '72',
-          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'stelios.n@example.com',
-          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1737244800, _nanoseconds: 0 } }, // Jan 20, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1737331200, _nanoseconds: 0 } }, // Jan 21, 2025
+        { field: 'followUpDate', value: '2025-04-15', timestamp: { _seconds: 1737417600, _nanoseconds: 0 } }, // Jan 22, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744243200, _nanoseconds: 0 } }, // Apr 11, 2025
+        { field: 'conversionValue', value: 7000, timestamp: { _seconds: 1744329600, _nanoseconds: 0 } }, // Apr 12, 2025
       ],
     },
     {
       id: '100016',
       typeOfCards: 'Leads',
-      name: 'Eirini Valasi',
-      phone: '6955887766',
-      email: 'eirini@example.com',
-      leadScore: '89',
-      nextActions: 'Confirm schedule',
-      followUpDate: '2025-04-20',
+      name: 'Mia Walker',
+      phone: '555-0116',
+      email: 'mia.w@example.com',
+      leadStatus: 'Contacted',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-21',
+      conversionValue: 0,
       history: [
-        {
-          field: 'email',
-          value: 'eirini.v@example.com',
-          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '85',
-          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Send reminder',
-          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-11-01',
-          timestamp: { _seconds: 1730419200, _nanoseconds: 0 }, // November 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1737504000, _nanoseconds: 0 } }, // Jan 23, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1737590400, _nanoseconds: 0 } }, // Jan 24, 2025
+        { field: 'followUpDate', value: '2025-04-21', timestamp: { _seconds: 1737676800, _nanoseconds: 0 } }, // Jan 25, 2025
       ],
     },
     {
       id: '100017',
       typeOfCards: 'Leads',
-      name: 'Apostolos Zannis',
-      phone: '6900332211',
-      email: 'apostolos@example.com',
-      leadScore: '84',
-      nextActions: 'Send contract',
-      followUpDate: '2025-04-21',
+      name: 'Ethan Young',
+      phone: '555-0117',
+      email: 'ethan.y@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-16',
+      conversionValue: 8500,
       history: [
-        {
-          field: 'phone',
-          value: '6900332212',
-          timestamp: { _seconds: 1676246400, _nanoseconds: 0 }, // February 13, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '80',
-          timestamp: { _seconds: 1693526400, _nanoseconds: 0 }, // September 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'apostolos.z@example.com',
-          timestamp: { _seconds: 1709251200, _nanoseconds: 0 }, // March 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1737763200, _nanoseconds: 0 } }, // Jan 26, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1737849600, _nanoseconds: 0 } }, // Jan 27, 2025
+        { field: 'followUpDate', value: '2025-04-16', timestamp: { _seconds: 1737936000, _nanoseconds: 0 } }, // Jan 28, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744329600, _nanoseconds: 0 } }, // Apr 12, 2025
+        { field: 'conversionValue', value: 8500, timestamp: { _seconds: 1744416000, _nanoseconds: 0 } }, // Apr 13, 2025
       ],
     },
     {
       id: '100018',
       typeOfCards: 'Leads',
-      name: 'Ioanna Michou',
-      phone: '6933221100',
-      email: 'ioanna@example.com',
-      leadScore: '91',
-      nextActions: 'Onboard',
-      followUpDate: '2025-04-22',
+      name: 'Isabella Hall',
+      phone: '555-0118',
+      email: 'isabella.h@example.com',
+      leadStatus: 'Lost',
+      leadSource: 'Google Ads',
+      followUpDate: '2025-04-17',
+      conversionValue: 0,
       history: [
-        {
-          field: 'name',
-          value: 'Ioanna Michous',
-          timestamp: { _seconds: 1682899200, _nanoseconds: 0 }, // May 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '88',
-          timestamp: { _seconds: 1699488000, _nanoseconds: 0 }, // November 9, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Sign contract',
-          timestamp: { _seconds: 1717200000, _nanoseconds: 0 }, // June 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-12-01',
-          timestamp: { _seconds: 1733011200, _nanoseconds: 0 }, // December 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1738022400, _nanoseconds: 0 } }, // Jan 29, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1738108800, _nanoseconds: 0 } }, // Jan 30, 2025
+        { field: 'followUpDate', value: '2025-04-17', timestamp: { _seconds: 1738195200, _nanoseconds: 0 } }, // Jan 31, 2025
+        { field: 'leadStatus', value: 'Lost', timestamp: { _seconds: 1744416000, _nanoseconds: 0 } }, // Apr 13, 2025
       ],
     },
     {
       id: '100019',
       typeOfCards: 'Leads',
-      name: 'Christos Makris',
-      phone: '6988776655',
-      email: 'christos@example.com',
-      leadScore: '67',
-      nextActions: 'Check-in call',
-      followUpDate: '2025-04-23',
+      name: 'Alexander Allen',
+      phone: '555-0119',
+      email: 'alexander.a@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'LinkedIn Ads',
+      followUpDate: '2025-04-18',
+      conversionValue: 4000,
       history: [
-        {
-          field: 'phone',
-          value: '6988776656',
-          timestamp: { _seconds: 1678838400, _nanoseconds: 0 }, // March 15, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '62',
-          timestamp: { _seconds: 1696118400, _nanoseconds: 0 }, // October 1, 2023
-        },
-        {
-          field: 'email',
-          value: 'christos.m@example.com',
-          timestamp: { _seconds: 1711929600, _nanoseconds: 0 }, // April 1, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1738281600, _nanoseconds: 0 } }, // Feb 1, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1738368000, _nanoseconds: 0 } }, // Feb 2, 2025
+        { field: 'followUpDate', value: '2025-04-18', timestamp: { _seconds: 1738454400, _nanoseconds: 0 } }, // Feb 3, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744502400, _nanoseconds: 0 } }, // Apr 14, 2025
+        { field: 'conversionValue', value: 4000, timestamp: { _seconds: 1744588800, _nanoseconds: 0 } }, // Apr 15, 2025
       ],
     },
     {
       id: '100020',
       typeOfCards: 'Leads',
-      name: 'Zoi Karra',
-      phone: '6911220088',
-      email: 'zoi@example.com',
-      leadScore: '86',
-      nextActions: 'Upsell offer',
-      followUpDate: '2025-04-24',
+      name: 'Charlotte King',
+      phone: '555-0120',
+      email: 'charlotte.k@example.com',
+      leadStatus: 'Converted',
+      leadSource: 'Facebook Ads',
+      followUpDate: '2025-04-19',
+      conversionValue: 6000,
       history: [
-        {
-          field: 'email',
-          value: 'zoi.karra@example.com',
-          timestamp: { _seconds: 1685577600, _nanoseconds: 0 }, // June 1, 2023
-        },
-        {
-          field: 'leadScore',
-          value: '82',
-          timestamp: { _seconds: 1698796800, _nanoseconds: 0 }, // November 1, 2023
-        },
-        {
-          field: 'nextActions',
-          value: 'Follow-up offer',
-          timestamp: { _seconds: 1719792000, _nanoseconds: 0 }, // July 1, 2024
-        },
-        {
-          field: 'followUpDate',
-          value: '2024-11-15',
-          timestamp: { _seconds: 1731628800, _nanoseconds: 0 }, // November 15, 2024
-        },
+        { field: 'leadStatus', value: 'New', timestamp: { _seconds: 1738540800, _nanoseconds: 0 } }, // Feb 4, 2025
+        { field: 'leadStatus', value: 'Contacted', timestamp: { _seconds: 1738627200, _nanoseconds: 0 } }, // Feb 5, 2025
+        { field: 'followUpDate', value: '2025-04-19', timestamp: { _seconds: 1738713600, _nanoseconds: 0 } }, // Feb 6, 2025
+        { field: 'leadStatus', value: 'Converted', timestamp: { _seconds: 1744588800, _nanoseconds: 0 } }, // Apr 15, 2025
+        { field: 'conversionValue', value: 6000, timestamp: { _seconds: 1744675200, _nanoseconds: 0 } }, // Apr 16, 2025
+      ],
+    },
+    // Ad Campaign Cards (6)
+    {
+      id: '200001',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'FB Lead Gen Q1',
+      platform: 'Facebook',
+      adSpend: 3000,
+      leadsGenerated: 8,
+      costPerLead: 375,
+      startDate: '2025-01-01',
+      status: 'Active',
+      history: [
+        { field: 'adSpend', value: 1500, timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadsGenerated', value: 4, timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'adSpend', value: 3000, timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadsGenerated', value: 8, timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+      ],
+    },
+    {
+      id: '200002',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'Google Lead Gen Q1',
+      platform: 'Google',
+      adSpend: 2500,
+      leadsGenerated: 6,
+      costPerLead: 416.67,
+      startDate: '2025-01-01',
+      status: 'Active',
+      history: [
+        { field: 'adSpend', value: 1250, timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'leadsGenerated', value: 3, timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'adSpend', value: 2500, timestamp: { _seconds: 1735862400, _nanoseconds: 0 } }, // Jan 3, 2025
+        { field: 'leadsGenerated', value: 6, timestamp: { _seconds: 1735948800, _nanoseconds: 0 } }, // Jan 4, 2025
+      ],
+    },
+    {
+      id: '200003',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'FB Lead Gen Q2',
+      platform: 'Facebook',
+      adSpend: 2000,
+      leadsGenerated: 4,
+      costPerLead: 500,
+      startDate: '2025-02-01',
+      status: 'Active',
+      history: [
+        { field: 'adSpend', value: 1000, timestamp: { _seconds: 1738281600, _nanoseconds: 0 } }, // Feb 1, 2025
+        { field: 'leadsGenerated', value: 2, timestamp: { _seconds: 1738368000, _nanoseconds: 0 } }, // Feb 2, 2025
+        { field: 'adSpend', value: 2000, timestamp: { _seconds: 1738454400, _nanoseconds: 0 } }, // Feb 3, 2025
+        { field: 'leadsGenerated', value: 4, timestamp: { _seconds: 1738540800, _nanoseconds: 0 } }, // Feb 4, 2025
+      ],
+    },
+    {
+      id: '200004',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'Google Lead Gen Q2',
+      platform: 'Google',
+      adSpend: 1500,
+      leadsGenerated: 3,
+      costPerLead: 500,
+      startDate: '2025-02-01',
+      status: 'Active',
+      history: [
+        { field: 'adSpend', value: 750, timestamp: { _seconds: 1738281600, _nanoseconds: 0 } }, // Feb 1, 2025
+        { field: 'leadsGenerated', value: 1, timestamp: { _seconds: 1738368000, _nanoseconds: 0 } }, // Feb 2, 2025
+        { field: 'adSpend', value: 1500, timestamp: { _seconds: 1738454400, _nanoseconds: 0 } }, // Feb 3, 2025
+        { field: 'leadsGenerated', value: 3, timestamp: { _seconds: 1738540800, _nanoseconds: 0 } }, // Feb 4, 2025
+      ],
+    },
+    {
+      id: '200005',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'LinkedIn Lead Gen Q1',
+      platform: 'LinkedIn',
+      adSpend: 2000,
+      leadsGenerated: 2,
+      costPerLead: 1000,
+      startDate: '2025-01-15',
+      status: 'Inactive',
+      history: [
+        { field: 'adSpend', value: 1000, timestamp: { _seconds: 1736812800, _nanoseconds: 0 } }, // Jan 15, 2025
+        { field: 'leadsGenerated', value: 1, timestamp: { _seconds: 1736899200, _nanoseconds: 0 } }, // Jan 16, 2025
+        { field: 'adSpend', value: 2000, timestamp: { _seconds: 1736985600, _nanoseconds: 0 } }, // Jan 17, 2025
+        { field: 'leadsGenerated', value: 2, timestamp: { _seconds: 1737072000, _nanoseconds: 0 } }, // Jan 18, 2025
+        { field: 'status', value: 'Inactive', timestamp: { _seconds: 1737158400, _nanoseconds: 0 } }, // Jan 19, 2025
+      ],
+    },
+    {
+      id: '200006',
+      typeOfCards: 'Ad Campaigns',
+      campaignName: 'FB Lead Gen Jan',
+      platform: 'Facebook',
+      adSpend: 1000,
+      leadsGenerated: 2,
+      costPerLead: 500,
+      startDate: '2025-01-10',
+      status: 'Completed',
+      history: [
+        { field: 'adSpend', value: 500, timestamp: { _seconds: 1736467200, _nanoseconds: 0 } }, // Jan 10, 2025
+        { field: 'leadsGenerated', value: 1, timestamp: { _seconds: 1736553600, _nanoseconds: 0 } }, // Jan 11, 2025
+        { field: 'adSpend', value: 1000, timestamp: { _seconds: 1736640000, _nanoseconds: 0 } }, // Jan 12, 2025
+        { field: 'leadsGenerated', value: 2, timestamp: { _seconds: 1736726400, _nanoseconds: 0 } }, // Jan 13, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1736812800, _nanoseconds: 0 } }, // Jan 14, 2025
+      ],
+    },
+    // Business Partner Cards (4)
+    {
+      id: '300001',
+      typeOfCards: 'Business Partners',
+      businessName: 'FitGym Inc.',
+      contact: 'contact@fitgym.com',
+      negotiatedRate: 2000,
+      status: 'Active',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'status', value: 'Active', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'negotiatedRate', value: 2000, timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+      ],
+    },
+    {
+      id: '300002',
+      typeOfCards: 'Business Partners',
+      businessName: 'HealthCo',
+      contact: 'info@healthco.com',
+      negotiatedRate: 2500,
+      status: 'Active',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'status', value: 'Active', timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'negotiatedRate', value: 2500, timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+      ],
+    },
+    {
+      id: '300003',
+      typeOfCards: 'Business Partners',
+      businessName: 'Wellness Pros',
+      contact: 'support@wellnesspros.com',
+      negotiatedRate: 3000,
+      status: 'Pending',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1738281600, _nanoseconds: 0 } }, // Feb 1, 2025
+        { field: 'negotiatedRate', value: 3000, timestamp: { _seconds: 1738368000, _nanoseconds: 0 } }, // Feb 2, 2025
+      ],
+    },
+    {
+      id: '300004',
+      typeOfCards: 'Business Partners',
+      businessName: 'ActiveLife',
+      contact: 'info@activelife.com',
+      negotiatedRate: 1500,
+      status: 'Inactive',
+      history: [
+        { field: 'status', value: 'Active', timestamp: { _seconds: 1735689600, _nanoseconds: 0 } }, // Jan 1, 2025
+        { field: 'negotiatedRate', value: 1500, timestamp: { _seconds: 1735776000, _nanoseconds: 0 } }, // Jan 2, 2025
+        { field: 'status', value: 'Inactive', timestamp: { _seconds: 1738540800, _nanoseconds: 0 } }, // Feb 4, 2025
+      ],
+    },
+    // Payment Cards (10)
+    {
+      id: '400001',
+      typeOfCards: 'Payments',
+      leadId: '100001',
+      clientPayment: 5000,
+      partnerPayment: 2000,
+      paymentDate: '2025-04-10',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1743984000, _nanoseconds: 0 } }, // Apr 8, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744070400, _nanoseconds: 0 } }, // Apr 9, 2025
+      ],
+    },
+    {
+      id: '400002',
+      typeOfCards: 'Payments',
+      leadId: '100004',
+      clientPayment: 7500,
+      partnerPayment: 2500,
+      paymentDate: '2025-04-08',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1743724800, _nanoseconds: 0 } }, // Apr 5, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1743811200, _nanoseconds: 0 } }, // Apr 6, 2025
+      ],
+    },
+    {
+      id: '400003',
+      typeOfCards: 'Payments',
+      leadId: '100006',
+      clientPayment: 6000,
+      partnerPayment: 2000,
+      paymentDate: '2025-04-11',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1743897600, _nanoseconds: 0 } }, // Apr 7, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1743984000, _nanoseconds: 0 } }, // Apr 8, 2025
+      ],
+    },
+    {
+      id: '400004',
+      typeOfCards: 'Payments',
+      leadId: '100009',
+      clientPayment: 8000,
+      partnerPayment: 2500,
+      paymentDate: '2025-04-09',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1743811200, _nanoseconds: 0 } }, // Apr 6, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1743897600, _nanoseconds: 0 } }, // Apr 7, 2025
+      ],
+    },
+    {
+      id: '400005',
+      typeOfCards: 'Payments',
+      leadId: '100011',
+      clientPayment: 9000,
+      partnerPayment: 3000,
+      paymentDate: '2025-04-12',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744156800, _nanoseconds: 0 } }, // Apr 10, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744243200, _nanoseconds: 0 } }, // Apr 11, 2025
+      ],
+    },
+    {
+      id: '400006',
+      typeOfCards: 'Payments',
+      leadId: '100013',
+      client3Payment: 6500,
+      partnerPayment: 2000,
+      paymentDate: '2025-04-10',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744070400, _nanoseconds: 0 } }, // Apr 9, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744156800, _nanoseconds: 0 } }, // Apr 10, 2025
+      ],
+    },
+    {
+      id: '400007',
+      typeOfCards: 'Payments',
+      leadId: '100015',
+      clientPayment: 7000,
+      partnerPayment: 2500,
+      paymentDate: '2025-04-13',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744243200, _nanoseconds: 0 } }, // Apr 11, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744329600, _nanoseconds: 0 } }, // Apr 12, 2025
+      ],
+    },
+    {
+      id: '400008',
+      typeOfCards: 'Payments',
+      leadId: '100017',
+      clientPayment: 8500,
+      partnerPayment: 3000,
+      paymentDate: '2025-04-14',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744329600, _nanoseconds: 0 } }, // Apr 12, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744416000, _nanoseconds: 0 } }, // Apr 13, 2025
+      ],
+    },
+    {
+      id: '400009',
+      typeOfCards: 'Payments',
+      leadId: '100019',
+      clientPayment: 4000,
+      partnerPayment: 1500,
+      paymentDate: '2025-04-15',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744502400, _nanoseconds: 0 } }, // Apr 14, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744588800, _nanoseconds: 0 } }, // Apr 15, 2025
+      ],
+    },
+    {
+      id: '400010',
+      typeOfCards: 'Payments',
+      leadId: '100020',
+      clientPayment: 6000,
+      partnerPayment: 2000,
+      paymentDate: '2025-04-16',
+      status: 'Completed',
+      history: [
+        { field: 'status', value: 'Pending', timestamp: { _seconds: 1744588800, _nanoseconds: 0 } }, // Apr 15, 2025
+        { field: 'status', value: 'Completed', timestamp: { _seconds: 1744675200, _nanoseconds: 0 } }, // Apr 16, 2025
       ],
     },
   ]);
@@ -721,37 +725,34 @@ export const MainContextProvider = ({ children }) => {
     { key: 'name', name: 'NAME', type: 'text' },
     { key: 'phone', name: 'PHONE', type: 'text' },
     { key: 'email', name: 'EMAIL', type: 'text' },
-    { key: 'leadScore', name: 'LEAD SCORE', type: 'number' },
     {
-      key: 'nextActions',
-      name: 'NEXT ACTION',
+      key: 'leadStatus',
+      name: 'LEAD STATUS',
       type: 'dropdown',
-      options: [
-        'Call back',
-        'Send offer',
-        'Follow-up email',
-        'Schedule meeting',
-        'Close deal',
-      ],
+      options: ['New', 'Contacted', 'Converted', 'Lost'],
     },
+    { key: 'leadSource', name: 'LEAD SOURCE', type: 'text' },
     { key: 'followUpDate', name: 'FOLLOW UP DATE', type: 'date' },
-    { key: 'fullName', name: 'FULL NAME', type: 'text' },
-    { key: 'address', name: 'ADDRESS', type: 'text' },
+    { key: 'conversionValue', name: 'CONVERSION VALUE', type: 'currency' },
+    { key: 'campaignName', name: 'CAMPAIGN NAME', type: 'text' },
+    { key: 'platform', name: 'PLATFORM', type: 'text' },
+    { key: 'adSpend', name: 'AD SPEND', type: 'currency' },
+    { key: 'leadsGenerated', name: 'LEADS GENERATED', type: 'number' },
+    { key: 'costPerLead', name: 'COST PER LEAD', type: 'currency' },
+    { key: 'startDate', name: 'START DATE', type: 'date' },
     {
       key: 'status',
       name: 'STATUS',
       type: 'dropdown',
-      options: ['Active', 'Inactive', 'Pending'],
+      options: ['Active', 'Inactive', 'Pending', 'Completed'],
     },
+    { key: 'businessName', name: 'BUSINESS NAME', type: 'text' },
     { key: 'contact', name: 'CONTACT', type: 'text' },
-    { key: 'description', name: 'DESCRIPTION', type: 'text' },
-    { key: 'dueDate', name: 'DUE DATE', type: 'date' },
-    {
-      key: 'priority',
-      name: 'PRIORITY',
-      type: 'dropdown',
-      options: ['High', 'Medium', 'Low'],
-    },
+    { key: 'negotiatedRate', name: 'NEGOTIATED RATE', type: 'currency' },
+    { key: 'leadId', name: 'LEAD ID', type: 'text' },
+    { key: 'clientPayment', name: 'CLIENT PAYMENT', type: 'currency' },
+    { key: 'partnerPayment', name: 'PARTNER PAYMENT', type: 'currency' },
+    { key: 'paymentDate', name: 'PAYMENT DATE', type: 'date' },
   ]);
 
   const [cardTemplates, setCardTemplates] = useState([
@@ -761,21 +762,41 @@ export const MainContextProvider = ({ children }) => {
       sections: [
         {
           name: 'Contact Information',
-          keys: ['id', 'name', 'phone', 'email', 'leadScore', 'nextActions', 'followUpDate'],
+          keys: ['id', 'name', 'phone', 'email'],
         },
         {
-          name: 'Sales Process',
-          keys: [],
+          name: 'Lead Details',
+          keys: ['leadStatus', 'leadSource', 'followUpDate', 'conversionValue'],
         },
       ],
     },
     {
-      name: 'Business',
-      typeOfCards: 'Business',
+      name: 'Ad Campaigns',
+      typeOfCards: 'Ad Campaigns',
       sections: [
         {
-          name: 'Business Details',
-          keys: ['id', 'fullName', 'address', 'status'],
+          name: 'Campaign Information',
+          keys: ['id', 'campaignName', 'platform', 'adSpend', 'leadsGenerated', 'costPerLead', 'startDate', 'status'],
+        },
+      ],
+    },
+    {
+      name: 'Business Partners',
+      typeOfCards: 'Business Partners',
+      sections: [
+        {
+          name: 'Partner Information',
+          keys: ['id', 'businessName', 'contact', 'negotiatedRate', 'status'],
+        },
+      ],
+    },
+    {
+      name: 'Payments',
+      typeOfCards: 'Payments',
+      sections: [
+        {
+          name: 'Payment Information',
+          keys: ['id', 'leadId', 'clientPayment', 'partnerPayment', 'paymentDate', 'status'],
         },
       ],
     },
@@ -785,33 +806,43 @@ export const MainContextProvider = ({ children }) => {
     {
       category: 'Financials',
       metrics: [
-        { id: 'metric-revenue', name: 'Total Revenue', type: 'currency', value: '$10,000' },
-        { id: 'metric-payouts', name: 'Pending Payouts', type: 'currency', value: '$1,200' },
+        { id: 'metric-revenue', name: 'Total Revenue', type: 'currency', value: '$81,500' },
+        { id: 'metric-net-profit', name: 'Net Profit', type: 'currency', value: '$37,500' },
         {
           id: 'metric-revenue-trend',
           name: 'Revenue Trend',
           type: 'line',
           data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            values: [8000, 9000, 8500, 10000, 9500, 11000],
+            labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+            values: [0, 15000, 30000, 81500],
           },
         },
+        { id: 'metric-avg-client-payment', name: 'Avg Client Payment', type: 'currency', value: '$8,150' },
       ],
     },
     {
       category: 'Marketing',
       metrics: [
-        { id: 'metric-campaign-roi', name: 'Campaign ROI', type: 'multiplier', value: '2.5x' },
-        { id: 'metric-fb-ad', name: 'FB Ad Leads', type: 'text', value: '5 leads, $20/lead' },
-        { id: 'metric-google-ad', name: 'Google Ad Leads', type: 'text', value: '3 leads, $25/lead' },
-        { id: 'metric-campaign-status', name: 'Campaign Status', type: 'text', value: 'Active' },
+        { id: 'metric-campaign-roi', name: 'Campaign ROI', type: 'multiplier', value: '6.79x' },
+        { id: 'metric-fb-leads', name: 'FB Ad Leads', type: 'text', value: '10 leads, $600/lead' },
+        { id: 'metric-google-leads', name: 'Google Ad Leads', type: 'text', value: '7 leads, $571.43/lead' },
+        { id: 'metric-linkedin-leads', name: 'LinkedIn Ad Leads', type: 'text', value: '3 leads, $666.67/lead' },
         {
           id: 'metric-ad-spend',
           name: 'Ad Spend Distribution',
           type: 'pie',
           data: {
-            labels: ['Facebook', 'Google', 'LinkedIn', 'Other'],
-            values: [5000, 3000, 1500, 1000],
+            labels: ['Facebook', 'Google', 'LinkedIn'],
+            values: [6000, 4000, 2000],
+          },
+        },
+        {
+          id: 'metric-campaign-performance',
+          name: 'Campaign Performance',
+          type: 'bar',
+          data: {
+            labels: ['FB Q1', 'Google Q1', 'FB Q2', 'Google Q2', 'LinkedIn Q1', 'FB Jan'],
+            values: [8, 6, 4, 3, 2, 2],
           },
         },
       ],
@@ -819,35 +850,31 @@ export const MainContextProvider = ({ children }) => {
     {
       category: 'Leads',
       metrics: [
-        { id: 'metric-leads-score', name: 'Leads Score', type: 'number', value: '74' },
+        { id: 'metric-conversion-rate', name: 'Conversion Rate', type: 'percentage', value: '50%' },
         { id: 'metric-total-leads', name: 'Total Leads', type: 'number', value: '20' },
-        {
-          id: 'metric-close-rate',
-          name: 'Close Rate',
-          type: 'speedometer',
-          data: { value: 75 },
-        },
-        { id: 'metric-cost-per-lead', name: 'Cost Per Lead', type: 'currency', value: '$25.00' },
-        { id: 'metric-bottleneck', name: 'Bottleneck', type: 'text', value: 'Low close rate' },
+        { id: 'metric-cost-per-lead', name: 'Cost Per Lead', type: 'currency', value: '$600' },
         {
           id: 'metric-lead-growth',
           name: 'Lead Growth',
           type: 'bar',
           data: {
-            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-            values: [10, 15, 12, 20],
+            labels: ['Q1', 'Q2'],
+            values: [15, 5],
           },
         },
+        { id: 'metric-fb-conversion', name: 'FB Conversion Rate', type: 'percentage', value: '60%' },
+        { id: 'metric-google-conversion', name: 'Google Conversion Rate', type: 'percentage', value: '42.86%' },
+        { id: 'metric-linkedin-conversion', name: 'LinkedIn Conversion Rate', type: 'percentage', value: '66.67%' },
       ],
     },
   ]);
-  
+
   const [dashboards, setDashboards] = useState([
     {
       id: 'dashboard-1',
       dashboardWidgets: [
         {
-          id: 'widget-revenue-3',
+          id: 'widget-leads',
           size: 'small',
           title: 'Leads',
           metricId: 'metric-lead-growth',
@@ -855,7 +882,7 @@ export const MainContextProvider = ({ children }) => {
           dashboardId: 'dashboard-1',
         },
         {
-          id: 'widget-revenue-1',
+          id: 'widget-revenue',
           size: 'verySmall',
           title: 'Financials',
           metricId: 'metric-revenue',
@@ -863,19 +890,27 @@ export const MainContextProvider = ({ children }) => {
           dashboardId: 'dashboard-1',
         },
         {
-          id: 'widget-pending-4',
+          id: 'widget-profit',
           size: 'verySmall',
           title: 'Financials',
-          metricId: 'metric-payouts',
+          metricId: 'metric-net-profit',
           position: { row: 1, col: 1 },
           dashboardId: 'dashboard-1',
         },
         {
-          id: 'widget-pending-2',
+          id: 'widget-trend',
           size: 'medium',
-          title: 'Leads',
+          title: 'Financials',
           metricId: 'metric-revenue-trend',
           position: { row: 2, col: 0 },
+          dashboardId: 'dashboard-1',
+        },
+        {
+          id: 'widget-avg-payment',
+          size: 'small',
+          title: 'Financials',
+          metricId: 'metric-avg-client-payment',
+          position: { row: 2, col: 1 },
           dashboardId: 'dashboard-1',
         },
       ],
@@ -884,11 +919,27 @@ export const MainContextProvider = ({ children }) => {
       id: 'dashboard-2',
       dashboardWidgets: [
         {
-          id: 'widget-close-rate',
+          id: 'widget-ad-spend',
           size: 'large',
           title: 'Marketing',
           metricId: 'metric-ad-spend',
           position: { row: 0, col: 0 },
+          dashboardId: 'dashboard-2',
+        },
+        {
+          id: 'widget-campaign-performance',
+          size: 'medium',
+          title: 'Marketing',
+          metricId: 'metric-campaign-performance',
+          position: { row: 1, col: 0 },
+          dashboardId: 'dashboard-2',
+        },
+        {
+          id: 'widget-roi',
+          size: 'small',
+          title: 'Marketing',
+          metricId: 'metric-campaign-roi',
+          position: { row: 1, col: 1 },
           dashboardId: 'dashboard-2',
         },
       ],
@@ -897,27 +948,35 @@ export const MainContextProvider = ({ children }) => {
       id: 'dashboard-3',
       dashboardWidgets: [
         {
-          id: 'widget-campaign-roi',
+          id: 'widget-conversion-rate',
           size: 'small',
-          title: 'Marketing',
-          metricId: 'metric-campaign-roi',
+          title: 'Leads',
+          metricId: 'metric-conversion-rate',
           position: { row: 0, col: 0 },
           dashboardId: 'dashboard-3',
         },
         {
-          id: 'widget-top-campaign-1',
+          id: 'widget-fb-conversion',
           size: 'small',
-          title: 'Marketing',
-          metricId: 'metric-fb-ad',
+          title: 'Leads',
+          metricId: 'metric-fb-conversion',
           position: { row: 0, col: 1 },
           dashboardId: 'dashboard-3',
         },
         {
-          id: 'widget-top-campaign-2',
-          size: 'medium',
-          title: 'Marketing',
-          metricId: 'metric-lead-growth',
-          position: { row: 2, col: 0 },
+          id: 'widget-google-conversion',
+          size: 'small',
+          title: 'Leads',
+          metricId: 'metric-google-conversion',
+          position: { row: 1, col: 0 },
+          dashboardId: 'dashboard-3',
+        },
+        {
+          id: 'widget-linkedin-conversion',
+          size: 'small',
+          title: 'Leads',
+          metricId: 'metric-linkedin-conversion',
+          position: { row: 1, col: 1 },
           dashboardId: 'dashboard-3',
         },
       ],
@@ -930,12 +989,11 @@ export const MainContextProvider = ({ children }) => {
         ...category,
         metrics: category.metrics.map((metric) => {
           if (metric.config) {
-            // Check for cardTemplates or cards
             const filteredCards = metric.config.cardTemplates
               ? cards.filter((card) => metric.config.cardTemplates.includes(card.typeOfCards))
               : metric.config.cards
               ? cards.filter((card) => metric.config.cards.includes(card.id))
-              : cards; // Fallback to all cards
+              : cards;
             const data = computeMetricData(filteredCards, metric.config);
             return {
               ...metric,
@@ -943,7 +1001,7 @@ export const MainContextProvider = ({ children }) => {
               value:
                 metric.type === 'number'
                   ? data.datasets?.[0]?.data?.[data.datasets[0].data.length - 1] || 0
-                  : metric.value, // Preserve existing value for non-number metrics
+                  : metric.value,
             };
           }
           return metric;
@@ -957,15 +1015,21 @@ export const MainContextProvider = ({ children }) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  // Sync "All Cards" sheet rows with all card IDs
   useEffect(() => {
     setSheets((prev) => ({
       ...prev,
-      allSheets: prev.allSheets.map((sheet) =>
-        sheet.id === 'primarySheet'
-          ? { ...sheet, rows: cards.map((card) => card.id) }
-          : sheet
-      ),
+      allSheets: prev.allSheets.map((sheet) => {
+        if (sheet.id === 'leadsSheet') {
+          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Leads').map((card) => card.id) };
+        } else if (sheet.id === 'campaignsSheet') {
+          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Ad Campaigns').map((card) => card.id) };
+        } else if (sheet.id === 'partnersSheet') {
+          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Business Partners').map((card) => card.id) };
+        } else if (sheet.id === 'paymentsSheet') {
+          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Payments').map((card) => card.id) };
+        }
+        return sheet;
+      }),
     }));
   }, [cards]);
 
@@ -978,7 +1042,7 @@ export const MainContextProvider = ({ children }) => {
       localStorage.setItem('theme', themeRef.current);
     }
   }, [isDarkTheme]);
-  
+
   return (
     <MainContext.Provider
       value={{
