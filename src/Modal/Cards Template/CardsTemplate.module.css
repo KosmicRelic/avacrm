@@ -1,3 +1,4 @@
+/* Existing CardsTemplate.module.css styles (unchanged) */
 .templateWrapper {
   background: transparent;
   width: 100%;
@@ -23,7 +24,7 @@
   display: flex;
   flex-direction: column;
   padding: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease; /* Added for animations */
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .view.darkTheme {
@@ -125,11 +126,11 @@
 }
 
 .templateButton:disabled:hover {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .templateButton.darkTheme:disabled:hover {
-  background: rgba(44, 44, 46, 0.95);
+  background: rgba(56, 56, 60, 0.6);
 }
 
 .sectionContent {
@@ -345,13 +346,50 @@
 }
 
 .headerType {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 400;
   color: #8e8e93;
 }
 
 .keyItem.darkTheme .headerType {
   color: #d0d0d0;
+}
+
+.headerSection {
+  font-size: 14px;
+  font-weight: 400;
+  color: #8e8e93;
+}
+
+.headerSection.darkTheme {
+  color: #d0d0d0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.infoButton {
+  background: transparent;
+  border: none;
+  color: #007aff;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.infoButton.darkTheme {
+  color: #0a84ff;
+}
+
+.infoButton:hover {
+  color: #005bb5;
+}
+
+.infoButton.darkTheme:hover {
+  color: #0073e6;
 }
 
 .dragIcon {
@@ -468,32 +506,27 @@
 }
 
 .deleteButton {
-  width: 100%;
-  padding: 13.5px 16px;
-  margin-top: 24px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
+  background: none;
   border: none;
   color: #ff453a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  padding: 8px 12px;
   cursor: pointer;
-  flex: 0 0 auto;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
 }
 
 .deleteButton.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
   color: #ff453a;
 }
 
 .deleteButton:hover {
-  background: #f5f5f5;
+  background: rgba(255, 69, 58, 0.1);
 }
 
 .deleteButton.darkTheme:hover {
-  background: #3a3a3c;
+  background: rgba(255, 69, 58, 0.2);
 }
 
 .deleteSectionButton {
@@ -582,6 +615,163 @@
 
 .confirmButton.darkTheme:hover {
   background: #0073e6;
+}
+
+/* New styles from HeadersModal.module.css for Steps 4 and 5 */
+.editActions {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent;
+  padding: 16px 0;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.3s ease;
+}
+
+.editActions.darkTheme {
+  background: transparent;
+}
+
+.editActionsButtons {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.inputField,
+.selectField {
+  width: 100%;
+  padding: 13.5px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.inputField.darkTheme,
+.selectField.darkTheme {
+  color: #ffffff;
+  background: rgba(56, 56, 60, 0.6);
+}
+
+.inputField:focus,
+.selectField:focus {
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inputField.darkTheme:focus,
+.selectField.darkTheme:focus {
+  background: rgba(56, 56, 60, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.selectField {
+  padding-right: 32px;
+}
+
+.selectField.darkTheme {
+  background: rgba(56, 56, 60, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+}
+
+.optionsSection {
+  margin-top: 8px;
+}
+
+.optionInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.addOptionButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.addOptionButton.darkTheme {
+  color: #0a84ff;
+}
+
+.addOptionButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.addOptionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.optionsList {
+  margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: background 0.3s ease;
+}
+
+.optionItem.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+}
+
+.optionItem span {
+  color: #1d1d1f;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.optionItem.darkTheme span {
+  color: #ffffff;
+}
+
+.removeOptionButton {
+  background: none;
+  border: none;
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 12px;
+  transition: all 0.2s ease, color 0.3s ease;
+}
+
+.removeOptionButton.darkTheme {
+  color: #ff453a;
+}
+
+.removeOptionButton:hover {
+  background: rgba(255, 69, 58, 0.1);
+}
+
+.removeOptionButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2);
 }
 
 /* Animations */

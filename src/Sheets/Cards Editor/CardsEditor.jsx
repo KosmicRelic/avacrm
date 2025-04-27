@@ -3,6 +3,25 @@ import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 
+// Utility function to format field names
+const formatFieldName = (key) => {
+  // Handle all-caps (e.g., "LEADSOURCE" → "Lead Source")
+  if (key === key.toUpperCase()) {
+    return key
+      .split(/[_-]/) // Split on underscores or hyphens
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+  // Handle camelCase (e.g., "leadSource" → "Lead Source") or snake_case (e.g., "lead_source")
+  return key
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/[_-]/g, ' ') // Replace underscores/hyphens with spaces
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const CardsEditor = ({
   onClose,
   onSave,
@@ -35,16 +54,16 @@ const CardsEditor = ({
       fields: section.keys
         .filter((key) => key !== 'id' && key !== 'typeOfCards')
         .map((key) => {
-          const header = headers?.find((h) => h.key === key);
+          const header = template.headers?.find((h) => h.key === key);
           return {
             key,
-            name: header?.name || key.charAt(0).toUpperCase() + key.slice(1),
+            name: header?.name || formatFieldName(key),
             type: header?.type || 'text',
             options: header?.options || [],
           };
         }),
     }));
-  }, [selectedCardType, cardTemplates, headers, isEditing, initialRowData]);
+  }, [selectedCardType, cardTemplates, isEditing, initialRowData]);
 
   // Compute historical form data based on selected history date
   const historicalFormData = useMemo(() => {

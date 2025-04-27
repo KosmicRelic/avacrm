@@ -1,10 +1,10 @@
-import { useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
-import PropTypes from "prop-types";
-import styles from "./EditSheetsModal.module.css";
-import { MainContext } from "../../Contexts/MainContext";
-import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaEye, FaEyeSlash, FaThumbtack } from "react-icons/fa";
-import { MdFilterAlt, MdFilterAltOff } from "react-icons/md";
+import { useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
+import styles from './EditSheetsModal.module.css';
+import { MainContext } from '../../Contexts/MainContext';
+import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
+import { FaEye, FaEyeSlash, FaThumbtack } from 'react-icons/fa';
+import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 
 const EditSheetsModal = ({
   isEditMode = false,
@@ -15,9 +15,9 @@ const EditSheetsModal = ({
   onDeleteSheet,
   handleClose,
 }) => {
-  const { headers: allHeaders, isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
-  const [sheetName, setSheetName] = useState(tempData.sheetName || "");
+  const [sheetName, setSheetName] = useState(tempData.sheetName || '');
   const [currentHeaders, setCurrentHeaders] = useState(() => {
     const uniqueHeaders = [];
     const seenKeys = new Set();
@@ -42,13 +42,39 @@ const EditSheetsModal = ({
   // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.id;
 
+  // Get all available headers from all sheets
+  const allHeaders = useMemo(() => {
+    const headersBySheet = sheets.allSheets
+      .filter((sheet) => sheet.sheetName !== sheetName) // Exclude current sheet
+      .map((sheet) => ({
+        sheetName: sheet.sheetName,
+        headers: (sheet.headers || []).map((header) => ({
+          key: header.key,
+          name: header.name,
+          type: header.type,
+          options: header.options || [],
+        })),
+      }));
+    // Include current sheet's headers (for consistency)
+    const currentSheetHeaders = {
+      sheetName: sheetName || 'Current Sheet',
+      headers: currentHeaders.map((header) => ({
+        key: header.key,
+        name: header.name,
+        type: header.type,
+        options: header.options || [],
+      })),
+    };
+    return [currentSheetHeaders, ...headersBySheet];
+  }, [sheets.allSheets, sheetName, currentHeaders]);
+
   // Initialize modal config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
         steps: [
           {
-            title: isEditMode ? "Edit Sheet" : "Create Sheet",
+            title: isEditMode ? 'Edit Sheet' : 'Create Sheet',
             rightButton: null,
           },
         ],
@@ -57,8 +83,8 @@ const EditSheetsModal = ({
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: isEditMode ? "Edit Sheet" : "Create Sheet",
-        backButtonTitle: "",
+        title: isEditMode ? 'Edit Sheet' : 'Create Sheet',
+        backButtonTitle: '',
         rightButton: null,
       });
       hasInitialized.current = true;
@@ -77,22 +103,9 @@ const EditSheetsModal = ({
     }
   }, [sheetName, currentHeaders, rows, setTempData]);
 
-  const resolvedHeaders = useMemo(
-    () =>
-      currentHeaders.map((header) => {
-        const globalHeader = allHeaders.find((h) => h.key === header.key);
-        return {
-          ...header,
-          name: header.name || (globalHeader ? globalHeader.name : header.key),
-          type: header.type || (globalHeader ? globalHeader.type : "text"),
-        };
-      }),
-    [currentHeaders, allHeaders]
-  );
-
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.effectAllowed = 'move';
     const element = headerRefs.current.get(index);
     if (element) element.classList.add(styles.dragging);
   }, []);
@@ -200,7 +213,7 @@ const EditSheetsModal = ({
     });
   }, []);
 
-  const addHeader = useCallback((headerKey) => {
+  const addHeader = useCallback((headerKey, headerDetails) => {
     setCurrentHeaders((prev) => {
       if (prev.some((h) => h.key === headerKey)) {
         console.warn(`Duplicate header key "${headerKey}" ignored`);
@@ -208,15 +221,21 @@ const EditSheetsModal = ({
       }
       return [
         ...prev,
-        { key: headerKey, visible: true, hidden: false },
+        {
+          key: headerKey,
+          name: headerDetails.name,
+          type: headerDetails.type,
+          options: headerDetails.options || [],
+          visible: true,
+          hidden: false,
+        },
       ];
     });
   }, []);
 
   const handleSheetNameChange = useCallback(
     (e) => {
-      // Prevent renaming for primarySheet
-      if (sheetId === "primarySheet") {
+      if (sheetId === 'primarySheet') {
         return;
       }
       setSheetName(e.target.value);
@@ -225,39 +244,49 @@ const EditSheetsModal = ({
   );
 
   return (
-    <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ""}`}>
+    <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <input
-        type="text"
+        type='text'
         value={sheetName}
         onChange={handleSheetNameChange}
-        placeholder={isEditMode ? "Rename sheet" : "Sheet Name"}
-        className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-        disabled={sheetId === "primarySheet"} // Disable input for primarySheet
+        placeholder={isEditMode ? 'Rename sheet' : 'Sheet Name'}
+        className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+        disabled={sheetId === 'primarySheet'}
       />
       <select
         onChange={(e) => {
-          const selectedKey = e.target.value;
-          if (selectedKey) addHeader(selectedKey);
-          e.target.value = "";
+          const [sheetName, headerKey] = e.target.value.split(':');
+          if (headerKey) {
+            const sourceSheet = allHeaders.find((sh) => sh.sheetName === sheetName);
+            const headerDetails = sourceSheet.headers.find((h) => h.key === headerKey);
+            if (headerDetails) {
+              addHeader(headerKey, headerDetails);
+            }
+          }
+          e.target.value = '';
         }}
-        className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+        className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
       >
-        <option value="">Add Column</option>
-        {allHeaders
-          .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
-          .map((header, index) => (
-            <option key={`${header.key}-${index}`} value={header.key}>
-              {header.name} ({header.type})
-            </option>
-          ))}
+        <option value=''>Add Column</option>
+        {allHeaders.map((sheet) => (
+          <optgroup key={sheet.sheetName} label={sheet.sheetName}>
+            {sheet.headers
+              .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
+              .map((header) => (
+                <option key={`${sheet.sheetName}:${header.key}`} value={`${sheet.sheetName}:${header.key}`}>
+                  {header.name} ({header.type})
+                </option>
+              ))}
+          </optgroup>
+        ))}
       </select>
-      <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {resolvedHeaders.map((header, index) => (
+      <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        {currentHeaders.map((header, index) => (
           <div
             ref={(el) => headerRefs.current.set(index, el)}
             key={header.key}
-            className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ""} ${
-              isDarkTheme ? styles.darkTheme : ""
+            className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ''} ${
+              isDarkTheme ? styles.darkTheme : ''
             }`}
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
@@ -271,8 +300,8 @@ const EditSheetsModal = ({
               <div className={styles.headerLeft}>
                 <button
                   onClick={() => togglePin(header.key)}
-                  className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ""} ${
-                    isDarkTheme ? styles.darkTheme : ""
+                  className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ''} ${
+                    isDarkTheme ? styles.darkTheme : ''
                   }`}
                 >
                   <FaThumbtack />
@@ -280,7 +309,7 @@ const EditSheetsModal = ({
                 {pinnedStates[header.key] && (
                   <button
                     onClick={() => removeHeader(header.key)}
-                    className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
                     Remove
                   </button>
@@ -290,18 +319,18 @@ const EditSheetsModal = ({
               <div className={styles.actions}>
                 <button
                   onClick={() => toggleHidden(index)}
-                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 >
                   {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
                 </button>
                 <button
                   onClick={() => toggleVisible(index)}
-                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 >
                   {header.visible ? <FaEye /> : <FaEyeSlash />}
                 </button>
                 <div className={styles.buttonSpacer}></div>
-                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   ☰
                 </span>
               </div>
@@ -309,7 +338,7 @@ const EditSheetsModal = ({
           </div>
         ))}
       </div>
-      {isEditMode && sheetId !== "primarySheet" && (
+      {isEditMode && sheetId !== 'primarySheet' && (
         <div className={styles.deleteButtonContainer}>
           <button
             onClick={() => {
@@ -318,8 +347,8 @@ const EditSheetsModal = ({
                 handleClose({ fromDelete: true });
               }
             }}
-            className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            aria-label="Delete Sheet"
+            className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            aria-label='Delete Sheet'
           >
             Delete Sheet
           </button>
@@ -333,11 +362,23 @@ EditSheetsModal.propTypes = {
   isEditMode: PropTypes.bool,
   tempData: PropTypes.shape({
     sheetName: PropTypes.string,
-    currentHeaders: PropTypes.arrayOf(PropTypes.object),
+    currentHeaders: PropTypes.arrayOf(PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      name: PropTypes.string,
+      type: PropTypes.string,
+      options: PropTypes.array,
+      visible: PropTypes.bool,
+      hidden: PropTypes.bool,
+    })),
     rows: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  sheets: PropTypes.object,
+  sheets: PropTypes.shape({
+    allSheets: PropTypes.arrayOf(PropTypes.shape({
+      sheetName: PropTypes.string,
+      headers: PropTypes.arrayOf(PropTypes.object),
+    })),
+  }),
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
   handleClose: PropTypes.func,

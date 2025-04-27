@@ -9,7 +9,6 @@ import PropTypes from "prop-types"; // Added for propTypes
 const ProfileModal = ({
   isOpen,
   onClose,
-  onOpenHeadersModal,
   setActiveOption,
   onOpenCardsTemplateModal,
   onOpenSheetsModal,
@@ -71,12 +70,6 @@ const ProfileModal = ({
           <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={() => handleButtonClick(onOpenHeadersModal)}
-          >
-            Headers
-          </button>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             onClick={handleCardsClick}
           >
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
@@ -91,7 +84,6 @@ const ProfileModal = ({
 ProfileModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onOpenHeadersModal: PropTypes.func.isRequired,
   setActiveOption: PropTypes.func.isRequired,
   onOpenCardsTemplateModal: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,

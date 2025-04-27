@@ -3,16 +3,21 @@ import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
+import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaInfoCircle } from "react-icons/fa";
 import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
+import { v4 as uuidv4 } from "uuid";
 
 const CardsTemplate = ({ tempData, setTempData }) => {
-  const { cardTemplates, headers, isDarkTheme } = useContext(MainContext);
-  const { registerModalSteps, goToStep, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
+  const { cardTemplates, isDarkTheme } = useContext(MainContext);
+  const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates).map((t) => ({ ...t, sections: t.sections.map((s) => ({ ...s })) }))
+    (tempData.currentCardTemplates || cardTemplates).map((t) => ({
+      ...t,
+      headers: t.headers || [],
+      sections: t.sections.map((s) => ({ ...s })),
+    }))
   );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
@@ -23,12 +28,49 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [newTemplateName, setNewTemplateName] = useState("");
-  const [navigationDirection, setNavigationDirection] = useState(null); // Track navigation direction
+  const [activeHeaderIndex, setActiveHeaderIndex] = useState(null);
+  const [newHeaderName, setNewHeaderName] = useState("");
+  const [newHeaderType, setNewHeaderType] = useState("text");
+  const [newHeaderSection, setNewHeaderSection] = useState("");
+  const [newHeaderOptions, setNewHeaderOptions] = useState([]);
+  const [newOption, setNewOption] = useState("");
+  const [navigationDirection, setNavigationDirection] = useState(null);
   const keyRefs = useRef(new Map());
-  const inputRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
-  const prevStepRef = useRef(currentStep); // Track previous step
+  const prevStepRef = useRef(currentStep);
+
+  // Reset header form
+  const resetHeaderForm = useCallback(() => {
+    setNewHeaderName("");
+    setNewHeaderType("text");
+    setNewHeaderSection("");
+    setNewHeaderOptions([]);
+    setNewOption("");
+  }, []);
+
+  // Handle back navigation
+  const handleBack = useCallback(() => {
+    if (currentStep === 5 || currentStep === 4) {
+      setActiveHeaderIndex(null);
+      resetHeaderForm();
+      goBack(); // Use goBack to return to Step 3
+    } else if (currentStep === 3) {
+      setCurrentSectionIndex(null);
+      setActiveHeaderIndex(null);
+      goBack(); // Use goBack to return to Step 2
+    } else if (currentStep === 2) {
+      if (editMode) {
+        setEditMode(false); // Cancel edit mode
+      } else {
+        setSelectedTemplateIndex(null);
+        goBack(); // Use goBack to return to Step 1
+      }
+    } else {
+      goBack();
+    }
+    setNavigationDirection("backward");
+  }, [currentStep, goBack, editMode, resetHeaderForm]);
 
   // Sync currentCardTemplates to tempData
   useEffect(() => {
@@ -38,6 +80,162 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       prevCardTemplatesRef.current = currentCardTemplates;
     }
   }, [currentCardTemplates, setTempData]);
+
+  // Validate header name
+  const validateHeader = useCallback(
+    (name, existingHeaders, isUpdate = false, index = null) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        alert("Field name must be non-empty.");
+        return false;
+      }
+      const nameConflict = existingHeaders.some(
+        (h, i) => h.name.toLowerCase() === trimmedName.toLowerCase() && (!isUpdate || i !== index)
+      );
+      if (nameConflict) {
+        alert(`A field with the name "${trimmedName}" already exists.`);
+        return false;
+      }
+      return true;
+    },
+    []
+  );
+
+  // Add new header
+  const addHeader = useCallback(() => {
+    if (selectedTemplateIndex === null) return;
+    const existingHeaders = currentCardTemplates[selectedTemplateIndex].headers;
+    if (!validateHeader(newHeaderName, existingHeaders)) return;
+    if (!newHeaderSection) {
+      alert("Please select a section for the field.");
+      return;
+    }
+
+    const newHeader = {
+      key: uuidv4(),
+      name: newHeaderName.trim(),
+      type: newHeaderType,
+      section: newHeaderSection,
+      isUsed: false,
+      ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
+    };
+
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev];
+      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      currentTemplate.headers = [...currentTemplate.headers, newHeader];
+      newTemplates[selectedTemplateIndex] = currentTemplate;
+      return newTemplates;
+    });
+    resetHeaderForm();
+    setActiveHeaderIndex(null);
+    setNavigationDirection("backward");
+    goBack(); // Use goBack to return to Step 3
+  }, [
+    newHeaderName,
+    newHeaderType,
+    newHeaderSection,
+    newHeaderOptions,
+    selectedTemplateIndex,
+    validateHeader,
+    resetHeaderForm,
+    goBack,
+  ]);
+
+  // Update existing header
+  const updateHeader = useCallback(
+    (index) => {
+      if (selectedTemplateIndex === null) return;
+      const existingHeaders = currentCardTemplates[selectedTemplateIndex].headers;
+      if (!validateHeader(newHeaderName, existingHeaders, true, index)) return;
+      if (!newHeaderSection) {
+        alert("Please select a section for the field.");
+        return;
+      }
+
+      setCurrentCardTemplates((prev) => {
+        const newTemplates = [...prev];
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        const existingHeader = currentTemplate.headers[index];
+        currentTemplate.headers[index] = {
+          ...existingHeader,
+          name: newHeaderName.trim(),
+          type: newHeaderType,
+          section: newHeaderSection,
+          ...(newHeaderType === "dropdown" ? { options: [...newHeaderOptions] } : { options: undefined }),
+        };
+        newTemplates[selectedTemplateIndex] = currentTemplate;
+        return newTemplates;
+      });
+      resetHeaderForm();
+      setActiveHeaderIndex(null);
+      setNavigationDirection("backward");
+      goBack(); // Use goBack to return to Step 3
+    },
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack]
+  );
+
+  // Delete header
+  const deleteHeader = useCallback(
+    (index) => {
+      if (selectedTemplateIndex === null) return;
+      const headerName = currentCardTemplates[selectedTemplateIndex].headers[index].name;
+      if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
+        setCurrentCardTemplates((prev) => {
+          const newTemplates = [...prev];
+          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+          const deletedKey = currentTemplate.headers[index].key;
+          currentTemplate.headers = currentTemplate.headers.filter((_, i) => i !== index);
+          currentTemplate.sections = currentTemplate.sections.map((section) => ({
+            ...section,
+            keys: section.keys.filter((k) => k !== deletedKey),
+          }));
+          newTemplates[selectedTemplateIndex] = currentTemplate;
+          return newTemplates;
+        });
+        setActiveHeaderIndex(null);
+        setNavigationDirection("backward");
+        goBack(); // Use goBack to return to Step 3
+      }
+    },
+    [selectedTemplateIndex, goBack]
+  );
+
+  // Save header (add or update)
+  const saveHeader = useCallback(() => {
+    if (activeHeaderIndex === -1) {
+      addHeader();
+    } else if (activeHeaderIndex !== null) {
+      updateHeader(activeHeaderIndex);
+    }
+  }, [activeHeaderIndex, addHeader, updateHeader]);
+
+  // Add dropdown option
+  const addOption = useCallback(() => {
+    if (newOption.trim() && !newHeaderOptions.includes(newOption.trim())) {
+      setNewHeaderOptions((prev) => [...prev, newOption.trim()]);
+      setNewOption("");
+    }
+  }, [newOption, newHeaderOptions]);
+
+  // Remove dropdown option
+  const removeOption = useCallback((option) => {
+    setNewHeaderOptions((prev) => prev.filter((opt) => opt !== option));
+  }, []);
+
+  // Handle key press for saving header or adding option
+  const handleKeyPress = useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        if (newHeaderType === "dropdown" && e.target.value === newOption) {
+          addOption();
+        } else {
+          saveHeader();
+        }
+      }
+    },
+    [saveHeader, newHeaderType, newOption, addOption]
+  );
 
   // Initialize modal steps
   useEffect(() => {
@@ -64,6 +262,27 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               : "Section",
           rightButton: null,
         },
+        {
+          title: () =>
+            activeHeaderIndex !== null && currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex]
+              ? currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].name || "Edit Field"
+              : "Edit Field",
+          rightButton: {
+            label: "Save",
+            onClick: saveHeader,
+            isActive: true,
+            isRemove: false,
+          },
+        },
+        {
+          title: "Create New Field",
+          rightButton: {
+            label: "Save",
+            onClick: saveHeader,
+            isActive: true,
+            isRemove: false,
+          },
+        },
       ];
 
       registerModalSteps({ steps });
@@ -76,17 +295,28 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         leftButton: null,
       });
     }
-  }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, currentCardTemplates]);
+  }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, currentCardTemplates, saveHeader]);
 
-  // Update modal config based on step and state changes
+  // Update modal config
   useEffect(() => {
-    if (currentStep === 2) {
-      setModalConfig((prev) => ({
-        ...prev,
-        title: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
+    if (currentStep === 1) {
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: false,
+        title: "Card Templates",
+        backButtonTitle: "",
+        leftButton: null,
+        rightButton: null,
+      });
+    } else if (currentStep === 2) {
+      setModalConfig({
+        showTitle: true,
         showDoneButton: false,
         showBackButton: !editMode,
         backButtonTitle: "Card Templates",
+        backButton: editMode ? null : { label: "Card Templates", onClick: handleBack },
+        title: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -111,55 +341,134 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               isRemove: false,
               color: "blue",
             },
-      }));
-    } else if (currentStep === 1) {
-      setModalConfig((prev) => ({
-        ...prev,
-        title: "Card Templates",
-        showDoneButton: true,
-        showBackButton: false,
-        leftButton: null,
-        rightButton: null,
-      }));
-    } else {
-      setModalConfig((prev) => ({
-        ...prev,
-        title:
-          currentStep === 3 && currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]
-            ? currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
-            : prev.title,
+      });
+    } else if (currentStep === 3) {
+      setModalConfig({
+        showTitle: true,
         showDoneButton: false,
         showBackButton: true,
+        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
+        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
+        title: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
         leftButton: null,
-        rightButton: null,
-      }));
+        rightButton: {
+          label: "Add Field",
+          onClick: () => handleCreateHeader(),
+          isActive: true,
+          isRemove: false,
+          color: "blue",
+        },
+      });
+    } else if (currentStep === 4) {
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        title: currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex]?.name || "Edit Field",
+        leftButton: null,
+        rightButton: {
+          label: "Save",
+          onClick: saveHeader,
+          isActive: true,
+          isRemove: false,
+        },
+      });
+    } else if (currentStep === 5) {
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        title: "Create New Field",
+        leftButton: null,
+        rightButton: {
+          label: "Save",
+          onClick: saveHeader,
+          isActive: true,
+          isRemove: false,
+        },
+      });
     }
 
-    // Set navigation direction based on step change
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, handleBack]);
 
+  // Add new section
+  const addSection = useCallback(() => {
+    if (selectedTemplateIndex === null) return;
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev];
+      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      const newSectionName = `Section ${currentTemplate.sections.length + 1}`;
+      if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.toLowerCase())) {
+        alert(`Section name "${newSectionName}" already exists. Please use a unique name.`);
+        return prev;
+      }
+      currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName, keys: [] }];
+      newTemplates[selectedTemplateIndex] = currentTemplate;
+      return newTemplates;
+    });
+  }, [selectedTemplateIndex]);
+
+  // Update section name
+  const updateSectionName = useCallback(
+    (index, newName) => {
+      if (selectedTemplateIndex === null) return;
+      setCurrentCardTemplates((prev) => {
+        const newTemplates = [...prev];
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        if (
+          newName.trim() &&
+          currentTemplate.sections.some(
+            (s, i) => i !== index && s.name.toLowerCase() === newName.trim().toLowerCase()
+          )
+        ) {
+          alert(`Section name "${newName}" already exists. Please use a unique name.`);
+          return prev;
+        }
+        const oldName = currentTemplate.sections[index].name;
+        currentTemplate.sections[index].name = newName.trim();
+        currentTemplate.headers = currentTemplate.headers.map((h) =>
+          h.section === oldName ? { ...h, section: newName.trim() } : h
+        );
+        newTemplates[selectedTemplateIndex] = currentTemplate;
+        return newTemplates;
+      });
+    },
+    [selectedTemplateIndex]
+  );
+
+  // Delete section
   const handleDeleteSection = useCallback(
     (index) => {
+      if (selectedTemplateIndex === null) return;
       const sectionName = currentCardTemplates[selectedTemplateIndex].sections[index].name;
       if (window.confirm(`Are you sure you want to delete the section "${sectionName}"?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
           const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+          const deletedSection = currentTemplate.sections[index];
           currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
+          currentTemplate.headers = currentTemplate.headers.map((h) =>
+            h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
+          );
           newTemplates[selectedTemplateIndex] = currentTemplate;
           return newTemplates;
         });
         setNavigationDirection("backward");
-        goToStep(2);
+        goBack(); // Use goBack to return to Step 2
       }
     },
-    [selectedTemplateIndex, goToStep]
+    [selectedTemplateIndex, goBack]
   );
 
+  // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     setDraggedIndex(index);
     setDraggedSectionIndex(sectionIndex);
@@ -263,6 +572,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     };
   }, [handleDragEnd, handleTouchEnd]);
 
+  // Open template editor
   const handleOpenEditor = useCallback(
     (template = null) => {
       if (template) {
@@ -285,6 +595,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [currentCardTemplates, goToStep]
   );
 
+  // Confirm new template
   const confirmNewTemplate = useCallback(() => {
     if (!newTemplateName.trim()) {
       alert("Please enter a template name.");
@@ -298,6 +609,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     const newTemplate = {
       name: newTemplateName.trim(),
       typeOfCards: newTemplateName.trim(),
+      headers: [],
       sections: [],
     };
 
@@ -311,8 +623,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     goToStep(2);
   }, [newTemplateName, currentCardTemplates, goToStep]);
 
+  // Update template name
   const updateTemplateName = useCallback(
     (newName) => {
+      if (selectedTemplateIndex === null) return;
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         if (
@@ -333,43 +647,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [selectedTemplateIndex]
   );
 
-  const addSection = useCallback(() => {
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev];
-      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-      const newSectionName = `Section ${currentTemplate.sections.length + 1}`;
-      if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.toLowerCase())) {
-        alert(`Section name "${newSectionName}" already exists. Please use a unique name.`);
-        return prev;
-      }
-      currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName, keys: [] }];
-      newTemplates[selectedTemplateIndex] = currentTemplate;
-      return newTemplates;
-    });
-  }, [selectedTemplateIndex]);
-
-  const updateSectionName = useCallback(
-    (index, newName) => {
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-        if (
-          newName.trim() &&
-          currentTemplate.sections.some(
-            (s, i) => i !== index && s.name.toLowerCase() === newName.trim().toLowerCase()
-          )
-        ) {
-          alert(`Section name "${newName}" already exists. Please use a unique name.`);
-          return prev;
-        }
-        currentTemplate.sections[index].name = newName.trim();
-        newTemplates[selectedTemplateIndex] = currentTemplate;
-        return newTemplates;
-      });
-    },
-    [selectedTemplateIndex]
-  );
-
+  // Edit section
   const handleEditSection = useCallback(
     (index) => {
       setCurrentSectionIndex(index);
@@ -379,17 +657,26 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [goToStep]
   );
 
+  // Toggle key selection
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
+      if (selectedTemplateIndex === null || sectionIndex === null) return;
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex], headers: [...newTemplates[selectedTemplateIndex].headers] };
         const newSections = [...currentTemplate.sections];
-        const section = { ...newSections[sectionIndex] };
+        const section = { ...newSections[sectionIndex], keys: [...newSections[sectionIndex].keys] };
         const isSelected = section.keys.includes(key);
-        section.keys = isSelected ? section.keys.filter((k) => k !== key) : [...section.keys, key];
+        if (isSelected) {
+          section.keys = section.keys.filter((k) => k !== key);
+        } else {
+          section.keys.push(key);
+        }
         newSections[sectionIndex] = section;
         currentTemplate.sections = newSections;
+        currentTemplate.headers = currentTemplate.headers.map((h) =>
+          h.key === key ? { ...h, isUsed: !isSelected } : { ...h }
+        );
         newTemplates[selectedTemplateIndex] = currentTemplate;
         return newTemplates;
       });
@@ -397,15 +684,20 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [selectedTemplateIndex]
   );
 
+  // Delete key from section
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
-      if (window.confirm(`Are you sure you want to delete "${key}" from this section?`)) {
+      if (selectedTemplateIndex === null || sectionIndex === null) return;
+      if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+          const currentTemplate = { ...newTemplates[selectedTemplateIndex], headers: [...newTemplates[selectedTemplateIndex].headers] };
           const newSections = [...currentTemplate.sections];
           newSections[sectionIndex].keys = newSections[sectionIndex].keys.filter((k) => k !== key);
           currentTemplate.sections = newSections;
+          currentTemplate.headers = currentTemplate.headers.map((h) =>
+            h.key === key ? { ...h, isUsed: false } : { ...h }
+          );
           newTemplates[selectedTemplateIndex] = currentTemplate;
           return newTemplates;
         });
@@ -414,25 +706,22 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [selectedTemplateIndex]
   );
 
-  const getUsedKeysInOtherSections = useCallback(() => {
+  // Filter headers for search
+  const filteredHeaders = useCallback(() => {
     if (selectedTemplateIndex === null || currentSectionIndex === null) return [];
-    const currentTemplate = currentCardTemplates[selectedTemplateIndex];
-    return currentTemplate.sections
-      .filter((_, i) => i !== currentSectionIndex)
-      .flatMap((section) => section.keys);
-  }, [currentCardTemplates, selectedTemplateIndex, currentSectionIndex]);
-
-  const filteredHeaders = headers.filter((header) => {
-    const usedKeysInOtherSections = getUsedKeysInOtherSections();
+    const sectionKeys = currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.keys || [];
     return (
-      !currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.keys.includes(header.key) &&
-      !usedKeysInOtherSections.includes(header.key) &&
-      [header.name, header.type, header.key].some((field) =>
-        field.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      currentCardTemplates[selectedTemplateIndex]?.headers?.filter(
+        (header) =>
+          !sectionKeys.includes(header.key) &&
+          [header.name, header.type, header.section].some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      ) || []
     );
-  });
+  }, [currentCardTemplates, selectedTemplateIndex, currentSectionIndex, searchQuery]);
 
+  // Delete template
   const handleDeleteTemplate = useCallback(() => {
     if (selectedTemplateIndex === null) return;
     const templateName = currentCardTemplates[selectedTemplateIndex].name;
@@ -443,14 +732,39 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         setEditMode(false);
         setNavigationDirection("backward");
         goToStep(1);
+        return newTemplates;
       });
     }
   }, [selectedTemplateIndex, currentCardTemplates, goToStep]);
 
+  // Edit header
+  const handleEditHeader = useCallback(
+    (index) => {
+      if (selectedTemplateIndex === null) return;
+      setActiveHeaderIndex(index);
+      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
+      setNewHeaderName(header.name);
+      setNewHeaderType(header.type || "text");
+      setNewHeaderSection(header.section || "");
+      setNewHeaderOptions(header.options || []);
+      setNavigationDirection("forward");
+      goToStep(4);
+    },
+    [selectedTemplateIndex, currentCardTemplates, goToStep]
+  );
+
+  // Create new header
+  const handleCreateHeader = useCallback(() => {
+    setActiveHeaderIndex(-1);
+    resetHeaderForm();
+    setNavigationDirection("forward");
+    goToStep(5);
+  }, [resetHeaderForm, goToStep]);
+
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3].map((step) => (
+        {[1, 2, 3, 4, 5].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
@@ -460,9 +774,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
             } ${
               step === currentStep && navigationDirection === "backward" ? styles.animateBackward : ""
             }`}
-            style={{
-              display: step !== currentStep ? "none" : "block",
-            }}
+            style={{ display: step !== currentStep ? "none" : "block" }}
           >
             {step === 1 && (
               <>
@@ -498,9 +810,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                       className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                       disabled={!editMode}
                     />
-                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      Sections
-                    </h3>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h3>
                     <div className={styles.templateList}>
                       {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
                         <div className={`${styles.sectionItem} ${isDarkTheme ? styles.darkTheme : ""}`} key={index}>
@@ -514,7 +824,9 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                             </span>
                             {!editMode && (
                               <span className={`${styles.chevronContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                <IoChevronForward className={`${styles.chevronIcon} ${isDarkTheme ? styles.darkTheme : ""}`} />
+                                <IoChevronForward
+                                  className={`${styles.chevronIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                />
                               </span>
                             )}
                           </button>
@@ -576,17 +888,18 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search headers by name, type, or key"
+                    placeholder="Search fields by name, type, or section"
                     className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                   />
                 </div>
                 <div className={styles.section}>
                   {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
-                    const header = headers.find((h) => h.key === key) || {
+                    const header = currentCardTemplates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
                       key,
                       name: key,
                       type: "text",
                     };
+                    const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
                     return (
                       <div
                         ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
@@ -616,7 +929,9 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         )}
                         <div className={styles.headerContent}>
                           <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) ? (
+                            {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                              header.key
+                            ) ? (
                               <FaRegCheckCircle size={18} className={styles.checked} />
                             ) : (
                               <FaRegCircle size={18} />
@@ -624,35 +939,66 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                           </span>
                           <span className={styles.headerName}>{header.name}</span>
                           <span className={styles.headerType}>({header.type})</span>
+                          {header.section && <span className={styles.headerSection}>- {header.section}</span>}
                         </div>
                         {!editMode && (
-                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                          <div className={styles.headerActions}>
+                            <button
+                              className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                headerIndex !== -1 && handleEditHeader(headerIndex);
+                              }}
+                            >
+                              <FaInfoCircle />
+                            </button>
+                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                          </div>
                         )}
                       </div>
                     );
                   })}
-                  {filteredHeaders.map((header, index) => (
-                    <div
-                      key={index}
-                      className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
-                    >
-                      <div className={styles.headerContent}>
-                        <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(header.key) ? (
-                            <FaRegCheckCircle size={18} className={styles.checked} />
-                          ) : (
-                            <FaRegCircle size={18} />
-                          )}
-                        </span>
-                        <span className={styles.headerName}>{header.name}</span>
-                        <span className={styles.headerType}>({header.type})</span>
+                  {filteredHeaders().map((header) => {
+                    const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex(
+                      (h) => h.key === header.key
+                    );
+                    return (
+                      <div
+                        key={header.key}
+                        className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
+                      >
+                        <div className={styles.headerContent}>
+                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                              header.key
+                            ) ? (
+                              <FaRegCheckCircle size={18} className={styles.checked} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
+                          </span>
+                          <span className={styles.headerName}>{header.name}</span>
+                          <span className={styles.headerType}>({header.type})</span>
+                          {header.section && <span className={styles.headerSection}>- {header.section}</span>}
+                        </div>
+                        {!editMode && (
+                          <div className={styles.headerActions}>
+                            <button
+                              className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                headerIndex !== -1 && handleEditHeader(headerIndex);
+                              }}
+                            >
+                              <FaInfoCircle />
+                            </button>
+                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                          </div>
+                        )}
                       </div>
-                      {!editMode && (
-                        <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <button
                   className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -661,6 +1007,161 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   Delete Section
                 </button>
               </>
+            )}
+
+            {step === 4 &&
+              selectedTemplateIndex !== null &&
+              activeHeaderIndex !== null &&
+              currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
+              <div
+                className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="text"
+                  value={newHeaderName}
+                  onChange={(e) => setNewHeaderName(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Field Name"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+                <select
+                  value={newHeaderType}
+                  onChange={(e) => setNewHeaderType(e.target.value)}
+                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date</option>
+                  <option value="currency">Currency</option>
+                  <option value="dropdown">Pop-up Menu</option>
+                </select>
+                <select
+                  value={newHeaderSection}
+                  onChange={(e) => setNewHeaderSection(e.target.value)}
+                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <option value="">Select Section</option>
+                  {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
+                    <option key={index} value={section.name}>
+                      {section.name}
+                    </option>
+                  ))}
+                </select>
+                {newHeaderType === "dropdown" && (
+                  <div className={styles.optionsSection}>
+                    <div className={styles.optionInputRow}>
+                      <input
+                        type="text"
+                        value={newOption}
+                        onChange={(e) => setNewOption(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addOption()}
+                        placeholder="Add item"
+                        className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                      <button
+                        onClick={addOption}
+                        className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className={styles.optionsList}>
+                      {newHeaderOptions.map((option) => (
+                        <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <span>{option}</span>
+                          <button
+                            onClick={() => removeOption(option)}
+                            className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className={styles.editActionsButtons}>
+                  <button
+                    onClick={() => deleteHeader(activeHeaderIndex)}
+                    className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && selectedTemplateIndex !== null && (
+              <div
+                className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="text"
+                  value={newHeaderName}
+                  onChange={(e) => setNewHeaderName(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Field Name"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+                <select
+                  value={newHeaderType}
+                  onChange={(e) => setNewHeaderType(e.target.value)}
+                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date</option>
+                  <option value="currency">Currency</option>
+                  <option value="dropdown">Pop-up Menu</option>
+                </select>
+                <select
+                  value={newHeaderSection}
+                  onChange={(e) => setNewHeaderSection(e.target.value)}
+                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <option value="">Select Section</option>
+                  {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
+                    <option key={index} value={section.name}>
+                      {section.name}
+                    </option>
+                  ))}
+                </select>
+                {newHeaderType === "dropdown" && (
+                  <div className={styles.optionsSection}>
+                    <div className={styles.optionInputRow}>
+                      <input
+                        type="text"
+                        value={newOption}
+                        onChange={(e) => setNewOption(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addOption()}
+                        placeholder="Add item"
+                        className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                      <button
+                        onClick={addOption}
+                        className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className={styles.optionsList}>
+                      {newHeaderOptions.map((option) => (
+                        <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <span>{option}</span>
+                          <button
+                            onClick={() => removeOption(option)}
+                            className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         ))}
@@ -675,6 +1176,16 @@ CardsTemplate.propTypes = {
       PropTypes.shape({
         name: PropTypes.string,
         typeOfCards: PropTypes.string,
+        headers: PropTypes.arrayOf(
+          PropTypes.shape({
+            key: PropTypes.string,
+            name: PropTypes.string,
+            type: PropTypes.string,
+            section: PropTypes.string,
+            isUsed: PropTypes.bool,
+            options: PropTypes.arrayOf(PropTypes.string),
+          })
+        ),
         sections: PropTypes.arrayOf(
           PropTypes.shape({
             name: PropTypes.string,

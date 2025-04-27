@@ -54,7 +54,7 @@ const Sheets = ({
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.addEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const Sheets = ({
       sheetTabsRef.current.scrollWidth;
       sheetTabsRef.current.style.width = 'auto';
     }
-  }, []);
+  }, [sheets.structure, activeSheetName]);
 
   const filteredRows = useMemo(() => {
     return rows.filter((row) =>

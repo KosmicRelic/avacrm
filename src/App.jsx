@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import Sheets from './Sheets/Sheets';
 import AppHeader from './App Header/AppHeader';
 import FilterModal from './Modal/FilterModal/FilterModal';
-import HeadersModal from './Modal/HeadersModal/HeaderModal';
 import { MainContext } from './Contexts/MainContext';
 import styles from './App.module.css';
 import EditSheetsModal from './Modal/Edit Sheets Modal/EditSheetsModal';
@@ -29,8 +28,6 @@ function App() {
     setSheets,
     cards,
     setCards,
-    headers,
-    setHeaders,
     cardTemplates,
     setCardTemplates,
     editMode,
@@ -50,7 +47,6 @@ function App() {
 
   const sheetModal = useModal();
   const filterModal = useModal();
-  const headersModal = useModal();
   const sheetsModal = useModal();
   const transportModal = useModal();
   const cardsTemplateModal = useModal();
@@ -61,7 +57,7 @@ function App() {
   const widgetSetupModal = useModal();
   const metricsModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
-  const [activeOption, setActiveOption] = useState('dashboard');
+  const [activeOption, setActiveOption] = useState('sheets');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
@@ -77,14 +73,17 @@ function App() {
 
   const { handleSheetChange, handleSaveSheet } = useSheets(sheets, setSheets, activeSheetName);
 
+  // Get headers directly from active sheet
   const resolvedHeaders = useMemo(() => {
-    return activeSheet?.headers?.map((sheetHeader) => {
-      const header = (headers || []).find((h) => h.key === sheetHeader.key);
-      return header
-        ? { key: sheetHeader.key, name: header.name, type: header.type, visible: sheetHeader.visible, hidden: sheetHeader.hidden }
-        : { key: sheetHeader.key, name: sheetHeader.key, type: 'text', visible: sheetHeader.visible, hidden: sheetHeader.hidden };
-    }) || [];
-  }, [activeSheet, headers]);
+    return (activeSheet?.headers || []).map((header) => ({
+      key: header.key,
+      name: header.name,
+      type: header.type,
+      options: header.options || [],
+      visible: header.visible !== false,
+      hidden: header.hidden || false,
+    }));
+  }, [activeSheet]);
 
   const resolvedRows = useMemo(() => {
     return activeSheet?.rows?.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
@@ -150,11 +149,19 @@ function App() {
         const newSheet = {
           id: newSheetId,
           sheetName: newSheetName,
-          headers: selectedHeaders.map((key) => ({
-            key,
-            visible: true,
-            hidden: false,
-          })),
+          headers: selectedHeaders.map((key) => {
+            const header = prevSheets.allSheets
+              .flatMap((sheet) => sheet.headers)
+              .find((h) => h.key === key) || { key, name: key, type: 'text' };
+            return {
+              key: header.key,
+              name: header.name,
+              type: header.type,
+              options: header.options || [],
+              visible: true,
+              hidden: false,
+            };
+          }),
           pinnedHeaders: [],
           rows: [],
           filters: {},
@@ -183,13 +190,12 @@ function App() {
           (item) => item.folderName === newFolderName
         );
         if (existingFolder) {
-          // Update existing folder, filter out duplicates
           const existingSheets = existingFolder.sheets || [];
           const newSheets = selectedSheets.filter(
             (sheet) => !existingSheets.includes(sheet)
           );
           if (newSheets.length === 0) {
-            return prevSheets; // No new sheets to add
+            return prevSheets;
           }
           return {
             ...prevSheets,
@@ -200,7 +206,6 @@ function App() {
             ),
           };
         }
-        // Create new folder
         return {
           ...prevSheets,
           structure: [
@@ -220,9 +225,7 @@ function App() {
     (modalType, data) => {
       switch (modalType) {
         case 'headers':
-          if (data?.currentHeaders) {
-            setHeaders([...data.currentHeaders]);
-          }
+          // Deprecated
           break;
         case 'filter':
           if (data?.filterValues) {
@@ -238,21 +241,69 @@ function App() {
           break;
         case 'sheet':
           if (data?.sheetName && data.currentHeaders) {
-            handleSaveSheet(
-              data.sheetName,
-              data.currentHeaders,
-              activeSheet?.pinnedHeaders || [],
-              isSheetModalEditMode
-            );
+            setSheets((prev) => {
+              const updatedSheets = {
+                ...prev,
+                allSheets: prev.allSheets.map((sheet) =>
+                  sheet.sheetName === activeSheetName && isSheetModalEditMode
+                    ? {
+                        ...sheet,
+                        sheetName: data.sheetName,
+                        headers: data.currentHeaders.map((h) => ({
+                          key: h.key,
+                          name: h.name,
+                          type: h.type,
+                          options: h.options || [],
+                          visible: h.visible,
+                          hidden: h.hidden,
+                        })),
+                      }
+                    : sheet
+                ),
+                structure: isSheetModalEditMode
+                  ? prev.structure.map((item) =>
+                      item.sheetName === activeSheetName
+                        ? { sheetName: data.sheetName }
+                        : item
+                    )
+                  : prev.structure,
+              };
+              return updatedSheets;
+            });
             handleSheetChange(data.sheetName);
           }
           break;
         case 'sheets':
           if (data?.newOrder) {
-            setSheets((prev) => ({
-              ...prev,
-              structure: [...data.newOrder],
-            }));
+            setSheets((prev) => {
+              const newStructure = [...data.newOrder];
+              let newActiveSheetName = null;
+              for (const item of newStructure) {
+                if (item.sheetName) {
+                  newActiveSheetName = item.sheetName;
+                  break;
+                } else if (item.folderName && item.sheets?.length > 0) {
+                  newActiveSheetName = item.sheets[0];
+                  break;
+                }
+              }
+              const updatedSheets = {
+                ...prev,
+                structure: newStructure,
+                allSheets: prev.allSheets.map((sheet) => ({
+                  ...sheet,
+                  isActive: sheet.sheetName === newActiveSheetName,
+                })),
+              };
+              return updatedSheets;
+            });
+            if (data.newOrder[0]?.sheetName) {
+              handleSheetChange(data.newOrder[0].sheetName);
+            } else if (data.newOrder[0]?.folderName && data.newOrder[0].sheets?.length > 0) {
+              handleSheetChange(data.newOrder[0].sheets[0]);
+            }
+          } else {
+            console.warn('No newOrder provided for sheets modal');
           }
           break;
         case 'transport':
@@ -262,7 +313,7 @@ function App() {
           break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-            setCardTemplates([...data.currentCardTemplates]);
+            setCardTemplates([...data.currentCardTemplates]); // Update cardTemplates only
           }
           break;
         case 'folderOperations':
@@ -306,7 +357,7 @@ function App() {
                 (sheet) => !existingSheets.includes(sheet)
               );
               if (newSheets.length === 0) {
-                return prev; // No new sheets to add
+                return prev;
               }
               return {
                 ...prev,
@@ -360,11 +411,8 @@ function App() {
       setTempData({});
     },
     [
-      setHeaders,
       setSheets,
-      handleSaveSheet,
       activeSheetName,
-      activeSheet,
       isSheetModalEditMode,
       setCardTemplates,
       setEditMode,
@@ -411,7 +459,6 @@ function App() {
       setCurrentSectionIndex(null);
       sheetModal.close();
       filterModal.close();
-      headersModal.close();
       sheetsModal.close();
       transportModal.close();
       cardsTemplateModal.close();
@@ -430,7 +477,6 @@ function App() {
       setCurrentSectionIndex,
       sheetModal,
       filterModal,
-      headersModal,
       sheetsModal,
       transportModal,
       cardsTemplateModal,
@@ -468,14 +514,6 @@ function App() {
     [filterModal, activeSheet]
   );
 
-  const onManageHeaders = useCallback(
-    () => {
-      setActiveModal({ type: 'headers', data: { currentHeaders: [...headers] } });
-      headersModal.open();
-    },
-    [headersModal, headers]
-  );
-
   const onManageMetrics = useCallback(
     () => {
       setActiveModal({ type: 'metrics', data: { currentCategories: [...metrics] } });
@@ -486,7 +524,7 @@ function App() {
 
   const onOpenSheetsModal = useCallback(
     () => {
-      setActiveModal({ type: 'sheets', data: { newOrder: sheets?.structure || [] } });
+      setActiveModal({ type: 'sheets', data: { newOrder: [...sheets.structure] } });
       sheetsModal.open();
     },
     [sheetsModal, sheets]
@@ -515,14 +553,14 @@ function App() {
         type: 'sheetFolder',
         data: {
           sheets,
-          headers,
+          cardTemplates,
           handleSheetSave,
           handleFolderSave,
         },
       });
       sheetFolderModal.open();
     },
-    [sheetFolderModal, sheets, headers, handleSheetSave, handleFolderSave]
+    [sheetFolderModal, sheets, cardTemplates, handleSheetSave, handleFolderSave]
   );
 
   const onOpenFolderOperationsModal = useCallback(
@@ -639,19 +677,11 @@ function App() {
             handleClose={handleModalClose}
           />
         );
-      case 'headers':
-        return (
-          <HeadersModal
-            tempData={activeModal.data || { currentHeaders: [...headers] }}
-            setTempData={setActiveModalData}
-            handleClose={handleModalClose}
-          />
-        );
       case 'sheets':
         return (
           <ReOrderModal
             sheets={sheets || { structure: [] }}
-            tempData={activeModal.data || { newOrder: sheets?.structure || [] }}
+            tempData={activeModal.data || { newOrder: [...sheets.structure] }}
             setTempData={setActiveModalData}
             handleClose={handleModalClose}
           />
@@ -680,7 +710,7 @@ function App() {
             setTempData={setActiveModalData}
             sheets={sheets}
             setSheets={setSheets}
-            headers={headers}
+            cardTemplates={cardTemplates}
             onSheetChange={handleSheetChange}
             handleSheetSave={handleSheetSave}
             handleFolderSave={handleFolderSave}
@@ -752,7 +782,7 @@ function App() {
         onOpenFolderModal={onOpenFolderOperationsModal}
         onOpenMetricsModal={onManageMetrics}
       />
-      <div className={`${styles.contentWrapper} ${isDarkTheme?styles.darkTheme:""}`}>
+      <div className={`${styles.contentWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {activeOption === 'sheets' && activeSheetName && (
           <Sheets
             headers={resolvedHeaders}
@@ -783,7 +813,7 @@ function App() {
           <Metrics
             selectedMetricData={selectedMetricData}
             onEditMetrics={onManageMetrics}
-            onMetricDataChange={handleMetricDataChange} // Pass the handler
+            onMetricDataChange={handleMetricDataChange}
           />
         )}
         {activeModal && (
@@ -799,7 +829,6 @@ function App() {
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
-          onOpenHeadersModal={onManageHeaders}
           onOpenCardsTemplateModal={onOpenCardsTemplateModal}
           onOpenMetricsModal={onManageMetrics}
         />
