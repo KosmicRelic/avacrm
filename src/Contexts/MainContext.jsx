@@ -100,7 +100,6 @@ export const MainContextProvider = ({ children }) => {
       { sheetName: 'Ad Campaigns' },
       { sheetName: 'Business Partners' },
       { sheetName: 'Payments' },
-      { folderName: 'Test', sheets:["Leads"] },
     ],
   });
 
@@ -739,6 +738,7 @@ export const MainContextProvider = ({ children }) => {
       name: "Leads",
       typeOfCards: "Leads",
       headers: [
+        { key: "typeOfCards", name: "Type of Card", type: "text", section: "Contact Information", isUsed: true },
         { key: "id", name: "ID", type: "number", section: "Contact Information", isUsed: true },
         { key: "name", name: "Name", type: "text", section: "Contact Information", isUsed: true },
         { key: "phone", name: "Phone", type: "text", section: "Contact Information", isUsed: true },
@@ -758,7 +758,7 @@ export const MainContextProvider = ({ children }) => {
       sections: [
         {
           name: "Contact Information",
-          keys: ["id", "name", "phone", "email"],
+          keys: ["typeOfCards", "id", "name", "phone", "email"],
         },
         {
           name: "Lead Details",
@@ -770,6 +770,7 @@ export const MainContextProvider = ({ children }) => {
       name: "Ad Campaigns",
       typeOfCards: "Ad Campaigns",
       headers: [
+        { key: "typeOfCards", name: "Type of Card", type: "text", section: "Campaign Information", isUsed: true },
         { key: "id", name: "ID", type: "number", section: "Campaign Information", isUsed: true },
         { key: "campaignName", name: "Campaign Name", type: "text", section: "Campaign Information", isUsed: true },
         { key: "platform", name: "Platform", type: "text", section: "Campaign Information", isUsed: true },
@@ -789,7 +790,7 @@ export const MainContextProvider = ({ children }) => {
       sections: [
         {
           name: "Campaign Information",
-          keys: ["id", "campaignName", "platform", "adSpend", "leadsGenerated", "costPerLead", "startDate", "status"],
+          keys: ["typeOfCards", "id", "campaignName", "platform", "adSpend", "leadsGenerated", "costPerLead", "startDate", "status"],
         },
       ],
     },
@@ -797,6 +798,7 @@ export const MainContextProvider = ({ children }) => {
       name: "Business Partners",
       typeOfCards: "Business Partners",
       headers: [
+        { key: "typeOfCards", name: "Type Of Card", type: "text", section: "Partner Information", isUsed: true },
         { key: "id", name: "ID", type: "number", section: "Partner Information", isUsed: true },
         { key: "businessName", name: "Business Name", type: "text", section: "Partner Information", isUsed: true },
         { key: "contact", name: "Contact", type: "text", section: "Partner Information", isUsed: true },
@@ -806,7 +808,7 @@ export const MainContextProvider = ({ children }) => {
       sections: [
         {
           name: "Partner Information",
-          keys: ["id", "businessName", "contact", "negotiatedRate", "status"],
+          keys: ["typeOfCards", "id", "businessName", "contact", "negotiatedRate", "status"],
         },
       ],
     },
@@ -814,6 +816,7 @@ export const MainContextProvider = ({ children }) => {
       name: "Payments",
       typeOfCards: "Payments",
       headers: [
+        { key: "typeOfCards", name: "Type of Card", type: "text", section: "Payment Information", isUsed: true },
         { key: "id", name: "ID", type: "number", section: "Payment Information", isUsed: true },
         { key: "leadId", name: "Lead ID", type: "text", section: "Payment Information", isUsed: true },
         { key: "clientPayment", name: "Client Payment", type: "currency", section: "Payment Information", isUsed: true },
@@ -831,7 +834,7 @@ export const MainContextProvider = ({ children }) => {
       sections: [
         {
           name: "Payment Information",
-          keys: ["id", "leadId", "clientPayment", "partnerPayment", "paymentDate", "status"],
+          keys: ["typeOfCards", "id", "leadId", "clientPayment", "partnerPayment", "paymentDate", "status"],
         },
       ],
     },

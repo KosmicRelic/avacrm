@@ -13,11 +13,21 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates).map((t) => ({
-      ...t,
-      headers: t.headers || [],
-      sections: t.sections.map((s) => ({ ...s })),
-    }))
+    (tempData.currentCardTemplates || cardTemplates).map((t) => {
+      const headers = t.headers.map((h) => ({
+        ...h,
+        isUsed: h.key === "id" || h.key === "typeOfCards" ? true : h.isUsed ?? false,
+      }));
+      const sections = t.sections.map((s) => ({
+        ...s,
+        keys: s.keys.includes("id") || s.keys.includes("typeOfCards") ? s.keys : [...s.keys],
+      }));
+      return {
+        ...t,
+        headers: headers || [],
+        sections,
+      };
+    })
   );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
@@ -110,13 +120,18 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       alert("Please select a section for the field.");
       return;
     }
+    // Prevent adding new headers to "Card Data" section
+    if (newHeaderSection === "Card Data") {
+      alert("The 'Card Data' section is reserved for 'ID' and 'Type of Cards' fields.");
+      return;
+    }
 
     const newHeader = {
       key: uuidv4(),
       name: newHeaderName.trim(),
       type: newHeaderType,
       section: newHeaderSection,
-      isUsed: false,
+      isUsed: true,
       ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
     };
 
@@ -124,6 +139,12 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       const newTemplates = [...prev];
       const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
       currentTemplate.headers = [...currentTemplate.headers, newHeader];
+      currentTemplate.sections = currentTemplate.sections.map((section) => {
+        if (section.name === newHeaderSection) {
+          return { ...section, keys: [...section.keys, newHeader.key] };
+        }
+        return section;
+      });
       newTemplates[selectedTemplateIndex] = currentTemplate;
       return newTemplates;
     });
@@ -153,17 +174,42 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         return;
       }
 
+      const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
+      const isProtected = currentHeader.key === "id" || currentHeader.key === "typeOfCards";
+
+      // Prevent moving id or typeOfCards out of "Card Data"
+      if (isProtected && newHeaderSection !== "Card Data") {
+        alert("The 'ID' and 'Type of Cards' fields must remain in the 'Card Data' section.");
+        return;
+      }
+
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
         const existingHeader = currentTemplate.headers[index];
+        const oldSection = existingHeader.section;
+
         currentTemplate.headers[index] = {
           ...existingHeader,
           name: newHeaderName.trim(),
           type: newHeaderType,
           section: newHeaderSection,
+          isUsed: isProtected ? true : true,
           ...(newHeaderType === "dropdown" ? { options: [...newHeaderOptions] } : { options: undefined }),
         };
+
+        if (oldSection !== newHeaderSection) {
+          currentTemplate.sections = currentTemplate.sections.map((section) => {
+            if (section.name === oldSection) {
+              return { ...section, keys: section.keys.filter((k) => k !== existingHeader.key) };
+            }
+            if (section.name === newHeaderSection) {
+              return { ...section, keys: [...section.keys, existingHeader.key] };
+            }
+            return section;
+          });
+        }
+
         newTemplates[selectedTemplateIndex] = currentTemplate;
         return newTemplates;
       });
@@ -180,8 +226,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     (index) => {
       if (selectedTemplateIndex === null) return;
       const header = currentCardTemplates[selectedTemplateIndex].headers[index];
-      if (header.key === "id") {
-        alert("The 'ID' field cannot be deleted.");
+      if (header.key === "id" || header.key === "typeOfCards") {
+        alert("The 'ID' or 'Type of Cards' field cannot be deleted.");
         return;
       }
       const headerName = header.name;
@@ -403,6 +449,58 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     }
   }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, handleBack]);
 
+  // Confirm new template
+  const confirmNewTemplate = useCallback(() => {
+    if (!newTemplateName.trim()) {
+      alert("Please enter a template name.");
+      return;
+    }
+    if (currentCardTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
+      alert("A template with this name already exists. Please choose a unique name.");
+      return;
+    }
+
+    const newTemplate = {
+      name: newTemplateName.trim(),
+      typeOfCards: newTemplateName.trim(),
+      headers: [
+        {
+          key: "id",
+          name: "ID",
+          type: "text",
+          section: "Card Data",
+          isUsed: true,
+        },
+        {
+          key: "typeOfCards",
+          name: "Type of Cards",
+          type: "text",
+          section: "Card Data",
+          isUsed: true,
+        },
+      ],
+      sections: [
+        {
+          name: "Primary Section",
+          keys: [],
+        },
+        {
+          name: "Card Data",
+          keys: ["id", "typeOfCards"],
+        },
+      ],
+    };
+
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev, newTemplate];
+      setSelectedTemplateIndex(newTemplates.length - 1);
+      setEditMode(false);
+      return newTemplates;
+    });
+    setNavigationDirection("forward");
+    goToStep(2);
+  }, [newTemplateName, currentCardTemplates, goToStep]);
+
   // Add new section
   const addSection = useCallback(() => {
     if (selectedTemplateIndex === null) return;
@@ -427,6 +525,14 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        const currentSection = currentTemplate.sections[index];
+        
+        // Prevent renaming "Card Data" section
+        if (currentSection.name === "Card Data") {
+          alert("The 'Card Data' section cannot be renamed.");
+          return prev;
+        }
+
         if (
           newName.trim() &&
           currentTemplate.sections.some(
@@ -452,12 +558,20 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleDeleteSection = useCallback(
     (index) => {
       if (selectedTemplateIndex === null) return;
-      const sectionName = currentCardTemplates[selectedTemplateIndex].sections[index].name;
-      if (sectionName === "New Section" && currentCardTemplates[selectedTemplateIndex].headers.some(h => h.key === "id" && h.section === "New Section")) {
-        alert("The 'New Section' cannot be deleted while it contains the 'ID' field.");
+      const section = currentCardTemplates[selectedTemplateIndex].sections[index];
+      
+      // Prevent deletion of "Card Data" section
+      if (section.name === "Card Data") {
+        alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
         return;
       }
-      if (window.confirm(`Are you sure you want to delete the section "${sectionName}"?`)) {
+
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "id" || key === "typeOfCards");
+      if (sectionContainsProtectedKey) {
+        alert("This section cannot be deleted because it contains the 'ID' or 'Type of Cards' field.");
+        return;
+      }
+      if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
           const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
@@ -478,14 +592,24 @@ const CardsTemplate = ({ tempData, setTempData }) => {
 
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
+    const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
+    if (key === "id" || key === "typeOfCards") {
+      e.preventDefault(); // Prevent dragging protected fields
+      return;
+    }
     setDraggedIndex(index);
     setDraggedSectionIndex(sectionIndex);
     e.dataTransfer.effectAllowed = "move";
     const element = keyRefs.current.get(`${sectionIndex}-${index}`);
     if (element) element.classList.add(styles.dragging);
-  }, []);
+  }, [selectedTemplateIndex, currentCardTemplates]);
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
+    const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
+    if (key === "id" || key === "typeOfCards") {
+      e.preventDefault(); // Prevent touch dragging protected fields
+      return;
+    }
     if (e.target.classList.contains(styles.dragIcon)) {
       e.preventDefault();
       setDraggedIndex(index);
@@ -495,7 +619,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       const element = keyRefs.current.get(`${sectionIndex}-${index}`);
       if (element) element.classList.add(styles.dragging);
     }
-  }, []);
+  }, [selectedTemplateIndex, currentCardTemplates]);
 
   const handleDragOver = useCallback(
     (e, sectionIndex, index) => {
@@ -603,47 +727,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     [currentCardTemplates, goToStep]
   );
 
-  // Confirm new template
-  const confirmNewTemplate = useCallback(() => {
-    if (!newTemplateName.trim()) {
-      alert("Please enter a template name.");
-      return;
-    }
-    if (currentCardTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
-      alert("A template with this name already exists. Please choose a unique name.");
-      return;
-    }
-
-    const newTemplate = {
-      name: newTemplateName.trim(),
-      typeOfCards: newTemplateName.trim(),
-      headers: [
-        {
-          key: "id",
-          name: "ID",
-          type: "text",
-          section: "New Section",
-          isUsed: true,
-        },
-      ],
-      sections: [
-        {
-          name: "New Section",
-          keys: ["id"],
-        },
-      ],
-    };
-
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev, newTemplate];
-      setSelectedTemplateIndex(newTemplates.length - 1);
-      setEditMode(false);
-      return newTemplates;
-    });
-    setNavigationDirection("forward");
-    goToStep(2);
-  }, [newTemplateName, currentCardTemplates, goToStep]);
-
   // Update template name
   const updateTemplateName = useCallback(
     (newName) => {
@@ -682,6 +765,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
+      if (key === "id" || key === "typeOfCards") {
+        alert("The 'ID' or 'Type of Cards' field cannot be deselected from the section.");
+        return;
+      }
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         const currentTemplate = { ...newTemplates[selectedTemplateIndex], headers: [...newTemplates[selectedTemplateIndex].headers] };
@@ -709,8 +796,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "id") {
-        alert("The 'ID' field cannot be removed from the section.");
+      if (key === "id" || key === "typeOfCards") {
+        alert("The 'ID' or 'Type of Cards' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
@@ -785,9 +872,12 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleCreateHeader = useCallback(() => {
     setActiveHeaderIndex(-1);
     resetHeaderForm();
+    // Set the recommended section to the current section, but not "Card Data"
+    const currentSectionName = currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name;
+    setNewHeaderSection(currentSectionName !== "Card Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
     goToStep(5);
-  }, [resetHeaderForm, goToStep]);
+  }, [resetHeaderForm, goToStep, currentCardTemplates, selectedTemplateIndex, currentSectionIndex]);
 
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -909,6 +999,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
                   className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                   placeholder="Section Name"
+                  disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
                 />
                 <div className={styles.searchContainer}>
                   <FaSearch className={styles.searchIcon} />
@@ -935,7 +1026,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         className={`${styles.keyItem} ${
                           draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
                         } ${isDarkTheme ? styles.darkTheme : ""}`}
-                        draggable={!editMode}
+                        draggable={!(key === "id" || key === "typeOfCards")}
                         onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
                         onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
                         onDragEnd={() => !editMode && handleDragEnd()}
@@ -944,7 +1035,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         onTouchEnd={() => !editMode && handleTouchEnd()}
                         onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
                       >
-                        {editMode && header.key !== "id" && (
+                        {editMode && header.key !== "id" && header.key !== "typeOfCards" && (
                           <button
                             className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                             onClick={(e) => {
@@ -980,7 +1071,9 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                             >
                               <FaInfoCircle />
                             </button>
-                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>☰</span>
+                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {header.key === "id" || header.key === "typeOfCards" ? "" : "☰"}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1031,6 +1124,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                 <button
                   className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                   onClick={() => handleDeleteSection(currentSectionIndex)}
+                  disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
                 >
                   Delete Section
                 </button>
@@ -1064,18 +1158,32 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   <option value="currency">Currency</option>
                   <option value="dropdown">Pop-up Menu</option>
                 </select>
-                <select
-                  value={newHeaderSection}
-                  onChange={(e) => setNewHeaderSection(e.target.value)}
-                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                >
-                  <option value="">Select Section</option>
-                  {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
-                    <option key={index} value={section.name}>
-                      {section.name}
-                    </option>
-                  ))}
-                </select>
+                {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
+                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards" ? (
+                  <select
+                    value={newHeaderSection}
+                    onChange={(e) => setNewHeaderSection(e.target.value)}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    disabled
+                  >
+                    <option value="Card Data">Card Data</option>
+                  </select>
+                ) : (
+                  <select
+                    value={newHeaderSection}
+                    onChange={(e) => setNewHeaderSection(e.target.value)}
+                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    <option value="">Select Section</option>
+                    {currentCardTemplates[selectedTemplateIndex].sections
+                      .filter((section) => section.name !== "Card Data")
+                      .map((section, index) => (
+                        <option key={index} value={section.name}>
+                          {section.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
                 {newHeaderType === "dropdown" && (
                   <div className={styles.optionsSection}>
                     <div className={styles.optionInputRow}>
@@ -1110,14 +1218,15 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   </div>
                 )}
                 <div className={styles.editActionsButtons}>
-                  {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "id" && (
-                    <button
-                      onClick={() => deleteHeader(activeHeaderIndex)}
-                      className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    >
-                      Remove
-                    </button>
-                  )}
+                  {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "id" &&
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" && (
+                      <button
+                        onClick={() => deleteHeader(activeHeaderIndex)}
+                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        Remove
+                      </button>
+                    )}
                 </div>
               </div>
             )}
@@ -1152,11 +1261,13 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                 >
                   <option value="">Select Section</option>
-                  {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
-                    <option key={index} value={section.name}>
-                      {section.name}
-                    </option>
-                  ))}
+                  {currentCardTemplates[selectedTemplateIndex].sections
+                    .filter((section) => section.name !== "Card Data")
+                    .map((section, index) => (
+                      <option key={index} value={section.name}>
+                        {section.name}
+                      </option>
+                    ))}
                 </select>
                 {newHeaderType === "dropdown" && (
                   <div className={styles.optionsSection}>

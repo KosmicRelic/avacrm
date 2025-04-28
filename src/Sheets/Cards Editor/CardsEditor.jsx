@@ -52,7 +52,7 @@ const CardsEditor = ({
     return template.sections.map((section) => ({
       name: section.name,
       fields: section.keys
-        .filter((key) => key !== 'id' && key !== 'typeOfCards')
+        .filter((key) => key !== 'id')
         .map((key) => {
           const header = template.headers?.find((h) => h.key === key);
           return {
