@@ -129,110 +129,80 @@ export const handleModalSave = ({
         setCardTemplates([...data.currentCardTemplates]);
       }
       break;
-    case 'folderOperations':
-      if (data?.tempData?.actions && Array.isArray(data.tempData.actions) && sheets) {
-        setSheets((prev) => {
-          let currentStructure = [...prev.structure];
-          data.tempData.actions.forEach((actionData) => {
-            if (
-              actionData.action === 'removeSheets' &&
-              actionData.selectedSheets &&
-              actionData.folderName
-            ) {
-              const folder = currentStructure.find(
-                (item) => item.folderName === actionData.folderName
-              );
-              const folderSheets = folder?.sheets || [];
-              const remainingSheets = folderSheets.filter(
-                (sheet) => !actionData.selectedSheets.includes(sheet)
-              );
-              const removedSheets = folderSheets.filter((sheet) =>
-                actionData.selectedSheets.includes(sheet)
-              );
-              const existingSheetNames = currentStructure
-                .filter((item) => item.sheetName)
-                .map((item) => item.sheetName);
-              const newSheetsToAdd = removedSheets.filter(
-                (sheetName) => !existingSheetNames.includes(sheetName)
-              );
-              currentStructure = [
-                ...currentStructure.filter(
-                  (item) => item.folderName !== actionData.folderName
-                ),
-                { folderName: actionData.folderName, sheets: remainingSheets },
-                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-              ];
-            } else if (
-              actionData.action === 'addSheets' &&
-              actionData.selectedSheets &&
-              actionData.folderName
-            ) {
-              const folder = currentStructure.find(
-                (item) => item.folderName === actionData.folderName
-              );
-              const existingSheets = folder?.sheets || [];
-              const newSheets = actionData.selectedSheets.filter(
-                (sheet) => !existingSheets.includes(sheet)
-              );
-              if (newSheets.length > 0) {
-                currentStructure = currentStructure.map((item) =>
-                  item.folderName === activeSheetName
-                    ? { ...item, sheets: [...existingSheets, ...newSheets] }
-                    : item
+      case 'folderOperations':
+        if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
+          setSheets((prev) => {
+            let currentStructure = [...prev.structure];
+            data.tempData.actions.forEach((actionData) => {
+              if (actionData.action === 'removeSheets' && actionData.selectedSheets && actionData.folderName) {
+                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+                const folderSheets = folder?.sheets || [];
+                const remainingSheets = folderSheets.filter(
+                  (sheet) => !actionData.selectedSheets.includes(sheet)
                 );
+                const removedSheets = folderSheets.filter((sheet) =>
+                  actionData.selectedSheets.includes(sheet)
+                );
+                const existingSheetNames = currentStructure
+                  .filter((item) => item.sheetName)
+                  .map((item) => item.sheetName);
+                const newSheetsToAdd = removedSheets.filter(
+                  (sheetName) => !existingSheetNames.includes(sheetName)
+                );
+                currentStructure = [
+                  ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                  { folderName: actionData.folderName, sheets: remainingSheets },
+                  ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+                ];
+              } else if (actionData.action === 'addSheets' && actionData.selectedSheets && actionData.folderName) {
+                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+                const existingSheets = folder?.sheets || [];
+                const newSheets = actionData.selectedSheets.filter(
+                  (sheet) => !existingSheets.includes(sheet)
+                );
+                if (newSheets.length > 0) {
+                  currentStructure = currentStructure.map((item) =>
+                    item.folderName === actionData.folderName
+                      ? { ...item, sheets: [...existingSheets, ...newSheets] }
+                      : item
+                  );
+                }
+              } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
+                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+                const folderSheets = folder?.sheets || [];
+                const existingSheetNames = currentStructure
+                  .filter((item) => item.sheetName)
+                  .map((item) => item.sheetName);
+                const newSheetsToAdd = folderSheets.filter(
+                  (sheetName) => !existingSheetNames.includes(sheetName)
+                );
+                currentStructure = [
+                  ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                  ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+                ];
               }
-            } else if (
-              actionData.action === 'deleteFolder' &&
-              actionData.folderName
-            ) {
-              const folder = currentStructure.find(
-                (item) => item.folderName === actionData.folderName
-              );
-              const folderSheets = folder?.sheets || [];
-              const existingSheetNames = currentStructure
-                .filter((item) => item.sheetName)
-                .map((item) => item.sheetName);
-              const newSheetsToAdd = folderSheets.filter(
-                (sheetName) => !existingSheetNames.includes(sheetName)
-              );
-              currentStructure = [
-                ...currentStructure.filter(
-                  (item) => item.folderName !== actionData.folderName
-                ),
-                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-              ];
-            }
+            });
+            return { ...prev, structure: currentStructure };
           });
-          return { ...prev, structure: currentStructure };
-        });
-      } else if (
-        data?.tempData?.action === 'deleteFolder' &&
-        data.tempData.folderName &&
-        sheets
-      ) {
-        setSheets((prev) => {
-          const folderSheets =
-            prev.structure.find(
-              (item) => item.folderName === data.tempData.folderName
-            )?.sheets || [];
-          const existingSheetNames = prev.structure
-            .filter((item) => item.sheetName)
-            .map((item) => item.sheetName);
-          const newSheetsToAdd = folderSheets.filter(
-            (sheetName) => !existingSheetNames.includes(sheetName)
-          );
-          return {
-            ...prev,
-            structure: [
-              ...prev.structure.filter(
-                (item) => item.folderName !== data.tempData.folderName
-              ),
-              ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-            ],
-          };
-        });
-      }
-      break;
+        } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
+          setSheets((prev) => {
+            const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
+            const existingSheetNames = prev.structure
+              .filter((item) => item.sheetName)
+              .map((item) => item.sheetName);
+            const newSheetsToAdd = folderSheets.filter(
+              (sheetName) => !existingSheetNames.includes(sheetName)
+            );
+            return {
+              ...prev,
+              structure: [
+                ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
+                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+              ],
+            };
+          });
+        }
+        break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
         setMetrics((prev) =>
