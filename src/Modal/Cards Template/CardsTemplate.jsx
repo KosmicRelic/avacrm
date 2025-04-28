@@ -54,17 +54,17 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     if (currentStep === 5 || currentStep === 4) {
       setActiveHeaderIndex(null);
       resetHeaderForm();
-      goBack(); // Use goBack to return to Step 3
+      goBack();
     } else if (currentStep === 3) {
       setCurrentSectionIndex(null);
       setActiveHeaderIndex(null);
-      goBack(); // Use goBack to return to Step 2
+      goBack();
     } else if (currentStep === 2) {
       if (editMode) {
-        setEditMode(false); // Cancel edit mode
+        setEditMode(false);
       } else {
         setSelectedTemplateIndex(null);
-        goBack(); // Use goBack to return to Step 1
+        goBack();
       }
     } else {
       goBack();
@@ -130,7 +130,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     resetHeaderForm();
     setActiveHeaderIndex(null);
     setNavigationDirection("backward");
-    goBack(); // Use goBack to return to Step 3
+    goBack();
   }, [
     newHeaderName,
     newHeaderType,
@@ -170,7 +170,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       resetHeaderForm();
       setActiveHeaderIndex(null);
       setNavigationDirection("backward");
-      goBack(); // Use goBack to return to Step 3
+      goBack();
     },
     [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack]
   );
@@ -179,7 +179,12 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const deleteHeader = useCallback(
     (index) => {
       if (selectedTemplateIndex === null) return;
-      const headerName = currentCardTemplates[selectedTemplateIndex].headers[index].name;
+      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
+      if (header.key === "id") {
+        alert("The 'ID' field cannot be deleted.");
+        return;
+      }
+      const headerName = header.name;
       if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
@@ -195,7 +200,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         });
         setActiveHeaderIndex(null);
         setNavigationDirection("backward");
-        goBack(); // Use goBack to return to Step 3
+        goBack();
       }
     },
     [selectedTemplateIndex, goBack]
@@ -242,10 +247,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
       const steps = [
-        {
-          title: "Card Templates",
-          rightButton: null,
-        },
+        { title: "Card Templates", rightButton: null },
         {
           title: () =>
             selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
@@ -451,6 +453,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     (index) => {
       if (selectedTemplateIndex === null) return;
       const sectionName = currentCardTemplates[selectedTemplateIndex].sections[index].name;
+      if (sectionName === "New Section" && currentCardTemplates[selectedTemplateIndex].headers.some(h => h.key === "id" && h.section === "New Section")) {
+        alert("The 'New Section' cannot be deleted while it contains the 'ID' field.");
+        return;
+      }
       if (window.confirm(`Are you sure you want to delete the section "${sectionName}"?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
@@ -464,7 +470,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           return newTemplates;
         });
         setNavigationDirection("backward");
-        goBack(); // Use goBack to return to Step 2
+        goBack();
       }
     },
     [selectedTemplateIndex, goBack]
@@ -588,7 +594,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         }
       }
 
-      // For new template, set selectedTemplateIndex to null and navigate to Step 2
       setSelectedTemplateIndex(null);
       setNewTemplateName("");
       setEditMode(false);
@@ -612,8 +617,21 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     const newTemplate = {
       name: newTemplateName.trim(),
       typeOfCards: newTemplateName.trim(),
-      headers: [],
-      sections: [],
+      headers: [
+        {
+          key: "id",
+          name: "ID",
+          type: "text",
+          section: "New Section",
+          isUsed: true,
+        },
+      ],
+      sections: [
+        {
+          name: "New Section",
+          keys: ["id"],
+        },
+      ],
     };
 
     setCurrentCardTemplates((prev) => {
@@ -691,6 +709,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
+      if (key === "id") {
+        alert("The 'ID' field cannot be removed from the section.");
+        return;
+      }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
         setCurrentCardTemplates((prev) => {
           const newTemplates = [...prev];
@@ -712,17 +734,14 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   // Filter headers for search
   const filteredHeaders = useCallback(() => {
     if (selectedTemplateIndex === null || currentSectionIndex === null) return [];
-    
-    // Get all keys used in any section
+
     const usedKeys = currentCardTemplates[selectedTemplateIndex]?.sections
       .flatMap((section) => section.keys) || [];
 
     return (
       currentCardTemplates[selectedTemplateIndex]?.headers?.filter(
         (header) =>
-          // Exclude headers used in any section
           !usedKeys.includes(header.key) &&
-          // Apply search query filter
           [header.name, header.type, header.section].some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase())
           )
@@ -925,7 +944,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                         onTouchEnd={() => !editMode && handleTouchEnd()}
                         onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
                       >
-                        {editMode && (
+                        {editMode && header.key !== "id" && (
                           <button
                             className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                             onClick={(e) => {
@@ -1091,12 +1110,14 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   </div>
                 )}
                 <div className={styles.editActionsButtons}>
-                  <button
-                    onClick={() => deleteHeader(activeHeaderIndex)}
-                    className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  >
-                    Remove
-                  </button>
+                  {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "id" && (
+                    <button
+                      onClick={() => deleteHeader(activeHeaderIndex)}
+                      className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
             )}
