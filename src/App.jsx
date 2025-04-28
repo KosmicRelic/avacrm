@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useContext, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Sheets from './Sheets/Sheets';
 import AppHeader from './App Header/AppHeader';
@@ -45,6 +46,8 @@ function App() {
     isDarkTheme,
   } = useContext(MainContext);
 
+  const navigate = useNavigate();
+  const location = useLocation();
   const sheetModal = useModal();
   const filterModal = useModal();
   const sheetsModal = useModal();
@@ -57,7 +60,7 @@ function App() {
   const widgetSetupModal = useModal();
   const metricsModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
-  const [activeOption, setActiveOption] = useState('sheets');
+  const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(dashboards[0]?.id || 'dashboard-1');
@@ -89,6 +92,17 @@ function App() {
     return activeSheet?.rows?.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
   }, [activeSheet, cards]);
 
+  // Sync activeOption with route
+  useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      setActiveOption('dashboard');
+    } else if (location.pathname === '/sheets') {
+      setActiveOption('sheets');
+    } else if (location.pathname === '/metrics') {
+      setActiveOption('metrics');
+    }
+  }, [location.pathname]);
+
   const handlePinToggle = useCallback(
     (headerKey) => {
       setSheets((prevSheets) => ({
@@ -112,16 +126,18 @@ function App() {
     (sheetName) => {
       setSheets((prev) => {
         const updatedAllSheets = prev.allSheets.filter((sheet) => sheet.sheetName !== sheetName);
-        const updatedStructure = prev.structure.map((item) => {
-          if (item.sheetName === sheetName) {
-            return null; // Remove the sheet from structure
-          }
-          if (item.folderName) {
-            const updatedSheets = item.sheets.filter((s) => s !== sheetName);
-            return { ...item, sheets: updatedSheets }; // Keep folder, even if sheets array is empty
-          }
-          return { ...item };
-        }).filter((item) => item !== null); // Remove null entries (deleted sheets)
+        const updatedStructure = prev.structure
+          .map((item) => {
+            if (item.sheetName === sheetName) {
+              return null;
+            }
+            if (item.folderName) {
+              const updatedSheets = item.sheets.filter((s) => s !== sheetName);
+              return { ...item, sheets: updatedSheets };
+            }
+            return item;
+          })
+          .filter((item) => item !== null);
 
         let newActiveSheet = updatedAllSheets[0]?.sheetName;
         if (updatedStructure.length > 0) {
@@ -225,7 +241,6 @@ function App() {
     (modalType, data) => {
       switch (modalType) {
         case 'headers':
-          // Deprecated
           break;
         case 'filter':
           if (data?.filterValues) {
@@ -262,11 +277,9 @@ function App() {
                 ),
                 structure: prev.structure.map((item) => {
                   if (item.sheetName === activeSheetName) {
-                    // Update standalone sheet name
                     return { sheetName: data.sheetName };
                   }
                   if (item.folderName) {
-                    // Update sheet name within folder
                     const updatedSheets = item.sheets.map((sheet) =>
                       sheet === activeSheetName ? data.sheetName : sheet
                     );
@@ -320,16 +333,14 @@ function App() {
           break;
         case 'cardsTemplate':
           if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-            setCardTemplates([...data.currentCardTemplates]); // Update cardTemplates only
+            setCardTemplates([...data.currentCardTemplates]);
           }
           break;
         case 'folderOperations':
           if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
             setSheets((prev) => {
               let currentStructure = [...prev.structure];
-
-              data.tempData.actions.forEach((actionData, index) => {
-
+              data.tempData.actions.forEach((actionData) => {
                 if (actionData.action === 'removeSheets' && actionData.selectedSheets && actionData.folderName) {
                   const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
                   const folderSheets = folder?.sheets || [];
@@ -339,18 +350,12 @@ function App() {
                   const removedSheets = folderSheets.filter((sheet) =>
                     actionData.selectedSheets.includes(sheet)
                   );
-
-                  // Get existing sheet names to avoid duplicates
                   const existingSheetNames = currentStructure
                     .filter((item) => item.sheetName)
                     .map((item) => item.sheetName);
-
-                  // Only add removed sheets that don't already exist
                   const newSheetsToAdd = removedSheets.filter(
                     (sheetName) => !existingSheetNames.includes(sheetName)
                   );
-
-                  // Update structure: keep folder (even if empty) and add non-duplicate sheets
                   currentStructure = [
                     ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
                     { folderName: actionData.folderName, sheets: remainingSheets },
@@ -362,14 +367,12 @@ function App() {
                   const newSheets = actionData.selectedSheets.filter(
                     (sheet) => !existingSheets.includes(sheet)
                   );
-
                   if (newSheets.length > 0) {
                     currentStructure = currentStructure.map((item) =>
                       item.folderName === actionData.folderName
                         ? { ...item, sheets: [...existingSheets, ...newSheets] }
                         : item
                     );
-                  } else {
                   }
                 } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
                   const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
@@ -386,12 +389,7 @@ function App() {
                   ];
                 }
               });
-
-              const newState = {
-                ...prev,
-                structure: currentStructure,
-              };
-              return newState;
+              return { ...prev, structure: currentStructure };
             });
           } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
             setSheets((prev) => {
@@ -402,13 +400,12 @@ function App() {
               const newSheetsToAdd = folderSheets.filter(
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
-              const newStructure = [
-                ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
-                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-              ];
               return {
                 ...prev,
-                structure: newStructure,
+                structure: [
+                  ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
+                  ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+                ],
               };
             });
           }
@@ -471,19 +468,15 @@ function App() {
 
   const handleModalClose = useCallback(
     (options = {}) => {
-      // Handle folder operations explicitly
       if (activeModal?.type === 'folderOperations') {
         if (options.fromSave || options.fromDelete) {
-          // Use options.tempData if provided, else fall back to activeModal.data.tempData
           const modalData = {
             ...activeModal.data,
             tempData: options.tempData || activeModal.data.tempData || {},
           };
           handleModalSave('folderOperations', modalData);
         }
-      }
-      // Handle widget setup
-      else if (options.fromSave && options.openWidgetSetup) {
+      } else if (options.fromSave && options.openWidgetSetup) {
         setActiveModal({
           type: 'widgetSetup',
           data: {
@@ -500,16 +493,11 @@ function App() {
           },
         });
         widgetSetupModal.open();
-      }
-      // Handle other modals (except widgetView)
-      else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
-        // Skip if options.animationComplete to avoid animation callbacks
+      } else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
         if (!options.animationComplete) {
           handleModalSave(activeModal.type, activeModal.data);
         }
       }
-
-      // Reset modal state
       setActiveModal(null);
       setEditMode(false);
       setSelectedTemplateIndex(null);
@@ -666,9 +654,10 @@ function App() {
           metric: { ...metric },
         });
         setActiveOption('metrics');
+        navigate('/metrics');
       }
     },
-    [widgetSetupModal, activeDashboard, metrics, setActiveOption, setSelectedMetricData]
+    [widgetSetupModal, activeDashboard, metrics, setActiveOption, setSelectedMetricData, navigate]
   );
 
   const handleMetricDataChange = useCallback(
@@ -686,9 +675,12 @@ function App() {
     setIsProfileModalOpen(false);
   }, []);
 
-  const handleDashboardChange = useCallback((dashboardId) => {
-    setActiveDashboardId(dashboardId);
-  }, []);
+  const handleDashboardChange = useCallback(
+    (dashboardId) => {
+      setActiveDashboardId(dashboardId);
+    },
+    []
+  );
 
   useEffect(() => {
     if (activeOption !== 'metrics') {
@@ -697,25 +689,22 @@ function App() {
   }, [activeOption]);
 
   const renderModalContent = () => {
-    if (!activeModal) {
-      return null;
-    }
+    if (!activeModal) return null;
     const setActiveModalData = (newData) =>
-      setActiveModal((prev) => {
-        if (!prev) return prev;
-        return { ...prev, data: { ...prev.data, ...newData } };
-      });
+      setActiveModal((prev) => (prev ? { ...prev, data: { ...prev.data, ...newData } } : prev));
 
     switch (activeModal.type) {
       case 'sheet':
         return (
           <EditSheetsModal
             isEditMode={isSheetModalEditMode}
-            tempData={activeModal.data || {
-              sheetName: isSheetModalEditMode ? activeSheetName : '',
-              currentHeaders: resolvedHeaders,
-              rows: activeSheet?.rows || [],
-            }}
+            tempData={
+              activeModal.data || {
+                sheetName: isSheetModalEditMode ? activeSheetName : '',
+                currentHeaders: resolvedHeaders,
+                rows: activeSheet?.rows || [],
+              }
+            }
             setTempData={setActiveModalData}
             sheets={sheets}
             onPinToggle={handlePinToggle}
@@ -745,9 +734,7 @@ function App() {
       case 'transport':
         return (
           <TransportModal
-            tempData={
-              activeModal.data || { action: 'copy', selectedRowIds: [], onComplete: null }
-            }
+            tempData={activeModal.data || { action: 'copy', selectedRowIds: [], onComplete: null }}
             handleClose={handleModalClose}
           />
         );
@@ -781,10 +768,9 @@ function App() {
             handleClose={handleModalClose}
             tempData={activeModal.data.tempData || {}}
             setTempData={(newData) =>
-              setActiveModal((prev) => {
-                if (!prev) return prev;
-                return { ...prev, data: { ...prev.data, tempData: newData } };
-              })
+              setActiveModal((prev) =>
+                prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
+              )
             }
           />
         );
@@ -807,7 +793,14 @@ function App() {
       case 'widgetSetup':
         return (
           <WidgetSetupModal
-            tempData={activeModal.data || { widget: activeModal.data?.widget || {}, category: null, metric: null, dashboardId: activeDashboard.id }}
+            tempData={
+              activeModal.data || {
+                widget: activeModal.data?.widget || {},
+                category: null,
+                metric: null,
+                dashboardId: activeDashboard.id,
+              }
+            }
             setTempData={setActiveModalData}
             setActiveModalData={setActiveModalData}
             handleClose={handleModalClose}
@@ -826,52 +819,72 @@ function App() {
     }
   };
 
+  // Determine if AppHeader should be shown
+  const showHeader = !['/signin', '/signup'].includes(location.pathname);
+
   return (
-    <div className={styles.appContainer}>
-      <AppHeader
-        sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
-        activeSheet={activeSheetName}
-        onSheetChange={handleSheetChange}
-        setIsProfileModalOpen={handleOpenProfileModal}
-        activeOption={activeOption}
-        setActiveOption={setActiveOption}
-        onOpenFolderModal={onOpenFolderOperationsModal}
-        onOpenMetricsModal={onManageMetrics}
-      />
-      <div className={`${styles.contentWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        {activeOption === 'sheets' && activeSheetName && (
-          <Sheets
-            headers={resolvedHeaders}
-            rows={resolvedRows}
-            sheets={sheets}
-            setSheets={setSheets}
-            activeSheetName={activeSheetName}
-            onSheetChange={handleSheetChange}
-            onEditSheet={onEditSheet}
-            onFilter={onFilter}
-            onRowClick={() => {}}
-            onCardSave={() => {}}
-            onCardDelete={() => {}}
-            onOpenSheetsModal={onOpenSheetsModal}
-            onOpenTransportModal={onOpenTransportModal}
-            onOpenSheetFolderModal={onOpenSheetFolderModal}
-            onOpenFolderModal={onOpenFolderOperationsModal}
+    <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {showHeader && (
+        <AppHeader
+          sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
+          activeSheet={activeSheetName}
+          onSheetChange={handleSheetChange}
+          setIsProfileModalOpen={handleOpenProfileModal}
+          activeOption={activeOption}
+          setActiveOption={setActiveOption}
+          onOpenFolderModal={onOpenFolderOperationsModal}
+          onOpenMetricsModal={onManageMetrics}
+        />
+      )}
+      <div className={styles.contentWrapper}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                onWidgetClick={handleWidgetClick}
+                activeDashboardId={activeDashboardId}
+                onDashboardChange={handleDashboardChange}
+              />
+            }
           />
-        )}
-        {activeOption === 'dashboard' && (
-          <Dashboard
-            onWidgetClick={handleWidgetClick}
-            activeDashboardId={activeDashboardId}
-            onDashboardChange={handleDashboardChange}
+          <Route
+            path="/sheets"
+            element={
+              <Sheets
+                headers={resolvedHeaders}
+                rows={resolvedRows}
+                sheets={sheets}
+                setSheets={setSheets}
+                activeSheetName={activeSheetName}
+                onSheetChange={handleSheetChange}
+                onEditSheet={onEditSheet}
+                onFilter={onFilter}
+                onRowClick={() => {}}
+                onCardSave={() => {}}
+                onCardDelete={() => {}}
+                onOpenSheetsModal={onOpenSheetsModal}
+                onOpenTransportModal={onOpenTransportModal}
+                onOpenSheetFolderModal={onOpenSheetFolderModal}
+                onOpenFolderModal={onOpenFolderOperationsModal}
+              />
+            }
           />
-        )}
-        {activeOption === 'metrics' && (
-          <Metrics
-            selectedMetricData={selectedMetricData}
-            onEditMetrics={onManageMetrics}
-            onMetricDataChange={handleMetricDataChange}
+          <Route
+            path="/metrics"
+            element={
+              <Metrics
+                selectedMetricData={selectedMetricData}
+                onEditMetrics={onManageMetrics}
+                onMetricDataChange={handleMetricDataChange}
+              />
+            }
           />
-        )}
+          {/* Placeholder routes for signin/signup */}
+          <Route path="/signin" element={<div>Sign In (To be implemented)</div>} />
+          <Route path="/signup" element={<div>Sign Up (To be implemented)</div>} />
+        </Routes>
         {activeModal && (
           <Modal
             onClose={handleModalClose}

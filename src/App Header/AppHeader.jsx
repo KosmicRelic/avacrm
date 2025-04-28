@@ -1,8 +1,9 @@
 import { CgDarkMode } from "react-icons/cg";
 import { useState, useEffect, useRef, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom"; // Added useNavigate, useLocation
 import styles from "./AppHeader.module.css";
 import { CgProfile } from "react-icons/cg";
-import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown } from "react-icons/fa"; // Added FaChevronDown
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown } from "react-icons/fa";
 import { SiGoogleadsense } from "react-icons/si";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { MainContext } from "../Contexts/MainContext";
@@ -12,13 +13,28 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const navigate = useNavigate(); // For navigation
+  const location = useLocation(); // To get current route
 
+  // Sync activeOption with current route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/dashboard") setActiveOption("dashboard");
+    else if (path === "/sheets") setActiveOption("sheets");
+    else if (path === "/metrics") setActiveOption("metrics");
+    else if (path === "/financials") setActiveOption("financials");
+    else if (path === "/marketing") setActiveOption("marketing");
+    else setActiveOption("dashboard"); // Default to dashboard
+  }, [location.pathname, setActiveOption]);
+
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -29,9 +45,19 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle navigation and option change
   const handleOptionClick = (option) => {
     setActiveOption(option);
     setIsMenuOpen(false);
+    // Navigate to corresponding route
+    const routes = {
+      dashboard: "/dashboard",
+      sheets: "/sheets",
+      metrics: "/metrics",
+      financials: "/financials",
+      marketing: "/marketing",
+    };
+    navigate(routes[option]);
   };
 
   const toggleTheme = () => {
@@ -44,7 +70,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
 
   const isMobile = windowWidth <= 1024;
 
-  // Map of options to their icons and labels
+  // Map of options to their icons, labels, and routes
   const navOptions = {
     dashboard: { icon: <RiDashboard2Fill size={20} />, label: "Dashboard" },
     sheets: { icon: <SiGoogleadsense size={20} />, label: "Sheets" },
