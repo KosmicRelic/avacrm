@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useContext, useState, useCallback, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import styles from "./ReOrderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
@@ -12,11 +12,18 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [orderedItems, setOrderedItems] = useState(() => {
     const structure = sheets?.structure || [];
-    return structure.map((item, index) => ({
-      ...item,
-      displayName: index === 0 ? "Search Cards" : item.sheetName || item.folderName,
-      id: item.sheetName || item.folderName || `item-${index}`,
-    }));
+    // Get all sheet names inside folders to exclude them from step 1
+    const folderSheetNames = structure
+      .filter((item) => item.folderName)
+      .flatMap((item) => item.sheets || []);
+    // Only include folders and standalone sheets (not in folderSheetNames)
+    return structure
+      .filter((item) => item.folderName || !folderSheetNames.includes(item.sheetName))
+      .map((item, index) => ({
+        ...item,
+        displayName: item.sheetName || item.folderName,
+        id: item.sheetName || item.folderName || `item-${index}`,
+      }));
   });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
@@ -27,6 +34,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const dragItemRef = useRef(null);
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep); // Track previous step
+  const fullStructureRef = useRef(sheets?.structure || []);
 
   // Initialize modal steps
   useEffect(() => {
@@ -68,27 +76,41 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
+      // Reset navigationDirection after animation completes
+      const timer = setTimeout(() => setNavigationDirection(null), 300);
+      return () => clearTimeout(timer);
     }
   }, [currentStep, selectedFolder, setModalConfig]);
 
   // Initialize folder sheets when entering step 2
   useEffect(() => {
     if (currentStep === 2 && selectedFolder) {
-      const folder = orderedItems.find((item) => item.folderName === selectedFolder);
+      const folder = fullStructureRef.current.find((item) => item.folderName === selectedFolder);
       const folderSheets = folder?.sheets || [];
       setOrderedFolderSheets(folderSheets.map((sheetName) => ({ sheetName, displayName: sheetName })));
     }
-  }, [currentStep, selectedFolder, orderedItems]);
+  }, [currentStep, selectedFolder]);
 
   // Update tempData for main structure
   useEffect(() => {
+    // Reconstruct full structure: orderedItems + folder sheets from fullStructureRef
+    const folderSheetMap = new Map(
+      fullStructureRef.current
+        .filter((item) => item.folderName)
+        .map((item) => [item.folderName, item.sheets || []])
+    );
+    // Update folder sheets if reordering happened in step 2
+    if (selectedFolder && orderedFolderSheets.length > 0) {
+      folderSheetMap.set(
+        selectedFolder,
+        orderedFolderSheets.map((sheet) => sheet.sheetName)
+      );
+    }
     const newStructure = orderedItems.map((item) => {
       if (item.folderName) {
         return {
           folderName: item.folderName,
-          sheets: item.sheets?.length && selectedFolder === item.folderName
-            ? orderedFolderSheets.map((sheet) => sheet.sheetName)
-            : item.sheets || [],
+          sheets: folderSheetMap.get(item.folderName) || [],
         };
       }
       return { sheetName: item.sheetName };
@@ -101,7 +123,6 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   }, [orderedItems, orderedFolderSheets, selectedFolder, setTempData, tempData]);
 
   const handleDragStart = useCallback((e, index) => {
-    if (index === 0) return;
     setDraggedIndex(index);
     dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
     e.dataTransfer.effectAllowed = "move";
@@ -111,7 +132,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   const handleDragOver = useCallback(
     (e, index) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedIndex === index || index === 0 || draggedIndex === 0) return;
+      if (draggedIndex === null || draggedIndex === index) return;
       setOrderedItems((prev) => {
         const newItems = [...prev];
         const [draggedItem] = newItems.splice(draggedIndex, 1);
@@ -132,7 +153,6 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   }, []);
 
   const handleTouchStart = useCallback((e, index) => {
-    if (index === 0) return;
     if (e.target.classList.contains(styles.dragIcon)) {
       e.preventDefault();
       setDraggedIndex(index);
@@ -152,7 +172,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       const itemHeight = 48;
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
-      const newIndex = Math.max(1, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
+      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
       if (newIndex !== draggedIndex) {
         setOrderedItems((prev) => {
           const newItems = [...prev];
@@ -263,16 +283,16 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   }, []);
 
   return (
-    <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""}`}>
+    <div
+      className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""} ${
+        navigationDirection ? styles[navigationDirection] : ""
+      }`}
+    >
       {[1, 2].map((step) => (
         <div
           key={step}
           className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
             step !== currentStep ? styles.hidden : ""
-          } ${
-            step === currentStep && navigationDirection === "forward" ? styles.animateForward : ""
-          } ${
-            step === currentStep && navigationDirection === "backward" ? styles.animateBackward : ""
           }`}
           style={{ display: step !== currentStep ? "none" : "block" }}
         >
@@ -303,19 +323,17 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                       </>
                     )}
                   </span>
-                  {index !== 0 && (
-                    <span
-                      className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnd={handleDragEnd}
-                      onTouchStart={(e) => handleTouchStart(e, index)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      ☰
-                    </span>
-                  )}
+                  <span
+                    className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    ☰
+                  </span>
                 </div>
               </div>
             ))}
@@ -363,15 +381,13 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
 ReOrderModal.propTypes = {
   sheets: PropTypes.shape({
     structure: PropTypes.arrayOf(
-      PropTypes.oneOfType([
-        PropTypes.shape({ sheetName: PropTypes.string.isRequired }),
-        PropTypes.shape({
-          folderName: PropTypes.string.isRequired,
-          sheets: PropTypes.arrayOf(PropTypes.string).isRequired,
-        }),
-      ])
+      PropTypes.shape({
+        sheetName: PropTypes.string,
+        folderName: PropTypes.string,
+        sheets: PropTypes.arrayOf(PropTypes.string),
+      })
     ),
-  }).isRequired,
+  }),
   tempData: PropTypes.shape({
     newOrder: PropTypes.array,
   }).isRequired,

@@ -316,7 +316,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         showBackButton: !editMode,
         backButtonTitle: "Card Templates",
         backButton: editMode ? null : { label: "Card Templates", onClick: handleBack },
-        title: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
+        title: selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] ? currentCardTemplates[selectedTemplateIndex].name || "New Template" : "New Template",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -334,13 +334,15 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               isRemove: false,
               color: "blue",
             }
-          : {
+          : selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
+          ? {
               label: "Edit",
               onClick: () => setEditMode(true),
               isActive: true,
               isRemove: false,
               color: "blue",
-            },
+            }
+          : null,
       });
     } else if (currentStep === 3) {
       setModalConfig({
@@ -586,7 +588,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         }
       }
 
-      setSelectedTemplateIndex(currentCardTemplates.length);
+      // For new template, set selectedTemplateIndex to null and navigate to Step 2
+      setSelectedTemplateIndex(null);
       setNewTemplateName("");
       setEditMode(false);
       setNavigationDirection("forward");
@@ -675,7 +678,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         newSections[sectionIndex] = section;
         currentTemplate.sections = newSections;
         currentTemplate.headers = currentTemplate.headers.map((h) =>
-          h.key === key ? { ...h, isUsed: !isSelected } : { ...h }
+          h.key === key ? { ...h, isUsed: !isSelected } : h
         );
         newTemplates[selectedTemplateIndex] = currentTemplate;
         return newTemplates;
@@ -696,7 +699,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           newSections[sectionIndex].keys = newSections[sectionIndex].keys.filter((k) => k !== key);
           currentTemplate.sections = newSections;
           currentTemplate.headers = currentTemplate.headers.map((h) =>
-            h.key === key ? { ...h, isUsed: false } : { ...h }
+            h.key === key ? { ...h, isUsed: false } : h
           );
           newTemplates[selectedTemplateIndex] = currentTemplate;
           return newTemplates;
@@ -709,11 +712,17 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   // Filter headers for search
   const filteredHeaders = useCallback(() => {
     if (selectedTemplateIndex === null || currentSectionIndex === null) return [];
-    const sectionKeys = currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.keys || [];
+    
+    // Get all keys used in any section
+    const usedKeys = currentCardTemplates[selectedTemplateIndex]?.sections
+      .flatMap((section) => section.keys) || [];
+
     return (
       currentCardTemplates[selectedTemplateIndex]?.headers?.filter(
         (header) =>
-          !sectionKeys.includes(header.key) &&
+          // Exclude headers used in any section
+          !usedKeys.includes(header.key) &&
+          // Apply search query filter
           [header.name, header.type, header.section].some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase())
           )
@@ -798,9 +807,9 @@ const CardsTemplate = ({ tempData, setTempData }) => {
               </>
             )}
 
-            {step === 2 && selectedTemplateIndex !== null && (
+            {step === 2 && (
               <>
-                {currentCardTemplates[selectedTemplateIndex] ? (
+                {selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] ? (
                   <>
                     <input
                       type="text"

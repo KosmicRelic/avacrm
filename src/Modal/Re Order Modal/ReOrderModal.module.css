@@ -4,7 +4,7 @@
   overflow: hidden;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -13,23 +13,21 @@
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
-.view {
-  width: 100%;
-  box-sizing: border-box;
-  transition: opacity 0.3s ease, transform 0.3s ease; /* Added for animations */
-}
-
-.view.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.view.animateForward {
+.sheetList.forward {
   animation: slideUp 0.3s ease-out forwards;
 }
 
-.view.animateBackward {
+.sheetList.backward {
   animation: slideBack 0.3s ease-out forwards;
+}
+
+.view {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.view.hidden {
+  display: none;
 }
 
 .sheetItem {
@@ -46,7 +44,14 @@
   background: rgba(58, 58, 60, 0.6);
 }
 
+.sheetItem:first-child {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
 .sheetItem:last-child {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
   border-bottom: none;
 }
 

@@ -15,6 +15,15 @@ export const MainContextProvider = ({ children }) => {
   const [sheets, setSheets] = useState({
     allSheets: [
       {
+        id: 'primarySheet',
+        sheetName: 'All',
+        headers: [],
+        pinnedHeaders: [],
+        rows: [],
+        filters: {},
+        isActive: true,
+      },
+      {
         id: 'leadsSheet',
         sheetName: 'Leads',
         headers: [
@@ -33,7 +42,7 @@ export const MainContextProvider = ({ children }) => {
           '100011', '100012', '100013', '100014', '100015', '100016', '100017', '100018', '100019', '100020',
         ],
         filters: {},
-        isActive: true,
+        isActive: false,
       },
       {
         id: 'campaignsSheet',
@@ -86,10 +95,12 @@ export const MainContextProvider = ({ children }) => {
       },
     ],
     structure: [
+      { sheetName: 'All' },
       { sheetName: 'Leads' },
       { sheetName: 'Ad Campaigns' },
       { sheetName: 'Business Partners' },
       { sheetName: 'Payments' },
+      { folderName: 'Test', sheets:["Leads"] },
     ],
   });
 
@@ -1068,7 +1079,7 @@ export const MainContextProvider = ({ children }) => {
   }, [isDarkTheme]);
 
   useEffect(()=>{
-    
+    // console.log(sheets)
   },[])
 
   return (

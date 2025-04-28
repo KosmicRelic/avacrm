@@ -3,14 +3,13 @@ import PropTypes from "prop-types";
 import styles from "./CreateSheetsAndFolders.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa"; // Added icons
+import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
 
 const CreateSheetsAndFolders = ({
   tempData,
   setTempData,
   sheets,
   setSheets,
-  headers,
   onSheetChange,
   handleSheetSave,
   handleFolderSave,
@@ -22,7 +21,6 @@ const CreateSheetsAndFolders = ({
   const [newSheetName, setNewSheetName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedSheets, setSelectedSheets] = useState([]);
-  const [selectedHeaders, setSelectedHeaders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const hasInitialized = useRef(false);
@@ -36,7 +34,6 @@ const CreateSheetsAndFolders = ({
       return;
     }
 
-    // Check for duplicate sheet name (case-insensitive)
     const sheetExists = sheets.allSheets.some(
       (sheet) => sheet.sheetName.toLowerCase() === trimmedName.toLowerCase()
     );
@@ -47,12 +44,11 @@ const CreateSheetsAndFolders = ({
 
     setError("");
     const sheetId = `sheet_${Date.now()}`;
-    handleSheetSave(trimmedName, selectedHeaders, sheetId);
+    handleSheetSave(trimmedName, [], sheetId);
     setNewSheetName("");
-    setSelectedHeaders([]);
     setSearchQuery("");
     handleClose();
-  }, [newSheetName, selectedHeaders, sheets.allSheets, handleSheetSave, handleClose]);
+  }, [newSheetName, sheets.allSheets, handleSheetSave, handleClose]);
 
   const handleFolderSaveClick = useCallback(() => {
     const trimmedName = newFolderName.trim();
@@ -61,7 +57,6 @@ const CreateSheetsAndFolders = ({
       return;
     }
 
-    // Check for duplicate folder name (case-insensitive)
     const folderExists = sheets.structure.some(
       (item) => item.folderName && item.folderName.toLowerCase() === trimmedName.toLowerCase()
     );
@@ -96,12 +91,7 @@ const CreateSheetsAndFolders = ({
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
-        steps: [
-          {
-            title: "Create Sheets & Folders",
-            rightButton: null,
-          },
-        ],
+        steps: [{ title: "Create Sheets & Folders", rightButton: null }],
       });
       setModalConfig({
         showTitle: true,
@@ -131,10 +121,9 @@ const CreateSheetsAndFolders = ({
     setNewSheetName("");
     setNewFolderName("");
     setSelectedSheets([]);
-    setSelectedHeaders([]);
     setSearchQuery("");
     setError("");
-  }, [addType]);
+  }, []);
 
   const toggleSheetSelection = useCallback((sheetName) => {
     setSelectedSheets((prev) =>
@@ -142,28 +131,16 @@ const CreateSheetsAndFolders = ({
     );
   }, []);
 
-  const toggleHeaderSelection = useCallback((headerKey) => {
-    setSelectedHeaders((prev) =>
-      prev.includes(headerKey) ? prev.filter((h) => h !== headerKey) : [...prev, headerKey]
-    );
-  }, []);
-
-  const availableHeaders = headers.map((h, index) => ({
-    key: h.key || `header-${index}`,
-    name: h.name || Object.values(h)[0],
-    type: h.type || "text",
-  }));
-
-  const filteredHeaders = availableHeaders.filter((header) =>
-    header.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const folderSheets = sheets.structure
+  // Get all sheet names that are already nested in folders
+  const nestedSheetNames = sheets.structure
     .filter((item) => item.folderName)
-    .flatMap((folder) => folder.sheets);
+    .flatMap((item) => item.sheets || []);
+
+  // Get available sheets (excluding primarySheet and nested sheets)
   const availableSheets = sheets.allSheets
-    .filter((sheet) => !folderSheets.includes(sheet.sheetName) && sheet.sheetName !== "primarySheet")
-    .map((sheet) => sheet.sheetName);
+    .filter((sheet) => sheet.sheetName !== "primarySheet" && !nestedSheetNames.includes(sheet.sheetName))
+    .map((sheet) => sheet.sheetName)
+    .filter((sheetName) => sheetName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className={`${styles.managerWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -208,59 +185,10 @@ const CreateSheetsAndFolders = ({
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
                 />
               </div>
-              <div>
-                <h3 className={`${styles.headerSectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Add Headers
-                </h3>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Headers"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  style={{ marginBottom: "16px" }}
-                />
-              </div>
               <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                {filteredHeaders.length > 0 ? (
-                  filteredHeaders.map((header) => (
-                    <div
-                      key={header.key}
-                      className={`${styles.headerItem} ${
-                        selectedHeaders.includes(header.key) ? styles.selected : ""
-                      } ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => toggleHeaderSelection(header.key)}
-                    >
-                      <div className={styles.headerRow}>
-                        <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {selectedHeaders.includes(header.key) ? (
-                            <FaRegCheckCircle
-                              className={`${styles.customCheckbox} ${styles.checked} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
-                          ) : (
-                            <FaRegCircle
-                              className={`${styles.customCheckbox} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
-                          )}
-                          <span>{header.name}</span>
-                          <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            ({header.type})
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    No headers found.
-                  </div>
-                )}
+                <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  Headers will be defined when creating cards for this sheet.
+                </div>
               </div>
             </>
           )}
@@ -279,11 +207,21 @@ const CreateSheetsAndFolders = ({
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
                 />
               </div>
+              <div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Sheets"
+                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  style={{ marginBottom: "16px" }}
+                />
+              </div>
               <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
                 {availableSheets.length > 0 ? (
                   availableSheets.map((sheetName) => (
                     <div
-                      key={sheetName}
+                      key={`sheet-${sheetName}`}
                       className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ""}`}
                       onClick={() => toggleSheetSelection(sheetName)}
                     >
@@ -310,7 +248,9 @@ const CreateSheetsAndFolders = ({
                     </div>
                   ))
                 ) : (
-                  <div className={styles.noItems}>No sheets available to add to a folder.</div>
+                  <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    No sheets available to add.
+                  </div>
                 )}
               </div>
             </>
@@ -331,7 +271,6 @@ CreateSheetsAndFolders.propTypes = {
     structure: PropTypes.array.isRequired,
   }).isRequired,
   setSheets: PropTypes.func.isRequired,
-  headers: PropTypes.array.isRequired,
   onSheetChange: PropTypes.func.isRequired,
   handleSheetSave: PropTypes.func.isRequired,
   handleFolderSave: PropTypes.func.isRequired,
