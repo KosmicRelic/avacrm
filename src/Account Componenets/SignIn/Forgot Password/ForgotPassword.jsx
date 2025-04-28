@@ -1,116 +1,153 @@
-import React, { useContext, useState } from "react";
+// src/Account Componenets/SignIn/Forgot Password/ForgotPassword.jsx
+import React, { useContext, useState } from 'react';
 import styles from './ForgotPassword.module.css';
-import { IoClose } from "react-icons/io5";
-import { ImSpinner2 } from "react-icons/im";
+import { IoClose } from 'react-icons/io5';
+import { ImSpinner2 } from 'react-icons/im';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../../firebase.jsx'; // Adjusted path based on folder structure
+import { MainContext } from '../../../Contexts/MainContext';
+import { useTranslation } from 'react-i18next';
 
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../../../firebase";
-import { MainContext } from "../../../Contexts/MainContext";
-import { useTranslation } from "react-i18next";
+export default function ForgotPassword({
+  setForgotPasswordIsActive,
+  setEditPasswordIsEnabled,
+  settingsForgotPassword,
+}) {
+  const { user } = useContext(MainContext);
+  const { t } = useTranslation();
 
-export default function ForgotPassword({ setForgotPasswordIsActive, setEditPasswordIsEnabled, settingsForgotPassword }) {
+  const [email, setEmail] = useState(user ? user.email : '');
+  const [emailFocused, setEmailFocused] = useState(!!user?.email);
+  const [emailError, setEmailError] = useState('');
+  const [emailWasSent, setEmailWasSent] = useState(false);
+  const [isProcessed, setIsProcessed] = useState(false);
 
-    const { user } = useContext(MainContext);
+  const handleForgotPasswordClose = () => {
+    if (isProcessed) return;
 
-    const { t } = useTranslation();
+    if (settingsForgotPassword && emailWasSent) {
+      setEditPasswordIsEnabled(false);
+    }
+    setForgotPasswordIsActive(false);
+  };
 
-    const [email, setEmail] = useState(user ? user.email : "");
-    const [emailFocused, setEmailFocused] = useState(false);  // To handle label focus
-    const [emailError, setEmailError] = useState("");  // To store email validation error
-    const [emailWasSent, setEmailWasSent] = useState(false);
-    const [isProcessed, setIsProcessed] = useState(false);
+  const handleInputChange = (e) => {
+    setEmail(e.target.value);
+    setEmailError('');
+  };
 
-    const handleForgotPasswordClose = () => {
-        if (isProcessed) return;
+  const handleFocus = () => setEmailFocused(true);
 
-        if (settingsForgotPassword && emailWasSent) {
-            setEditPasswordIsEnabled(false);
-        }
-        setForgotPasswordIsActive(false);
-    };
+  const handleBlur = () => {
+    if (email === '') {
+      setEmailFocused(false);
+    }
+  };
 
-    const handleInputChange = (e) => {
-        setEmail(e.target.value);
-        setEmailError("");
-    };
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
-    const handleFocus = () => setEmailFocused(true);
+  const handleForgotPasswordSubmit = async () => {
+    if (isProcessed) return;
 
-    const handleBlur = () => {
-        if (email === "") {
-            setEmailFocused(false);
-        }
-    };
+    if (!validateEmail(email)) {
+      setEmailError(t('forgotPassword.emailError'));
+      return;
+    }
 
-    const validateEmail = (email) => {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    };
+    setIsProcessed(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setEmailWasSent(true);
+    } catch (error) {
+      console.error('Error sending password reset email:', error.code, error.message);
+      let errorMessage = t('forgotPassword.genericError');
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = t('forgotPassword.userNotFound');
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = t('forgotPassword.invalidEmail');
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = t('forgotPassword.tooManyRequests');
+      }
+      setEmailError(errorMessage);
+    } finally {
+      setIsProcessed(false);
+    }
+  };
 
-    const handleForgotPasswordSubmit = async () => {
-        if (isProcessed) return;
+  return (
+    <>
+      <div
+        className={styles.background}
+        onClick={handleForgotPasswordClose}
+        role="button"
+        aria-label={t('forgotPassword.closeModal')}
+      />
+      <div className={styles.forgotPasswordContainer}>
+        <button
+          className={styles.closeButton}
+          onClick={handleForgotPasswordClose}
+          aria-label={t('forgotPassword.closeButton')}
+          disabled={isProcessed}
+        >
+          <IoClose size={24} />
+        </button>
+        <h2 className={styles.title}>
+          {emailWasSent ? t('forgotPassword.emailSentTitle') : t('forgotPassword.title')}
+        </h2>
+        <p className={styles.emailSentText}>
+          {emailWasSent
+            ? t('forgotPassword.emailSentInstructions')
+            : t('forgotPassword.instructions')}
+        </p>
 
-        if (!validateEmail(email)) {
-            setEmailError(t("forgotPassword.emailError"));
-            return;
-        }
+        {!emailWasSent && (
+          <div className={`${styles.inputContainer} ${emailError ? styles.error : ''}`}>
+            <label
+              className={`${styles.label} ${emailFocused || email ? styles.focused : ''} ${
+                emailError ? styles.errorText : ''
+              }`}
+            >
+              {t('forgotPassword.label')}*
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={handleInputChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              className={styles.inputField}
+              disabled={isProcessed}
+              aria-invalid={!!emailError}
+              aria-describedby={emailError ? 'email-error' : undefined}
+            />
+          </div>
+        )}
 
-        setIsProcessed(true);
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setEmailWasSent(true);
-        } catch (error) {
-            console.error("Error sending password reset email:", error);
-        } finally {
-            setIsProcessed(false);
-        }
-    };
+        {emailError && !emailWasSent && (
+          <p id="email-error" className={styles.errorText}>
+            {emailError}
+          </p>
+        )}
 
-    return (
-        <>
-            <div className={styles.background} onClick={handleForgotPasswordClose}></div>
-            <div className={styles.forgotPasswordContainer}>
-                <IoClose 
-                    size={24} 
-                    className={styles.closeButton} 
-                    onClick={handleForgotPasswordClose}
-                />
-                <h2 className={styles.title}>
-                    {!emailWasSent ? t("forgotPassword.title") : t("forgotPassword.emailSentTitle")}
-                </h2>
-                <p className={styles.emailSentText}>
-                    {!emailWasSent
-                        ? t("forgotPassword.instructions")
-                        : t("forgotPassword.emailSentInstructions")
-                    }
-                </p>
-                
-                {!emailWasSent && (
-                    <div className={styles.inputContainer}>
-                        <label className={`${styles.label} ${emailFocused || email ? styles.focused : ""}`}>
-                            {t("forgotPassword.label")}
-                        </label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={handleInputChange}
-                            onFocus={handleFocus}
-                            onBlur={handleBlur}
-                            className={styles.inputField}
-                            disabled={isProcessed}
-                        />
-                    </div>
-                )}
-                
-                {emailError && !emailWasSent && <p className={styles.errorText}>{emailError}</p>}
-                
-                <button 
-                    className={styles.saveChanges} 
-                    onClick={!isProcessed && !emailWasSent ? handleForgotPasswordSubmit : emailWasSent ? handleForgotPasswordClose : null}
-                >
-                    {isProcessed ? <ImSpinner2 className={styles.spinner} /> : (!emailWasSent ? t("forgotPassword.sendEmailButton") : t("forgotPassword.gotItButton"))}
-                </button>
-            </div>
-        </>
-    );
+        <button
+          className={styles.saveChanges}
+          onClick={
+            !isProcessed && !emailWasSent ? handleForgotPasswordSubmit : handleForgotPasswordClose
+          }
+          disabled={isProcessed}
+        >
+          {isProcessed ? (
+            <ImSpinner2 className={styles.spinner} />
+          ) : emailWasSent ? (
+            t('forgotPassword.gotItButton')
+          ) : (
+            t('forgotPassword.sendEmailButton')
+          )}
+        </button>
+      </div>
+    </>
+  );
 }

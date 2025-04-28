@@ -1,0 +1,78 @@
+{
+  "businessSignUp": {
+    "signup": "Sign Up",
+    "shortText": "Create your business account to get started.",
+    "businessName": "Business Name",
+    "email": "Email",
+    "password": "Password",
+    "invitationCode": "Invitation Code",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "signin": "Sign In",
+    "successMessage": "Account created successfully!",
+    "error": {
+      "generic": "Failed to create account. Please try again."
+    },
+    "passwordRequirement": {
+      "minLength": "Password must be at least 8 characters",
+      "uppercase": "Password must contain an uppercase letter",
+      "lowercase": "Password must contain a lowercase letter",
+      "number": "Password must contain a number"
+    }
+  },
+    "signIn": {
+      "signin": "Sign In",
+      "shortText": "Log in to access your account.",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot Password?",
+      "dontHaveAccount": "Don't have an account?",
+      "signup": "Sign Up",
+      "userNotFound": "No account found with this email.",
+      "wrongPassword": "Incorrect password. Please try again.",
+      "invalidEmail": "Invalid email format.",
+      "tooManyRequests": "Too many attempts. Please try again later.",
+      "genericError": "An error occurred. Please try again."
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "emailSentTitle": "Check Your Email",
+      "instructions": "Enter your email address to receive a password reset link.",
+      "emailSentInstructions": "We've sent a password reset link to your email. Please check your inbox (and spam folder).",
+      "label": "Email",
+      "sendEmailButton": "Send Reset Link",
+      "gotItButton": "Got It",
+      "closeModal": "Close modal",
+      "closeButton": "Close",
+      "emailError": "Please enter a valid email address.",
+      "userNotFound": "No account found with this email.",
+      "invalidEmail": "Invalid email format.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "genericError": "An error occurred. Please try again."
+    },
+    "businessSignUp": {
+      "signup": "Sign Up",
+      "shortText": "Create your business account to get started.",
+      "businessName": "Business Name",
+      "email": "Email",
+      "password": "Password",
+      "invitationCode": "Invitation Code",
+      "createAccount": "Create Account",
+      "alreadyHaveAccount": "Already have an account?",
+      "signin": "Sign In",
+      "successMessage": "Account created successfully! Redirecting...",
+      "passwordRequirement": {
+        "minLength": "Password must be at least 8 characters",
+        "uppercase": "Password must contain an uppercase letter",
+        "lowercase": "Password must contain a lowercase letter",
+        "number": "Password must contain a number"
+      },
+      "error": {
+        "emailInUse": "This email is already in use.",
+        "invalidEmail": "Invalid email format.",
+        "weakPassword": "Password is too weak.",
+        "invalidCode": "Invalid invitation code.",
+        "generic": "Failed to create account. Please try again."
+      }
+    }
+  }

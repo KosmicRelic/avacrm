@@ -1,8 +1,7 @@
-/* Container for the overall layout */
+/* src/Account Componenets/SignIn/SignIn.module.css */
 .container {
     display: flex;
     flex-direction: column;
-    /* justify-content: center; */
     align-items: center;
     height: 100vh;
     background-color: #fff;
@@ -10,20 +9,19 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     position: fixed;
     top: 0;
-    left:0;
+    left: 0;
     width: 100%;
     height: 100%;
     box-sizing: border-box;
     z-index: 1300;
 }
 
-/* Header containing the logo and intro text */
 .header {
     text-align: center;
     margin-top: 8em;
 }
 
-.subText{
+.subText {
     font-size: 1.1em;
     font-weight: 400;
 }
@@ -44,7 +42,6 @@ p {
     color: #555;
 }
 
-/* Form and input fields */
 .form {
     width: 100%;
     max-width: 320px;
@@ -88,7 +85,6 @@ p {
     border-color: #000;
 }
 
-/* Focused label state (when input is focused or has value) */
 .focused {
     top: 16px;
     left: 16px;
@@ -96,7 +92,6 @@ p {
     color: #000;
 }
 
-/* Submit button */
 .submitButton {
     width: 100%;
     height: 50px;
@@ -112,15 +107,15 @@ p {
     white-space: nowrap;
 }
 
-.logoText{
+.logoText {
     position: absolute;
     text-align: center;
     top: 0;
-    right:0;
+    right: 0;
     left: 0;
     width: 100%;
     font-size: 1.4em;
-    margin:1em 0;
+    margin: 1em 0;
     margin-bottom: 1.5em;
     cursor: pointer;
 }
@@ -134,7 +129,6 @@ p {
     width: 80%;
 }
 
-/* Footer for the "Log in" link */
 .footer {
     margin-top: 20px;
     font-size: 14px;
@@ -145,20 +139,19 @@ p {
     color: #000;
     text-decoration: none;
     font-weight: bold;
-    cursor: pointer
+    cursor: pointer;
 }
 
 .footer a:hover {
     text-decoration: underline;
 }
 
-/* Add this class to style the input fields in error */
 .error .inputField {
     border-color: rgb(176, 59, 59);
 }
 
 .errorText {
-    color: rgb(176, 59, 59); /* Match the error color */
+    color: rgb(176, 59, 59);
 }
 
 .eyeIcons {
@@ -172,9 +165,9 @@ p {
 }
 
 .spinner {
-    animation: spin 1s linear infinite; /* Animation properties */
-    margin: auto; /* Center horizontally */
-    display: block; /* Ensure it's block to center properly */
+    animation: spin 1s linear infinite;
+    margin: auto;
+    display: block;
 }
 
 @keyframes spin {
@@ -182,16 +175,16 @@ p {
     100% { transform: rotate(360deg); }
 }
 
-.forgotPassword{
+.forgotPassword {
     font-size: 0.9em;
     font-weight: 600;
     color: rgb(68, 68, 68);
     width: fit-content;
     cursor: pointer;
-    margin:0;
-    margin-top: 1em; 
+    margin: 0;
+    margin-top: 1em;
 }
 
-.forgotPassword:hover{
+.forgotPassword:hover {
     text-decoration: underline;
 }

@@ -1,5 +1,7 @@
 import { createContext, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from "../firebase";
 
 export const MainContext = createContext();
 
@@ -10,19 +12,29 @@ export const MainContextProvider = ({ children }) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  const [user, setUser] = useState(null); // Add user state for authentication
+  const [userAuthChecked, setUserAuthChecked] = useState(false);
+
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+        });
+      } else {
+        setUser(null);
+      }
+      setUserAuthChecked(true); // Mark auth check as complete
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const [sheets, setSheets] = useState({
     allSheets: [
-      {
-        id: 'primarySheet',
-        sheetName: 'All',
-        headers: [],
-        pinnedHeaders: [],
-        rows: [],
-        filters: {},
-        isActive: true,
-      },
       {
         id: 'leadsSheet',
         sheetName: 'Leads',
@@ -42,7 +54,7 @@ export const MainContextProvider = ({ children }) => {
           '100011', '100012', '100013', '100014', '100015', '100016', '100017', '100018', '100019', '100020',
         ],
         filters: {},
-        isActive: false,
+        isActive: true,
       },
       {
         id: 'campaignsSheet',
@@ -95,7 +107,6 @@ export const MainContextProvider = ({ children }) => {
       },
     ],
     structure: [
-      { sheetName: 'All' },
       { sheetName: 'Leads' },
       { sheetName: 'Ad Campaigns' },
       { sheetName: 'Business Partners' },
@@ -1109,6 +1120,10 @@ export const MainContextProvider = ({ children }) => {
         setDashboards,
         metrics,
         setMetrics,
+        user,
+        setUser,
+        userAuthChecked,
+        setUserAuthChecked,
       }}
     >
       {children}

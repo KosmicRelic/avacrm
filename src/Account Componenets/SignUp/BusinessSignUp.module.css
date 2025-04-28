@@ -1,4 +1,4 @@
-/* Container for the overall layout */
+/* src/BusinessSignUp/BusinessSignUp.module.css */
 .container {
     display: flex;
     flex-direction: column;
@@ -9,56 +9,54 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     position: fixed;
     top: 0;
-    left:0;
+    left: 0;
     width: 100%;
     height: 100%;
     box-sizing: border-box;
     z-index: 1300;
     overflow-y: auto;
-}
-
-/* Header containing the logo and intro text */
-.header {
+  }
+  
+  .header {
     text-align: center;
     margin-top: 4em;
-}
-
-.subText{
+  }
+  
+  .subText {
     font-size: 1.1em;
     font-weight: 400;
-}
-
-.logo {
+  }
+  
+  .logo {
     height: 50px;
     width: 50px;
     margin-bottom: 10px;
-}
-
-h2 {
+  }
+  
+  h2 {
     font-size: 24px;
     margin-bottom: 10px;
-}
-
-p {
+  }
+  
+  p {
     font-size: 14px;
     color: #555;
-}
-
-/* Form and input fields */
-.form {
+  }
+  
+  .form {
     width: 100%;
     max-width: 320px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-}
-
-.inputContainer {
+  }
+  
+  .inputContainer {
     position: relative;
     width: 100%;
-}
-
-.label {
+  }
+  
+  .label {
     position: absolute;
     left: 22px;
     top: 50%;
@@ -67,9 +65,9 @@ p {
     font-size: 14px;
     color: #888;
     pointer-events: none;
-}
-
-.inputField {
+  }
+  
+  .inputField {
     width: 100%;
     height: 60px;
     padding: 16px 15px;
@@ -82,32 +80,20 @@ p {
     transition: all 0.2s ease-in-out;
     background-color: white;
     color: black;
-}
-
-.inputField.centerItems{
-    display: flex;
-    flex-direction: column;
-}
-
-.dateText{
-    font-size: 16px;
-    color: #000;
-}
-
-.inputField:focus {
+  }
+  
+  .inputField:focus {
     border-color: #000;
-}
-
-/* Focused label state (when input is focused or has value) */
-.focused {
+  }
+  
+  .focused {
     top: 16px;
     left: 16px;
     font-size: 12px;
     color: #000;
-}
-
-/* Submit button */
-.submitButton, .continueButton{
+  }
+  
+  .submitButton {
     width: 100%;
     height: 50px;
     background-color: rgb(48, 111, 219);
@@ -120,68 +106,62 @@ p {
     transform: translateX(-50%);
     cursor: pointer;
     white-space: nowrap;
-}
-
-.logoText{
+  }
+  
+  .logoText {
     position: absolute;
     text-align: center;
     top: 0;
-    right:0;
+    right: 0;
     left: 0;
     width: 100%;
     font-size: 1.4em;
-    margin:1em 0;
+    margin: 1em 0;
     margin-bottom: 1.5em;
     cursor: pointer;
-}
-
-.title {
+  }
+  
+  .title {
     font-size: 3em;
     font-weight: 700;
     margin: 0;
     text-align: center;
     margin: 0.5em auto;
     width: 80%;
-}
-
-.successMessage{
+  }
+  
+  .successMessage {
     font-size: 2.4em;
     font-weight: 650;
     color: #000;
-}
-
-.continueButton{
-    max-width: 400px;
-}
-
-/* Footer for the "Log in" link */
-.footer {
+  }
+  
+  .footer {
     margin-top: 20px;
     font-size: 14px;
     color: #555;
-}
-
-.footer a {
+  }
+  
+  .footer a {
     color: #000;
     text-decoration: none;
     font-weight: bold;
-    cursor: pointer
-}
-
-.footer a:hover {
+    cursor: pointer;
+  }
+  
+  .footer a:hover {
     text-decoration: underline;
-}
-
-/* Add this class to style the input fields in error */
-.error .inputField {
+  }
+  
+  .error .inputField {
     border-color: rgb(176, 59, 59);
-}
-
-.errorText {
-    color: rgb(176, 59, 59); /* Match the error color */
-}
-
-.eyeIcons {
+  }
+  
+  .errorText {
+    color: rgb(176, 59, 59);
+  }
+  
+  .eyeIcons {
     position: absolute;
     right: 15px;
     top: 50%;
@@ -189,27 +169,30 @@ p {
     display: flex;
     align-items: center;
     cursor: pointer;
-}
-
-.requirementsList {
+  }
+  
+  .requirementsList {
     padding-left: 32px;
-    list-style-type: disc; /* Bulleted list */
-    margin: 0; /* Remove default margin */
-    /* padding-left: 20px;  */
-}
-
-.requirementsText {
-    color: red; /* Or any color you prefer for error text */
+    list-style-type: disc;
+    margin: 0;
+  }
+  
+  .requirementsText {
+    color: red;
     font-size: 0.8rem;
-}
-
-.spinner {
-    animation: spin 1s linear infinite; /* Animation properties */
-    margin: auto; /* Center horizontally */
-    display: block; /* Ensure it's block to center properly */
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+    margin: auto;
+    display: block;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }

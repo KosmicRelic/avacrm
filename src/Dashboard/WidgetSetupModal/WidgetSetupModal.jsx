@@ -1,3 +1,4 @@
+// src/Dashboard/WidgetSetupModal.jsx
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from './WidgetSetupModal.module.css';
@@ -20,8 +21,9 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       alert('Please select both a category and a metric to proceed.');
       return;
     }
+    console.log('Saving widget with tempData:', tempData);
     handleClose({ fromSave: true });
-  }, [selectedCategory, selectedMetric, handleClose]);
+  }, [selectedCategory, selectedMetric, handleClose, tempData]);
 
   // Memoize the Save button handler
   const handleSave = useCallback(() => {
@@ -90,7 +92,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
           isRemove: false,
         },
       });
-      // Set initial step based on tempData.initialStep
       if (tempData.initialStep === 2) {
         goToStep(2);
       }
@@ -131,7 +132,6 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       };
     }
 
-    // Only update if config has changed
     if (
       !prevConfigRef.current ||
       JSON.stringify(newConfig) !== JSON.stringify(prevConfigRef.current)
@@ -150,16 +150,15 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     prevSelectionsRef.current = currentSelections;
 
     if (!selectedCategory || !selectedMetric) {
-      setTempData((prev) => ({
-        ...prev,
+      const newTempData = {
+        ...tempData,
         updatedWidget: null,
+        category: selectedCategory,
+        metric: selectedMetric,
         canClose: false,
-      }));
-      setActiveModalData((prev) => ({
-        ...prev,
-        updatedWidget: null,
-        canClose: false,
-      }));
+      };
+      setTempData(newTempData);
+      setActiveModalData(newTempData);
       return;
     }
 
@@ -167,36 +166,39 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
     const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
 
     if (!metricData) {
-      setTempData((prev) => ({
-        ...prev,
+      const newTempData = {
+        ...tempData,
         updatedWidget: null,
+        category: selectedCategory,
+        metric: selectedMetric,
         canClose: false,
-      }));
-      setActiveModalData((prev) => ({
-        ...prev,
-        updatedWidget: null,
-        canClose: false,
-      }));
+      };
+      setTempData(newTempData);
+      setActiveModalData(newTempData);
       return;
     }
 
     const updatedWidget = {
       ...tempData.widget,
+      id: tempData.widget.id || `widget-${Date.now()}`,
       title: selectedCategory,
       metricId: metricData.id,
+      dashboardId: tempData.dashboardId,
     };
 
     const newTempData = {
       ...tempData,
       updatedWidget,
+      category: selectedCategory,
+      metric: selectedMetric,
       dashboardId: tempData.dashboardId,
       canClose: true,
     };
     setTempData(newTempData);
     setActiveModalData(newTempData);
+    console.log('Updated tempData:', newTempData);
   }, [selectedCategory, selectedMetric, metrics, setTempData, setActiveModalData, tempData]);
 
-  // Fixed: Changed 'category' to 'selectedCategory'
   const selectedMetrics = selectedCategory
     ? metrics.find((cat) => cat.category === selectedCategory)?.metrics || []
     : [];
