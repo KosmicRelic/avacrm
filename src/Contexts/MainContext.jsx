@@ -1,9 +1,10 @@
 import { createContext, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import fetchUserData from '../Firebase/Firebase Functions/User Functions/fetchUserData';
 import { useNavigate } from 'react-router-dom';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
 export const MainContext = createContext();
 
@@ -25,12 +26,21 @@ export const MainContextProvider = ({ children }) => {
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [isSignup, setIsSignup] = useState(false); // New state to track signup
+  const [isSignup, setIsSignup] = useState(false);
 
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef(false);
   const navigate = useNavigate();
 
+  // Refs to track initial load and previous state values for updates
+  const isInitialLoad = useRef(true);
+  const prevSheets = useRef(sheets);
+  const prevCards = useRef(cards);
+  const prevCardTemplates = useRef(cardTemplates);
+  const prevMetrics = useRef(metrics);
+  const prevDashboards = useRef(dashboards);
+
+  // Theme effect
   useEffect(() => {
     themeRef.current = isDarkTheme ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', themeRef.current);
@@ -41,6 +51,7 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
+  // Auth state effect
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -49,15 +60,13 @@ export const MainContextProvider = ({ children }) => {
           email: firebaseUser.email,
         });
 
-        // If it's a signup, navigate to dashboard but skip data fetching
         if (isSignup) {
-          setIsSignup(false); // Reset signup flag
+          setIsSignup(false);
           navigate('/dashboard');
           setUserAuthChecked(true);
           return;
         }
 
-        // Fetch data only if not already fetched and not a signup
         if (!hasFetched.current) {
           hasFetched.current = true;
           const cleanupFetch = fetchUserData({
@@ -68,30 +77,129 @@ export const MainContextProvider = ({ children }) => {
             setMetrics,
             setDashboards,
           });
-
-          // Cleanup Firestore subscriptions on auth state change
           return cleanupFetch;
         }
       } else {
-        // Reset states if no user
         setUser(null);
         setSheets({ allSheets: [], structure: [] });
         setCards([]);
         setCardTemplates([]);
         setMetrics([]);
         setDashboards([]);
-        hasFetched.current = false; // Allow re-fetching if user logs in again
+        hasFetched.current = false;
       }
       setUserAuthChecked(true);
     });
 
-    // Cleanup auth listener on unmount
     return () => unsubscribeAuth();
   }, [navigate, isSignup]);
 
+  // Firestore update effect
   useEffect(() => {
-    // console.log(sheets);
-  }, [sheets]);
+    // Skip updates if no user is logged in
+    if (!user || !user.uid) return;
+
+    // Skip updates during initial load
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      prevSheets.current = sheets;
+      prevCards.current = cards;
+      prevCardTemplates.current = cardTemplates;
+      prevMetrics.current = metrics;
+      prevDashboards.current = dashboards;
+      return;
+    }
+
+    // Function to check if two objects/arrays are deeply equal
+    const isEqual = (a, b) => {
+      if (a === b) return true;
+      if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null) return false;
+      const keysA = Object.keys(a);
+      const keysB = Object.keys(b);
+      if (keysA.length !== keysB.length) return false;
+      for (const key of keysA) {
+        if (!keysB.includes(key) || !isEqual(a[key], b[key])) return false;
+      }
+      return true;
+    };
+
+    // Check for meaningful changes
+    const sheetsChanged = !isEqual(sheets, prevSheets.current);
+    const cardsChanged = !isEqual(cards, prevCards.current);
+    const cardTemplatesChanged = !isEqual(cardTemplates, prevCardTemplates.current);
+    const metricsChanged = !isEqual(metrics, prevMetrics.current);
+    const dashboardsChanged = !isEqual(dashboards, prevDashboards.current);
+
+    // If no changes, skip Firestore update
+    if (!sheetsChanged && !cardsChanged && !cardTemplatesChanged && !metricsChanged && !dashboardsChanged) {
+      return;
+    }
+
+    // Perform Firestore batch update
+    const updateFirestore = async () => {
+      try {
+        const batch = writeBatch(db);
+        const businessId = user.uid;
+
+        // Update sheets
+        if (sheetsChanged) {
+          sheets.allSheets.forEach((sheet) => {
+            const sheetRef = doc(collection(db, 'businesses', businessId, 'sheets'), sheet.id);
+            batch.set(sheetRef, sheet);
+          });
+          const structureRef = doc(collection(db, 'businesses', businessId, 'sheetsStructure'), 'structure');
+          batch.set(structureRef, { structure: sheets.structure });
+        }
+
+        // Update cards
+        if (cardsChanged) {
+          cards.forEach((card) => {
+            const cardRef = doc(collection(db, 'businesses', businessId, 'cards'), card.id);
+            batch.set(cardRef, card);
+          });
+        }
+
+        // Update card templates
+        if (cardTemplatesChanged) {
+          cardTemplates.forEach((template) => {
+            const templateRef = doc(collection(db, 'businesses', businessId, 'cardTemplates'), template.name);
+            batch.set(templateRef, template);
+          });
+        }
+
+        // Update metrics
+        if (metricsChanged) {
+          metrics.forEach((category) => {
+            const metricRef = doc(collection(db, 'businesses', businessId, 'metrics'), category.category);
+            batch.set(metricRef, category);
+          });
+        }
+
+        // Update dashboards
+        if (dashboardsChanged) {
+          dashboards.forEach((dashboard) => {
+            const dashboardRef = doc(collection(db, 'businesses', businessId, 'dashboards'), dashboard.id);
+            batch.set(dashboardRef, dashboard);
+          });
+        }
+
+        // Commit the batch
+        await batch.commit();
+        console.log('Firestore updated successfully');
+
+        // Update refs with new state
+        prevSheets.current = sheets;
+        prevCards.current = cards;
+        prevCardTemplates.current = cardTemplates;
+        prevMetrics.current = metrics;
+        prevDashboards.current = dashboards;
+      } catch (error) {
+        console.error('Error updating Firestore:', error);
+      }
+    };
+
+    updateFirestore();
+  }, [user, sheets, cards, cardTemplates, metrics, dashboards]);
 
   return (
     <MainContext.Provider
@@ -122,7 +230,7 @@ export const MainContextProvider = ({ children }) => {
         userAuthChecked,
         setUserAuthChecked,
         isSignup,
-        setIsSignup, // Expose isSignup for signup component
+        setIsSignup,
       }}
     >
       {children}

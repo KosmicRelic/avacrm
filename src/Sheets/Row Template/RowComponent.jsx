@@ -25,11 +25,6 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isS
     }
   };
 
-  // Don't render the Add row when in select mode
-  if (isAddNew && isSelectMode) {
-    return null;
-  }
-
   return (
     <div
       className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ""} ${
@@ -53,31 +48,41 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isS
           </div>
         </div>
       )}
-      {headerNames.map((header, i) => (
-        <div
-          key={i}
-          className={`${styles.bodyCell} ${
-            isAddNew && i === 0 ? styles.addCell : ""
-          } ${isDarkTheme ? styles.darkTheme : ""}`}
-        >
-          {isAddNew && i === 0 ? (
+      {isAddNew ? (
+        <>
+          <div
+            className={`${styles.bodyCell} ${styles.addCell} ${isDarkTheme ? styles.darkTheme : ""}`}
+          >
             <button
               className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               onClick={handleSelectClick}
             >
               Select
             </button>
-          ) : isAddNew && i === 1 ? (
-            "+ Add"
-          ) : isAddNew ? (
-            ""
-          ) : rowData[header] !== undefined ? (
-            String(rowData[header])
-          ) : (
-            ""
-          )}
-        </div>
-      ))}
+          </div>
+          <div
+            className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ""}`}
+          >
+            + Add
+          </div>
+          {/* Render empty cells for remaining headers, if any */}
+          {headerNames.slice(2).map((header, i) => (
+            <div
+              key={i}
+              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ""}`}
+            ></div>
+          ))}
+        </>
+      ) : (
+        headerNames.map((header, i) => (
+          <div
+            key={i}
+            className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ""}`}
+          >
+            {rowData[header] !== undefined ? String(rowData[header]) : ""}
+          </div>
+        ))
+      )}
     </div>
   );
 };
