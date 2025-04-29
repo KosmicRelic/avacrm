@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import fetchUserData from '../Firebase/Firebase Functions/User Functions/fetchUserData';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 
 export const MainContext = createContext();
@@ -29,16 +29,19 @@ export const MainContextProvider = ({ children }) => {
   const [isSignup, setIsSignup] = useState(false);
 
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
-  const hasFetched = useRef(false);
+  const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Refs to track initial load and previous state values for updates
+  // Refs to track initial load and previous state values
   const isInitialLoad = useRef(true);
-  const prevSheets = useRef(sheets);
-  const prevCards = useRef(cards);
-  const prevCardTemplates = useRef(cardTemplates);
-  const prevMetrics = useRef(metrics);
-  const prevDashboards = useRef(dashboards);
+  const prevStates = useRef({
+    sheets: { allSheets: [], structure: [] },
+    cards: [],
+    cardTemplates: [],
+    metrics: [],
+    dashboards: [],
+  });
 
   // Theme effect
   useEffect(() => {
@@ -51,7 +54,7 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [isDarkTheme]);
 
-  // Auth state effect
+  // Auth state and route-based data fetching effect
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -67,18 +70,30 @@ export const MainContextProvider = ({ children }) => {
           return;
         }
 
-        if (!hasFetched.current) {
-          hasFetched.current = true;
-          const cleanupFetch = fetchUserData({
+        const currentRoute = location.pathname;
+        let cleanupFetch = () => {};
+
+        if (
+          (currentRoute === '/sheets' && !hasFetched.current.sheets) ||
+          (currentRoute === '/dashboard' && !hasFetched.current.dashboard) ||
+          (currentRoute === '/metrics' && !hasFetched.current.metrics)
+        ) {
+          cleanupFetch = fetchUserData({
             businessId: firebaseUser.uid,
+            route: currentRoute,
             setSheets,
             setCards,
             setCardTemplates,
             setMetrics,
             setDashboards,
           });
-          return cleanupFetch;
+
+          if (currentRoute === '/sheets') hasFetched.current.sheets = true;
+          if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
+          if (currentRoute === '/metrics') hasFetched.current.metrics = true;
         }
+
+        return cleanupFetch;
       } else {
         setUser(null);
         setSheets({ allSheets: [], structure: [] });
@@ -86,31 +101,37 @@ export const MainContextProvider = ({ children }) => {
         setCardTemplates([]);
         setMetrics([]);
         setDashboards([]);
-        hasFetched.current = false;
+        hasFetched.current = { sheets: false, dashboard: false, metrics: false };
+        isInitialLoad.current = true;
+        prevStates.current = {
+          sheets: { allSheets: [], structure: [] },
+          cards: [],
+          cardTemplates: [],
+          metrics: [],
+          dashboards: [],
+        };
       }
       setUserAuthChecked(true);
     });
 
     return () => unsubscribeAuth();
-  }, [navigate, isSignup]);
+  }, [navigate, isSignup, location.pathname]);
+
+  // useEffect(()=>{
+  //   console.log(dashboards);
+  // },[dashboards])
 
   // Firestore update effect
   useEffect(() => {
-    // Skip updates if no user is logged in
     if (!user || !user.uid) return;
 
-    // Skip updates during initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-      prevSheets.current = sheets;
-      prevCards.current = cards;
-      prevCardTemplates.current = cardTemplates;
-      prevMetrics.current = metrics;
-      prevDashboards.current = dashboards;
+      prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       return;
     }
 
-    // Function to check if two objects/arrays are deeply equal
+    // Helper function for deep comparison
     const isEqual = (a, b) => {
       if (a === b) return true;
       if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null) return false;
@@ -123,83 +144,124 @@ export const MainContextProvider = ({ children }) => {
       return true;
     };
 
-    // Check for meaningful changes
-    const sheetsChanged = !isEqual(sheets, prevSheets.current);
-    const cardsChanged = !isEqual(cards, prevCards.current);
-    const cardTemplatesChanged = !isEqual(cardTemplates, prevCardTemplates.current);
-    const metricsChanged = !isEqual(metrics, prevMetrics.current);
-    const dashboardsChanged = !isEqual(dashboards, prevDashboards.current);
+    // Helper function to detect changes in a collection
+    const detectCollectionChanges = (currentItems, prevItems) => {
+      const changes = { added: [], updated: [], removed: [] };
+      const currentMap = new Map(currentItems.map(item => [item.docId, item]));
+      const prevMap = new Map(prevItems.map(item => [item.docId, item]));
 
-    // If no changes, skip Firestore update
-    if (!sheetsChanged && !cardsChanged && !cardTemplatesChanged && !metricsChanged && !dashboardsChanged) {
-      return;
-    }
-
-    // Perform Firestore batch update
-    const updateFirestore = async () => {
-      try {
-        const batch = writeBatch(db);
-        const businessId = user.uid;
-
-        // Update sheets
-        if (sheetsChanged) {
-          sheets.allSheets.forEach((sheet) => {
-            const sheetRef = doc(collection(db, 'businesses', businessId, 'sheets'), sheet.id);
-            batch.set(sheetRef, sheet);
-          });
-          const structureRef = doc(collection(db, 'businesses', businessId, 'sheetsStructure'), 'structure');
-          batch.set(structureRef, { structure: sheets.structure });
+      currentItems.forEach(item => {
+        if (!prevMap.has(item.docId)) {
+          changes.added.push(item);
+        } else if (!isEqual(item, prevMap.get(item.docId))) {
+          changes.updated.push(item);
         }
+      });
 
-        // Update cards
-        if (cardsChanged) {
-          cards.forEach((card) => {
-            const cardRef = doc(collection(db, 'businesses', businessId, 'cards'), card.id);
-            batch.set(cardRef, card);
-          });
+      prevItems.forEach(item => {
+        if (!currentMap.has(item.docId)) {
+          changes.removed.push(item.docId);
         }
+      });
 
-        // Update card templates
-        if (cardTemplatesChanged) {
-          cardTemplates.forEach((template) => {
-            const templateRef = doc(collection(db, 'businesses', businessId, 'cardTemplates'), template.name);
-            batch.set(templateRef, template);
-          });
-        }
-
-        // Update metrics
-        if (metricsChanged) {
-          metrics.forEach((category) => {
-            const metricRef = doc(collection(db, 'businesses', businessId, 'metrics'), category.category);
-            batch.set(metricRef, category);
-          });
-        }
-
-        // Update dashboards
-        if (dashboardsChanged) {
-          dashboards.forEach((dashboard) => {
-            const dashboardRef = doc(collection(db, 'businesses', businessId, 'dashboards'), dashboard.id);
-            batch.set(dashboardRef, dashboard);
-          });
-        }
-
-        // Commit the batch
-        await batch.commit();
-        console.log('Firestore updated successfully');
-
-        // Update refs with new state
-        prevSheets.current = sheets;
-        prevCards.current = cards;
-        prevCardTemplates.current = cardTemplates;
-        prevMetrics.current = metrics;
-        prevDashboards.current = dashboards;
-      } catch (error) {
-        console.error('Error updating Firestore:', error);
-      }
+      return changes;
     };
 
-    updateFirestore();
+    // Configuration mapping state to Firestore paths (derived from fetchUserData)
+    const stateConfig = {
+      sheets: {
+        collectionPath: (uid) => collection(db, 'businesses', uid, 'sheets'),
+        singleDoc: {
+          path: (uid) => doc(db, 'businesses', uid, 'sheetsStructure', 'structure'),
+          field: 'structure',
+          getData: (state) => state.structure,
+          setData: (state, data) => ({ ...state, structure: data }),
+        },
+        getCollectionData: (state) => state.allSheets,
+        setCollectionData: (state, data) => ({ ...state, allSheets: data }),
+      },
+      cards: {
+        collectionPath: (uid) => collection(db, 'businesses', uid, 'cards'),
+        getCollectionData: (state) => state,
+        setCollectionData: (state, data) => data,
+      },
+      cardTemplates: {
+        collectionPath: (uid) => collection(db, 'businesses', uid, 'cardTemplates'),
+        getCollectionData: (state) => state,
+        setCollectionData: (state, data) => data,
+      },
+      metrics: {
+        collectionPath: (uid) => collection(db, 'businesses', uid, 'metrics'),
+        getCollectionData: (state) => state,
+        setCollectionData: (state, data) => data,
+      },
+      dashboards: {
+        collectionPath: (uid) => collection(db, 'businesses', uid, 'dashboards'),
+        getCollectionData: (state) => state,
+        setCollectionData: (state, data) => data,
+      },
+    };
+
+    // Initialize batch
+    const batch = writeBatch(db);
+    let hasChanges = false;
+
+    // Process each state
+    Object.entries(stateConfig).forEach(([stateKey, config]) => {
+      const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
+      const prevState = prevStates.current[stateKey];
+
+      // Handle collection data
+      const currentCollectionData = config.getCollectionData(currentState);
+      const prevCollectionData = config.getCollectionData(prevState);
+      const collectionChanges = detectCollectionChanges(currentCollectionData, prevCollectionData);
+
+      // Process added items
+      collectionChanges.added.forEach(item => {
+        const docRef = doc(config.collectionPath(user.uid), item.docId);
+        const { docId, ...data } = item;
+        batch.set(docRef, data);
+        hasChanges = true;
+      });
+
+      // Process updated items
+      collectionChanges.updated.forEach(item => {
+        const docRef = doc(config.collectionPath(user.uid), item.docId);
+        const { docId, ...data } = item;
+        batch.set(docRef, data, { merge: true });
+        hasChanges = true;
+      });
+
+      // Process removed items
+      collectionChanges.removed.forEach(docId => {
+        const docRef = doc(config.collectionPath(user.uid), docId);
+        batch.delete(docRef);
+        hasChanges = true;
+      });
+
+      // Handle single document (e.g., sheets.structure)
+      if (config.singleDoc) {
+        const currentSingleData = config.singleDoc.getData(currentState);
+        const prevSingleData = config.singleDoc.getData(prevState);
+        if (!isEqual(currentSingleData, prevSingleData)) {
+          const docRef = config.singleDoc.path(user.uid);
+          batch.set(docRef, { [config.singleDoc.field]: currentSingleData });
+          hasChanges = true;
+        }
+      }
+    });
+
+    // Commit batch if there are changes
+    if (hasChanges) {
+      batch.commit().catch(error => {
+        console.error('Error committing Firestore batch:', error);
+      });
+    }
+
+    // Update previous states
+    prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
   }, [user, sheets, cards, cardTemplates, metrics, dashboards]);
+  
 
   return (
     <MainContext.Provider

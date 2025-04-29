@@ -460,7 +460,10 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       return;
     }
 
+    const timestampId = `template_${Date.now()}`;
     const newTemplate = {
+      docId: timestampId,
+      id: timestampId,
       name: newTemplateName.trim(),
       typeOfCards: newTemplateName.trim(),
       headers: [

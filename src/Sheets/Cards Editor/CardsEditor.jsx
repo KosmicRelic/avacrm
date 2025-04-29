@@ -167,6 +167,7 @@ const CardsEditor = ({
     const newRow = {
       ...formData,
       id: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(), // Use UUID for new cards
+      docId: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(),
       sheetName: selectedSheet,
       typeOfCards: template.name,
       history: formData.history || [],

@@ -194,7 +194,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     // If no dashboard can fit, create a new one
     if (!targetDashboard || !freePosition) {
       const newDashboardId = `dashboard-${Date.now()}`;
-      targetDashboard = { id: newDashboardId, dashboardWidgets: [] };
+      targetDashboard = { docId: newDashboardId, id: newDashboardId, dashboardWidgets: [] };
       freePosition = findFreePosition(targetDashboard, size);
       if (!freePosition) {
         alert('Cannot add widget: No valid position available.');

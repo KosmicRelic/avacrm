@@ -207,9 +207,10 @@ function App() {
     (newSheetName, selectedHeaders) => {
       if (!sheets) return;
       setSheets((prevSheets) => {
-        const newSheetId = `sheet${prevSheets.allSheets.length + 1}`;
+        const newSheetId = `sheet_${Date.now()}`;
         const newSheet = {
           id: newSheetId,
+          docId: newSheetId,
           sheetName: newSheetName,
           headers: selectedHeaders.map((key) => {
             const header =
