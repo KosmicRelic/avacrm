@@ -32,11 +32,11 @@ import {
 const ProtectedRoute = React.memo(({ children }) => {
   const { user, userAuthChecked } = useContext(MainContext);
 
-  if (!userAuthChecked) {
-    return <div>Loading...</div>;
+  if (!userAuthChecked && !user) {
+    return ;
   }
 
-  if (!user) {
+  if (!user && userAuthChecked) {
     return <Navigate to="/signin" replace />;
   }
 
@@ -69,6 +69,7 @@ function App() {
     setMetrics,
     isDarkTheme,
     user,
+    userAuthChecked
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -414,6 +415,7 @@ function App() {
   return (
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {showHeader && (
+        <ProtectedRoute>
         <AppHeader
           sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
           activeSheet={activeSheetName}
@@ -426,6 +428,7 @@ function App() {
           }
           onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
         />
+        </ProtectedRoute>
       )}
       <div className={styles.contentWrapper}>
         <Routes>

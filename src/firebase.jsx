@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -18,8 +19,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const functions = getFunctions(app);
 
 // Set authentication persistence to 'local'
 setPersistence(auth, browserLocalPersistence)
@@ -29,3 +31,6 @@ setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error('Error setting auth persistence:', error);
   });
+
+// Export Firebase services
+export { app, auth, db, functions, analytics };

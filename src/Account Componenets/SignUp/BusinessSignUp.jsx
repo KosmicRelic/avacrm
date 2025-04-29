@@ -1,5 +1,4 @@
-// src/BusinessSignUp/BusinessSignUp.jsx
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './BusinessSignUp.module.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -7,11 +6,13 @@ import { ImSpinner2 } from 'react-icons/im';
 import { MainContext } from '../../Contexts/MainContext';
 import { BusinessSignUp as FirebaseBusinessSignUp } from '../../Firebase/Firebase Functions/User Functions/BusinessSignUpFunction';
 import { useTranslation } from 'react-i18next';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function BusinessSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, setUser } = useContext(MainContext);
+  const { user, setIsSignup } = React.useContext(MainContext);
+  const auth = getAuth();
 
   const [businessName, setBusinessName] = useState('');
   const [businessNameFocused, setBusinessNameFocused] = useState(false);
@@ -42,13 +43,11 @@ export default function BusinessSignUp() {
     }
   }, [user, navigate]);
 
-  // Utility function to validate email format
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Check password requirements
   const checkPasswordRequirements = (password) => {
     const requirements = [];
     if (password.length < 8) {
@@ -67,7 +66,6 @@ export default function BusinessSignUp() {
     setPasswordError(requirements.length > 0);
   };
 
-  // Handle input changes
   const handleInputChange = (setter, setError) => (e) => {
     const value = e.target.value;
     setter(value);
@@ -75,56 +73,61 @@ export default function BusinessSignUp() {
       setError(false);
     }
     if (setter === setEmail) {
-      setEmailError(!isValidEmail(value));
+      setEmailError(!isValidEmail(value) && value !== '');
     }
     if (setter === setPassword) {
       checkPasswordRequirements(value);
     }
     if (setter === setInvitationCode) {
-      setInvitationCodeError(value !== '0000'); // Hardcoded for now
+      setInvitationCodeError(value !== '0000' && value !== '');
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setBusinessNameError(!businessName);
-    setEmailError(!isValidEmail(email));
-    setPasswordError(passwordRequirements.length > 0 || !password);
-    setInvitationCodeError(invitationCode !== '0000'); // Hardcoded validation
 
-    if (
-      businessName &&
-      isValidEmail(email) &&
-      password &&
-      passwordRequirements.length === 0 &&
-      invitationCode === '0000'
-    ) {
+    // Validate all fields
+    const isBusinessNameValid = businessName.trim() !== '';
+    const isEmailValid = isValidEmail(email);
+    const isPasswordValid = password && passwordRequirements.length === 0;
+    const isInvitationCodeValid = invitationCode === '0000';
+
+    setBusinessNameError(!isBusinessNameValid);
+    setEmailError(!isEmailValid);
+    setPasswordError(!isPasswordValid);
+    setInvitationCodeError(!isInvitationCodeValid);
+
+    if (isBusinessNameValid && isEmailValid && isPasswordValid && isInvitationCodeValid) {
       try {
         setIsSubmitting(true);
         setSignupError('');
-        const userData = await FirebaseBusinessSignUp({
-          email,
+        setIsSignup(true); // Set signup flag
+
+        // Call the Cloud Function to create the user
+        await FirebaseBusinessSignUp({
+          email: email.trim(),
           password,
-          businessName,
+          businessName: businessName.trim(),
           invitationCode,
-          userType: 'business', // Set userType for extensibility
+          userType: 'business',
         });
-        setUser(userData);
+
+        // Sign in the user immediately after signup
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+
+        // Set signup success to show success message
         setSignupSuccess(true);
-        setTimeout(() => {
-          navigate('/dashboard');
-          window.location.reload();
-        }, 1500);
       } catch (error) {
         setIsSubmitting(false);
         setSignupSuccess(false);
+        setIsSignup(false); // Reset signup flag on error
         setSignupError(error.message || t('businessSignUp.error.generic'));
       }
+    } else {
+      console.log('Form validation failed');
     }
   };
 
-  // Toggle password visibility
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
@@ -166,6 +169,11 @@ export default function BusinessSignUp() {
                 onChange={handleInputChange(setBusinessName, setBusinessNameError)}
                 disabled={isSubmitting}
               />
+              {businessNameError && (
+                <p className={styles.errorText}>
+                  {t('businessSignUp.error.businessNameRequired')}
+                </p>
+              )}
             </div>
 
             <div
@@ -189,6 +197,11 @@ export default function BusinessSignUp() {
                 onChange={handleInputChange(setEmail, setEmailError)}
                 disabled={isSubmitting}
               />
+              {emailError && (
+                <p className={styles.errorText}>
+                  {t('businessSignUp.error.invalidEmail')}
+                </p>
+              )}
             </div>
 
             <div
@@ -266,10 +279,23 @@ export default function BusinessSignUp() {
               />
             </div>
 
+            {signupError && (
+              <p className={styles.errorText} style={{ textAlign: 'center' }}>
+                {signupError}
+              </p>
+            )}
+
             <button
               type="submit"
               className={styles.submitButton}
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                !businessName.trim() ||
+                !isValidEmail(email) ||
+                !password ||
+                passwordRequirements.length > 0 ||
+                invitationCode !== '0000'
+              }
             >
               {isSubmitting ? (
                 <ImSpinner2 className={styles.spinner} />
@@ -278,12 +304,6 @@ export default function BusinessSignUp() {
               )}
             </button>
           </form>
-
-          {signupError && (
-            <p className={styles.errorText} style={{ textAlign: 'center' }}>
-              {signupError}
-            </p>
-          )}
 
           <footer className={styles.footer}>
             {t('businessSignUp.alreadyHaveAccount')}{' '}
