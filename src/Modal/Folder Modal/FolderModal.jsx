@@ -18,24 +18,42 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
   const folder = sheets.structure.find((item) => item.folderName === folderName);
   const folderSheets = folder ? folder.sheets : [];
 
-  // Compute set of all nested sheets across all folders
+  // Compute set of all nested sheets across all folders, including pending actions
   const nestedSheetsSet = useMemo(() => {
-    return new Set(
+    const baseNestedSheets = new Set(
       sheets.structure
         .filter((item) => item.folderName)
         .flatMap((folder) => folder.sheets || [])
     );
-  }, [sheets.structure]);
 
-  // Calculate available sheets (standalone sheets only)
+    // Add sheets from pending 'addSheets' actions for this folder
+    const addedSheets = (tempData?.actions || [])
+      .filter((action) => action.action === "addSheets" && action.folderName === folderName)
+      .flatMap((action) => action.selectedSheets || []);
+
+    // Remove sheets from pending 'removeSheets' actions for this folder
+    const removedSheets = (tempData?.actions || [])
+      .filter((action) => action.action === "removeSheets" && action.folderName === folderName)
+      .flatMap((action) => action.selectedSheets || []);
+
+    addedSheets.forEach((sheet) => baseNestedSheets.add(sheet));
+    removedSheets.forEach((sheet) => baseNestedSheets.delete(sheet));
+
+    return baseNestedSheets;
+  }, [sheets.structure, tempData?.actions, folderName]);
+
+  // Calculate available sheets (standalone sheets not in any folder, adjusted for pending actions)
   const availableSheets = useMemo(() => {
-    return sheets.allSheets
+    const sheetsList = sheets.allSheets
       .filter(
         (sheet) =>
-          !nestedSheetsSet.has(sheet.sheetName) && // Exclude sheets nested in any folder
+          !nestedSheetsSet.has(sheet.sheetName) && // Exclude sheets in any folder (including pending actions)
           sheet.sheetName !== "All Cards"           // Exclude special "All Cards" sheet
       )
       .map((sheet) => sheet.sheetName);
+
+    console.log('Available sheets for Step 2:', sheetsList);
+    return sheetsList;
   }, [sheets.allSheets, nestedSheetsSet]);
 
   const handleRemoveSheets = useCallback(() => {
@@ -54,7 +72,11 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
     setTempData({
       actions: [...(tempData?.actions || []), newAction],
     });
-    setDisplayedSheets((prev) => prev.filter((sheet) => !selectedSheets.includes(sheet)));
+    setDisplayedSheets((prev) => {
+      const updatedSheets = prev.filter((sheet) => !selectedSheets.includes(sheet));
+      console.log('Updated displayedSheets after remove:', updatedSheets);
+      return updatedSheets;
+    });
     setSelectedSheets([]);
     setIsEditMode(false);
   }, [selectedSheets, folderName, setTempData, tempData]);
@@ -75,7 +97,11 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
     setTempData({
       actions: [...(tempData?.actions || []), newAction],
     });
-    setDisplayedSheets((prev) => [...new Set([...prev, ...selectedSheets])]);
+    setDisplayedSheets((prev) => {
+      const updatedSheets = [...new Set([...prev, ...selectedSheets])];
+      console.log('Updated displayedSheets after add:', updatedSheets);
+      return updatedSheets;
+    });
     setSelectedSheets([]);
     setNavigationDirection("backward");
     goBack();
@@ -116,8 +142,18 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
 
   // Initialize displayedSheets
   useEffect(() => {
-    setDisplayedSheets(folderSheets);
-  }, [folderSheets]);
+    // Initialize with folderSheets and apply pending actions
+    let initialSheets = [...folderSheets];
+    (tempData?.actions || []).forEach((action) => {
+      if (action.action === "addSheets" && action.folderName === folderName) {
+        initialSheets = [...new Set([...initialSheets, ...(action.selectedSheets || [])])];
+      } else if (action.action === "removeSheets" && action.folderName === folderName) {
+        initialSheets = initialSheets.filter((sheet) => !(action.selectedSheets || []).includes(sheet));
+      }
+    });
+    setDisplayedSheets(initialSheets);
+    console.log('Initialized displayedSheets:', initialSheets);
+  }, [folderSheets, tempData?.actions, folderName]);
 
   // Initialize modal steps (run once)
   useEffect(() => {

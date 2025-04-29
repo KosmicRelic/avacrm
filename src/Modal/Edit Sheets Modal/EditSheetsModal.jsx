@@ -15,7 +15,7 @@ const EditSheetsModal = ({
   onDeleteSheet,
   handleClose,
 }) => {
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, cardTemplates } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || '');
   const [currentHeaders, setCurrentHeaders] = useState(() => {
@@ -42,10 +42,11 @@ const EditSheetsModal = ({
   // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.id;
 
-  // Get all available headers from all sheets
+  // Get all available headers from sheets and card templates
   const allHeaders = useMemo(() => {
+    // Headers from other sheets
     const headersBySheet = sheets.allSheets
-      .filter((sheet) => sheet.sheetName !== sheetName) // Exclude current sheet
+      .filter((sheet) => sheet.sheetName !== sheetName)
       .map((sheet) => ({
         sheetName: sheet.sheetName,
         headers: (sheet.headers || []).map((header) => ({
@@ -55,7 +56,8 @@ const EditSheetsModal = ({
           options: header.options || [],
         })),
       }));
-    // Include current sheet's headers (for consistency)
+
+    // Headers from current sheet
     const currentSheetHeaders = {
       sheetName: sheetName || 'Current Sheet',
       headers: currentHeaders.map((header) => ({
@@ -65,8 +67,22 @@ const EditSheetsModal = ({
         options: header.options || [],
       })),
     };
-    return [currentSheetHeaders, ...headersBySheet];
-  }, [sheets.allSheets, sheetName, currentHeaders]);
+
+    // Headers from all card templates
+    const templateHeaders = cardTemplates.map((template) => ({
+      sheetName: `${template.name} (Template)`,
+      headers: template.headers
+        .filter((header) => header.isUsed !== false) // Only include headers marked as used
+        .map((header) => ({
+          key: header.key,
+          name: header.name,
+          type: header.type,
+          options: header.options || [],
+        })),
+    }));
+
+    return [currentSheetHeaders, ...headersBySheet, ...templateHeaders];
+  }, [sheets.allSheets, sheetName, currentHeaders, cardTemplates]);
 
   // Initialize modal config
   useEffect(() => {
@@ -246,7 +262,7 @@ const EditSheetsModal = ({
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <input
-        type='text'
+        type="text"
         value={sheetName}
         onChange={handleSheetNameChange}
         placeholder={isEditMode ? 'Rename sheet' : 'Sheet Name'}
@@ -255,10 +271,11 @@ const EditSheetsModal = ({
       />
       <select
         onChange={(e) => {
-          const [sheetName, headerKey] = e.target.value.split(':');
+          const [sourceName, headerKey] = e.target.value.split(':');
           if (headerKey) {
-            const sourceSheet = allHeaders.find((sh) => sh.sheetName === sheetName);
-            const headerDetails = sourceSheet.headers.find((h) => h.key === headerKey);
+            // Find the header from either a sheet or a template
+            const source = allHeaders.find((sh) => sh.sheetName === sourceName || sh.sheetName === `${sourceName} (Template)`);
+            const headerDetails = source?.headers.find((h) => h.key === headerKey);
             if (headerDetails) {
               addHeader(headerKey, headerDetails);
             }
@@ -267,13 +284,13 @@ const EditSheetsModal = ({
         }}
         className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
       >
-        <option value=''>Add Column</option>
-        {allHeaders.map((sheet) => (
-          <optgroup key={sheet.sheetName} label={sheet.sheetName}>
-            {sheet.headers
+        <option value="">Add Column</option>
+        {allHeaders.map((source) => (
+          <optgroup key={source.sheetName} label={source.sheetName}>
+            {source.headers
               .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
               .map((header) => (
-                <option key={`${sheet.sheetName}:${header.key}`} value={`${sheet.sheetName}:${header.key}`}>
+                <option key={`${source.sheetName}:${header.key}`} value={`${source.sheetName}:${header.key}`}>
                   {header.name} ({header.type})
                 </option>
               ))}
@@ -348,7 +365,7 @@ const EditSheetsModal = ({
               }
             }}
             className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            aria-label='Delete Sheet'
+            aria-label="Delete Sheet"
           >
             Delete Sheet
           </button>
@@ -362,22 +379,26 @@ EditSheetsModal.propTypes = {
   isEditMode: PropTypes.bool,
   tempData: PropTypes.shape({
     sheetName: PropTypes.string,
-    currentHeaders: PropTypes.arrayOf(PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      name: PropTypes.string,
-      type: PropTypes.string,
-      options: PropTypes.array,
-      visible: PropTypes.bool,
-      hidden: PropTypes.bool,
-    })),
+    currentHeaders: PropTypes.arrayOf(
+      PropTypes.shape({
+        key: PropTypes.string.isRequired,
+        name: PropTypes.string,
+        type: PropTypes.string,
+        options: PropTypes.array,
+        visible: PropTypes.bool,
+        hidden: PropTypes.bool,
+      })
+    ),
     rows: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({
-    allSheets: PropTypes.arrayOf(PropTypes.shape({
-      sheetName: PropTypes.string,
-      headers: PropTypes.arrayOf(PropTypes.object),
-    })),
+    allSheets: PropTypes.arrayOf(
+      PropTypes.shape({
+        sheetName: PropTypes.string,
+        headers: PropTypes.arrayOf(PropTypes.object),
+      })
+    ),
   }),
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,

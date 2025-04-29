@@ -1,21 +1,20 @@
-import { useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
+import { v4 as uuidv4 } from 'uuid'; // Import UUID
 
 // Utility function to format field names
 const formatFieldName = (key) => {
-  // Handle all-caps (e.g., "LEADSOURCE" → "Lead Source")
   if (key === key.toUpperCase()) {
     return key
-      .split(/[_-]/) // Split on underscores or hyphens
+      .split(/[_-]/)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   }
-  // Handle camelCase (e.g., "leadSource" → "Lead Source") or snake_case (e.g., "lead_source")
   return key
-    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-    .replace(/[_-]/g, ' ') // Replace underscores/hyphens with spaces
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]/g, ' ')
     .trim()
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -65,7 +64,6 @@ const CardsEditor = ({
     }));
   }, [selectedCardType, cardTemplates, isEditing, initialRowData]);
 
-  // Compute historical form data based on selected history date
   const historicalFormData = useMemo(() => {
     if (!isViewingHistory || !selectedHistoryDate || !formData.history) {
       return formData;
@@ -76,7 +74,6 @@ const CardsEditor = ({
       (entry) => entry.timestamp._seconds <= selectedHistoryDate._seconds
     );
 
-    // Apply history entries in reverse to get the latest value up to the selected date
     const fieldValues = {};
     historyUpToDate.reverse().forEach((entry) => {
       if (!fieldValues[entry.field]) {
@@ -84,12 +81,10 @@ const CardsEditor = ({
       }
     });
 
-    // Update historicalData with values from history
     Object.keys(fieldValues).forEach((field) => {
       historicalData[field] = fieldValues[field];
     });
 
-    // Reset fields that have no history entries to empty
     selectedSections.flatMap((section) => section.fields).forEach((field) => {
       if (!fieldValues[field.key] && formData[field.key]) {
         historicalData[field.key] = '';
@@ -99,7 +94,6 @@ const CardsEditor = ({
     return historicalData;
   }, [isViewingHistory, selectedHistoryDate, formData, selectedSections]);
 
-  // Get unique history dates for selection
   const historyDates = useMemo(() => {
     if (!formData.history) return [];
     const timestamps = [...new Set(formData.history.map((entry) => entry.timestamp._seconds))];
@@ -172,17 +166,19 @@ const CardsEditor = ({
 
     const newRow = {
       ...formData,
-      id: isEditing && initialRowData?.id ? initialRowData.id : Date.now().toString(),
+      id: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(), // Use UUID for new cards
       sheetName: selectedSheet,
       typeOfCards: template.name,
       history: formData.history || [],
     };
 
+    // Log the saved card
+    console.log('CardsEditor saving card:', newRow);
+
     const newHistory = [];
     const timestamp = { _seconds: Math.floor(Date.now() / 1000), _nanoseconds: 0 };
 
     if (isViewingHistory && selectedHistoryDate) {
-      // Revert mode: Save historical data and log reversion
       const existingCard = cards.find((card) => card.id === initialRowData.id);
       Object.keys(historicalFormData).forEach((key) => {
         if (
@@ -204,7 +200,6 @@ const CardsEditor = ({
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      // Normal edit: Log changes
       const existingCard = cards.find((card) => card.id === initialRowData.id);
       if (existingCard) {
         Object.keys(formData).forEach((key) => {
@@ -225,7 +220,6 @@ const CardsEditor = ({
       }
       newRow.history = [...newRow.history, ...newHistory];
     } else {
-      // New card: Log initial values
       Object.keys(formData).forEach((key) => {
         if (
           key !== 'id' &&

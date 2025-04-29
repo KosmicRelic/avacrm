@@ -1065,21 +1065,21 @@ export const MainContextProvider = ({ children }) => {
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    setSheets((prev) => ({
-      ...prev,
-      allSheets: prev.allSheets.map((sheet) => {
-        if (sheet.id === 'leadsSheet') {
-          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Leads').map((card) => card.id) };
-        } else if (sheet.id === 'campaignsSheet') {
-          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Ad Campaigns').map((card) => card.id) };
-        } else if (sheet.id === 'partnersSheet') {
-          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Business Partners').map((card) => card.id) };
-        } else if (sheet.id === 'paymentsSheet') {
-          return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Payments').map((card) => card.id) };
-        }
-        return sheet;
-      }),
-    }));
+    // setSheets((prev) => ({
+    //   ...prev,
+    //   allSheets: prev.allSheets.map((sheet) => {
+    //     if (sheet.id === 'leadsSheet') {
+    //       return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Leads').map((card) => card.id) };
+    //     } else if (sheet.id === 'campaignsSheet') {
+    //       return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Ad Campaigns').map((card) => card.id) };
+    //     } else if (sheet.id === 'partnersSheet') {
+    //       return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Business Partners').map((card) => card.id) };
+    //     } else if (sheet.id === 'paymentsSheet') {
+    //       return { ...sheet, rows: cards.filter((card) => card.typeOfCards === 'Payments').map((card) => card.id) };
+    //     }
+    //     return sheet;
+    //   }),
+    // }));
   }, [cards]);
 
   useEffect(() => {
@@ -1093,8 +1093,9 @@ export const MainContextProvider = ({ children }) => {
   }, [isDarkTheme]);
 
   useEffect(()=>{
+    // console.log(cards)
     // console.log(sheets)
-  },[])
+  },[cards])
 
   return (
     <MainContext.Provider
