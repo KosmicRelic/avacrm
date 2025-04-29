@@ -2,10 +2,9 @@ import { createContext, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
-import fetchUserData from '../Firebase/Firebase Functions/User Functions/fetchUserData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch } from 'firebase/firestore';
-
+import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData'
 export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
