@@ -1,11 +1,9 @@
-// src/firebase.jsx
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBVs39nQSA-r-AMG-f-iQlDvvcwcrMegxY",
   authDomain: "avacrm-6900e.firebaseapp.com",
@@ -16,14 +14,12 @@ const firebaseConfig = {
   measurementId: "G-CDVZT070VS",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app);
+const functions = getFunctions(app, 'us-central1'); // Specify your region, e.g., 'us-central1'
 
-// Set authentication persistence to 'local'
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
     // console.log('Auth persistence set to local');
@@ -32,5 +28,4 @@ setPersistence(auth, browserLocalPersistence)
     console.error('Error setting auth persistence:', error);
   });
 
-// Export Firebase services
 export { app, auth, db, functions, analytics };

@@ -1,10 +1,20 @@
-// functions/index.js
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { Resend } = require('resend');
+const cors = require('cors');
 
+// Initialize Firebase Admin
 admin.initializeApp();
 const db = admin.firestore();
 const auth = admin.auth();
+
+const resend = new Resend('re_C1GAhxiY_KvM6xMG96EHQwAZnC6Cp2k5s');
+// CORS configuration
+const corsOptions = {
+  origin: true, // Allow all origins, adjust for production
+  methods: ['POST'],
+  credentials: true,
+};
 
 exports.businessSignUp = functions.https.onCall(async (data, context) => {
   try {
@@ -1110,6 +1120,237 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
 
     if (errorCode === 'invalid-argument') {
       // Pass through invalid-argument errors
+    } else if (error.code === 'auth/email-already-in-use') {
+      errorCode = 'already-exists';
+      errorMessage = 'Email is already in use';
+    } else if (error.code === 'auth/invalid-email') {
+      errorCode = 'invalid-argument';
+      errorMessage = 'Invalid email address';
+    } else if (error.code === 'auth/weak-password') {
+      errorCode = 'invalid-argument';
+      errorMessage = 'Password is too weak';
+    }
+
+    throw new functions.https.HttpsError(errorCode, errorMessage);
+  }
+});
+
+exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
+  // Apply CORS middleware
+  cors(corsOptions)(req, res, async () => {
+    try {
+      // Log the raw request for debugging
+      functions.logger.info('sendInvitationEmail called', {
+        headers: req.headers,
+        rawBody: req.body,
+      });
+
+      // Manually parse JSON body if Content-Type is application/json
+      let body;
+      if (req.get('Content-Type') === 'application/json') {
+        try {
+          body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        } catch (error) {
+          functions.logger.error('Failed to parse JSON body', { error: error.message });
+          return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+      } else {
+        functions.logger.error('Invalid Content-Type', { contentType: req.get('Content-Type') });
+        return res.status(400).json({ error: 'Content-Type must be application/json' });
+      }
+
+      // Destructure the parsed body
+      const { email, businessId, invitedBy, businessEmail } = body || {};
+
+      // Log the parsed body
+      functions.logger.info('Parsed body', { email, businessId, invitedBy });
+
+      // Validate input
+      if (!email || !businessId || !invitedBy) {
+        functions.logger.error('Missing required fields', { email, businessId, invitedBy });
+        return res.status(400).json({
+          error: `Missing required fields: ${!email ? 'email ' : ''}${!businessId ? 'businessId ' : ''}${!invitedBy ? 'invitedBy' : ''}`,
+        });
+      }
+
+      // Validate email format (basic check)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        functions.logger.error('Invalid email format', { email });
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      // Fetch business data
+      const businessDoc = await db.collection('businesses').doc(businessId).get();
+      if (!businessDoc.exists) {
+        functions.logger.error('Business not found', { businessId });
+        return res.status(404).json({ error: 'Business not found' });
+      }
+      const businessData = businessDoc.data();
+      const businessName = businessData.businessInfo.name;
+
+      // Generate invitation code
+      const invitationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      // Store invitation in Firestore
+      await db.collection('invitations').add({
+        email,
+        businessId,
+        businessName,
+        invitationCode,
+        status: 'pending',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        invitedBy,
+      });
+
+      // Send email via Resend
+      const emailResponse = await resend.emails.send({
+        from: `${businessName} Team <invitations@apx.gr>`,
+        to: email,
+        subject: `You're Invited to Join ${businessName} Team!`,
+        html: `
+          <h1>Team Invitation</h1>
+          <p>You've been invited to join the ${businessName} team!</p>
+          <p>Click <a href="https://www.apx.gr/signup/${invitationCode}">here</a> to accept your invitation.</p>
+          <p>If you have any questions, contact ${businessEmail}</p>
+        `,
+      });
+
+      functions.logger.info('Invitation email sent', { email, invitationCode });
+      return res.status(200).json({ status: 'success', message: 'Invitation email sent successfully' });
+    } catch (error) {
+      functions.logger.error('sendInvitationEmail failed', {
+        error: error.message,
+        stack: error.stack,
+      });
+      return res.status(500).json({ error: 'Failed to send invitation email' });
+    }
+  });
+});
+
+exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
+  try {
+    // Log raw data
+    functions.logger.info('teamMemberSignUp started', { rawData: data });
+
+    // Destructure payload
+    const { email, password, phone, invitationCode } = data.data || data || {};
+
+    // Log destructured fields
+    functions.logger.info('Destructured data', {
+      email,
+      password: password ? '[REDACTED]' : undefined,
+      phone,
+      invitationCode,
+    });
+
+    // Validate fields
+    if (!email || !password || !phone || !invitationCode) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        `Missing required fields: ${!email ? 'email ' : ''}${!password ? 'password ' : ''}${!phone ? 'phone ' : ''}${!invitationCode ? 'invitationCode' : ''}`
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid email format');
+    }
+
+    // Validate phone format (basic check, adjust as needed)
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phone)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid phone number format');
+    }
+
+    // Find invitation
+    const invitationQuery = await db
+      .collection('invitations')
+      .where('invitationCode', '==', invitationCode)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (invitationQuery.empty) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired invitation code');
+    }
+
+    const invitationDoc = invitationQuery.docs[0];
+    const invitationData = invitationDoc.data();
+    const { businessId, businessName, invitedBy } = invitationData;
+
+    // Verify email matches invitation
+    if (invitationData.email.toLowerCase() !== email.toLowerCase()) {
+      throw new functions.https.HttpsError('invalid-argument', 'Email does not match invitation');
+    }
+
+    // Check invitation expiry (7 days)
+    const createdAt = invitationData.createdAt.toDate();
+    if (new Date() - createdAt > 7 * 24 * 60 * 60 * 1000) {
+      throw new functions.https.HttpsError('failed-precondition', 'Invitation has expired');
+    }
+
+    // Create user
+    functions.logger.info('Creating user', { email });
+    const userRecord = await auth.createUser({ email, password });
+    const user = userRecord;
+
+    // Prepare batch for Firestore updates
+    const batch = db.batch();
+
+    // Store user data
+    functions.logger.info('Writing user data', { uid: user.uid });
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      phone,
+      role: 'team_member',
+      businessId,
+      businessName,
+      createdAt: new Date().toISOString(),
+    };
+    const userDocRef = db.collection('users').doc(user.uid);
+    batch.set(userDocRef, userData);
+
+    // Update invitation
+    functions.logger.info('Updating invitation', { invitationId: invitationDoc.id });
+    batch.update(invitationDoc.ref, {
+      status: 'accepted',
+      userId: user.uid,
+      acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Add team member to business (optional)
+    functions.logger.info('Adding team member to business', { businessId });
+    const businessDocRef = db.collection('businesses').doc(businessId);
+    batch.update(businessDocRef, {
+      teamMembers: admin.firestore.FieldValue.arrayUnion({
+        uid: user.uid,
+        email: user.email,
+        phone,
+        role: 'team_member',
+        joinedAt: new Date().toISOString(),
+      }),
+    });
+
+    // Commit batch
+    functions.logger.info('Committing batch');
+    await batch.commit();
+
+    functions.logger.info('teamMemberSignUp completed', { uid: user.uid });
+    return { status: 'success', userData };
+  } catch (error) {
+    functions.logger.error('teamMemberSignUp failed', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
+
+    let errorCode = error.code || 'internal';
+    let errorMessage = error.message || 'Internal server error';
+
+    if (errorCode === 'invalid-argument' || errorCode === 'not-found' || errorCode === 'failed-precondition') {
+      // Pass through specific errors
     } else if (error.code === 'auth/email-already-in-use') {
       errorCode = 'already-exists';
       errorMessage = 'Email is already in use';

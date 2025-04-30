@@ -13,7 +13,9 @@ import ProfileModal from './Profile Modal/ProfileModal';
 import Dashboard from './Dashboard/Dashboard';
 import Metrics from './Metrics/Metrics';
 import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
+import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
+import Settings from './Settings/Settings'; // Added Settings import
 import {
   handleModalSave,
   handleModalClose,
@@ -33,10 +35,10 @@ const ProtectedRoute = React.memo(({ children }) => {
   const { user, userAuthChecked } = useContext(MainContext);
 
   if (!userAuthChecked && !user) {
-    return ;
+    return null;
   }
 
-  if (!user && userAuthChecked) {
+  if (!user && userAuthChecked && location.pathname !== '/signup') {
     return <Navigate to="/signin" replace />;
   }
 
@@ -141,6 +143,8 @@ function App() {
       setActiveOption('sheets');
     } else if (location.pathname === '/metrics') {
       setActiveOption('metrics');
+    } else if (location.pathname === '/settings') {
+      setActiveOption('settings');
     }
   }, [location.pathname]);
 
@@ -417,18 +421,18 @@ function App() {
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {showHeader && (
         <ProtectedRoute>
-        <AppHeader
-          sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
-          activeSheet={activeSheetName}
-          onSheetChange={handleSheetChange}
-          setIsProfileModalOpen={handleOpenProfileModal}
-          activeOption={activeOption}
-          setActiveOption={setActiveOption}
-          onOpenFolderModal={(folderName) =>
-            onOpenFolderOperationsModal({ folderName, ...modalUtilsProps })
-          }
-          onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
-        />
+          <AppHeader
+            sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
+            activeSheet={activeSheetName}
+            onSheetChange={handleSheetChange}
+            setIsProfileModalOpen={handleOpenProfileModal}
+            activeOption={activeOption}
+            setActiveOption={setActiveOption}
+            onOpenFolderModal={(folderName) =>
+              onOpenFolderOperationsModal({ folderName, ...modalUtilsProps })
+            }
+            onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
+          />
         </ProtectedRoute>
       )}
       <div className={styles.contentWrapper}>
@@ -486,35 +490,45 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<BusinessSignUp />} />
         </Routes>
         {activeModal && (
           <Modal
-          onClose={(options) =>
-            handleModalClose({
-              options,
-              handleModalSave: (args) => handleModalSave({ ...args, ...modalUtilsProps }),
-              ...modalUtilsProps,
-            })
-          }
-          onSave={() =>
-            handleModalSave({
-              modalType: activeModal.type,
-              data: activeModal.data,
-              ...modalUtilsProps,
-            })
-          }
-          modalType={activeModal.type}
-          tempData={activeModal.data}
-        >
-          {renderModalContent(modalUtilsProps)}
-        </Modal>
+            onClose={(options) =>
+              handleModalClose({
+                options,
+                handleModalSave: (args) => handleModalSave({ ...args, ...modalUtilsProps }),
+                ...modalUtilsProps,
+              })
+            }
+            onSave={() =>
+              handleModalSave({
+                modalType: activeModal.type,
+                data: activeModal.data,
+                ...modalUtilsProps,
+              })
+            }
+            modalType={activeModal.type}
+            tempData={activeModal.data}
+          >
+            {renderModalContent(modalUtilsProps)}
+          </Modal>
         )}
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
+          setActiveOption={setActiveOption}
           onOpenCardsTemplateModal={() => onOpenCardsTemplateModal(modalUtilsProps)}
+          onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
           onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
         />
       </div>

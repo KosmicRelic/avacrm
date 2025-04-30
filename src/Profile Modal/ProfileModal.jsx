@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/ProfileModal/ProfileModal.jsx
 import { useNavigate } from 'react-router-dom';
 import styles from "./ProfileModal.module.css";
-import { FaAddressCard, FaFolder, FaChartBar } from "react-icons/fa"; // Added FaChartBar
-import { useContext } from "react";
+import { FaAddressCard, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
+import { useContext, useState, useRef, useEffect } from "react";
 import { MainContext } from "../Contexts/MainContext";
-import { CgArrowsExchangeAlt } from "react-icons/cg";
-import PropTypes from "prop-types"; // Added for propTypes
+import PropTypes from "prop-types";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -15,11 +14,11 @@ const ProfileModal = ({
   setActiveOption,
   onOpenCardsTemplateModal,
   onOpenSheetsModal,
+  onOpenMetricsModal, // Added prop
 }) => {
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, user } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,19 +48,24 @@ const ProfileModal = ({
   const handleCardsClick = () => {
     handleButtonClick(onOpenCardsTemplateModal);
   };
-  
-  const handleSignOut = async() => {
+
+  const handleSettingsClick = () => {
+    handleButtonClick(() => {
+      setActiveOption('settings');
+      navigate('/settings');
+    });
+  };
+
+  const handleSignOut = async () => {
     try {
-      // Step 1: Sign out the user using Firebase Auth
-      await signOut(auth); // Signs the user out of Firebase Authentication
-      navigate(`/signin`);
+      await signOut(auth);
+      navigate('/signin');
       window.location.reload();
       return true;
-  } catch (error) {
-      // Handle sign-out errors
+    } catch (error) {
       console.error("Error signing out:", error.message);
       throw error;
-  }
+    }
   };
 
   if (!isOpen && !isAnimating) return null;
@@ -94,7 +98,15 @@ const ProfileModal = ({
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
           </button>
-          
+          {(
+            <button
+              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={handleSettingsClick}
+            >
+              <FaCog size={16} style={{ marginRight: "8px" }} />
+              Settings
+            </button>
+          )}
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             onClick={handleSignOut}
@@ -114,7 +126,7 @@ ProfileModal.propTypes = {
   setActiveOption: PropTypes.func.isRequired,
   onOpenCardsTemplateModal: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,
-  onOpenMetricsModal: PropTypes.func.isRequired, // Added propType
+  onOpenMetricsModal: PropTypes.func.isRequired,
 };
 
 export default ProfileModal;

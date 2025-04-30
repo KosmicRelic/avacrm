@@ -74,5 +74,16 @@
         "invalidCode": "Invalid invitation code.",
         "generic": "Failed to create account. Please try again."
       }
-    }
+    },
+      "settings": {
+        "title": "Settings",
+        "teamInvitations": "Team Invitations",
+        "recipientEmail": "Recipient Email",
+        "enterEmail": "Enter recipient's email",
+        "sendInvitation": "Send Invitation",
+        "sending": "Sending...",
+        "pleaseLogin": "Please log in to send invitations",
+        "enterValidEmail": "Please enter a valid email address",
+        "errorSendingInvitation": "Failed to send invitation. Please try again."
+      }
   }
