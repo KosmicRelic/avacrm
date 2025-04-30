@@ -2,7 +2,7 @@ import React, { useContext, useState, useCallback, useMemo, useEffect } from 're
 import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { v4 as uuidv4 } from 'uuid'; // Import UUID
+import { v4 as uuidv4 } from 'uuid';
 
 // Utility function to format field names
 const formatFieldName = (key) => {
@@ -51,7 +51,6 @@ const CardsEditor = ({
     return template.sections.map((section) => ({
       name: section.name,
       fields: section.keys
-        .filter((key) => key !== 'id')
         .map((key) => {
           const header = template.headers?.find((h) => h.key === key);
           return {
@@ -126,7 +125,12 @@ const CardsEditor = ({
       alert('Invalid card type selected.');
       return;
     }
-    setFormData({ sheetName: selectedSheet, typeOfCards: template.name });
+    setFormData((prev) => ({
+      ...prev,
+      sheetName: selectedSheet,
+      typeOfCards: template.name,
+      id: prev.id || uuidv4(), // Ensure id is set for new cards
+    }));
     setView('editor');
   }, [selectedSheet, selectedCardType, cardTemplates]);
 
@@ -139,6 +143,10 @@ const CardsEditor = ({
 
   const handleInputChange = useCallback(
     (key, value) => {
+      // Prevent changes to id and typeOfCards
+      if (key === 'id' || key === 'typeOfCards') {
+        return;
+      }
       if (!isViewingHistory) {
         setFormData((prev) => ({ ...prev, [key]: value }));
       }
@@ -157,7 +165,7 @@ const CardsEditor = ({
       return;
     }
     const hasData = Object.keys(formData).some(
-      (key) => key !== 'sheetName' && key !== 'typeOfCards' && formData[key] && formData[key].toString().trim() !== ''
+      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'id' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
       alert('Please fill in at least one field to create a card.');
@@ -166,10 +174,10 @@ const CardsEditor = ({
 
     const newRow = {
       ...formData,
-      id: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(), // Use UUID for new cards
+      id: isEditing && initialRowData?.id ? initialRowData.id : formData.id || uuidv4(), // Preserve existing id
       docId: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(),
       sheetName: selectedSheet,
-      typeOfCards: template.name,
+      typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name, // Preserve typeOfCards
       history: formData.history || [],
     };
 
@@ -509,6 +517,7 @@ const CardsEditor = ({
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
                                   readOnly={isViewingHistory}
+                                  disabled = {field.key == "typeOfCards"||field.key == "id"?true:false}
                                 />
                               )}
                             </div>
@@ -564,7 +573,12 @@ const CardsEditor = ({
 CardsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
-  initialRowData: PropTypes.object,
+  initialRowData: PropTypes.shape({
+    id: PropTypes.string,
+    sheetName: PropTypes.string,
+    typeOfCards: PropTypes.string,
+    history: PropTypes.array,
+  }),
   startInEditMode: PropTypes.bool,
   preSelectedSheet: PropTypes.string,
 };

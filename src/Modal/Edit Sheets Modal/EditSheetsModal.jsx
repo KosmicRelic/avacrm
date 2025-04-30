@@ -68,11 +68,27 @@ const EditSheetsModal = ({
       })),
     };
 
-    // Headers from all card templates
+    // Common headers (id and typeOfCards) from card templates
+    const commonHeaders = [];
+    if (cardTemplates.length > 0) {
+      const firstTemplateHeaders = cardTemplates[0].headers.filter(
+        (header) => header.isUsed !== false && ['id', 'typeOfCards'].includes(header.key)
+      );
+      commonHeaders.push(
+        ...firstTemplateHeaders.map((header) => ({
+          key: header.key,
+          name: header.name,
+          type: header.type,
+          options: header.options || [],
+        }))
+      );
+    }
+
+    // Headers from all card templates, excluding id and typeOfCards
     const templateHeaders = cardTemplates.map((template) => ({
       sheetName: `${template.name} (Template)`,
       headers: template.headers
-        .filter((header) => header.isUsed !== false) // Only include headers marked as used
+        .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
         .map((header) => ({
           key: header.key,
           name: header.name,
@@ -81,7 +97,12 @@ const EditSheetsModal = ({
         })),
     }));
 
-    return [currentSheetHeaders, ...headersBySheet, ...templateHeaders];
+    return [
+      { sheetName: 'Common', headers: commonHeaders }, // Common headers at the top
+      currentSheetHeaders,
+      ...headersBySheet,
+      ...templateHeaders,
+    ];
   }, [sheets.allSheets, sheetName, currentHeaders, cardTemplates]);
 
   // Initialize modal config
@@ -273,8 +294,7 @@ const EditSheetsModal = ({
         onChange={(e) => {
           const [sourceName, headerKey] = e.target.value.split(':');
           if (headerKey) {
-            // Find the header from either a sheet or a template
-            const source = allHeaders.find((sh) => sh.sheetName === sourceName || sh.sheetName === `${sourceName} (Template)`);
+            const source = allHeaders.find((sh) => sh.sheetName === sourceName);
             const headerDetails = source?.headers.find((h) => h.key === headerKey);
             if (headerDetails) {
               addHeader(headerKey, headerDetails);
@@ -286,15 +306,32 @@ const EditSheetsModal = ({
       >
         <option value="">Add Column</option>
         {allHeaders.map((source) => (
-          <optgroup key={source.sheetName} label={source.sheetName}>
-            {source.headers
-              .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
-              .map((header) => (
-                <option key={`${source.sheetName}:${header.key}`} value={`${source.sheetName}:${header.key}`}>
-                  {header.name} ({header.type})
-                </option>
-              ))}
-          </optgroup>
+          source.sheetName === 'Common' ? (
+            // Render common headers as top-level options
+            source.headers.map((header) => (
+              <option
+                key={`Common:${header.key}`}
+                value={`Common:${header.key}`}
+                disabled={currentHeaders.some((ch) => ch.key === header.key)}
+              >
+                {header.name} ({header.type})
+              </option>
+            ))
+          ) : (
+            // Render other headers in optgroups
+            <optgroup key={source.sheetName} label={source.sheetName}>
+              {source.headers
+                .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
+                .map((header) => (
+                  <option
+                    key={`${source.sheetName}:${header.key}`}
+                    value={`${source.sheetName}:${header.key}`}
+                  >
+                    {header.name} ({header.type})
+                  </option>
+                ))}
+            </optgroup>
+          )
         ))}
       </select>
       <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ''}`}>
