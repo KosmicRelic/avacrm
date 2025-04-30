@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import styles from "./ProfileModal.module.css";
 import { FaAddressCard, FaFolder, FaChartBar } from "react-icons/fa"; // Added FaChartBar
 import { useContext } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import { CgArrowsExchangeAlt } from "react-icons/cg";
 import PropTypes from "prop-types"; // Added for propTypes
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
 const ProfileModal = ({
   isOpen,
@@ -16,6 +19,8 @@ const ProfileModal = ({
   const { isDarkTheme } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +48,20 @@ const ProfileModal = ({
 
   const handleCardsClick = () => {
     handleButtonClick(onOpenCardsTemplateModal);
+  };
+  
+  const handleSignOut = async() => {
+    try {
+      // Step 1: Sign out the user using Firebase Auth
+      await signOut(auth); // Signs the user out of Firebase Authentication
+      navigate(`/signin`);
+      window.location.reload();
+      return true;
+  } catch (error) {
+      // Handle sign-out errors
+      console.error("Error signing out:", error.message);
+      throw error;
+  }
   };
 
   if (!isOpen && !isAnimating) return null;
@@ -74,6 +93,14 @@ const ProfileModal = ({
           >
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
+          </button>
+          
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleSignOut}
+          >
+            <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+            Sign Out
           </button>
         </div>
       </div>
