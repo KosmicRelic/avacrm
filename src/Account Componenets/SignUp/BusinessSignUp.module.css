@@ -8,6 +8,7 @@
   overflow-y: auto;
   background: rgba(243, 242, 248, 0.95); /* Matches Sheets light theme background */
   transition: background 0.3s ease;
+  height: 100vh;
 }
 
 .container.darkTheme {
