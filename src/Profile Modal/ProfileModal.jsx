@@ -89,6 +89,15 @@ const ProfileModal = ({
             ✕
           </button>
         </div>
+        {(
+            <button
+              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={handleSettingsClick}
+            >
+              <FaCog size={16} style={{ marginRight: "8px" }} />
+              Settings
+            </button>
+          )}
         <div className={styles.section}>
           <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
           <button
@@ -98,15 +107,6 @@ const ProfileModal = ({
             <FaAddressCard size={16} style={{ marginRight: "8px" }} />
             Cards
           </button>
-          {(
-            <button
-              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleSettingsClick}
-            >
-              <FaCog size={16} style={{ marginRight: "8px" }} />
-              Settings
-            </button>
-          )}
           <button
             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             onClick={handleSignOut}

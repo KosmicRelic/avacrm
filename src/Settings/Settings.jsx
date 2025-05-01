@@ -6,7 +6,7 @@ import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
 import { Navigate } from 'react-router-dom';
-import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaBars } from 'react-icons/fa';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -16,6 +16,7 @@ export default function Settings() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
   const [availableSheets, setAvailableSheets] = useState([]);
   const [availableDashboards, setAvailableDashboards] = useState([]);
   const [availableCardTemplates, setAvailableCardTemplates] = useState([]);
@@ -24,6 +25,18 @@ export default function Settings() {
   const [selectedDashboards, setSelectedDashboards] = useState([]);
   const [selectedCardTemplates, setSelectedCardTemplates] = useState([]);
   const [selectedPermissions, setSelectedPermissions] = useState('viewer');
+  const [currentStep, setCurrentStep] = useState('main'); // main, invitations, sendInvitation, viewInvitations, manageTeam, editAccess
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [animationDirection, setAnimationDirection] = useState('enter'); // enter, exit
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // if (!user || user.userType !== 'business') {
   //   return <Navigate to="/dashboard" />;
@@ -33,10 +46,21 @@ export default function Settings() {
     const fetchData = async () => {
       if (!user) return;
       try {
+        // Fetch team members
         const teamMembersRef = collection(db, 'businesses', user.uid, 'teamMembers');
         const teamMembersSnap = await getDocs(teamMembersRef);
         setTeamMembers(teamMembersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
 
+        // Fetch pending invitations
+        const invitationsRef = collection(db, 'businesses', user.uid, 'invitations');
+        const invitationsSnap = await getDocs(invitationsRef);
+        setPendingInvitations(
+          invitationsSnap.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(inv => inv.status === 'pending')
+        );
+
+        // Fetch sheets
         const sheetsRef = collection(db, 'businesses', user.uid, 'sheets');
         const sheetsSnap = await getDocs(sheetsRef);
         setAvailableSheets(sheetsSnap.docs.map(doc => ({
@@ -44,6 +68,7 @@ export default function Settings() {
           name: doc.data().sheetName || `Sheet ${doc.id}`,
         })));
 
+        // Fetch dashboards
         const dashboardsRef = collection(db, 'businesses', user.uid, 'dashboards');
         const dashboardsSnap = await getDocs(dashboardsRef);
         setAvailableDashboards(dashboardsSnap.docs.map(doc => ({
@@ -51,6 +76,7 @@ export default function Settings() {
           name: doc.data().name || `Dashboard ${doc.id}`,
         })));
 
+        // Fetch card templates
         const cardTemplatesRef = collection(db, 'businesses', user.uid, 'cardTemplates');
         const cardTemplatesSnap = await getDocs(cardTemplatesRef);
         setAvailableCardTemplates(cardTemplatesSnap.docs.map(doc => ({
@@ -75,23 +101,16 @@ export default function Settings() {
   }, [successMessage, errorMessage]);
 
   const toggleTeamMemberSelection = (uid) => {
-    setSelectedTeamMemberUids(prev => {
-      if (prev.includes(uid)) {
-        return prev.filter(id => id !== uid);
-      } else {
-        return [...prev, uid];
-      }
-    });
-
-    if (!selectedTeamMemberUids.includes(uid)) {
-      const teamMember = teamMembers.find(tm => tm.uid === uid);
-      if (teamMember) {
-        setSelectedSheets(teamMember.allowedSheetIds || []);
-        setSelectedDashboards(teamMember.allowedDashboardIds || []);
-        setSelectedCardTemplates(teamMember.allowedCardTemplateIds || []);
-        setSelectedPermissions(teamMember.permissions || 'viewer');
-      }
+    setSelectedTeamMemberUids([uid]); // Single selection for edit access
+    const teamMember = teamMembers.find(tm => tm.uid === uid);
+    if (teamMember) {
+      setSelectedSheets(teamMember.allowedSheetIds || []);
+      setSelectedDashboards(teamMember.allowedDashboardIds || []);
+      setSelectedCardTemplates(teamMember.allowedCardTemplateIds || []);
+      setSelectedPermissions(teamMember.permissions || 'viewer');
     }
+    setAnimationDirection('enter');
+    setCurrentStep('editAccess');
   };
 
   const toggleOption = (type, value) => {
@@ -163,11 +182,13 @@ export default function Settings() {
         );
       }
       setSuccessMessage(t('settings.accessUpdated'));
-      setSelectedTeamMemberUids([]); // Clear selections after successful save
+      setSelectedTeamMemberUids([]);
       setSelectedSheets([]);
       setSelectedDashboards([]);
       setSelectedCardTemplates([]);
       setSelectedPermissions('viewer');
+      setAnimationDirection('exit');
+      setCurrentStep('manageTeam');
       if (selectedTeamMemberUids.includes(user.uid)) {
         window.location.reload();
       }
@@ -182,6 +203,8 @@ export default function Settings() {
     setSelectedDashboards([]);
     setSelectedCardTemplates([]);
     setSelectedPermissions('viewer');
+    setAnimationDirection('exit');
+    setCurrentStep('manageTeam');
   };
 
   const handleGenerateInvitation = async () => {
@@ -229,6 +252,15 @@ export default function Settings() {
       const result = await response.json();
       if (response.ok && result.status === 'success') {
         setSuccessMessage(result.message);
+        setEmail(''); // Clear email input
+        // Refresh pending invitations
+        const invitationsRef = collection(db, 'businesses', user.uid, 'invitations');
+        const invitationsSnap = await getDocs(invitationsRef);
+        setPendingInvitations(
+          invitationsSnap.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(inv => inv.status === 'pending')
+        );
       } else {
         throw new Error(result.error || t('settings.failedToSendInvitation'));
       }
@@ -237,6 +269,17 @@ export default function Settings() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleStepChange = (step) => {
+    setAnimationDirection(step === 'main' || (currentStep === 'sendInvitation' && step === 'invitations') || (currentStep === 'viewInvitations' && step === 'invitations') || (currentStep === 'editAccess' && step === 'manageTeam') ? 'exit' : 'enter');
+    setCurrentStep(step);
+    setSelectedTeamMemberUids([]);
+    setSelectedSheets([]);
+    setSelectedDashboards([]);
+    setSelectedCardTemplates([]);
+    setSelectedPermissions('viewer');
+    setEmail('');
   };
 
   return (
@@ -257,214 +300,366 @@ export default function Settings() {
         <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {t('settings.title')}
         </h1>
+        {isMobile && currentStep === 'main' && (
+          <button
+            className={`${styles.toggleButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            aria-label={t('settings.showMenu')}
+            disabled // No toggle needed since left pane is always visible in main
+          >
+            <FaBars />
+          </button>
+        )}
       </div>
 
-      {/* Invitation Section */}
-      <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <h2>{t('settings.teamInvitations')}</h2>
-        <div className={styles.inputGroup}>
-          <label htmlFor="email">{t('settings.recipientEmail')}</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t('settings.enterEmail')}
-            className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
-            aria-label={t('settings.recipientEmail')}
-          />
-        </div>
-        <button
-          onClick={handleGenerateInvitation}
-          disabled={isGenerating}
-          className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
-          aria-label={isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
+      {/* Main Content */}
+      <div className={`${styles.teamAccessContainer} ${isMobile ? styles.mobile : ''}`}>
+        <div
+          className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''} ${
+            isMobile && currentStep !== 'main' ? styles.hidden : ''
+          }`}
         >
-          {isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
-        </button>
-      </div>
+          <button
+            onClick={() => handleStepChange('invitations')}
+            className={`${styles.stepButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+              currentStep === 'invitations' || currentStep === 'sendInvitation' || currentStep === 'viewInvitations' ? styles.selected : ''
+            }`}
+            aria-label={t('settings.teamInvitations')}
+          >
+            <span>{t('settings.teamInvitations')}</span>
+            <FaChevronRight className={styles.arrowIcon} />
+          </button>
+          <button
+            onClick={() => handleStepChange('manageTeam')}
+            className={`${styles.stepButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+              currentStep === 'manageTeam' || currentStep === 'editAccess' ? styles.selected : ''
+            }`}
+            aria-label={t('settings.manageTeamAccess')}
+          >
+            <span>{t('settings.manageTeamAccess')}</span>
+            <FaChevronRight className={styles.arrowIcon} />
+          </button>
+        </div>
 
-      {/* Manage Team Access Section */}
-      <div className={`${styles.manageTeamsSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <h2>{t('settings.manageTeamAccess')}</h2>
-        <div className={styles.teamAccessContainer}>
-          <div className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {teamMembers.map(tm => (
+        <div
+          className={`${styles.rightPane} ${isDarkTheme ? styles.darkTheme : ''} ${
+            isMobile && currentStep !== 'main' ? styles.fullScreen : ''
+          } ${isMobile ? styles.animateContent : ''} ${
+            animationDirection === 'enter' ? styles.animateEnter : styles.animateExit
+          }`}
+        >
+          {currentStep === 'main' && (
+            <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {t('settings.selectOption', { defaultValue: 'Select an option to proceed' })}
+            </p>
+          )}
+
+          {currentStep === 'invitations' && (
+            <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
               <button
-                key={tm.uid}
-                onClick={() => toggleTeamMemberSelection(tm.uid)}
-                className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                  selectedTeamMemberUids.includes(tm.uid) ? styles.selected : ''
-                }`}
-                aria-label={t('settings.editAccessFor', { email: tm.email })}
+                onClick={() => handleStepChange('main')}
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.back')}
               >
-                <span>{tm.email}</span>
-                {selectedTeamMemberUids.includes(tm.uid) ? (
-                  <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                ) : (
-                  <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                )}
+                <FaArrowLeft className={styles.backIcon} />
+                <span>{t('settings.back')}</span>
               </button>
-            ))}
-          </div>
-          <div className={`${styles.rightPane} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {selectedTeamMemberUids.length > 0 ? (
-              <div className={`${styles.editAccess} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <h3>
-                  {selectedTeamMemberUids.length === 1
-                    ? t('settings.editAccessFor', {
-                        email: teamMembers.find(tm => tm.uid === selectedTeamMemberUids[0])?.email,
-                      })
-                    : t('settings.editAccessForMultiple', {
-                        count: selectedTeamMemberUids.length,
-                        defaultValue: 'Editing Access for {count} Team Members',
-                      })}
-                </h3>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.role')}</label>
-                  {['viewer', 'editor'].map(role => (
-                    <button
-                      key={role}
-                      onClick={() => setSelectedPermissions(role)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedPermissions === role ? styles.selected : ''
-                      }`}
-                      aria-label={t(`settings.${role}`)}
-                    >
-                      <span>{t(`settings.${role}`)}</span>
-                      {selectedPermissions === role ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.sheets')}</label>
-                  <button
-                    onClick={() => toggleOption('sheets', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedSheets.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allSheets')}
-                  >
-                    <span>{t('settings.allSheets')}</span>
-                    {selectedSheets.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    )}
-                  </button>
-                  {availableSheets.map(sheet => (
-                    <button
-                      key={sheet.id}
-                      onClick={() => toggleOption('sheets', sheet.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedSheets.includes(sheet.id) ? styles.selected : ''
-                      }`}
-                      aria-label={sheet.name}
-                    >
-                      <span>{sheet.name}</span>
-                      {selectedSheets.includes(sheet.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.dashboards')}</label>
-                  <button
-                    onClick={() => toggleOption('dashboards', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedDashboards.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allDashboards')}
-                  >
-                    <span>{t('settings.allDashboards')}</span>
-                    {selectedDashboards.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    )}
-                  </button>
-                  {availableDashboards.map(dashboard => (
-                    <button
-                      key={dashboard.id}
-                      onClick={() => toggleOption('dashboards', dashboard.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedDashboards.includes(dashboard.id) ? styles.selected : ''
-                      }`}
-                      aria-label={dashboard.name}
-                    >
-                      <span>{dashboard.name}</span>
-                      {selectedDashboards.includes(dashboard.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.cardTemplates')}</label>
-                  <button
-                    onClick={() => toggleOption('cardTemplates', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedCardTemplates.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allCardTemplates')}
-                  >
-                    <span>{t('settings.allCardTemplates')}</span>
-                    {selectedCardTemplates.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    )}
-                  </button>
-                  {availableCardTemplates.map(template => (
-                    <button
-                      key={template.id}
-                      onClick={() => toggleOption('cardTemplates', template.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedCardTemplates.includes(template.id) ? styles.selected : ''
-                      }`}
-                      aria-label={template.name}
-                    >
-                      <span>{template.name}</span>
-                      {selectedCardTemplates.includes(template.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.buttonGroup}>
-                  <button
-                    onClick={saveAccess}
-                    className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    aria-label={t('settings.save')}
-                  >
-                    {t('settings.save')}
-                  </button>
-                  <button
-                    onClick={cancelEditing}
-                    className={`${styles.button} ${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    aria-label={t('settings.cancel')}
-                  >
-                    {t('settings.cancel')}
-                  </button>
-                </div>
+              <h2>{t('settings.teamInvitations')}</h2>
+              <button
+                onClick={() => handleStepChange('sendInvitation')}
+                className={`${styles.stepButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.sendInvitation')}
+              >
+                <span>{t('settings.sendInvitation')}</span>
+                <FaChevronRight className={styles.arrowIcon} />
+              </button>
+              <button
+                onClick={() => handleStepChange('viewInvitations')}
+                className={`${styles.stepButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.viewPendingInvitations')}
+              >
+                <span>{t('settings.viewPendingInvitations')}</span>
+                <FaChevronRight className={styles.arrowIcon} />
+              </button>
+            </div>
+          )}
+
+          {currentStep === 'sendInvitation' && (
+            <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <button
+                onClick={() => handleStepChange('invitations')}
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.back')}
+              >
+                <FaArrowLeft className={styles.backIcon} />
+                <span>{t('settings.back')}</span>
+              </button>
+              <h2>{t('settings.sendInvitation')}</h2>
+              <div className={styles.inputGroup}>
+                <label htmlFor="email">{t('settings.recipientEmail')}</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('settings.enterEmail')}
+                  className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  aria-label={t('settings.recipientEmail')}
+                />
               </div>
-            ) : (
-              <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {t('settings.selectTeamMember', { defaultValue: 'Select team members to edit access' })}
-              </p>
-            )}
-          </div>
+              <button
+                onClick={handleGenerateInvitation}
+                disabled={isGenerating}
+                className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
+              >
+                {isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
+              </button>
+            </div>
+          )}
+
+          {currentStep === 'viewInvitations' && (
+            <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <button
+                onClick={() => handleStepChange('invitations')}
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.back')}
+              >
+                <FaArrowLeft className={styles.backIcon} />
+                <span>{t('settings.back')}</span>
+              </button>
+              <h2>{t('settings.viewPendingInvitations')}</h2>
+              {pendingInvitations.length > 0 ? (
+                <div className={styles.invitationList}>
+                  {pendingInvitations.map(inv => (
+                    <div key={inv.id} className={styles.invitationItem}>
+                      <span>{inv.email}</span>
+                      <span>
+                        {t('settings.invitedOn', {
+                          date: new Date(inv.createdAt?.seconds * 1000).toLocaleDateString(),
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {t('settings.noPendingInvitations', { defaultValue: 'No pending invitations' })}
+                </p>
+              )}
+            </div>
+          )}
+
+          {currentStep === 'manageTeam' && (
+            <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <button
+                onClick={() => handleStepChange('main')}
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label={t('settings.back')}
+              >
+                <FaArrowLeft className={styles.backIcon} />
+                <span>{t('settings.back')}</span>
+              </button>
+              <h2>{t('settings.manageTeamAccess')}</h2>
+              {teamMembers.length > 0 ? (
+                teamMembers.map(tm => (
+                  <button
+                    key={tm.uid}
+                    onClick={() => toggleTeamMemberSelection(tm.uid)}
+                    className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label={t('settings.editAccessFor', { email: tm.email })}
+                  >
+                    <span>{tm.email}</span>
+                    <FaChevronRight className={styles.arrowIcon} />
+                  </button>
+                ))
+              ) : (
+                <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {t('settings.noTeamMembers', { defaultValue: 'No team members found' })}
+                </p>
+              )}
+            </div>
+          )}
+
+{currentStep === 'editAccess' && selectedTeamMemberUids.length > 0 && (
+  <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+    <button
+      onClick={() => handleStepChange('manageTeam')}
+      className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+      aria-label={t('settings.back')}
+    >
+      <FaArrowLeft className={styles.backIcon} />
+      <span>{t('settings.back')}</span>
+    </button>
+
+    <h3>
+      {t('settings.editAccessFor', {
+        email:
+          teamMembers.find(tm => tm.uid === selectedTeamMemberUids[0])?.email ||
+          t('settings.unknownEmail', { defaultValue: 'Unknown Email' }),
+      })}
+    </h3>
+
+    <div className={styles.inputGroup}>
+      <label>{t('settings.role')}</label>
+      {['viewer', 'editor'].map(role => (
+        <button
+          key={role}
+          onClick={() => setSelectedPermissions(role)}
+          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+            selectedPermissions === role ? styles.selected : ''
+          }`}
+          aria-label={t(`settings.${role}`)}
+        >
+          <span>{t(`settings.${role}`)}</span>
+          {selectedPermissions === role ? (
+            <FaRegCheckCircle
+              className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+            />
+          ) : (
+            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+          )}
+        </button>
+      ))}
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>{t('settings.sheets')}</label>
+      <button
+        onClick={() => toggleOption('sheets', 'all')}
+        className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+          selectedSheets.includes('all') ? styles.selected : ''
+        }`}
+        aria-label={t('settings.allSheets')}
+      >
+        <span>{t('settings.allSheets')}</span>
+        {selectedSheets.includes('all') ? (
+          <FaRegCheckCircle
+            className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+          />
+        ) : (
+          <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+        )}
+      </button>
+
+      {availableSheets.map(sheet => (
+        <button
+          key={sheet.id}
+          onClick={() => toggleOption('sheets', sheet.id)}
+          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+            selectedSheets.includes(sheet.id) ? styles.selected : ''
+          }`}
+          aria-label={sheet.name}
+        >
+          <span>{sheet.name}</span>
+          {selectedSheets.includes(sheet.id) ? (
+            <FaRegCheckCircle
+              className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+            />
+          ) : (
+            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+          )}
+        </button>
+      ))}
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>{t('settings.dashboards')}</label>
+      <button
+        onClick={() => toggleOption('dashboards', 'all')}
+        className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+          selectedDashboards.includes('all') ? styles.selected : ''
+        }`}
+        aria-label={t('settings.allDashboards')}
+      >
+        <span>{t('settings.allDashboards')}</span>
+        {selectedDashboards.includes('all') ? (
+          <FaRegCheckCircle
+            className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+          />
+        ) : (
+          <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+        )}
+      </button>
+
+      {availableDashboards.map(dashboard => (
+        <button
+          key={dashboard.id}
+          onClick={() => toggleOption('dashboards', dashboard.id)}
+          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+            selectedDashboards.includes(dashboard.id) ? styles.selected : ''
+          }`}
+          aria-label={dashboard.name}
+        >
+          <span>{dashboard.name}</span>
+          {selectedDashboards.includes(dashboard.id) ? (
+            <FaRegCheckCircle
+              className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+            />
+          ) : (
+            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+          )}
+        </button>
+      ))}
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>{t('settings.cardTemplates')}</label>
+      <button
+        onClick={() => toggleOption('cardTemplates', 'all')}
+        className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+          selectedCardTemplates.includes('all') ? styles.selected : ''
+        }`}
+        aria-label={t('settings.allCardTemplates')}
+      >
+        <span>{t('settings.allCardTemplates')}</span>
+        {selectedCardTemplates.includes('all') ? (
+          <FaRegCheckCircle
+            className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+          />
+        ) : (
+          <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+        )}
+      </button>
+
+      {availableCardTemplates.map(template => (
+        <button
+          key={template.id}
+          onClick={() => toggleOption('cardTemplates', template.id)}
+          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+            selectedCardTemplates.includes(template.id) ? styles.selected : ''
+          }`}
+          aria-label={template.name}
+        >
+          <span>{template.name}</span>
+          {selectedCardTemplates.includes(template.id) ? (
+            <FaRegCheckCircle
+              className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`}
+            />
+          ) : (
+            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+          )}
+        </button>
+      ))}
+    </div>
+
+    <div className={styles.buttonGroup}>
+      <button
+        onClick={saveAccess}
+        className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
+        aria-label={t('settings.save')}
+      >
+        {t('settings.save')}
+      </button>
+      <button
+        onClick={cancelEditing}
+        className={`${styles.button} ${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+        aria-label={t('settings.cancel')}
+      >
+        {t('settings.cancel')}
+      </button>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </div>

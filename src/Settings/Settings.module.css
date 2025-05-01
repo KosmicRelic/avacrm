@@ -1,4 +1,4 @@
-/* Existing styles with modifications */
+/* Core container styles */
 .container {
   padding: 16px;
   padding-top: 56px;
@@ -7,33 +7,24 @@
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   transition: background 0.3s ease;
+  position: relative;
+  min-height: 100vh;
 }
 
 .container.darkTheme {
   background: rgba(0, 0, 0, 0.95);
 }
 
+/* Section styles */
 .section {
-  background: rgba(255, 255, 255);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 20px;
-  margin-bottom: 48px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  background: transparent;
+  padding: 20px 0;
+  margin-bottom: 0;
+  transition: background 0.3s ease;
 }
 
 .section.darkTheme {
-  background: rgba(28, 28, 30);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.manageTeamsSection {
-  background-color: transparent;
-}
-
-.manageTeamsSection.darkTheme {
-  background-color: transparent;
+  background: transparent;
 }
 
 .section h2 {
@@ -48,6 +39,7 @@
   color: #f5f5f7;
 }
 
+/* Input group styles */
 .inputGroup {
   margin-bottom: 16px;
 }
@@ -85,6 +77,7 @@
   background: rgba(44, 44, 46, 0.9);
 }
 
+/* Button styles */
 .button {
   padding: 10px 20px;
   font-size: 15px;
@@ -109,14 +102,33 @@
   background: #0073e6;
 }
 
+/* Toggle button for mobile */
+.toggleButton {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #1d1d1f;
+  cursor: not-allowed;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+}
+
+.toggleButton.darkTheme {
+  color: #f5f5f7;
+}
+
+/* Dual pane layout */
 .teamAccessContainer {
   display: flex;
   gap: 16px;
   width: 100%;
+  position: relative;
 }
 
 .leftPane {
-  width: 300px;
+  width: 30%;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 16px;
@@ -125,9 +137,10 @@
   transition: background 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Restored for consistent spacing */
-  max-height: 600px; /* Limit height to prevent overflow */
-  overflow-y: auto; /* Enable scrolling */
+  gap: 8px;
+  max-height: 600px;
+  overflow-y: auto;
+  position: relative;
 }
 
 .leftPane.darkTheme {
@@ -136,15 +149,16 @@
 }
 
 .rightPane {
-  flex: 1;
+  width: 70%;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: background 0.3s ease, box-shadow 0.3s ease;
-  max-height: 600px; /* Limit height to prevent overflow */
-  overflow-y: auto; /* Enable scrolling */
+  max-height: 600px;
+  overflow-y: auto;
+  position: relative;
 }
 
 .rightPane.darkTheme {
@@ -164,6 +178,7 @@
   color: #f5f5f7;
 }
 
+/* Button group */
 .buttonGroup {
   display: flex;
   gap: 8px;
@@ -187,6 +202,7 @@
   background: rgba(255, 69, 58, 0.3);
 }
 
+/* Placeholder text */
 .noSelection {
   font-size: 15px;
   color: #6e6e73;
@@ -198,6 +214,8 @@
   color: #a1a1a6;
 }
 
+/* Step and team member buttons */
+.stepButton,
 .teamMemberButton {
   display: flex;
   justify-content: space-between;
@@ -213,34 +231,38 @@
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease, color 0.3s ease, box-shadow 0.2s ease;
-  flex-shrink: 0; /* Prevent buttons from shrinking */
+  flex-shrink: 0;
 }
 
+.stepButton.darkTheme,
 .teamMemberButton.darkTheme {
   background: rgba(44, 44, 46);
   color: #f5f5f7;
 }
 
+.stepButton:hover,
 .teamMemberButton:hover {
   background: rgba(0, 122, 255, 0.1);
 }
 
+.stepButton.darkTheme:hover,
 .teamMemberButton.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
 }
 
-.teamMemberButton.selected {
+.stepButton.selected {
   background: rgba(0, 122, 255, 0.2);
   color: #007aff;
   box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
 }
 
-.teamMemberButton.selected.darkTheme {
+.stepButton.selected.darkTheme {
   background: rgba(10, 132, 255, 0.3);
   color: #0a84ff;
   box-shadow: 0 2px 6px rgba(10, 132, 255, 0.4);
 }
 
+/* Option button */
 .optionButton {
   display: flex;
   justify-content: space-between;
@@ -248,7 +270,7 @@
   width: 100%;
   padding: 12px 16px;
   margin-bottom: 8px;
-  background: rgba(243, 242, 248);
+  background: rgba(243, 242,  Darmstadtium, 248);
   border: none;
   border-radius: 12px;
   font-size: 15px;
@@ -257,7 +279,7 @@
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease, color 0.3s ease, box-shadow 0.2s ease;
-  flex-shrink: 0; /* Prevent buttons from shrinking */
+  flex-shrink: 0;
 }
 
 .optionButton.darkTheme {
@@ -285,6 +307,7 @@
   box-shadow: 0 2px 6px rgba(10, 132, 255, 0.4);
 }
 
+/* Icons */
 .icon {
   font-size: 18px;
   color: #6e6e73;
@@ -303,8 +326,76 @@
   color: #0a84ff;
 }
 
+.arrowIcon {
+  font-size: 16px;
+  color: #6e6e73;
+  transition: color 0.3s ease;
+}
+
+.arrowIcon.darkTheme {
+  color: #a1a1a6;
+}
+
+/* Back button */
+.backButton {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #007aff;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.backButton.darkTheme {
+  color: #0a84ff;
+}
+
+.backButton:hover {
+  color: #0066d6;
+}
+
+.backButton.darkTheme:hover {
+  color: #0073e6;
+}
+
+.backIcon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* Invitation list */
+.invitationList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invitationItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(243, 242, 248);
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1d1d1f;
+}
+
+.invitationItem.darkTheme {
+  background: rgba(44, 44, 46);
+  color: #f5f5f7;
+}
+
+/* Navbar */
 .navBar {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .navTitle {
@@ -319,6 +410,7 @@
   color: #f5f5f7;
 }
 
+/* Banner */
 .banner {
   position: fixed;
   top: 20px;
@@ -365,18 +457,81 @@
 
 /* Mobile-specific styles */
 @media (max-width: 768px) {
+  .container {
+    padding: 0;
+    padding-top: 56px;
+  }
+
   .teamAccessContainer {
+    position: relative;
     flex-direction: column;
+    height: 100%;
   }
 
   .leftPane {
-    width: calc(100% - 32px);
-    max-height: 350px; /* Override for mobile */
-    overflow-y: auto;
+    width: 100%;
+    height: calc(100vh - 56px); /* Full height minus navbar */
+    max-height: none;
+    border-radius: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    visibility: visible;
+    transition: visibility 0s;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .leftPane.hidden {
+    visibility: hidden;
   }
 
   .rightPane {
-    width: calc(100% - 32px);
-    max-height: 400px; /* Adjusted for mobile */
+    width: 100%;
+    height: calc(100vh - 56px); /* Full height minus navbar */
+    max-height: none;
+    border-radius: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    visibility: hidden;
+    transform: translateX(100%);
+    transition: transform 0.3s ease, visibility 0s 0.3s;
+    padding: 16px;
+    box-sizing: border-box;
   }
+
+  .rightPane.fullScreen {
+    visibility: visible;
+    transform: translateX(0);
+    transition: transform 0.3s ease, visibility 0s;
+  }
+
+  .rightPane.animateContent {
+    transition: none; /* Remove transition for content wrapper */
+  }
+
+  .rightPane.animateEnter > div {
+    animation: slideInMobile 0.3s ease forwards;
+  }
+
+  .rightPane.animateExit > div {
+    animation: slideOutMobile 0.3s ease forwards;
+  }
+}
+
+@keyframes slideInMobile {
+  from { transform: translateX(100%); opacity: 0.7; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutMobile {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0.7; }
 }
