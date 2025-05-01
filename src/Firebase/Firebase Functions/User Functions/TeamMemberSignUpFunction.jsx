@@ -1,6 +1,5 @@
-// src/Firebase/Firebase Functions/User Functions/TeamMemberSignUpFunction.jsx
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../../../firebase.jsx';
+import { app } from '../../../firebase';
 
 export const TeamMemberSignUpFunction = async ({ email, password, phone, invitationCode }) => {
   try {

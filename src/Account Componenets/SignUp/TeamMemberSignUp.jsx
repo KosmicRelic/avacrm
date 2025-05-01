@@ -1,20 +1,17 @@
-// src/components/TeamMemberSignUp.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import styles from './BusinessSignUp.module.css'; // Reuse styles for consistency
+import styles from './BusinessSignUp.module.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { ImSpinner2 } from 'react-icons/im';
 import { MainContext } from '../../Contexts/MainContext';
 import { TeamMemberSignUpFunction } from '../../Firebase/Firebase Functions/User Functions/TeamMemberSignUpFunction';
 import { useTranslation } from 'react-i18next';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function TeamMemberSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { code } = useParams(); // Get invitation code from URL
+  const { code } = useParams();
   const { user, setIsSignup } = React.useContext(MainContext);
   const auth = getAuth();
 
@@ -32,7 +29,7 @@ export default function TeamMemberSignUp() {
   const [phoneFocused, setPhoneFocused] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
 
-  const [invitationCode, setInvitationCode] = useState(code || '');
+  const [invitationCode] = useState(code || '');
   const [invitationCodeError, setInvitationCodeError] = useState(false);
   const [invitationDetails, setInvitationDetails] = useState(null);
 
@@ -40,40 +37,20 @@ export default function TeamMemberSignUp() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupError, setSignupError] = useState('');
 
-  // Redirect if already signed in
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
 
-  // Fetch invitation details
   useEffect(() => {
-    const fetchInvitation = async () => {
-      if (invitationCode) {
-        try {
-          const q = query(
-            collection(db, 'invitations'),
-            where('invitationCode', '==', invitationCode),
-            where('status', '==', 'pending')
-          );
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            const invitationData = querySnapshot.docs[0].data();
-            setInvitationDetails(invitationData);
-            setEmail(invitationData.email); // Pre-fill email
-          } else {
-            setInvitationCodeError(true);
-            setSignupError(t('teamMemberSignUp.error.invalidCode'));
-          }
-        } catch (error) {
-          console.error('Error fetching invitation:', error);
-          setInvitationCodeError(true);
-          setSignupError(t('teamMemberSignUp.error.invalidCode'));
-        }
-      }
-    };
-    fetchInvitation();
+    if (invitationCode) {
+      // Invitation validation is handled by the Cloud Function
+      setInvitationDetails({ invitationCode }); // Placeholder for rendering
+    } else {
+      setInvitationCodeError(true);
+      setSignupError(t('teamMemberSignUp.error.invalidCode'));
+    }
   }, [invitationCode, t]);
 
   const isValidEmail = (email) => {
@@ -124,7 +101,6 @@ export default function TeamMemberSignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate fields
     const isEmailValid = isValidEmail(email);
     const isPasswordValid = password && passwordRequirements.length === 0;
     const isPhoneValid = isValidPhone(phone);
@@ -141,7 +117,6 @@ export default function TeamMemberSignUp() {
         setSignupError('');
         setIsSignup(true);
 
-        // Call Cloud Function
         await TeamMemberSignUpFunction({
           email: email.trim(),
           password,
@@ -149,7 +124,6 @@ export default function TeamMemberSignUp() {
           invitationCode,
         });
 
-        // Sign in
         await signInWithEmailAndPassword(auth, email.trim(), password);
 
         setSignupSuccess(true);
@@ -158,9 +132,8 @@ export default function TeamMemberSignUp() {
         setSignupSuccess(false);
         setIsSignup(false);
         setSignupError(error.message || t('teamMemberSignUp.error.generic'));
+        setInvitationCodeError(error.code === 'not-found' || error.code === 'failed-precondition');
       }
-    } else {
-      console.log('Form validation failed');
     }
   };
 
@@ -182,7 +155,7 @@ export default function TeamMemberSignUp() {
             <h2 className={styles.title}>{t('teamMemberSignUp.signup')}</h2>
             <p className={styles.subText}>
               {invitationDetails
-                ? t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName })
+                ? t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName || 'the team' })
                 : t('teamMemberSignUp.shortTextGeneric')}
             </p>
           </header>
@@ -205,7 +178,7 @@ export default function TeamMemberSignUp() {
                 onBlur={() => setEmailFocused(email !== '')}
                 value={email}
                 onChange={handleInputChange(setEmail, setEmailError)}
-                disabled={isSubmitting || !!invitationDetails}
+                disabled={isSubmitting}
               />
               {emailError && (
                 <p className={styles.errorText}>

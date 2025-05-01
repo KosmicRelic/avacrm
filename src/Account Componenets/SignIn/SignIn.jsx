@@ -136,7 +136,7 @@ export default function SignIn() {
             </form>
 
             <footer className={styles.footer}>
-                {t("signIn.dontHaveAccount")} <a onClick={() => !userIsSigningIn ? navigate(`/signup`) : ""}>{t("signIn.signup")}</a>
+                {t("signIn.dontHaveAccount")} <a onClick={() => !userIsSigningIn ? navigate(`/signup/business`) : ""}>{t("signIn.signup")}</a>
             </footer>
 
             {forgotPasswordIsActive && <ForgotPassword setForgotPasswordIsActive={setForgotPasswordIsActive} />}

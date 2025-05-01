@@ -1136,16 +1136,13 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
 });
 
 exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
-  // Apply CORS middleware
   cors(corsOptions)(req, res, async () => {
     try {
-      // Log the raw request for debugging
       functions.logger.info('sendInvitationEmail called', {
         headers: req.headers,
         rawBody: req.body,
       });
 
-      // Manually parse JSON body if Content-Type is application/json
       let body;
       if (req.get('Content-Type') === 'application/json') {
         try {
@@ -1159,28 +1156,23 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
       }
 
-      // Destructure the parsed body
-      const { email, businessId, invitedBy, businessEmail } = body || {};
+      const { email, businessId, invitedBy, businessEmail, permissions } = body || {};
 
-      // Log the parsed body
-      functions.logger.info('Parsed body', { email, businessId, invitedBy });
+      functions.logger.info('Parsed body', { email, businessId, invitedBy, permissions });
 
-      // Validate input
-      if (!email || !businessId || !invitedBy) {
-        functions.logger.error('Missing required fields', { email, businessId, invitedBy });
+      if (!email || !businessId || !invitedBy || !permissions) {
+        functions.logger.error('Missing required fields', { email, businessId, invitedBy, permissions });
         return res.status(400).json({
-          error: `Missing required fields: ${!email ? 'email ' : ''}${!businessId ? 'businessId ' : ''}${!invitedBy ? 'invitedBy' : ''}`,
+          error: `Missing required fields: ${!email ? 'email ' : ''}${!businessId ? 'businessId ' : ''}${!invitedBy ? 'invitedBy ' : ''}${!permissions ? 'permissions' : ''}`,
         });
       }
 
-      // Validate email format (basic check)
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         functions.logger.error('Invalid email format', { email });
         return res.status(400).json({ error: 'Invalid email format' });
       }
 
-      // Fetch business data
       const businessDoc = await db.collection('businesses').doc(businessId).get();
       if (!businessDoc.exists) {
         functions.logger.error('Business not found', { businessId });
@@ -1189,10 +1181,8 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
       const businessData = businessDoc.data();
       const businessName = businessData.businessInfo.name;
 
-      // Generate invitation code
       const invitationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      // Store invitation in Firestore
       await db.collection('invitations').add({
         email,
         businessId,
@@ -1201,9 +1191,14 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         status: 'pending',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         invitedBy,
+        permissions: {
+          dashboard: permissions.dashboard || false,
+          metrics: permissions.metrics || false,
+          sheets: permissions.sheets || false,
+          allowedSheetIds: permissions.allowedSheetIds || [],
+        },
       });
 
-      // Send email via Resend
       const emailResponse = await resend.emails.send({
         from: `${businessName} Team <invitations@apx.gr>`,
         to: email,
@@ -1211,7 +1206,7 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         html: `
           <h1>Team Invitation</h1>
           <p>You've been invited to join the ${businessName} team!</p>
-          <p>Click <a href="https://www.apx.gr/signup/${invitationCode}">here</a> to accept your invitation.</p>
+          <p>Click <a href="https://www.apx.gr/signup/teammember/${invitationCode}">here</a> to accept your invitation.</p>
           <p>If you have any questions, contact ${businessEmail}</p>
         `,
       });
@@ -1230,13 +1225,10 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
 
 exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
   try {
-    // Log raw data
     functions.logger.info('teamMemberSignUp started', { rawData: data });
 
-    // Destructure payload
     const { email, password, phone, invitationCode } = data.data || data || {};
 
-    // Log destructured fields
     functions.logger.info('Destructured data', {
       email,
       password: password ? '[REDACTED]' : undefined,
@@ -1244,7 +1236,6 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       invitationCode,
     });
 
-    // Validate fields
     if (!email || !password || !phone || !invitationCode) {
       throw new functions.https.HttpsError(
         'invalid-argument',
@@ -1252,19 +1243,16 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid email format');
     }
 
-    // Validate phone format (basic check, adjust as needed)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (!phoneRegex.test(phone)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid phone number format');
     }
 
-    // Find invitation
     const invitationQuery = await db
       .collection('invitations')
       .where('invitationCode', '==', invitationCode)
@@ -1277,28 +1265,23 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
 
     const invitationDoc = invitationQuery.docs[0];
     const invitationData = invitationDoc.data();
-    const { businessId, businessName, invitedBy } = invitationData;
+    const { businessId, businessName, invitedBy, permissions } = invitationData;
 
-    // Verify email matches invitation
     if (invitationData.email.toLowerCase() !== email.toLowerCase()) {
       throw new functions.https.HttpsError('invalid-argument', 'Email does not match invitation');
     }
 
-    // Check invitation expiry (7 days)
     const createdAt = invitationData.createdAt.toDate();
     if (new Date() - createdAt > 7 * 24 * 60 * 60 * 1000) {
       throw new functions.https.HttpsError('failed-precondition', 'Invitation has expired');
     }
 
-    // Create user
     functions.logger.info('Creating user', { email });
     const userRecord = await auth.createUser({ email, password });
     const user = userRecord;
 
-    // Prepare batch for Firestore updates
     const batch = db.batch();
 
-    // Store user data
     functions.logger.info('Writing user data', { uid: user.uid });
     const userData = {
       uid: user.uid,
@@ -1312,28 +1295,23 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
     const userDocRef = db.collection('users').doc(user.uid);
     batch.set(userDocRef, userData);
 
-    // Update invitation
-    functions.logger.info('Updating invitation', { invitationId: invitationDoc.id });
-    batch.update(invitationDoc.ref, {
-      status: 'accepted',
-      userId: user.uid,
-      acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // Add team member to business (optional)
     functions.logger.info('Adding team member to business', { businessId });
-    const businessDocRef = db.collection('businesses').doc(businessId);
-    batch.update(businessDocRef, {
-      teamMembers: admin.firestore.FieldValue.arrayUnion({
-        uid: user.uid,
-        email: user.email,
-        phone,
-        role: 'team_member',
-        joinedAt: new Date().toISOString(),
-      }),
+    const teamMemberDocRef = db.collection('businesses').doc(businessId).collection('teamMembers').doc(user.uid);
+    batch.set(teamMemberDocRef, {
+      uid: user.uid,
+      email: user.email,
+      phone,
+      role: 'team_member',
+      joinedAt: new Date().toISOString(),
+      allowedSheetIds: permissions.allowedSheetIds || [],
+      allowedDashboardIds: permissions.allowedDashboardIds || [],
+      allowedCardTemplateIds: permissions.allowedCardTemplateIds || [],
+      permissions: permissions.role || 'viewer',
     });
 
-    // Commit batch
+    functions.logger.info('Deleting invitation', { invitationId: invitationDoc.id });
+    batch.delete(invitationDoc.ref);
+
     functions.logger.info('Committing batch');
     await batch.commit();
 
@@ -1350,7 +1328,6 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
     let errorMessage = error.message || 'Internal server error';
 
     if (errorCode === 'invalid-argument' || errorCode === 'not-found' || errorCode === 'failed-precondition') {
-      // Pass through specific errors
     } else if (error.code === 'auth/email-already-in-use') {
       errorCode = 'already-exists';
       errorMessage = 'Email is already in use';

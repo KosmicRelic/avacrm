@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useCallback, useMemo, useContext, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
@@ -15,7 +14,7 @@ import Metrics from './Metrics/Metrics';
 import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
-import Settings from './Settings/Settings'; // Added Settings import
+import Settings from './Settings/Settings';
 import {
   handleModalSave,
   handleModalClose,
@@ -38,7 +37,7 @@ const ProtectedRoute = React.memo(({ children }) => {
     return null;
   }
 
-  if (!user && userAuthChecked && location.pathname !== '/signup') {
+  if (!user && userAuthChecked && !['/signup/business', '/signin'].includes(location.pathname) && !location.pathname.startsWith('/signup/teammember/')) {
     return <Navigate to="/signin" replace />;
   }
 
@@ -71,7 +70,7 @@ function App() {
     setMetrics,
     isDarkTheme,
     user,
-    userAuthChecked
+    userAuthChecked,
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -146,7 +145,7 @@ function App() {
     } else if (location.pathname === '/settings') {
       setActiveOption('settings');
     }
-  }, [location.pathname]);
+  }, [location.pathname, setActiveOption]);
 
   const handlePinToggle = useCallback(
     (headerKey) => {
@@ -415,7 +414,7 @@ function App() {
     handleDeleteSheet,
   };
 
-  const showHeader = !['/signin', '/signup'].includes(location.pathname);
+  const showHeader = !['/signin', '/signup/business'].includes(location.pathname) && !location.pathname.startsWith('/signup/teammember/');
 
   return (
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -499,7 +498,8 @@ function App() {
             }
           />
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<BusinessSignUp />} />
+          <Route path="/signup/business" element={<BusinessSignUp />} />
+          <Route path="/signup/teammember/:code" element={<TeamMemberSignUp />} />
         </Routes>
         {activeModal && (
           <Modal

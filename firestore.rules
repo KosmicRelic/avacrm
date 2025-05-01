@@ -1,19 +1,104 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Users: Only the user can read/write their own document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 5, 1);
+    match /businesses/{businessId} {
+      // Allow read for owner and team members, write for owner only
+      allow read: if request.auth != null && (
+        resource.data.businessInfo.ownerUid == request.auth.uid ||
+        exists(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid))
+      );
+      allow write: if request.auth != null && 
+        resource.data.businessInfo.ownerUid == request.auth.uid;
+
+      // TeamMembers: Allow read for authenticated users (temporary for testing)
+      match /teamMembers/{userId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && 
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid;
+      }
+
+      // Sheets: Allow write for editors with matching sheetId
+      match /sheets/{sheetId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (sheetId in get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
+
+      // SheetsStructure: Allow write for editors with sheet access
+      match /sheetsStructure/structure {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds.size() > 0 &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
+
+      // Cards: Allow write for editors with sheet access
+      match /cards/{cardId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedSheetIds.size() > 0 &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
+
+      // Dashboards: Allow write for editors with dashboard access
+      match /dashboards/{dashboardId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedDashboardIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedDashboardIds.size() > 0 &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
+
+      // Metrics: Allow write for editors with dashboard access
+      match /metrics/{metricId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedDashboardIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedDashboardIds.size() > 0 &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
+
+      // CardTemplates: Allow write for editors with template access
+      match /cardTemplates/{templateId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedCardTemplateIds.size() > 0
+        );
+        allow write: if request.auth != null && (
+          get(/databases/$(database)/documents/businesses/$(businessId)).data.businessInfo.ownerUid == request.auth.uid ||
+          (get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.allowedCardTemplateIds.size() > 0 &&
+           get(/databases/$(database)/documents/businesses/$(businessId)/teamMembers/$(request.auth.uid)).data.permissions == 'editor')
+        );
+      }
     }
   }
 }
