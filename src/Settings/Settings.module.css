@@ -1,51 +1,382 @@
+/* Existing styles with modifications */
 .container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 16px;
+  padding-top: 56px;
   margin: 0 auto;
+  background: rgba(243, 242, 248);
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  transition: background 0.3s ease;
+}
+
+.container.darkTheme {
+  background: rgba(0, 0, 0, 0.95);
 }
 
 .section {
-  margin-bottom: 30px;
+  background: rgba(255, 255, 255);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 48px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
-.button {
-  padding: 10px 20px;
-  background: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
+.section.darkTheme {
+  background: rgba(28, 28, 30);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+.manageTeamsSection {
+  background-color: transparent;
 }
 
-.invitationUrl {
-  margin-top: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.manageTeamsSection.darkTheme {
+  background-color: transparent;
+}
+
+.section h2 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px;
+  transition: color 0.3s ease;
+}
+
+.section.darkTheme h2 {
+  color: #f5f5f7;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.inputGroup label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  transition: color 0.3s ease;
+}
+
+.inputGroup.darkTheme label {
+  color: #a1a1a6;
 }
 
 .input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.copyButton {
-  padding: 8px 15px;
-  background: #28a745;
-  color: white;
+  padding: 12px 14px;
   border: none;
-  cursor: pointer;
-  border-radius: 4px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(243, 242, 248, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.error {
-  color: red;
-  margin-top: 10px;
+.input.darkTheme {
+  color: #f5f5f7;
+  background: rgba(44, 44, 46, 0.9);
+}
+
+.button {
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.button.darkTheme {
+  background: #0a84ff;
+}
+
+.button:hover {
+  background: #0066d6;
+}
+
+.button.darkTheme:hover {
+  background: #0073e6;
+}
+
+.teamAccessContainer {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.leftPane {
+  width: 300px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Restored for consistent spacing */
+  max-height: 600px; /* Limit height to prevent overflow */
+  overflow-y: auto; /* Enable scrolling */
+}
+
+.leftPane.darkTheme {
+  background: rgba(28, 28, 30);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rightPane {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  max-height: 600px; /* Limit height to prevent overflow */
+  overflow-y: auto; /* Enable scrolling */
+}
+
+.rightPane.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rightPane h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px;
+  transition: color 0.3s ease;
+}
+
+.rightPane.darkTheme h3 {
+  color: #f5f5f7;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.cancelButton {
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.cancelButton.darkTheme {
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.2);
+}
+
+.cancelButton:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
+.cancelButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.3);
+}
+
+.noSelection {
+  font-size: 15px;
+  color: #6e6e73;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.noSelection.darkTheme {
+  color: #a1a1a6;
+}
+
+.teamMemberButton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(243, 242, 248);
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease, color 0.3s ease, box-shadow 0.2s ease;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.teamMemberButton.darkTheme {
+  background: rgba(44, 44, 46);
+  color: #f5f5f7;
+}
+
+.teamMemberButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.teamMemberButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.teamMemberButton.selected {
+  background: rgba(0, 122, 255, 0.2);
+  color: #007aff;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
+}
+
+.teamMemberButton.selected.darkTheme {
+  background: rgba(10, 132, 255, 0.3);
+  color: #0a84ff;
+  box-shadow: 0 2px 6px rgba(10, 132, 255, 0.4);
+}
+
+.optionButton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(243, 242, 248);
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease, color 0.3s ease, box-shadow 0.2s ease;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.optionButton.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  color: #f5f5f7;
+}
+
+.optionButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.optionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.optionButton.selected {
+  background: rgba(0, 122, 255, 0.2);
+  color: #007aff;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
+}
+
+.optionButton.selected.darkTheme {
+  background: rgba(10, 132, 255, 0.3);
+  color: #0a84ff;
+  box-shadow: 0 2px 6px rgba(10, 132, 255, 0.4);
+}
+
+.icon {
+  font-size: 18px;
+  color: #6e6e73;
+  transition: color 0.3s ease;
+}
+
+.icon.darkTheme {
+  color: #a1a1a6;
+}
+
+.icon.selected {
+  color: #007aff;
+}
+
+.icon.selected.darkTheme {
+  color: #0a84ff;
+}
+
+.navBar {
+  margin-bottom: 24px;
+}
+
+.navTitle {
+  font-size: 36px;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-align: left;
+  transition: color 0.3s ease;
+}
+
+.navTitle.darkTheme {
+  color: #f5f5f7;
+}
+
+.banner {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+}
+
+.banner.success {
+  background: rgba(52, 199, 89, 0.95);
+  color: #fff;
+}
+
+.banner.success.darkTheme {
+  background: rgba(48, 209, 88, 0.95);
+}
+
+.banner.error {
+  background: rgba(255, 59, 48, 0.95);
+  color: #fff;
+}
+
+.banner.error.darkTheme {
+  background: rgba(255, 69, 58, 0.95);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(-50%) translateY(0); opacity: 1; }
+  to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .teamAccessContainer {
+    flex-direction: column;
+  }
+
+  .leftPane {
+    width: calc(100% - 32px);
+    max-height: 350px; /* Override for mobile */
+    overflow-y: auto;
+  }
+
+  .rightPane {
+    width: calc(100% - 32px);
+    max-height: 400px; /* Adjusted for mobile */
+  }
 }

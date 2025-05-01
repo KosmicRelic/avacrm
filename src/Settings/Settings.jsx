@@ -2,195 +2,216 @@ import React, { useContext, useEffect, useState } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { doc, setDoc ,getDoc, collection, query, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
 import { Navigate } from 'react-router-dom';
+import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { user } = useContext(MainContext);
+  const { user, isDarkTheme } = useContext(MainContext);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // State for managing team member access
   const [teamMembers, setTeamMembers] = useState([]);
   const [availableSheets, setAvailableSheets] = useState([]);
   const [availableDashboards, setAvailableDashboards] = useState([]);
   const [availableCardTemplates, setAvailableCardTemplates] = useState([]);
-  const [editingTeamMemberUid, setEditingTeamMemberUid] = useState(null);
+  const [selectedTeamMemberUids, setSelectedTeamMemberUids] = useState([]);
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedDashboards, setSelectedDashboards] = useState([]);
   const [selectedCardTemplates, setSelectedCardTemplates] = useState([]);
   const [selectedPermissions, setSelectedPermissions] = useState('viewer');
 
-  // Restrict to business owners
   // if (!user || user.userType !== 'business') {
   //   return <Navigate to="/dashboard" />;
   // }
 
-  // Fetch team members and available resources on component mount
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-
       try {
-        // Fetch team members from businesses/{businessId}/teamMembers
         const teamMembersRef = collection(db, 'businesses', user.uid, 'teamMembers');
         const teamMembersSnap = await getDocs(teamMembersRef);
-        const teamMembersData = teamMembersSnap.docs.map(doc => ({
-          uid: doc.id,
-          ...doc.data(),
-        }));
-        setTeamMembers(teamMembersData);
+        setTeamMembers(teamMembersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
 
-        // Fetch available sheets
         const sheetsRef = collection(db, 'businesses', user.uid, 'sheets');
         const sheetsSnap = await getDocs(sheetsRef);
-        const sheetsData = sheetsSnap.docs.map(doc => ({
+        setAvailableSheets(sheetsSnap.docs.map(doc => ({
           id: doc.id,
           name: doc.data().sheetName || `Sheet ${doc.id}`,
-        }));
-        setAvailableSheets(sheetsData);
+        })));
 
-        // Fetch available dashboards
         const dashboardsRef = collection(db, 'businesses', user.uid, 'dashboards');
         const dashboardsSnap = await getDocs(dashboardsRef);
-        const dashboardsData = dashboardsSnap.docs.map(doc => ({
+        setAvailableDashboards(dashboardsSnap.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name || `Dashboard ${doc.id}`,
-        }));
-        setAvailableDashboards(dashboardsData);
+        })));
 
-        // Fetch available card templates
         const cardTemplatesRef = collection(db, 'businesses', user.uid, 'cardTemplates');
         const cardTemplatesSnap = await getDocs(cardTemplatesRef);
-        const cardTemplatesData = cardTemplatesSnap.docs.map(doc => ({
+        setAvailableCardTemplates(cardTemplatesSnap.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name || `Template ${doc.id}`,
-        }));
-        setAvailableCardTemplates(cardTemplatesData);
+        })));
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load team members or resources: ' + err.message);
+        setErrorMessage(t('settings.errorFetchingData', { message: err.message }));
       }
     };
-
     fetchData();
-  }, [user]);
+  }, [user, t]);
 
-  // Start editing a team member's access
-  const startEditing = async (uid) => {
-    try {
-      const teamMemberDoc = await getDoc(doc(db, 'businesses', user.uid, 'teamMembers', uid));
-      if (teamMemberDoc.exists()) {
-        const teamMemberData = teamMemberDoc.data();
-        setSelectedSheets(teamMemberData.allowedSheetIds || []);
-        setSelectedDashboards(teamMemberData.allowedDashboardIds || []);
-        setSelectedCardTemplates(teamMemberData.allowedCardTemplateIds || []);
-        setSelectedPermissions(teamMemberData.permissions || 'viewer');
-        setEditingTeamMemberUid(uid);
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
+
+  const toggleTeamMemberSelection = (uid) => {
+    setSelectedTeamMemberUids(prev => {
+      if (prev.includes(uid)) {
+        return prev.filter(id => id !== uid);
       } else {
-        setError('Team member data not found');
+        return [...prev, uid];
       }
-    } catch (err) {
-      console.error('Error fetching team member data:', err);
-      setError('Failed to load team member data: ' + err.message);
+    });
+
+    if (!selectedTeamMemberUids.includes(uid)) {
+      const teamMember = teamMembers.find(tm => tm.uid === uid);
+      if (teamMember) {
+        setSelectedSheets(teamMember.allowedSheetIds || []);
+        setSelectedDashboards(teamMember.allowedDashboardIds || []);
+        setSelectedCardTemplates(teamMember.allowedCardTemplateIds || []);
+        setSelectedPermissions(teamMember.permissions || 'viewer');
+      }
     }
   };
 
-// Save updated access permissions to teamMembers
-const saveAccess = async () => {
-  try {
-    // Fetch the current team member document to preserve existing fields
-    const teamMemberRef = doc(db, 'businesses', user.uid, 'teamMembers', editingTeamMemberUid);
-    const teamMemberDoc = await getDoc(teamMemberRef);
-    if (!teamMemberDoc.exists()) {
-      throw new Error('Team member data not found');
-    }
-    const currentData = teamMemberDoc.data();
-
-    // Construct new document data
-    const newData = {
-      ...currentData, // Preserve fields like email, phone, joinedAt, etc.
-      allowedSheetIds: selectedSheets.includes('all') ? availableSheets.map(s => s.id) : selectedSheets,
-      allowedDashboardIds: selectedDashboards.includes('all') ? availableDashboards.map(d => d.id) : selectedDashboards,
-      allowedCardTemplateIds: selectedCardTemplates.includes('all') ? availableCardTemplates.map(t => t.id) : selectedCardTemplates,
-      permissions: selectedPermissions,
+  const toggleOption = (type, value) => {
+    const setters = {
+      sheets: setSelectedSheets,
+      dashboards: setSelectedDashboards,
+      cardTemplates: setSelectedCardTemplates,
     };
+    const selected = {
+      sheets: selectedSheets,
+      dashboards: selectedDashboards,
+      cardTemplates: selectedCardTemplates,
+    }[type];
+    const items = {
+      sheets: availableSheets,
+      dashboards: availableDashboards,
+      cardTemplates: availableCardTemplates,
+    }[type];
 
-    // Replace the entire document
-    await setDoc(teamMemberRef, newData, { merge: false });
-
-    // Update local state
-    setTeamMembers(
-      teamMembers.map(tm =>
-        tm.uid === editingTeamMemberUid
-          ? {
-              ...tm,
-              allowedSheetIds: newData.allowedSheetIds,
-              allowedDashboardIds: newData.allowedDashboardIds,
-              allowedCardTemplateIds: newData.allowedCardTemplateIds,
-              permissions: newData.permissions,
-            }
-          : tm
-      )
-    );
-    setEditingTeamMemberUid(null);
-    setSuccessMessage('Access updated successfully');
-
-    // Force refresh for the team member if they are the current user
-    if (editingTeamMemberUid === user.uid) {
-      window.location.reload(); // Reload to apply new permissions
+    if (value === 'all') {
+      setters[type](prev => {
+        if (prev.includes('all') || prev.length === items.length) {
+          return [];
+        } else {
+          return ['all', ...items.map(item => item.id)];
+        }
+      });
+    } else {
+      setters[type](prev => {
+        if (prev.includes(value)) {
+          return prev.filter(v => v !== value && v !== 'all');
+        } else {
+          const newSelected = [...prev.filter(v => v !== 'all'), value];
+          if (newSelected.length === items.length) {
+            return ['all', ...newSelected];
+          }
+          return newSelected;
+        }
+      });
     }
-  } catch (err) {
-    console.error('Error updating access:', err);
-    setError('Failed to update access: ' + err.message);
-  }
-};
+  };
 
-  // Invitation handler
+  const saveAccess = async () => {
+    if (selectedTeamMemberUids.length === 0) {
+      setErrorMessage(t('settings.noTeamMembersSelected', { defaultValue: 'Please select at least one team member' }));
+      return;
+    }
+    try {
+      for (const uid of selectedTeamMemberUids) {
+        const teamMemberRef = doc(db, 'businesses', user.uid, 'teamMembers', uid);
+        const teamMemberDoc = await getDoc(teamMemberRef);
+        if (!teamMemberDoc.exists()) {
+          throw new Error(t('settings.teamMemberNotFound'));
+        }
+        const currentData = teamMemberDoc.data();
+
+        const newData = {
+          ...currentData,
+          allowedSheetIds: selectedSheets.includes('all') ? availableSheets.map(s => s.id) : selectedSheets.filter(id => id !== 'all'),
+          allowedDashboardIds: selectedDashboards.includes('all') ? availableDashboards.map(d => d.id) : selectedDashboards.filter(id => id !== 'all'),
+          allowedCardTemplateIds: selectedCardTemplates.includes('all') ? availableCardTemplates.map(t => t.id) : selectedCardTemplates.filter(id => id !== 'all'),
+          permissions: selectedPermissions,
+        };
+
+        await setDoc(teamMemberRef, newData, { merge: false });
+
+        setTeamMembers(prev =>
+          prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm))
+        );
+      }
+      setSuccessMessage(t('settings.accessUpdated'));
+      setSelectedTeamMemberUids([]); // Clear selections after successful save
+      setSelectedSheets([]);
+      setSelectedDashboards([]);
+      setSelectedCardTemplates([]);
+      setSelectedPermissions('viewer');
+      if (selectedTeamMemberUids.includes(user.uid)) {
+        window.location.reload();
+      }
+    } catch (err) {
+      setErrorMessage(t('settings.errorUpdatingAccess', { message: err.message }));
+    }
+  };
+
+  const cancelEditing = () => {
+    setSelectedTeamMemberUids([]);
+    setSelectedSheets([]);
+    setSelectedDashboards([]);
+    setSelectedCardTemplates([]);
+    setSelectedPermissions('viewer');
+  };
+
   const handleGenerateInvitation = async () => {
     if (!user) {
-      setError(t('settings.pleaseLogin'));
+      setErrorMessage(t('settings.pleaseLogin'));
       return;
     }
-
     if (!email) {
-      setError(t('settings.enterValidEmail'));
+      setErrorMessage(t('settings.enterValidEmail'));
       return;
     }
-
     setIsGenerating(true);
-    setError('');
+    setErrorMessage('');
     setSuccessMessage('');
-
     try {
       const auth = getAuth();
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        throw new Error('No authenticated user found');
+        throw new Error(t('settings.noAuthenticatedUser'));
       }
-
-      if (currentUser.uid !== user.uid) {
-        console.warn('UID mismatch between MainContext and Firebase Auth');
-      }
-
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
-        throw new Error('User data not found');
+        throw new Error(t('settings.userDataNotFound'));
       }
       const businessId = userDoc.data().uid;
-
       const response = await fetch(
         'https://us-central1-avacrm-6900e.cloudfunctions.net/sendInvitationEmail',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             businessId,
@@ -205,27 +226,41 @@ const saveAccess = async () => {
           }),
         }
       );
-
       const result = await response.json();
       if (response.ok && result.status === 'success') {
         setSuccessMessage(result.message);
       } else {
-        throw new Error(result.error || 'Failed to send invitation');
+        throw new Error(result.error || t('settings.failedToSendInvitation'));
       }
     } catch (err) {
-      console.error('Error calling sendInvitationEmail:', err);
-      setError(t('settings.errorSendingInvitation', { message: err.message || 'Unknown error' }));
+      setErrorMessage(t('settings.errorSendingInvitation', { message: err.message }));
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1>{t('settings.title')}</h1>
+    <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {/* Banner for success/error messages */}
+      {(successMessage || errorMessage) && (
+        <div
+          className={`${styles.banner} ${
+            successMessage ? styles.success : styles.error
+          } ${isDarkTheme ? styles.darkTheme : ''}`}
+        >
+          {successMessage || errorMessage}
+        </div>
+      )}
+
+      {/* Title */}
+      <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          {t('settings.title')}
+        </h1>
+      </div>
 
       {/* Invitation Section */}
-      <div className={styles.section}>
+      <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <h2>{t('settings.teamInvitations')}</h2>
         <div className={styles.inputGroup}>
           <label htmlFor="email">{t('settings.recipientEmail')}</label>
@@ -235,116 +270,202 @@ const saveAccess = async () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('settings.enterEmail')}
-            className={styles.input}
+            className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
+            aria-label={t('settings.recipientEmail')}
           />
         </div>
         <button
           onClick={handleGenerateInvitation}
           disabled={isGenerating}
-          className={styles.button}
+          className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
+          aria-label={isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
         >
           {isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
         </button>
-        {successMessage && <p className={styles.success}>{successMessage}</p>}
-        {error && <p className={styles.error}>{error}</p>}
       </div>
 
-      {/* Manage Team Member Access Section */}
-      <div className={styles.section}>
-        <h2>Manage Team Member Access</h2>
-        {teamMembers.map(tm => (
-          <div key={tm.uid} className={styles.teamMember}>
-            <span>{tm.email}</span>
-            <button onClick={() => startEditing(tm.uid)}>Edit Access</button>
+      {/* Manage Team Access Section */}
+      <div className={`${styles.manageTeamsSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <h2>{t('settings.manageTeamAccess')}</h2>
+        <div className={styles.teamAccessContainer}>
+          <div className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {teamMembers.map(tm => (
+              <button
+                key={tm.uid}
+                onClick={() => toggleTeamMemberSelection(tm.uid)}
+                className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                  selectedTeamMemberUids.includes(tm.uid) ? styles.selected : ''
+                }`}
+                aria-label={t('settings.editAccessFor', { email: tm.email })}
+              >
+                <span>{tm.email}</span>
+                {selectedTeamMemberUids.includes(tm.uid) ? (
+                  <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                ) : (
+                  <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                )}
+              </button>
+            ))}
           </div>
-        ))}
-
-        {editingTeamMemberUid && (
-          <div className={styles.editAccess}>
-            <h3>
-              Edit Access for{' '}
-              {teamMembers.find(tm => tm.uid === editingTeamMemberUid)?.email}
-            </h3>
-
-            {/* Permissions Selection */}
-            <div>
-              <label>Role</label>
-              <select
-                value={selectedPermissions}
-                onChange={e => setSelectedPermissions(e.target.value)}
-              >
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
-              </select>
-            </div>
-
-            {/* Sheets Selection */}
-            <div>
-              <label>Sheets</label>
-              <select
-                multiple
-                value={selectedSheets}
-                onChange={e =>
-                  setSelectedSheets(
-                    Array.from(e.target.selectedOptions, option => option.value)
-                  )
-                }
-              >
-                <option value="all">All Sheets</option>
-                {availableSheets.map(sheet => (
-                  <option key={sheet.id} value={sheet.id}>
-                    {sheet.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dashboards Selection */}
-            <div>
-              <label>Dashboards</label>
-              <select
-                multiple
-                value={selectedDashboards}
-                onChange={e =>
-                  setSelectedDashboards(
-                    Array.from(e.target.selectedOptions, option => option.value)
-                  )
-                }
-              >
-                <option value="all">All Dashboards</option>
-                {availableDashboards.map(dashboard => (
-                  <option key={dashboard.id} value={dashboard.id}>
-                    {dashboard.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Card Templates Selection */}
-            <div>
-              <label>Card Templates</label>
-              <select
-                multiple
-                value={selectedCardTemplates}
-                onChange={e =>
-                  setSelectedCardTemplates(
-                    Array.from(e.target.selectedOptions, option => option.value)
-                  )
-                }
-              >
-                <option value="all">All Card Templates</option>
-                {availableCardTemplates.map(template => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button onClick={saveAccess}>Save</button>
-            <button onClick={() => setEditingTeamMemberUid(null)}>Cancel</button>
+          <div className={`${styles.rightPane} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {selectedTeamMemberUids.length > 0 ? (
+              <div className={`${styles.editAccess} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <h3>
+                  {selectedTeamMemberUids.length === 1
+                    ? t('settings.editAccessFor', {
+                        email: teamMembers.find(tm => tm.uid === selectedTeamMemberUids[0])?.email,
+                      })
+                    : t('settings.editAccessForMultiple', {
+                        count: selectedTeamMemberUids.length,
+                        defaultValue: 'Editing Access for {count} Team Members',
+                      })}
+                </h3>
+                <div className={styles.inputGroup}>
+                  <label>{t('settings.role')}</label>
+                  {['viewer', 'editor'].map(role => (
+                    <button
+                      key={role}
+                      onClick={() => setSelectedPermissions(role)}
+                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                        selectedPermissions === role ? styles.selected : ''
+                      }`}
+                      aria-label={t(`settings.${role}`)}
+                    >
+                      <span>{t(`settings.${role}`)}</span>
+                      {selectedPermissions === role ? (
+                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      ) : (
+                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>{t('settings.sheets')}</label>
+                  <button
+                    onClick={() => toggleOption('sheets', 'all')}
+                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                      selectedSheets.includes('all') ? styles.selected : ''
+                    }`}
+                    aria-label={t('settings.allSheets')}
+                  >
+                    <span>{t('settings.allSheets')}</span>
+                    {selectedSheets.includes('all') ? (
+                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    ) : (
+                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    )}
+                  </button>
+                  {availableSheets.map(sheet => (
+                    <button
+                      key={sheet.id}
+                      onClick={() => toggleOption('sheets', sheet.id)}
+                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                        selectedSheets.includes(sheet.id) ? styles.selected : ''
+                      }`}
+                      aria-label={sheet.name}
+                    >
+                      <span>{sheet.name}</span>
+                      {selectedSheets.includes(sheet.id) ? (
+                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      ) : (
+                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>{t('settings.dashboards')}</label>
+                  <button
+                    onClick={() => toggleOption('dashboards', 'all')}
+                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                      selectedDashboards.includes('all') ? styles.selected : ''
+                    }`}
+                    aria-label={t('settings.allDashboards')}
+                  >
+                    <span>{t('settings.allDashboards')}</span>
+                    {selectedDashboards.includes('all') ? (
+                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    ) : (
+                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    )}
+                  </button>
+                  {availableDashboards.map(dashboard => (
+                    <button
+                      key={dashboard.id}
+                      onClick={() => toggleOption('dashboards', dashboard.id)}
+                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                        selectedDashboards.includes(dashboard.id) ? styles.selected : ''
+                      }`}
+                      aria-label={dashboard.name}
+                    >
+                      <span>{dashboard.name}</span>
+                      {selectedDashboards.includes(dashboard.id) ? (
+                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      ) : (
+                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.inputGroup}>
+                  <label>{t('settings.cardTemplates')}</label>
+                  <button
+                    onClick={() => toggleOption('cardTemplates', 'all')}
+                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                      selectedCardTemplates.includes('all') ? styles.selected : ''
+                    }`}
+                    aria-label={t('settings.allCardTemplates')}
+                  >
+                    <span>{t('settings.allCardTemplates')}</span>
+                    {selectedCardTemplates.includes('all') ? (
+                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    ) : (
+                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                    )}
+                  </button>
+                  {availableCardTemplates.map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => toggleOption('cardTemplates', template.id)}
+                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                        selectedCardTemplates.includes(template.id) ? styles.selected : ''
+                      }`}
+                      aria-label={template.name}
+                    >
+                      <span>{template.name}</span>
+                      {selectedCardTemplates.includes(template.id) ? (
+                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      ) : (
+                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.buttonGroup}>
+                  <button
+                    onClick={saveAccess}
+                    className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label={t('settings.save')}
+                  >
+                    {t('settings.save')}
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className={`${styles.button} ${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label={t('settings.cancel')}
+                  >
+                    {t('settings.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {t('settings.selectTeamMember', { defaultValue: 'Select team members to edit access' })}
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -1,190 +1,312 @@
-/* src/BusinessSignUp/BusinessSignUp.module.css */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px;
-    box-sizing: border-box;
-    z-index: 1300;
-    overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  z-index: 1300;
+  overflow-y: auto;
+  background: rgba(243, 242, 248, 0.95); /* Matches Sheets light theme background */
+  transition: background 0.3s ease;
+}
+
+.container.darkTheme {
+  background: rgb(0, 0, 0); /* Matches Sheets dark theme background */
+}
+
+.header {
+  text-align: center;
+  margin-top: 4em;
+}
+
+.subText {
+  font-size: 1.1em;
+  font-weight: 400;
+  color: #6e6e73; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+.subText.darkTheme {
+  color: rgb(142, 142, 147); /* Dark theme text */
+}
+
+.logo {
+  height: 50px;
+  width: 50px;
+  margin-bottom: 10px;
+}
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #1d1d1f; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+h2.darkTheme {
+  color: rgb(235, 235, 245); /* Dark theme text */
+}
+
+p {
+  font-size: 14px;
+  color: #6e6e73; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+p.darkTheme {
+  color: rgb(142, 142, 147); /* Dark theme text */
+}
+
+.form {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputContainer {
+  position: relative;
+  width: 100%;
+}
+
+.label {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+  font-size: 14px;
+  color: #6e6e73; /* Light theme label */
+  pointer-events: none;
+}
+
+.label.darkTheme {
+  color: rgb(142, 142, 147); /* Dark theme label */
+}
+
+.inputField {
+  width: 100%;
+  height: 60px;
+  padding: 16px 15px;
+  padding-bottom: 0;
+  font-size: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Light theme border */
+  border-radius: 12px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease-in-out, border 0.3s ease, background 0.3s ease, color 0.3s ease;
+  background: rgba(255, 255, 255, 0.95); /* Light theme input background */
+  color: #1d1d1f; /* Light theme text */
+}
+
+.inputField.darkTheme {
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Dark theme border */
+  background: rgba(58, 58, 60, 0.9); /* Dark theme input background */
+  color: rgb(235, 235, 245); /* Dark theme text */
+}
+
+.inputField:focus {
+  border: 1px solid #007aff; /* Light theme focus border */
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inputField.darkTheme:focus {
+  border: 1px solid #0A84FF; /* Dark theme focus border */
+  background: rgba(72, 72, 74, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.focused {
+  top: 16px;
+  left: 16px;
+  font-size: 12px;
+  color: #007aff; /* Light theme focused label */
+}
+
+.focused.darkTheme {
+  color: #0A84FF; /* Dark theme focused label */
+}
+
+.submitButton {
+  width: 100%;
+  height: 50px;
+  background: rgba(0, 122, 255, 0.95); /* Light theme button background */
+  border-radius: 5em;
+  border: none;
+  font-size: 1em;
+  font-weight: 600;
+  color: #ffffff; /* Button text */
+  margin-left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.submitButton.darkTheme {
+  background: rgba(10, 132, 255, 0.95); /* Dark theme button background */
+}
+
+.submitButton:hover {
+  background: rgba(0, 122, 255, 0.8); /* Light theme hover */
+}
+
+.submitButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.8); /* Dark theme hover */
+}
+
+.submitButton:disabled {
+  background: rgba(0, 0, 0, 0.1);
+  cursor: not-allowed;
+}
+
+.submitButton.darkTheme:disabled {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.logoText {
+  position: absolute;
+  text-align: center;
+  top: 0;
+  right: 0;
+  left: 0;
+  width: 100%;
+  font-size: 1.4em;
+  margin: 1em 0;
+  margin-bottom: 1.5em;
+  cursor: pointer;
+  color: #1d1d1f; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+.logoText.darkTheme {
+  color: rgb(235, 235, 245); /* Dark theme text */
+}
+
+.title {
+  font-size: 3em;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+  margin: 0.5em auto;
+  width: 100%;
+  color: #1d1d1f; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+.title.darkTheme {
+  color: rgb(235, 235, 245); /* Dark theme text */
+}
+
+.successMessage {
+  font-size: 2.4em;
+  font-weight: 650;
+  color: #007aff; /* Light theme success */
+  transition: color 0.3s ease;
+}
+
+.successMessage.darkTheme {
+  color: #0A84FF; /* Dark theme success */
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #6e6e73; /* Light theme text */
+  transition: color 0.3s ease;
+}
+
+.footer.darkTheme {
+  color: rgb(142, 142, 147); /* Dark theme text */
+}
+
+.footer a {
+  color: #007aff; /* Light theme link */
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.footer a.darkTheme {
+  color: #0A84FF; /* Dark theme link */
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.error .inputField {
+  border-color: #ff3b30; /* Light theme error */
+}
+
+.error .inputField.darkTheme {
+  border-color: #ff453a; /* Dark theme error */
+}
+
+.errorText {
+  color: #ff3b30; /* Light theme error text */
+  font-size: 0.8rem;
+}
+
+.errorText.darkTheme {
+  color: #ff453a; /* Dark theme error text */
+}
+
+.eyeIcons {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #6e6e73; /* Light theme icon */
+  transition: color 0.3s ease;
+}
+
+.eyeIcons.darkTheme {
+  color: rgb(142, 142, 147); /* Dark theme icon */
+}
+
+.eyeIcons:hover {
+  color: #007aff; /* Light theme hover */
+}
+
+.eyeIcons.darkTheme:hover {
+  color: #0A84FF; /* Dark theme hover */
+}
+
+.requirementsList {
+  padding-left: 32px;
+  list-style-type: disc;
+  margin: 0;
+}
+
+.requirementsText {
+  color: #ff3b30; /* Light theme error */
+  font-size: 0.8rem;
+  transition: color 0.3s ease;
+}
+
+.requirementsText.darkTheme {
+  color: #ff453a; /* Dark theme error */
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin: auto;
+  display: block;
+  color: #ffffff; /* Spinner matches button text */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .header {
-    text-align: center;
-    margin-top: 4em;
+  100% {
+    transform: rotate(360deg);
   }
-  
-  .subText {
-    font-size: 1.1em;
-    font-weight: 400;
-  }
-  
-  .logo {
-    height: 50px;
-    width: 50px;
-    margin-bottom: 10px;
-  }
-  
-  h2 {
-    font-size: 24px;
-    margin-bottom: 10px;
-  }
-  
-  p {
-    font-size: 14px;
-    color: #555;
-  }
-  
-  .form {
-    width: 100%;
-    max-width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .inputContainer {
-    position: relative;
-    width: 100%;
-  }
-  
-  .label {
-    position: absolute;
-    left: 22px;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: all 0.3s ease;
-    font-size: 14px;
-    color: #888;
-    pointer-events: none;
-  }
-  
-  .inputField {
-    width: 100%;
-    height: 60px;
-    padding: 16px 15px;
-    padding-bottom: 0;
-    font-size: 16px;
-    border: 1px solid rgb(230, 230, 230);
-    border-radius: 12px;
-    outline: none;
-    box-sizing: border-box;
-    transition: all 0.2s ease-in-out;
-    background-color: white;
-    color: black;
-  }
-  
-  .inputField:focus {
-    border-color: #000;
-  }
-  
-  .focused {
-    top: 16px;
-    left: 16px;
-    font-size: 12px;
-    color: #000;
-  }
-  
-  .submitButton {
-    width: 100%;
-    height: 50px;
-    background-color: rgb(48, 111, 219);
-    border-radius: 5em;
-    border: none;
-    font-size: 1em;
-    font-weight: 600;
-    color: white;
-    margin-left: 50%;
-    transform: translateX(-50%);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  
-  .logoText {
-    position: absolute;
-    text-align: center;
-    top: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    font-size: 1.4em;
-    margin: 1em 0;
-    margin-bottom: 1.5em;
-    cursor: pointer;
-  }
-  
-  .title {
-    font-size: 3em;
-    font-weight: 700;
-    margin: 0;
-    text-align: center;
-    margin: 0.5em auto;
-    width: 80%;
-  }
-  
-  .successMessage {
-    font-size: 2.4em;
-    font-weight: 650;
-    color: #000;
-  }
-  
-  .footer {
-    margin-top: 20px;
-    font-size: 14px;
-    color: #555;
-  }
-  
-  .footer a {
-    color: #000;
-    text-decoration: none;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  .footer a:hover {
-    text-decoration: underline;
-  }
-  
-  .error .inputField {
-    border-color: rgb(176, 59, 59);
-  }
-  
-  .errorText {
-    color: rgb(176, 59, 59);
-  }
-  
-  .eyeIcons {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-  
-  .requirementsList {
-    padding-left: 32px;
-    list-style-type: disc;
-    margin: 0;
-  }
-  
-  .requirementsText {
-    color: red;
-    font-size: 0.8rem;
-  }
-  
-  .spinner {
-    animation: spin 1s linear infinite;
-    margin: auto;
-    display: block;
-  }
-  
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
+}

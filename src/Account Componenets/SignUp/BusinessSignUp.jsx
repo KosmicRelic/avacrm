@@ -11,7 +11,7 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 export default function BusinessSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, setIsSignup } = React.useContext(MainContext);
+  const { user, setIsSignup, isDarkTheme } = React.useContext(MainContext); // Added isDarkTheme
   const auth = getAuth();
 
   const [businessName, setBusinessName] = useState('');
@@ -36,7 +36,6 @@ export default function BusinessSignUp() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupError, setSignupError] = useState('');
 
-  // Redirect if already signed in
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
@@ -86,7 +85,6 @@ export default function BusinessSignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate all fields
     const isBusinessNameValid = businessName.trim() !== '';
     const isEmailValid = isValidEmail(email);
     const isPasswordValid = password && passwordRequirements.length === 0;
@@ -101,9 +99,8 @@ export default function BusinessSignUp() {
       try {
         setIsSubmitting(true);
         setSignupError('');
-        setIsSignup(true); // Set signup flag
+        setIsSignup(true);
 
-        // Call the Cloud Function to create the user
         await FirebaseBusinessSignUp({
           email: email.trim(),
           password,
@@ -112,19 +109,15 @@ export default function BusinessSignUp() {
           userType: 'business',
         });
 
-        // Sign in the user immediately after signup
         await signInWithEmailAndPassword(auth, email.trim(), password);
 
-        // Set signup success to show success message
         setSignupSuccess(true);
       } catch (error) {
         setIsSubmitting(false);
         setSignupSuccess(false);
-        setIsSignup(false); // Reset signup flag on error
+        setIsSignup(false);
         setSignupError(error.message || t('businessSignUp.error.generic'));
       }
-    } else {
-      console.log('Form validation failed');
     }
   };
 
@@ -133,7 +126,7 @@ export default function BusinessSignUp() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {!signupSuccess && (
         <>
           <h1

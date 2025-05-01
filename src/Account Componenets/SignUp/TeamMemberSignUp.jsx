@@ -12,7 +12,7 @@ export default function TeamMemberSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { code } = useParams();
-  const { user, setIsSignup } = React.useContext(MainContext);
+  const { user, setIsSignup, isDarkTheme } = React.useContext(MainContext);
   const auth = getAuth();
 
   const [email, setEmail] = useState('');
@@ -45,11 +45,27 @@ export default function TeamMemberSignUp() {
 
   useEffect(() => {
     if (invitationCode) {
-      // Invitation validation is handled by the Cloud Function
-      setInvitationDetails({ invitationCode }); // Placeholder for rendering
+      // Simulate fetching business name (replace with actual API call if available)
+      // For example, call a Firebase function to validate the invitation code and get business name
+      const validateInvitationCode = async () => {
+        try {
+          // Placeholder: Assume TeamMemberSignUpFunction or another function returns business name
+          const response = await TeamMemberSignUpFunction({ invitationCode, validateOnly: true });
+          setInvitationDetails({
+            invitationCode,
+            businessName: response?.businessName || 'the team', // Fallback to 'the team'
+          });
+        } catch (error) {
+          setInvitationCodeError(true);
+          setSignupError(t('teamMemberSignUp.error.invalidCode'));
+          setInvitationDetails(null);
+        }
+      };
+      validateInvitationCode();
     } else {
       setInvitationCodeError(true);
       setSignupError(t('teamMemberSignUp.error.invalidCode'));
+      setInvitationDetails(null);
     }
   }, [invitationCode, t]);
 
@@ -142,7 +158,7 @@ export default function TeamMemberSignUp() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {!signupSuccess && (
         <>
           <h1
@@ -252,7 +268,6 @@ export default function TeamMemberSignUp() {
                 value={phone}
                 onChange={handleInputChange(setPhone, setPhoneError)}
                 disabled={isSubmitting}
-                placeholder="+1234567890"
               />
               {phoneError && (
                 <p className={styles.errorText}>
