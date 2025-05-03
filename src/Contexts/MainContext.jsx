@@ -10,7 +10,7 @@ export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    const storedTheme = localStorage.getItem('theme');
+    const storedTheme = localStorage.getItem('theme') || 'device'; // Default to 'device' if no theme is stored
     if (storedTheme === 'device') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
@@ -52,8 +52,6 @@ export const MainContextProvider = ({ children }) => {
     document.documentElement.setAttribute('data-theme', themeRef.current);
     document.body.style.backgroundColor = isDarkTheme ? 'black' : 'rgb(243, 242, 248)';
     document.body.style.color = isDarkTheme ? 'rgb(243, 242, 248)' : 'rgb(0, 0, 0)';
-    // Store the theme preference
-    localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
   }, [isDarkTheme]);
 
   useEffect(() => {

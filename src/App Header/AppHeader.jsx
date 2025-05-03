@@ -189,7 +189,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                     key={option.value}
                     className={`${styles.themeOption} ${
                       currentTheme === option.value ? styles.activeTheme : ''
-                    }`}
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
                     onClick={() => handleThemeSelect(option.value)}
                   >
                     {option.label}
