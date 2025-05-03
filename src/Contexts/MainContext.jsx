@@ -128,8 +128,10 @@ export const MainContextProvider = ({ children }) => {
           });
 
           if (currentRoute === '/sheets') hasFetched.current.sheets = true;
-          if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
-          if (currentRoute === '/metrics') hasFetched.current.metrics = true;
+          if (currentRoute === '/dashboard' || currentRoute === '/metrics') {
+            hasFetched.current.dashboard = true;
+            hasFetched.current.metrics = true;
+          }
         }
 
         return cleanupFetch;
@@ -185,28 +187,6 @@ export const MainContextProvider = ({ children }) => {
       return true;
     };
 
-    const detectCollectionChanges = (currentItems, prevItems) => {
-      const changes = { added: [], updated: [], removed: [] };
-      const currentMap = new Map(currentItems.map((item) => [item.docId, item]));
-      const prevMap = new Map(prevItems.map((item) => [item.docId, item]));
-
-      currentItems.forEach((item) => {
-        if (!prevMap.has(item.docId)) {
-          changes.added.push(item);
-        } else if (!isEqual(item, prevMap.get(item.docId))) {
-          changes.updated.push(item);
-        }
-      });
-
-      prevItems.forEach((item) => {
-        if (!currentMap.has(item.docId)) {
-          changes.removed.push(item.docId);
-        }
-      });
-
-      return changes;
-    };
-
     const stateConfig = {
       sheets: {
         collectionPath: () => collection(db, 'businesses', businessId, 'sheets'),
@@ -245,12 +225,28 @@ export const MainContextProvider = ({ children }) => {
       isBatchProcessing.current = true;
       const batch = writeBatch(db);
       let hasChanges = false;
-      let typeOfCardsChanges = [];
 
       try {
-        const templateChanges = detectCollectionChanges(cardTemplates, prevStates.current.cardTemplates);
-        typeOfCardsChanges = [];
+        // Handle card changes based on isModified and action
+        const modifiedCards = cards.filter((card) => card.isModified);
+        for (const card of modifiedCards) {
+          const docRef = doc(stateConfig.cards.collectionPath(), card.docId);
+          if (card.action === 'remove') {
+            console.log('Adding batch delete for card:', { path: docRef.path });
+            batch.delete(docRef);
+            hasChanges = true;
+          } else if (card.action === 'add' || card.action === 'update') {
+            // Remove isModified and action before saving
+            const { isModified, action, docId, ...cardData } = card;
+            console.log('Adding batch set for card:', { path: docRef.path, data: cardData });
+            batch.set(docRef, cardData); // Replace the document
+            hasChanges = true;
+          }
+        }
 
+        // Handle template changes to update typeOfCards
+        const templateChanges = detectCollectionChanges(cardTemplates, prevStates.current.cardTemplates);
+        const typeOfCardsChanges = [];
         templateChanges.updated.forEach((currentTemplate) => {
           const prevTemplate = prevStates.current.cardTemplates.find(
             (t) => t.docId === currentTemplate.docId
@@ -265,7 +261,6 @@ export const MainContextProvider = ({ children }) => {
         });
 
         let updatedCards = [...cards];
-
         if (typeOfCardsChanges.length > 0) {
           isUpdatingCardsFromTemplate.current = true;
           updatedCards = cards.map((card) => {
@@ -274,7 +269,10 @@ export const MainContextProvider = ({ children }) => {
             );
             if (change) {
               const cardDocRef = doc(stateConfig.cards.collectionPath(), card.docId);
-              console.log('Adding batch update for card:', { docId: card.docId, newTypeOfCards: change.newTypeOfCards });
+              console.log('Adding batch update for card typeOfCards:', {
+                docId: card.docId,
+                newTypeOfCards: change.newTypeOfCards,
+              });
               batch.set(cardDocRef, { typeOfCards: change.newTypeOfCards }, { merge: true });
               hasChanges = true;
               return { ...card, typeOfCards: change.newTypeOfCards };
@@ -283,7 +281,11 @@ export const MainContextProvider = ({ children }) => {
           });
         }
 
-        Object.entries(stateConfig).forEach(([stateKey, config]) => {
+        // Handle other collections (sheets, cardTemplates, metrics, dashboards)
+        const collectionsToCheck = ['sheets', 'cardTemplates', 'metrics', 'dashboards'];
+        for (const stateKey of collectionsToCheck) {
+          if (stateKey === 'cards') continue; // Cards handled separately
+          const config = stateConfig[stateKey];
           const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
           const prevState = prevStates.current[stateKey];
 
@@ -300,9 +302,6 @@ export const MainContextProvider = ({ children }) => {
           });
 
           collectionChanges.updated.forEach((item) => {
-            if (stateKey === 'cards' && typeOfCardsChanges.some((change) => change.oldTypeOfCards === item.typeOfCards)) {
-              return;
-            }
             const docRef = doc(config.collectionPath(), item.docId);
             const { docId, ...data } = item;
             console.log('Adding batch update for:', { path: docRef.path, data });
@@ -322,16 +321,32 @@ export const MainContextProvider = ({ children }) => {
             const prevSingleData = config.singleDoc.getData(prevState);
             if (!isEqual(currentSingleData, prevSingleData)) {
               const docRef = config.singleDoc.path();
-              console.log('Adding batch set for single doc:', { path: docRef.path, data: { [config.singleDoc.field]: currentSingleData } });
+              console.log('Adding batch set for single doc:', {
+                path: docRef.path,
+                data: { [config.singleDoc.field]: currentSingleData },
+              });
               batch.set(docRef, { [config.singleDoc.field]: currentSingleData });
               hasChanges = true;
             }
           }
-        });
+        }
 
         if (hasChanges) {
-          console.log('Committing batch with operations:', { typeOfCardsChanges, hasChanges });
+          console.log('Committing batch with operations:', { hasChanges });
           await batch.commit();
+
+          // Clean up cards: remove isModified and action, and remove deleted cards
+          setCards((prev) =>
+            prev
+              .filter((card) => !(card.isModified && card.action === 'remove'))
+              .map((card) => {
+                if (card.isModified) {
+                  const { isModified, action, ...cleanCard } = card;
+                  return cleanCard;
+                }
+                return card;
+              })
+          );
         } else {
           console.log('No changes to commit, skipping batch');
         }
@@ -340,11 +355,33 @@ export const MainContextProvider = ({ children }) => {
           setCards(updatedCards);
         }
       } catch (error) {
-        console.error('Error processing Firestore updates:', error, { typeOfCardsChanges, hasChanges });
+        console.error('Error processing Firestore updates:', error);
       } finally {
         isBatchProcessing.current = false;
         prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       }
+    };
+
+    const detectCollectionChanges = (currentItems, prevItems) => {
+      const changes = { added: [], updated: [], removed: [] };
+      const currentMap = new Map(currentItems.map((item) => [item.docId, item]));
+      const prevMap = new Map(prevItems.map((item) => [item.docId, item]));
+
+      currentItems.forEach((item) => {
+        if (!prevMap.has(item.docId)) {
+          changes.added.push(item);
+        } else if (!isEqual(item, prevMap.get(item.docId))) {
+          changes.updated.push(item);
+        }
+      });
+
+      prevItems.forEach((item) => {
+        if (!currentMap.has(item.docId)) {
+          changes.removed.push(item.docId);
+        }
+      });
+
+      return changes;
     };
 
     processUpdates();

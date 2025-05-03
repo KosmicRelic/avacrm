@@ -54,7 +54,7 @@ const Sheets = ({
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
-    return () => window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ const Sheets = ({
   const handleEditorSave = useCallback(
     (updatedRow, isEditing) => {
       const rowId = updatedRow.id;
-      const newCardData = { ...updatedRow, id: rowId };
+      const newCardData = { ...updatedRow, id: rowId, isModified: true, action: isEditing ? 'update' : 'add' };
 
       const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
       const sheetRows = activeSheet ? activeSheet.rows : [];
@@ -275,7 +275,13 @@ const Sheets = ({
   );
 
   const handleDeleteSelected = useCallback(() => {
-    setCards((prev) => prev.filter((card) => !selectedRowIds.includes(card.id)));
+    setCards((prev) =>
+      prev.map((card) =>
+        selectedRowIds.includes(card.id)
+          ? { ...card, isModified: true, action: 'remove' }
+          : card
+      )
+    );
     setSheets((prev) => ({
       ...prev,
       allSheets: prev.allSheets.map((sheet) => ({

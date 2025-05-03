@@ -129,7 +129,8 @@ const CardsEditor = ({
       ...prev,
       sheetName: selectedSheet,
       typeOfCards: template.name,
-      id: prev.id || uuidv4(), // Ensure id is set for new cards
+      id: prev.id || uuidv4(),
+      docId: prev.docId || uuidv4(), // Ensure docId is set for new cards
     }));
     setView('editor');
   }, [selectedSheet, selectedCardType, cardTemplates]);
@@ -143,7 +144,6 @@ const CardsEditor = ({
 
   const handleInputChange = useCallback(
     (key, value) => {
-      // Prevent changes to id and typeOfCards
       if (key === 'id' || key === 'typeOfCards') {
         return;
       }
@@ -165,7 +165,7 @@ const CardsEditor = ({
       return;
     }
     const hasData = Object.keys(formData).some(
-      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'id' && formData[key] && formData[key].toString().trim() !== ''
+      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'id' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
       alert('Please fill in at least one field to create a card.');
@@ -174,15 +174,14 @@ const CardsEditor = ({
 
     const newRow = {
       ...formData,
-      id: isEditing && initialRowData?.id ? initialRowData.id : formData.id || uuidv4(), // Preserve existing id
-      docId: isEditing && initialRowData?.id ? initialRowData.id : uuidv4(),
+      id: isEditing && initialRowData?.id ? initialRowData.id : formData.id || uuidv4(),
+      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId || uuidv4(),
       sheetName: selectedSheet,
-      typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name, // Preserve typeOfCards
+      typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
       history: formData.history || [],
+      isModified: true,
+      action: isEditing ? 'update' : 'add',
     };
-
-    // Log the saved card
-    console.log('CardsEditor saving card:', newRow);
 
     const newHistory = [];
     const timestamp = { _seconds: Math.floor(Date.now() / 1000), _nanoseconds: 0 };
@@ -192,6 +191,7 @@ const CardsEditor = ({
       Object.keys(historicalFormData).forEach((key) => {
         if (
           key !== 'id' &&
+          key !== 'docId' &&
           key !== 'sheetName' &&
           key !== 'typeOfCards' &&
           key !== 'history' &&
@@ -214,6 +214,7 @@ const CardsEditor = ({
         Object.keys(formData).forEach((key) => {
           if (
             key !== 'id' &&
+            key !== 'docId' &&
             key !== 'sheetName' &&
             key !== 'typeOfCards' &&
             key !== 'history' &&
@@ -232,6 +233,7 @@ const CardsEditor = ({
       Object.keys(formData).forEach((key) => {
         if (
           key !== 'id' &&
+          key !== 'docId' &&
           key !== 'sheetName' &&
           key !== 'typeOfCards' &&
           key !== 'history' &&
@@ -248,6 +250,7 @@ const CardsEditor = ({
       newRow.history = [...newRow.history, ...newHistory];
     }
 
+    console.log('CardsEditor saving card:', newRow);
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
@@ -274,7 +277,13 @@ const CardsEditor = ({
       return;
     }
     if (window.confirm('Are you sure you want to delete this card? This action will remove it from all sheets.')) {
-      setCards((prev) => prev.filter((card) => card.id !== initialRowData.id));
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === initialRowData.id
+            ? { ...card, isModified: true, action: 'remove' }
+            : card
+        )
+      );
       setSheets((prev) => ({
         ...prev,
         allSheets: prev.allSheets.map((sheet) => ({
@@ -438,7 +447,7 @@ const CardsEditor = ({
                       aria-label="Select a card type"
                     >
                       <option value="">Select a card type</option>
-                      {cardTypeOptions.map((type) => (
+                      {cardTypeOptions.map((type) => ( 
                         <option key={type} value={type}>
                           {type}
                         </option>
