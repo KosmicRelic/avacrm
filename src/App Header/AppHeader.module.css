@@ -42,6 +42,10 @@
   flex-shrink: 0;
 }
 
+.themeContainer {
+  position: relative;
+}
+
 .themeButton {
   color: #000000;
   background: none;
@@ -58,6 +62,66 @@
 .themeButton:hover {
   opacity: 0.8;
   transform: scale(1.05);
+}
+
+.themeDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 180px;
+  background: rgba(243, 242, 248);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1003;
+  margin-top: 6px;
+  padding: 6px 0;
+  animation: slideDown 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.themeDropdown.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6e6e73;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.3s ease;
+}
+
+.themeOption.darkTheme {
+  color: #8e8e93;
+}
+
+.themeOption:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.themeOption.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.activeTheme {
+  color: #007AFF;
+  background: rgba(0, 122, 255, 0.12);
+}
+
+.activeTheme.darkTheme {
+  color: #007AFF;
+  background: rgba(0, 122, 255, 0.2);
 }
 
 .menuButton {
@@ -284,34 +348,30 @@
   }
 }
 
-/* Add to existing CSS */
-
 .chevronWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 8px; /* Space between label and chevron */
-  color: #6e6e73; /* Matches navButton color */
-  transition: transform 0.2s ease, color 0.3s ease; /* Smooth rotation and color change */
+  margin-left: 8px;
+  color: #6e6e73;
+  transition: transform 0.2s ease, color 0.3s ease;
 }
 
 .chevronWrapper.darkTheme {
-  color: #8e8e93; /* Matches navButton dark mode color */
+  color: #8e8e93;
 }
 
 .chevronUp {
-  transform: rotate(180deg); /* Rotate chevron to point up when menu is open */
+  transform: rotate(180deg);
 }
 
-/* Ensure menuButton has enough space for chevron */
 .menuButton {
-  padding-right: 10px; /* Extra padding to accommodate chevron */
+  padding-right: 10px;
   border-radius: 12px;
 }
 
-/* Update navButton in dropdown to avoid extra padding */
 @media (max-width: 1024px) {
-  .menuDropdown .navButton {
+  .menudropDown .navButton {
     padding: 8px 16px;
   }
 }

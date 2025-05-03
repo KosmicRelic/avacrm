@@ -11,8 +11,10 @@ export const MainContext = createContext();
 export const MainContextProvider = ({ children }) => {
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     const storedTheme = localStorage.getItem('theme');
-    if (storedTheme) return storedTheme === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (storedTheme === 'device') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return storedTheme === 'dark';
   });
 
   const [user, setUser] = useState(null);
@@ -50,10 +52,20 @@ export const MainContextProvider = ({ children }) => {
     document.documentElement.setAttribute('data-theme', themeRef.current);
     document.body.style.backgroundColor = isDarkTheme ? 'black' : 'rgb(243, 242, 248)';
     document.body.style.color = isDarkTheme ? 'rgb(243, 242, 248)' : 'rgb(0, 0, 0)';
-    if (localStorage.getItem('theme') !== null) {
-      localStorage.setItem('theme', themeRef.current);
-    }
+    // Store the theme preference
+    localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
   }, [isDarkTheme]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (localStorage.getItem('theme') === 'device') {
+        setIsDarkTheme(mediaQuery.matches);
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {

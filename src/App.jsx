@@ -37,7 +37,12 @@ const ProtectedRoute = React.memo(({ children }) => {
     return null;
   }
 
-  if (!user && userAuthChecked && !['/signup/business', '/signin'].includes(location.pathname) && !location.pathname.startsWith('/signup/teammember/')) {
+  if (
+    !user &&
+    userAuthChecked &&
+    !['/signup/business', '/signin'].includes(location.pathname) &&
+    !location.pathname.startsWith('/signup/teammember/')
+  ) {
     return <Navigate to="/signin" replace />;
   }
 
@@ -110,11 +115,7 @@ function App() {
     return dashboards.find((d) => d.id === activeDashboardId) || dashboards[0];
   }, [dashboards, activeDashboardId]);
 
-  const { handleSheetChange, handleSaveSheet } = useSheets(
-    sheets,
-    setSheets,
-    activeSheetName
-  );
+  const { handleSheetChange, handleSaveSheet } = useSheets(sheets, setSheets, activeSheetName);
 
   const resolvedHeaders = useMemo(() => {
     if (!activeSheet) return [];
@@ -130,9 +131,7 @@ function App() {
 
   const resolvedRows = useMemo(() => {
     if (!activeSheet || !cards) return [];
-    return (
-      activeSheet.rows?.map((rowId) => cards.find((card) => card.id === rowId) || {}) || []
-    );
+    return activeSheet.rows?.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
   }, [activeSheet, cards]);
 
   useEffect(() => {
@@ -171,9 +170,7 @@ function App() {
     (sheetName) => {
       if (!sheets) return;
       setSheets((prev) => {
-        const updatedAllSheets = prev.allSheets.filter(
-          (sheet) => sheet.sheetName !== sheetName
-        );
+        const updatedAllSheets = prev.allSheets.filter((sheet) => sheet.sheetName !== sheetName);
         const updatedStructure = prev.structure
           .map((item) => {
             if (item.sheetName === sheetName) {
@@ -259,9 +256,7 @@ function App() {
         );
         if (existingFolder) {
           const existingSheets = existingFolder.sheets || [];
-          const newSheets = selectedSheets.filter(
-            (sheet) => !existingSheets.includes(sheet)
-          );
+          const newSheets = selectedSheets.filter((sheet) => !existingSheets.includes(sheet));
           if (newSheets.length === 0) {
             return prevSheets;
           }
@@ -308,7 +303,7 @@ function App() {
               metricId: widget.metricId || null,
               dashboardId: widget.dashboardId,
             },
-            category: widget.title || null,
+            category: widget.title || sêkịtừnnull,
             metric: widget.metricId || null,
             dashboardId: widget.dashboardId || activeDashboard?.id,
             initialStep: initialStep || 1,
@@ -316,9 +311,7 @@ function App() {
         });
         widgetSetupModal.open();
       } else if (type === 'metric') {
-        const categoryObj = metrics?.find((cat) =>
-          cat.metrics.some((m) => m.id === metric.id)
-        );
+        const categoryObj = metrics?.find((cat) => cat.metrics.some((m) => m.id === metric.id));
         if (!categoryObj) {
           console.warn('Category not found for metric:', metric);
           return;
@@ -331,15 +324,7 @@ function App() {
         navigate('/metrics');
       }
     },
-    [
-      widgetSetupModal,
-      activeDashboard,
-      metrics,
-      setActiveOption,
-      setSelectedMetricData,
-      navigate,
-      dashboards,
-    ]
+    [widgetSetupModal, activeDashboard, metrics, setActiveOption, setSelectedMetricData, navigate, dashboards]
   );
 
   const handleMetricDataChange = useCallback(
@@ -414,7 +399,9 @@ function App() {
     handleDeleteSheet,
   };
 
-  const showHeader = !['/signin', '/signup/business'].includes(location.pathname) && !location.pathname.startsWith('/signup/teammember/');
+  const showHeader =
+    !['/signin', '/signup/business'].includes(location.pathname) &&
+    !location.pathname.startsWith('/signup/teammember/');
 
   return (
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
