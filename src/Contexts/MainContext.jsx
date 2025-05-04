@@ -1,10 +1,10 @@
 import { createContext, useState, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '../firebase'; // Adjust the import path as needed
+import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch, getDoc } from 'firebase/firestore';
-import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData'; // Adjust the import path as needed
+import fetchUserData, { resetFetchedSheetIds } from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 export const MainContext = createContext();
 
@@ -31,6 +31,8 @@ export const MainContextProvider = ({ children }) => {
   const [isSignup, setIsSignup] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeSheetName, setActiveSheetName] = useState(null);
+  const [sheetCardsFetched, setSheetCardsFetched] = useState({});
+  const fetchingSheetIdsRef = useRef(new Set());
 
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
@@ -44,17 +46,16 @@ export const MainContextProvider = ({ children }) => {
   const isUpdatingCardsFromTemplate = useRef(false);
   const isBatchProcessing = useRef(false);
   const lastFetchedSheetId = useRef(null);
+  const isFetching = useRef(false); // Track ongoing fetches
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Memoize state to prevent unnecessary re-renders
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedCards = useMemo(() => cards, [cards]);
   const memoizedCardTemplates = useMemo(() => cardTemplates, [cardTemplates]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
-  // Theme-related effects
   useEffect(() => {
     themeRef.current = isDarkTheme ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', themeRef.current);
@@ -73,7 +74,6 @@ export const MainContextProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Authentication and initial data fetching
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -101,7 +101,19 @@ export const MainContextProvider = ({ children }) => {
             (currentRoute === '/dashboard' && !hasFetched.current.dashboard) ||
             (currentRoute === '/metrics' && !hasFetched.current.metrics)
           ) {
-            fetchUserData({
+            if (currentRoute === '/sheets' && !activeSheetName) {
+              console.log('Setting default activeSheetName to "Leads"');
+              setActiveSheetName('Leads');
+            }
+
+            if (isFetching.current) {
+              console.log('Skipping fetch: another fetch is in progress');
+              return;
+            }
+
+            console.log('Initial fetch with activeSheetName:', activeSheetName || 'Leads');
+            isFetching.current = true;
+            await fetchUserData({
               businessId: fetchedBusinessId,
               route: currentRoute,
               setSheets,
@@ -109,9 +121,10 @@ export const MainContextProvider = ({ children }) => {
               setCardTemplates,
               setMetrics,
               setDashboards,
-              activeSheetName: null,
-              updateSheets: true, // <-- only update sheets on initial load
+              activeSheetName: currentRoute === '/sheets' ? activeSheetName || 'Leads' : null,
+              updateSheets: true,
             });
+            isFetching.current = false;
 
             if (currentRoute === '/sheets') hasFetched.current.sheets = true;
             if (currentRoute === '/dashboard' || currentRoute === '/metrics') {
@@ -121,10 +134,12 @@ export const MainContextProvider = ({ children }) => {
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
+          isFetching.current = false;
         }
 
         setIsDataLoaded(true);
       } else {
+        console.log('User logged out, resetting state and cache');
         setUser(null);
         setBusinessId(null);
         setSheets({ allSheets: [], structure: [] });
@@ -132,6 +147,7 @@ export const MainContextProvider = ({ children }) => {
         setCardTemplates([]);
         setMetrics([]);
         setDashboards([]);
+        setActiveSheetName(null);
         hasFetched.current = { sheets: false, dashboard: false, metrics: false };
         prevStates.current = {
           sheets: { allSheets: [], structure: [] },
@@ -141,6 +157,7 @@ export const MainContextProvider = ({ children }) => {
           dashboards: [],
         };
         setIsDataLoaded(false);
+        resetFetchedSheetIds();
       }
       setUserAuthChecked(true);
     });
@@ -148,7 +165,6 @@ export const MainContextProvider = ({ children }) => {
     return () => unsubscribeAuth();
   }, [navigate, isSignup, location.pathname]);
 
-  // Fetch cards for the active sheet whenever it changes (but not if it's the same sheet id)
   useEffect(() => {
     if (
       user &&
@@ -156,13 +172,18 @@ export const MainContextProvider = ({ children }) => {
       location.pathname === '/sheets' &&
       activeSheetName
     ) {
-      // Find the sheet id for the activeSheetName
       const sheetObj = sheets.allSheets.find(s => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
-      if (!sheetId || lastFetchedSheetId.current === sheetId) {
+      if (
+        !sheetId ||
+        sheetCardsFetched[sheetId] ||
+        fetchingSheetIdsRef.current.has(sheetId)
+      ) {
+        // Already fetched or currently fetching for this sheetId
         return;
       }
-      lastFetchedSheetId.current = sheetId;
+      // Mark as fetching to avoid race conditions
+      fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
         route: '/sheets',
@@ -172,11 +193,27 @@ export const MainContextProvider = ({ children }) => {
         setDashboards,
         activeSheetName,
         updateSheets: false,
+      }).then(() => {
+        setSheetCardsFetched(prev => ({ ...prev, [sheetId]: true }));
+        fetchingSheetIdsRef.current.delete(sheetId);
+      }).catch(() => {
+        fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
+    // DO NOT include sheetCardsFetched in the dependency array!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets]);
 
-  // Batch update effect for Firebase synchronization
+  useEffect(() => {
+    if (location.pathname.startsWith('/sheets/')) {
+      const sheetName = location.pathname.split('/sheets/')[1];
+      if (sheetName && sheetName !== activeSheetName) {
+        console.log('Setting activeSheetName from URL:', decodeURIComponent(sheetName));
+        setActiveSheetName(decodeURIComponent(sheetName));
+      }
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded || isBatchProcessing.current) return;
 
@@ -235,7 +272,6 @@ export const MainContextProvider = ({ children }) => {
       let hasChanges = false;
 
       try {
-        // Process cards with explicit modifications
         const modifiedCards = cards.filter((card) => card.isModified);
         for (const card of modifiedCards) {
           const docRef = doc(stateConfig.cards.collectionPath(), card.docId);
@@ -249,7 +285,6 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        // Process dashboards with explicit modifications
         const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
         for (const dashboard of modifiedDashboards) {
           const docRef = doc(stateConfig.dashboards.collectionPath(), dashboard.docId);
@@ -263,7 +298,6 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        // Process cardTemplates with explicit modifications
         const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
         for (const template of modifiedCardTemplates) {
           const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
@@ -277,7 +311,6 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        // Handle template changes affecting cards
         const templateChanges = modifiedCardTemplates.filter(
           (template) => template.isModified && (template.action === 'add' || template.action === 'update')
         );
@@ -307,7 +340,6 @@ export const MainContextProvider = ({ children }) => {
           });
         }
 
-        // Process other collections only for explicit changes
         const collectionsToCheck = ['sheets', 'metrics'];
         for (const stateKey of collectionsToCheck) {
           const config = stateConfig[stateKey];
@@ -406,9 +438,7 @@ export const MainContextProvider = ({ children }) => {
         if (!prevMap.has(item.docId)) {
           changes.added.push(item);
         } else {
-          // Ignore updates where only isActive changed
           const prevItem = prevMap.get(item.docId);
-          // Compare all keys except isActive
           const keys = new Set([...Object.keys(item), ...Object.keys(prevItem)]);
           let diff = false;
           for (const key of keys) {
@@ -468,6 +498,8 @@ export const MainContextProvider = ({ children }) => {
         setIsSignup,
         activeSheetName,
         setActiveSheetName,
+        sheetCardsFetched,
+        setSheetCardsFetched,
       }}
     >
       {children}

@@ -89,13 +89,6 @@ const TransportModal = ({ tempData, handleClose }) => {
       <div
         className={`${styles.modalContent} ${isDarkTheme ? styles.darkTheme : ""}`}
       >
-        <div className={styles.modalHeader}>
-          <h2
-            className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}
-          >
-            {tempData.action === "move" ? "Move to Sheet" : "Copy to Sheet"}
-          </h2>
-        </div>
         <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {availableSheets.length > 0 ? (
             availableSheets.map((sheet, index) => (
