@@ -27,7 +27,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName, clearFetchedSheets } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const filters = activeSheet?.filters || {};
@@ -168,11 +168,9 @@ const Sheets = ({
   const handleSheetClick = useCallback((sheetName) => {
     console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
     if (sheetName !== activeSheetName) {
-      setActiveSheetName(sheetName);
-      clearFetchedSheets();
       onSheetChange(sheetName);
     }
-  }, [activeSheetName, setActiveSheetName, clearFetchedSheets, onSheetChange]);
+  }, [activeSheetName, onSheetChange]);
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
