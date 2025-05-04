@@ -112,7 +112,7 @@ export const handleModalSave = ({
           }
           const updatedSheets = {
             ...prev,
-            structure: { ...newStructure, isModified: true, action: 'update' },
+            structure: Object.assign([...newStructure], { isModified: true, action: 'update' }),
             allSheets: prev.allSheets.map((sheet) => ({
               ...sheet,
               isActive: sheet.sheetName === newActiveSheetName,
@@ -197,7 +197,7 @@ export const handleModalSave = ({
           });
           return {
             ...prev,
-            structure: { ...currentStructure, isModified: true, action: 'update' },
+            structure: [...currentStructure], // Ensure structure is always an array
             allSheets: prev.allSheets.map((sheet) =>
               modifiedSheets.has(sheet.sheetName)
                 ? { ...sheet, isModified: true, action: 'update' }
@@ -216,14 +216,10 @@ export const handleModalSave = ({
           );
           return {
             ...prev,
-            structure: {
-              ...[
-                ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
-                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-              ],
-              isModified: true,
-              action: 'update',
-            },
+            structure: [
+              ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
+              ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+            ], // Ensure structure is always an array
             allSheets: prev.allSheets.map((sheet) =>
               folderSheets.includes(sheet.sheetName)
                 ? { ...sheet, isModified: true, action: 'update' }

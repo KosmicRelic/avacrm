@@ -373,8 +373,22 @@ export const MainContextProvider = ({ children }) => {
       currentItems.forEach((item) => {
         if (!prevMap.has(item.docId)) {
           changes.added.push(item);
-        } else if (!isEqual(item, prevMap.get(item.docId))) {
-          changes.updated.push(item);
+        } else {
+          // Ignore updates where only isActive changed
+          const prevItem = prevMap.get(item.docId);
+          // Compare all keys except isActive
+          const keys = new Set([...Object.keys(item), ...Object.keys(prevItem)]);
+          let diff = false;
+          for (const key of keys) {
+            if (key === 'isActive') continue;
+            if (!isEqual(item[key], prevItem[key])) {
+              diff = true;
+              break;
+            }
+          }
+          if (diff) {
+            changes.updated.push(item);
+          }
         }
       });
 

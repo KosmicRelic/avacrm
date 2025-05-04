@@ -14,6 +14,8 @@ const EditSheetsModal = ({
   onPinToggle,
   onDeleteSheet,
   handleClose,
+  setActiveSheetName,
+  clearFetchedSheets,
 }) => {
   const { isDarkTheme, cardTemplates } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
@@ -44,7 +46,6 @@ const EditSheetsModal = ({
 
   // Get all available headers from sheets and card templates
   const allHeaders = useMemo(() => {
-    // Headers from other sheets
     const headersBySheet = sheets.allSheets
       .filter((sheet) => sheet.sheetName !== sheetName)
       .map((sheet) => ({
@@ -57,7 +58,6 @@ const EditSheetsModal = ({
         })),
       }));
 
-    // Headers from current sheet
     const currentSheetHeaders = {
       sheetName: sheetName || 'Current Sheet',
       headers: currentHeaders.map((header) => ({
@@ -68,7 +68,6 @@ const EditSheetsModal = ({
       })),
     };
 
-    // Common headers (id and typeOfCards) from card templates
     const commonHeaders = [];
     if (cardTemplates.length > 0) {
       const firstTemplateHeaders = cardTemplates[0].headers.filter(
@@ -84,7 +83,6 @@ const EditSheetsModal = ({
       );
     }
 
-    // Headers from all card templates, excluding id and typeOfCards
     const templateHeaders = cardTemplates.map((template) => ({
       sheetName: `${template.name} (Template)`,
       headers: template.headers
@@ -98,7 +96,7 @@ const EditSheetsModal = ({
     }));
 
     return [
-      { sheetName: 'Common', headers: commonHeaders }, // Common headers at the top
+      { sheetName: 'Common', headers: commonHeaders },
       currentSheetHeaders,
       ...headersBySheet,
       ...templateHeaders,
@@ -123,10 +121,20 @@ const EditSheetsModal = ({
         title: isEditMode ? 'Edit Sheet' : 'Create Sheet',
         backButtonTitle: '',
         rightButton: null,
+        onDoneClick: () => {
+          console.log('[EditSheetsModal] Saving sheet:', { sheetName, currentHeaders });
+          setTempData({ sheetName, currentHeaders, rows });
+          if (sheetName !== tempData.sheetName) {
+            console.log('[EditSheetsModal] Updating activeSheetName:', sheetName);
+            setActiveSheetName(sheetName);
+            clearFetchedSheets();
+          }
+          handleClose({ fromSave: true });
+        },
       });
       hasInitialized.current = true;
     }
-  }, [registerModalSteps, setModalConfig, isEditMode]);
+  }, [registerModalSteps, setModalConfig, isEditMode, sheetName, currentHeaders, rows, setTempData, handleClose, setActiveSheetName, clearFetchedSheets, tempData.sheetName]);
 
   // Sync tempData
   useEffect(() => {
@@ -307,7 +315,6 @@ const EditSheetsModal = ({
         <option value="">Add Column</option>
         {allHeaders.map((source) => (
           source.sheetName === 'Common' ? (
-            // Render common headers as top-level options
             source.headers.map((header) => (
               <option
                 key={`Common:${header.key}`}
@@ -318,7 +325,6 @@ const EditSheetsModal = ({
               </option>
             ))
           ) : (
-            // Render other headers in optgroups
             <optgroup key={source.sheetName} label={source.sheetName}>
               {source.headers
                 .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
@@ -440,6 +446,8 @@ EditSheetsModal.propTypes = {
   onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
   handleClose: PropTypes.func,
+  setActiveSheetName: PropTypes.func.isRequired,
+  clearFetchedSheets: PropTypes.func.isRequired,
 };
 
 EditSheetsModal.defaultProps = {

@@ -27,7 +27,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName, clearFetchedSheets } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const filters = activeSheet?.filters || {};
@@ -166,8 +166,13 @@ const Sheets = ({
   }, [sortedRows, searchQuery, visibleHeaders]);
 
   const handleSheetClick = useCallback((sheetName) => {
-    onSheetChange(sheetName);
-  }, [onSheetChange]);
+    console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
+    if (sheetName !== activeSheetName) {
+      setActiveSheetName(sheetName);
+      clearFetchedSheets();
+      onSheetChange(sheetName);
+    }
+  }, [activeSheetName, setActiveSheetName, clearFetchedSheets, onSheetChange]);
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
@@ -228,6 +233,7 @@ const Sheets = ({
 
   const handleFolderClick = useCallback(
     (folderName) => {
+      console.log('[Sheets] handleFolderClick:', { folderName });
       onOpenFolderModal(folderName);
     },
     [onOpenFolderModal]
@@ -379,7 +385,7 @@ const Sheets = ({
                           handleRemoveSelected();
                         }
                       }}
-                    >
+                  >
                       Remove
                     </button>
                   )}
