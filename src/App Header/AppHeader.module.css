@@ -314,7 +314,6 @@
     font-weight: 500;
     padding: 8px 16px;
     height: auto;
-    border-radius: 0;
   }
   .navButton:hover {
     background: rgba(0, 0, 0, 0.04);

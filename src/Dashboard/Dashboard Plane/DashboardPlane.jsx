@@ -151,6 +151,7 @@ const DashboardPlane = ({
   onDragStart,
   onDrop,
   onWidgetClick,
+  swapWidgets, // <-- already present
 }) => {
   const { isDarkTheme, setDashboards } = useContext(MainContext);
   const [windows, setWindows] = useState([]);
@@ -422,9 +423,36 @@ const DashboardPlane = ({
     const row = Math.floor((clientY - rect.top) / cellHeight);
 
     if (row >= 0 && row < 4 && col >= 0 && col < 2) {
+      // Find if a window already occupies this cell
+      const targetWindow = windows.find(win => {
+        const { position, size } = win;
+        const { width, height } = windowSizes[size] || windowSizes.small;
+        return (
+          row >= position.row &&
+          row < position.row + height &&
+          col >= position.col &&
+          col < position.col + width
+        );
+      });
+
+      if (editMode && swapWidgets && targetWindow) {
+        // Always try to swap, pass full info
+        const swapped = swapWidgets({
+          dashboardId,
+          row,
+          col,
+          targetWidget: {
+            ...targetWindow.originalWidget,
+            position: targetWindow.position,
+            size: targetWindow.size,
+          }
+        });
+        if (swapped) return;
+      }
+
       onDrop({ dashboardId, row, col });
     }
-  }, [dashboardId, onDrop]);
+  }, [dashboardId, onDrop, editMode, swapWidgets, windows]);
 
   useEffect(() => {
     if (areWidgetsEqual(prevWidgetsRef.current, initialWidgets)) {
