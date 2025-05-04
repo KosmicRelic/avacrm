@@ -1,4 +1,4 @@
-import React, { useRef, useContext, useState, useMemo } from 'react';
+import React, { useRef, useContext, useState, useMemo, useCallback } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
@@ -8,7 +8,7 @@ import Modal from '../Modal/Modal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
 const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
-  const { isDarkTheme, dashboards, setDashboards, metricsCategories } = useContext(MainContext);
+  const { isDarkTheme, dashboards, setDashboards } = useContext(MainContext);
   const [editMode, setEditMode] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -28,20 +28,20 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     large: 80,
   };
 
-  const toggleEditMode = () => {
+  const toggleEditMode = useCallback(() => {
     setEditMode((prev) => !prev);
     setDraggedWidget(null);
-  };
+  }, []);
 
-  const validateDashboardScore = (currentWidgets, newWidgets) => {
+  const validateDashboardScore = useCallback((currentWidgets, newWidgets) => {
     const totalScore = newWidgets.reduce((sum, widget) => {
       const size = widget.size || 'small';
       return sum + (windowScores[size] || 0);
     }, 0);
     return totalScore <= 80;
-  };
+  }, []);
 
-  const canPlaceWidget = (dashboard, widget, row, col, skipWidgets = [], customGrid = null) => {
+  const canPlaceWidget = useCallback((dashboard, widget, row, col, skipWidgets = [], customGrid = null) => {
     const size = widget.size;
     const { width, height } = windowSizes[size] || windowSizes.small;
     if (row < 0 || col < 0 || row + height > 4 || col + width > 2) {
@@ -87,9 +87,9 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       }
     }
     return true;
-  };
+  }, []);
 
-  const findFreePosition = (dashboard, size, skipWidgets = [], customGrid = null) => {
+  const findFreePosition = useCallback((dashboard, size, skipWidgets = [], customGrid = null) => {
     const possiblePositions = [];
     if (size === 'verySmall') {
       for (let r = 0; r < 4; r++) {
@@ -119,22 +119,28 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       }
     }
     return null;
-  };
+  }, [canPlaceWidget]);
 
-  const cleanupEmptyDashboards = (currentDashboards) => {
+  const cleanupEmptyDashboards = useCallback((currentDashboards) => {
     let newDashboards = currentDashboards.filter((dashboard) => dashboard.dashboardWidgets.length > 0);
     if (newDashboards.length === 0) {
       newDashboards = [
         {
+          docId: `dashboard-${Date.now()}`,
           id: `dashboard-${Date.now()}`,
           dashboardWidgets: [],
+          isModified: true,
+          action: 'add',
         },
       ];
+      onDashboardChange(newDashboards[0].id);
+    } else if (!newDashboards.some((d) => d.id === activeDashboardId)) {
+      onDashboardChange(newDashboards[0].id);
     }
     return newDashboards;
-  };
+  }, [onDashboardChange, activeDashboardId]);
 
-  const addWindowToDashboard = (size) => {
+  const addWindowToDashboard = useCallback((size) => {
     const newWidgetId = `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newWidget = {
       id: newWidgetId,
@@ -148,7 +154,6 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     let targetDashboard = null;
     let freePosition = null;
 
-    // Prioritize the active dashboard
     const activeDashboard = dashboards.find((d) => d.id === activeDashboardId);
     if (activeDashboard) {
       const existingWidgetIds = new Set(activeDashboard.dashboardWidgets.map((w) => w.id));
@@ -167,7 +172,6 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       }
     }
 
-    // If active dashboard can't fit, check other dashboards
     if (!targetDashboard || !freePosition) {
       for (const dashboard of dashboards) {
         if (dashboard.id === activeDashboardId) continue;
@@ -191,10 +195,9 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       }
     }
 
-    // If no dashboard can fit, create a new one
     if (!targetDashboard || !freePosition) {
       const newDashboardId = `dashboard-${Date.now()}`;
-      targetDashboard = { docId: newDashboardId, id: newDashboardId, dashboardWidgets: [] };
+      targetDashboard = { docId: newDashboardId, id: newDashboardId, dashboardWidgets: [], isModified: true, action: 'add' };
       freePosition = findFreePosition(targetDashboard, size);
       if (!freePosition) {
         alert('Cannot add widget: No valid position available.');
@@ -226,142 +229,87 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
                 ...dashboard.dashboardWidgets,
                 { ...newWidget, position: freePosition, dashboardId: targetDashboard.id },
               ],
+              isModified: true,
+              action: dashboard.action || 'update',
             }
           : dashboard
       );
       widgetSizeModal.close();
       return cleanupEmptyDashboards(newDashboards);
     });
-  };
+  }, [activeDashboardId, dashboards, setDashboards, onDashboardChange, widgetSizeModal, validateDashboardScore, findFreePosition, cleanupEmptyDashboards]);
 
-  const reassignOverlappingWidgets = (
-    dashboard,
-    overlappingWidgets,
-    targetPos,
-    draggedWidgetData,
-    draggedSize,
-    sourceDashboard = null,
-    sourcePos = null
-  ) => {
-    let tempGrid = Array(4)
-      .fill()
-      .map(() => Array(2).fill(false));
-    let newWidgets = dashboard.dashboardWidgets.filter((w) => !overlappingWidgets.some((ow) => ow.id === w.id));
-    let skipWidgets = [draggedWidgetData];
-
-    if (
-      !canPlaceWidget(
-        { dashboardWidgets: newWidgets },
-        { id: draggedWidgetData.id, size: draggedSize },
-        targetPos.row,
-        targetPos.col,
-        skipWidgets,
-        tempGrid
-      )
-    ) {
-      return null;
+  const getValidPosition = useCallback((size, row, col) => {
+    switch (size) {
+      case 'verySmall':
+        return { row, col };
+      case 'small':
+        return { row: row <= 1 ? 0 : 2, col };
+      case 'medium':
+        return { row: row <= 1 ? 0 : 2, col: 0 };
+      case 'large':
+        return { row: 0, col: 0 };
+      default:
+        return { row: row <= 1 ? 0 : 2, col };
     }
-    newWidgets.push({ ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboard.id });
-    const { width, height } = windowSizes[draggedSize];
-    for (let r = targetPos.row; r < targetPos.row + height; r++) {
-      for (let c = targetPos.col; c < targetPos.col + width; c++) {
-        if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-          tempGrid[r][c] = true;
-        }
-      }
-    }
+  }, []);
 
-    const targetDashboard = sourceDashboard || dashboard;
-    const isSameDashboard = !sourceDashboard;
+  const reassignOverlappingWidgets = (targetDashboard, overlappingWidgets, targetPos, draggedWidgetData, draggedSize, sourceDashboard = null, draggedOriginalPos = null) => {
+    const remainingWidgets = targetDashboard.dashboardWidgets.filter((w) => !overlappingWidgets.some((ow) => ow.id === w.id));
+    const newTargetWidgets = [...remainingWidgets, { ...draggedWidgetData, size: draggedSize, position: targetPos }];
+    let sourceWidgets = sourceDashboard ? sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id) : null;
 
-    let canSwap = true;
-    let targetTempGrid = Array(4)
-      .fill()
-      .map(() => Array(2).fill(false));
-    const targetSkipWidgets = [draggedWidgetData];
-    const targetWidgets = isSameDashboard
-      ? newWidgets
-      : targetDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id);
-    let tempTargetWidgets = [...targetWidgets];
-
-    for (const widget of overlappingWidgets) {
-      const size = widget.size;
-      const freePos = findFreePosition({ dashboardWidgets: tempTargetWidgets }, size, targetSkipWidgets, targetTempGrid);
-      if (freePos) {
-        tempTargetWidgets.push({ ...widget, position: freePos, dashboardId: targetDashboard.id });
-        targetSkipWidgets.push(widget);
-        const { width: wWidth, height: wHeight } = windowSizes[size];
-        for (let r = freePos.row; r < freePos.row + wHeight; r++) {
-          for (let c = freePos.col; c < freePos.col + wWidth; c++) {
-            if (r >= 0 && r < 4 && c >= 0 && c < 2) {
-              targetTempGrid[r][c] = true;
-            }
+    const tempGrid = Array(4).fill().map(() => Array(2).fill(false));
+    newTargetWidgets.forEach((w) => {
+      const { width, height } = windowSizes[w.size] || windowSizes.small;
+      for (let r = w.position.row; r < w.position.row + height; r++) {
+        for (let c = w.position.col; c < w.position.col + width; c++) {
+          if (r >= 0 && r < 4 && c >= 0 && c < 2) {
+            tempGrid[r][c] = true;
           }
         }
-      } else {
-        canSwap = false;
-        break;
       }
-    }
+    });
 
-    if (canSwap) {
-      if (isSameDashboard) {
-        const finalWidgets = tempTargetWidgets
-          .filter((w) => w.id !== draggedWidgetData.id)
-          .concat({
-            ...draggedWidgetData,
-            size: draggedSize,
-            position: targetPos,
-            dashboardId: dashboard.id,
-          });
-        return { targetWidgets: finalWidgets };
-      }
-      return {
-        targetWidgets: newWidgets,
-        sourceWidgets: tempTargetWidgets,
-      };
-    }
-
-    const remainingWidgets = [...overlappingWidgets];
-    const placedWidgets = [];
-
-    while (remainingWidgets.length > 0) {
-      const widget = remainingWidgets.shift();
-      const size = widget.size;
-      const freePos = findFreePosition({ dashboardWidgets: newWidgets }, size, skipWidgets, tempGrid);
-      if (freePos) {
-        newWidgets.push({ ...widget, position: freePos, dashboardId: dashboard.id });
-        skipWidgets.push(widget);
-        placedWidgets.push(widget);
-        const { width: wWidth, height: wHeight } = windowSizes[size];
-        for (let r = freePos.row; r < freePos.row + wHeight; r++) {
-          for (let c = freePos.col; c < freePos.col + wWidth; c++) {
+    for (const widget of overlappingWidgets) {
+      const pos = findFreePosition({ dashboardWidgets: newTargetWidgets }, widget.size, [], tempGrid);
+      if (pos) {
+        newTargetWidgets.push({ ...widget, position: pos });
+        const { width, height } = windowSizes[widget.size] || windowSizes.small;
+        for (let r = pos.row; r < pos.row + height; r++) {
+          for (let c = pos.col; c < pos.col + width; c++) {
             if (r >= 0 && r < 4 && c >= 0 && c < 2) {
               tempGrid[r][c] = true;
             }
           }
         }
+      } else if (sourceDashboard && draggedOriginalPos) {
+        const sourcePos = draggedOriginalPos;
+        if (canPlaceWidget({ dashboardWidgets: sourceWidgets || [] }, widget, sourcePos.row, sourcePos.col, [])) {
+          sourceWidgets = [...(sourceWidgets || []), { ...widget, position: sourcePos }];
+        } else {
+          const newSourcePos = findFreePosition({ dashboardWidgets: sourceWidgets || [] }, widget.size, []);
+          if (newSourcePos) {
+            sourceWidgets = [...(sourceWidgets || []), { ...widget, position: newSourcePos }];
+          } else {
+            return null;
+          }
+        }
       } else {
-        remainingWidgets.push(widget);
-        break;
+        return null;
       }
     }
 
-    if (remainingWidgets.length === 0) {
-      return { targetWidgets: newWidgets };
-    }
-
-    return null;
+    return { targetWidgets: newTargetWidgets, sourceWidgets };
   };
 
-  const handleDrop = ({ dashboardId, row, col }) => {
+  const handleDrop = useCallback(({ dashboardId, row, col }) => {
     if (!draggedWidget || !editMode || !isInitialized) {
       setDraggedWidget(null);
       return;
     }
 
     const sourceDashboardId = draggedWidget.dashboardId;
-    const sourceIndex = draggedWidget.index;
     const draggedSize = draggedWidget.size;
     const draggedWidgetData = draggedWidget.widget;
     const draggedOriginalPos = draggedWidget.position;
@@ -426,19 +374,20 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) =>
-              dashboard.id === dashboardId
-                ? {
-                    ...dashboard,
-                    dashboardWidgets: targetWidgets.map((w) => ({
-                      ...w,
-                      dashboardId: dashboardId,
-                    })),
-                  }
-                : dashboard
-            )
+          const updatedDashboards = prev.map((dashboard) =>
+            dashboard.id === dashboardId
+              ? {
+                  ...dashboard,
+                  dashboardWidgets: targetWidgets.map((w) => ({
+                    ...w,
+                    dashboardId: dashboardId,
+                  })),
+                  isModified: true,
+                  action: dashboard.action || 'update',
+                }
+              : dashboard
           );
+          return cleanupEmptyDashboards(updatedDashboards);
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -506,17 +455,26 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
               return prev;
             }
 
-            return cleanupEmptyDashboards(
-              prev.map((dashboard) => {
-                if (dashboard.id === sourceDashboardId) {
-                  return { ...dashboard, dashboardWidgets: sourceNewWidgets };
-                }
-                if (dashboard.id === dashboardId) {
-                  return { ...dashboard, dashboardWidgets: targetNewWidgets };
-                }
-                return dashboard;
-              })
-            );
+            const updatedDashboards = prev.map((dashboard) => {
+              if (dashboard.id === sourceDashboardId) {
+                return {
+                  ...dashboard,
+                  dashboardWidgets: sourceNewWidgets,
+                  isModified: true,
+                  action: sourceNewWidgets.length === 0 ? 'remove' : (dashboard.action || 'update'),
+                };
+              }
+              if (dashboard.id === dashboardId) {
+                return {
+                  ...dashboard,
+                  dashboardWidgets: targetNewWidgets,
+                  isModified: true,
+                  action: dashboard.action || 'update',
+                };
+              }
+              return dashboard;
+            });
+            return cleanupEmptyDashboards(updatedDashboards);
           }
         }
 
@@ -540,17 +498,26 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) => {
-              if (dashboard.id === sourceDashboardId) {
-                return { ...dashboard, dashboardWidgets: sourceNewWidgets };
-              }
-              if (dashboard.id === dashboardId) {
-                return { ...dashboard, dashboardWidgets: targetNewWidgets };
-              }
-              return dashboard;
-            })
-          );
+          const updatedDashboards = prev.map((dashboard) => {
+            if (dashboard.id === sourceDashboardId) {
+              return {
+                ...dashboard,
+                dashboardWidgets: sourceNewWidgets,
+                isModified: true,
+                action: sourceNewWidgets.length === 0 ? 'remove' : (dashboard.action || 'update'),
+              };
+            }
+            if (dashboard.id === dashboardId) {
+              return {
+                ...dashboard,
+                dashboardWidgets: targetNewWidgets,
+                isModified: true,
+                action: dashboard.action || 'update',
+              };
+            }
+            return dashboard;
+          });
+          return cleanupEmptyDashboards(updatedDashboards);
         }
 
         alert('Cannot swap widget: No valid position for displaced widget');
@@ -580,29 +547,32 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
             return prev;
           }
 
-          return cleanupEmptyDashboards(
-            prev.map((dashboard) => {
-              if (dashboard.id === sourceDashboardId && sourceWidgets) {
-                return {
-                  ...dashboard,
-                  dashboardWidgets: sourceWidgets.map((w) => ({
-                    ...w,
-                    dashboardId: sourceDashboardId,
-                  })),
-                };
-              }
-              if (dashboard.id === dashboardId) {
-                return {
-                  ...dashboard,
-                  dashboardWidgets: targetWidgets.map((w) => ({
-                    ...w,
-                    dashboardId: dashboardId,
-                  })),
-                };
-              }
-              return dashboard;
-            })
-          );
+          const updatedDashboards = prev.map((dashboard) => {
+            if (dashboard.id === sourceDashboardId && sourceWidgets) {
+              return {
+                ...dashboard,
+                dashboardWidgets: sourceWidgets.map((w) => ({
+                  ...w,
+                  dashboardId: sourceDashboardId,
+                })),
+                isModified: true,
+                action: sourceWidgets.length === 0 ? 'remove' : (dashboard.action || 'update'),
+              };
+            }
+            if (dashboard.id === dashboardId) {
+              return {
+                ...dashboard,
+                dashboardWidgets: targetWidgets.map((w) => ({
+                  ...w,
+                  dashboardId: dashboardId,
+                })),
+                isModified: true,
+                action: dashboard.action || 'update',
+              };
+            }
+            return dashboard;
+          });
+          return cleanupEmptyDashboards(updatedDashboards);
         }
 
         alert('Cannot drop widget: No valid positions for displaced widgets');
@@ -615,7 +585,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
           ...targetDashboard.dashboardWidgets,
           { ...draggedWidgetData, size: draggedSize, position: targetPos, dashboardId: dashboardId },
         ];
-        const sourceNewWidgets = sourceDashboard.dashboardWidgets.filter((_, i) => i !== sourceIndex);
+        const sourceNewWidgets = sourceDashboard.dashboardWidgets.filter((w) => w.id !== draggedWidgetData.id);
 
         if (
           !validateDashboardScore(targetDashboard.dashboardWidgets, targetNewWidgets) ||
@@ -626,17 +596,26 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
           return prev;
         }
 
-        return cleanupEmptyDashboards(
-          prev.map((dashboard) => {
-            if (dashboard.id === sourceDashboardId) {
-              return { ...dashboard, dashboardWidgets: sourceNewWidgets };
-            }
-            if (dashboard.id === dashboardId) {
-              return { ...dashboard, dashboardWidgets: targetNewWidgets };
-            }
-            return dashboard;
-          })
-        );
+        const updatedDashboards = prev.map((dashboard) => {
+          if (dashboard.id === sourceDashboardId) {
+            return {
+              ...dashboard,
+              dashboardWidgets: sourceNewWidgets,
+              isModified: true,
+              action: sourceNewWidgets.length === 0 ? 'remove' : (dashboard.action || 'update'),
+            };
+          }
+          if (dashboard.id === dashboardId) {
+            return {
+              ...dashboard,
+              dashboardWidgets: targetNewWidgets,
+              isModified: true,
+              action: dashboard.action || 'update',
+            };
+          }
+          return dashboard;
+        });
+        return cleanupEmptyDashboards(updatedDashboards);
       }
 
       const draggedElement = document.querySelector(`.${styles.dragging}`);
@@ -646,9 +625,9 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       setDraggedWidget(null);
       return prev;
     });
-  };
+  }, [draggedWidget, editMode, isInitialized, setDashboards, validateDashboardScore, cleanupEmptyDashboards, getValidPosition, canPlaceWidget, findFreePosition]);
 
-  const handleDragStart = (e, widgetInfo) => {
+  const handleDragStart = useCallback((e, widgetInfo) => {
     if (!editMode || !isInitialized) return;
     setDraggedWidget(widgetInfo);
     e.dataTransfer.setData('text/plain', JSON.stringify(widgetInfo));
@@ -660,67 +639,56 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       },
       { once: true }
     );
-  };
+  }, [editMode, isInitialized]);
 
-  const updateWidgets = (dashboardId, newWidgets) => {
-    const dashboard = dashboards.find((d) => d.id === dashboardId);
-    if (!dashboard) {
-      return;
-    }
-
-    const uniqueWidgets = [];
-    const seenIds = new Set();
-    for (const widget of newWidgets.reverse()) {
-      if (!seenIds.has(widget.id)) {
-        uniqueWidgets.push({
-          ...widget,
-          position: widget.position || { row: 0, col: 0 },
-          dashboardId: dashboardId,
-        });
-        seenIds.add(widget.id);
-      }
-    }
-    uniqueWidgets.reverse();
-
-    if (!validateDashboardScore(dashboard.dashboardWidgets, uniqueWidgets)) {
-      return;
-    }
-
+  const updateWidgets = useCallback((dashboardId, newWidgets) => {
     setDashboards((prev) => {
-      const newDashboards = prev.map((dashboard) =>
-        dashboard.id === dashboardId ? { ...dashboard, dashboardWidgets: uniqueWidgets } : dashboard
-      );
+      const newDashboards = prev.map((dashboard) => {
+        if (dashboard.id === dashboardId) {
+          const uniqueWidgets = [];
+          const seenIds = new Set();
+          for (const widget of newWidgets.reverse()) {
+            if (!seenIds.has(widget.id)) {
+              uniqueWidgets.push({
+                ...widget,
+                position: widget.position || { row: 0, col: 0 },
+                dashboardId: dashboardId,
+              });
+              seenIds.add(widget.id);
+            }
+          }
+          uniqueWidgets.reverse();
+
+          if (!validateDashboardScore(dashboard.dashboardWidgets, uniqueWidgets)) {
+            return dashboard;
+          }
+
+          const isEmpty = uniqueWidgets.length === 0;
+          return {
+            ...dashboard,
+            dashboardWidgets: uniqueWidgets,
+            isModified: true,
+            action: isEmpty ? 'remove' : 'update',
+          };
+        }
+        return dashboard;
+      });
       return cleanupEmptyDashboards(newDashboards);
     });
     setIsInitialized(true);
-  };
+  }, [setDashboards, validateDashboardScore, cleanupEmptyDashboards]);
 
-  const getValidPosition = (size, row, col) => {
-    switch (size) {
-      case 'verySmall':
-        return { row, col };
-      case 'small':
-        return { row: row <= 1 ? 0 : 2, col };
-      case 'medium':
-        return { row: row <= 1 ? 0 : 2, col: 0 };
-      case 'large':
-        return { row: 0, col: 0 };
-      default:
-        return { row: row <= 1 ? 0 : 2, col };
-    }
-  };
-
-  const handleAddWidgetClick = () => {
+  const handleAddWidgetClick = useCallback(() => {
     widgetSizeModal.open();
-  };
+  }, [widgetSizeModal]);
 
-  const handleWidgetSizeSelect = (size) => {
+  const handleWidgetSizeSelect = useCallback((size) => {
     addWindowToDashboard(size);
-  };
+  }, [addWindowToDashboard]);
 
-  const handleWidgetClick = (payload) => {
+  const handleWidgetClick = useCallback((payload) => {
     onWidgetClick(payload);
-  };
+  }, [onWidgetClick]);
 
   const memoizedDashboards = useMemo(() => {
     return dashboards.map((d) => ({

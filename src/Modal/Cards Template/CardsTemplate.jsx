@@ -26,6 +26,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         ...t,
         headers: headers || [],
         sections,
+        isModified: t.isModified || false, // Preserve existing isModified if present
+        action: t.action || null, // Preserve existing action if present
       };
     })
   );
@@ -120,7 +122,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       alert("Please select a section for the field.");
       return;
     }
-    // Prevent adding new headers to "Card Data" section
     if (newHeaderSection === "Card Data") {
       alert("The 'Card Data' section is reserved for 'ID' and 'Type of Cards' fields.");
       return;
@@ -145,7 +146,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         }
         return section;
       });
-      newTemplates[selectedTemplateIndex] = currentTemplate;
+      newTemplates[selectedTemplateIndex] = {
+        ...currentTemplate,
+        isModified: true,
+        action: currentTemplate.action || "update",
+      };
       return newTemplates;
     });
     resetHeaderForm();
@@ -177,7 +182,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
       const isProtected = currentHeader.key === "id" || currentHeader.key === "typeOfCards";
 
-      // Prevent moving id or typeOfCards out of "Card Data"
       if (isProtected && newHeaderSection !== "Card Data") {
         alert("The 'ID' and 'Type of Cards' fields must remain in the 'Card Data' section.");
         return;
@@ -210,7 +214,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           });
         }
 
-        newTemplates[selectedTemplateIndex] = currentTemplate;
+        newTemplates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || "update",
+        };
         return newTemplates;
       });
       resetHeaderForm();
@@ -241,7 +249,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
             ...section,
             keys: section.keys.filter((k) => k !== deletedKey),
           }));
-          newTemplates[selectedTemplateIndex] = currentTemplate;
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
           return newTemplates;
         });
         setActiveHeaderIndex(null);
@@ -492,6 +504,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           keys: ["id", "typeOfCards"],
         },
       ],
+      isModified: true,
+      action: "add",
     };
 
     setCurrentCardTemplates((prev) => {
@@ -516,7 +530,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         return prev;
       }
       currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName, keys: [] }];
-      newTemplates[selectedTemplateIndex] = currentTemplate;
+      newTemplates[selectedTemplateIndex] = {
+        ...currentTemplate,
+        isModified: true,
+        action: currentTemplate.action || "update",
+      };
       return newTemplates;
     });
   }, [selectedTemplateIndex]);
@@ -530,7 +548,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
         const currentSection = currentTemplate.sections[index];
         
-        // Prevent renaming "Card Data" section
         if (currentSection.name === "Card Data") {
           alert("The 'Card Data' section cannot be renamed.");
           return prev;
@@ -550,7 +567,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         currentTemplate.headers = currentTemplate.headers.map((h) =>
           h.section === oldName ? { ...h, section: newName.trim() } : h
         );
-        newTemplates[selectedTemplateIndex] = currentTemplate;
+        newTemplates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || "update",
+        };
         return newTemplates;
       });
     },
@@ -563,7 +584,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
       if (selectedTemplateIndex === null) return;
       const section = currentCardTemplates[selectedTemplateIndex].sections[index];
       
-      // Prevent deletion of "Card Data" section
       if (section.name === "Card Data") {
         alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
         return;
@@ -583,7 +603,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           currentTemplate.headers = currentTemplate.headers.map((h) =>
             h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
           );
-          newTemplates[selectedTemplateIndex] = currentTemplate;
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
           return newTemplates;
         });
         setNavigationDirection("backward");
@@ -597,7 +621,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
     if (key === "id" || key === "typeOfCards") {
-      e.preventDefault(); // Prevent dragging protected fields
+      e.preventDefault();
       return;
     }
     setDraggedIndex(index);
@@ -610,7 +634,7 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
     if (key === "id" || key === "typeOfCards") {
-      e.preventDefault(); // Prevent touch dragging protected fields
+      e.preventDefault();
       return;
     }
     if (e.target.classList.contains(styles.dragIcon)) {
@@ -638,7 +662,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         sectionKeys.splice(index, 0, draggedItem);
         newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
         currentTemplate.sections = newSections;
-        newTemplates[selectedTemplateIndex] = currentTemplate;
+        newTemplates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || "update",
+        };
         return newTemplates;
       });
       setTimeout(() => setDraggedIndex(index), 0);
@@ -669,7 +697,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           sectionKeys.splice(newIndex, 0, draggedItem);
           newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
           currentTemplate.sections = newSections;
-          newTemplates[selectedTemplateIndex] = currentTemplate;
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
           return newTemplates;
         });
         setTimeout(() => setDraggedIndex(newIndex), 0);
@@ -747,6 +779,8 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           ...newTemplates[selectedTemplateIndex],
           name: newName.trim(),
           typeOfCards: newName.trim(),
+          isModified: true,
+          action: newTemplates[selectedTemplateIndex].action || "update",
         };
         return newTemplates;
       });
@@ -788,7 +822,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
         currentTemplate.headers = currentTemplate.headers.map((h) =>
           h.key === key ? { ...h, isUsed: !isSelected } : h
         );
-        newTemplates[selectedTemplateIndex] = currentTemplate;
+        newTemplates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || "update",
+        };
         return newTemplates;
       });
     },
@@ -813,7 +851,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
           currentTemplate.headers = currentTemplate.headers.map((h) =>
             h.key === key ? { ...h, isUsed: false } : h
           );
-          newTemplates[selectedTemplateIndex] = currentTemplate;
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
           return newTemplates;
         });
       }
@@ -845,7 +887,11 @@ const CardsTemplate = ({ tempData, setTempData }) => {
     const templateName = currentCardTemplates[selectedTemplateIndex].name;
     if (window.confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
       setCurrentCardTemplates((prev) => {
-        const newTemplates = prev.filter((_, i) => i !== selectedTemplateIndex);
+        const newTemplates = prev.map((template, i) =>
+          i === selectedTemplateIndex
+            ? { ...template, isModified: true, action: "remove" }
+            : template
+        );
         setSelectedTemplateIndex(null);
         setEditMode(false);
         setNavigationDirection("backward");
@@ -875,7 +921,6 @@ const CardsTemplate = ({ tempData, setTempData }) => {
   const handleCreateHeader = useCallback(() => {
     setActiveHeaderIndex(-1);
     resetHeaderForm();
-    // Set the recommended section to the current section, but not "Card Data"
     const currentSectionName = currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Card Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
@@ -906,15 +951,17 @@ const CardsTemplate = ({ tempData, setTempData }) => {
                   <FaPlus /> Add New Card Template
                 </button>
                 <div className={styles.templateList}>
-                  {currentCardTemplates.map((template, index) => (
-                    <button
-                      key={index}
-                      className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleOpenEditor(template)}
-                    >
-                      {template.name || "Unnamed Template"}
-                    </button>
-                  ))}
+                  {currentCardTemplates
+                    .filter((template) => template.action !== "remove")
+                    .map((template, index) => (
+                      <button
+                        key={index}
+                        className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => handleOpenEditor(template)}
+                      >
+                        {template.name || "Unnamed Template"}
+                      </button>
+                    ))}
                 </div>
               </>
             )}
@@ -1336,6 +1383,8 @@ CardsTemplate.propTypes = {
             keys: PropTypes.arrayOf(PropTypes.string),
           })
         ),
+        isModified: PropTypes.bool,
+        action: PropTypes.oneOf(["add", "update", "remove", null]),
       })
     ),
   }).isRequired,

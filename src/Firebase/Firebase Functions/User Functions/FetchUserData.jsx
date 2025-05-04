@@ -134,12 +134,12 @@ const fetchUserData = async ({
     );
 
     // Fetch all cards
-    await fetchCollection(
-      collection(db, 'businesses', businessId, 'cards'),
-      setCards,
-      [],
-      'Error fetching cards:'
-    );
+    // await fetchCollection(
+    //   collection(db, 'businesses', businessId, 'cards'),
+    //   setCards,
+    //   [],
+    //   'Error fetching cards:'
+    // );
   }
 
   // Return an empty cleanup function since no listeners are set up

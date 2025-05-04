@@ -1,4 +1,3 @@
-// src/utils/modal/modalUtils.js
 import React from 'react';
 import EditSheetsModal from '../Modal/Edit Sheets Modal/EditSheetsModal';
 import FilterModal from '../Modal/FilterModal/FilterModal';
@@ -41,7 +40,12 @@ export const handleModalSave = ({
           ...prev,
           allSheets: prev.allSheets.map((sheet) =>
             sheet.sheetName === activeSheetName
-              ? { ...sheet, filters: { ...data.filterValues } }
+              ? {
+                  ...sheet,
+                  filters: { ...data.filterValues },
+                  isModified: true,
+                  action: 'update',
+                }
               : sheet
           ),
         }));
@@ -65,6 +69,8 @@ export const handleModalSave = ({
                       visible: h.visible,
                       hidden: h.hidden,
                     })),
+                    isModified: true,
+                    action: 'update',
                   }
                 : sheet
             ),
@@ -81,6 +87,10 @@ export const handleModalSave = ({
               return item;
             }),
           };
+          // Mark structure as modified if sheet name changed
+          if (activeSheetName !== data.sheetName) {
+            updatedSheets.structure = { ...updatedSheets.structure, isModified: true, action: 'update' };
+          }
           return updatedSheets;
         });
         handleSheetChange(data.sheetName);
@@ -102,7 +112,7 @@ export const handleModalSave = ({
           }
           const updatedSheets = {
             ...prev,
-            structure: newStructure,
+            structure: { ...newStructure, isModified: true, action: 'update' },
             allSheets: prev.allSheets.map((sheet) => ({
               ...sheet,
               isActive: sheet.sheetName === newActiveSheetName,
@@ -129,80 +139,100 @@ export const handleModalSave = ({
         setCardTemplates([...data.currentCardTemplates]);
       }
       break;
-      case 'folderOperations':
-        if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
-          setSheets((prev) => {
-            let currentStructure = [...prev.structure];
-            data.tempData.actions.forEach((actionData) => {
-              if (actionData.action === 'removeSheets' && actionData.selectedSheets && actionData.folderName) {
-                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
-                const folderSheets = folder?.sheets || [];
-                const remainingSheets = folderSheets.filter(
-                  (sheet) => !actionData.selectedSheets.includes(sheet)
+    case 'folderOperations':
+      if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
+        setSheets((prev) => {
+          let currentStructure = [...prev.structure];
+          const modifiedSheets = new Set();
+          data.tempData.actions.forEach((actionData) => {
+            if (actionData.action === 'removeSheets' && actionData.selectedSheets && actionData.folderName) {
+              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+              const folderSheets = folder?.sheets || [];
+              const remainingSheets = folderSheets.filter(
+                (sheet) => !actionData.selectedSheets.includes(sheet)
+              );
+              const removedSheets = folderSheets.filter((sheet) =>
+                actionData.selectedSheets.includes(sheet)
+              );
+              const existingSheetNames = currentStructure
+                .filter((item) => item.sheetName)
+                .map((item) => item.sheetName);
+              const newSheetsToAdd = removedSheets.filter(
+                (sheetName) => !existingSheetNames.includes(sheetName)
+              );
+              currentStructure = [
+                ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                { folderName: actionData.folderName, sheets: remainingSheets },
+                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+              ];
+            } else if (actionData.action === 'addSheets' && actionData.selectedSheets && actionData.folderName) {
+              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+              const existingSheets = folder?.sheets || [];
+              const newSheets = actionData.selectedSheets.filter(
+                (sheet) => !existingSheets.includes(sheet)
+              );
+              if (newSheets.length > 0) {
+                currentStructure = currentStructure.map((item) =>
+                  item.folderName === actionData.folderName
+                    ? { ...item, sheets: [...existingSheets, ...newSheets] }
+                    : item
                 );
-                const removedSheets = folderSheets.filter((sheet) =>
-                  actionData.selectedSheets.includes(sheet)
-                );
-                const existingSheetNames = currentStructure
-                  .filter((item) => item.sheetName)
-                  .map((item) => item.sheetName);
-                const newSheetsToAdd = removedSheets.filter(
-                  (sheetName) => !existingSheetNames.includes(sheetName)
-                );
-                currentStructure = [
-                  ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
-                  { folderName: actionData.folderName, sheets: remainingSheets },
-                  ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-                ];
-              } else if (actionData.action === 'addSheets' && actionData.selectedSheets && actionData.folderName) {
-                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
-                const existingSheets = folder?.sheets || [];
-                const newSheets = actionData.selectedSheets.filter(
-                  (sheet) => !existingSheets.includes(sheet)
-                );
-                if (newSheets.length > 0) {
-                  currentStructure = currentStructure.map((item) =>
-                    item.folderName === actionData.folderName
-                      ? { ...item, sheets: [...existingSheets, ...newSheets] }
-                      : item
-                  );
-                }
-              } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
-                const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
-                const folderSheets = folder?.sheets || [];
-                const existingSheetNames = currentStructure
-                  .filter((item) => item.sheetName)
-                  .map((item) => item.sheetName);
-                const newSheetsToAdd = folderSheets.filter(
-                  (sheetName) => !existingSheetNames.includes(sheetName)
-                );
-                currentStructure = [
-                  ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
-                  ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-                ];
               }
-            });
-            return { ...prev, structure: currentStructure };
+            } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
+              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+              const folderSheets = folder?.sheets || [];
+              const existingSheetNames = currentStructure
+                .filter((item) => item.sheetName)
+                .map((item) => item.sheetName);
+              const newSheetsToAdd = folderSheets.filter(
+                (sheetName) => !existingSheetNames.includes(sheetName)
+              );
+              currentStructure = [
+                ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+              ];
+              // Mark affected sheets as modified
+              folderSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
+            }
           });
-        } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
-          setSheets((prev) => {
-            const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
-            const existingSheetNames = prev.structure
-              .filter((item) => item.sheetName)
-              .map((item) => item.sheetName);
-            const newSheetsToAdd = folderSheets.filter(
-              (sheetName) => !existingSheetNames.includes(sheetName)
-            );
-            return {
-              ...prev,
-              structure: [
+          return {
+            ...prev,
+            structure: { ...currentStructure, isModified: true, action: 'update' },
+            allSheets: prev.allSheets.map((sheet) =>
+              modifiedSheets.has(sheet.sheetName)
+                ? { ...sheet, isModified: true, action: 'update' }
+                : sheet
+            ),
+          };
+        });
+      } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
+        setSheets((prev) => {
+          const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
+          const existingSheetNames = prev.structure
+            .filter((item) => item.sheetName)
+            .map((item) => item.sheetName);
+          const newSheetsToAdd = folderSheets.filter(
+            (sheetName) => !existingSheetNames.includes(sheetName)
+          );
+          return {
+            ...prev,
+            structure: {
+              ...[
                 ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ],
-            };
-          });
-        }
-        break;
+              isModified: true,
+              action: 'update',
+            },
+            allSheets: prev.allSheets.map((sheet) =>
+              folderSheets.includes(sheet.sheetName)
+                ? { ...sheet, isModified: true, action: 'update' }
+                : sheet
+            ),
+          };
+        });
+      }
+      break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
         setMetrics((prev) =>
@@ -226,26 +256,19 @@ export const handleModalSave = ({
         );
         const newDashboards = prev.map((dashboard) => {
           if (dashboard.id !== data.dashboardId) return dashboard;
-          if (widgetExists) {
-            // Update existing widget
-            return {
-              ...dashboard,
-              dashboardWidgets: dashboard.dashboardWidgets.map((w) =>
+          const updatedWidgets = widgetExists
+            ? dashboard.dashboardWidgets.map((w) =>
                 w.id === data.updatedWidget.id
                   ? { ...data.updatedWidget, dashboardId: data.dashboardId }
                   : w
-              ),
-            };
-          } else {
-            // Add new widget
-            return {
-              ...dashboard,
-              dashboardWidgets: [
-                ...dashboard.dashboardWidgets,
-                { ...data.updatedWidget, dashboardId: data.dashboardId },
-              ],
-            };
-          }
+              )
+            : [...dashboard.dashboardWidgets, { ...data.updatedWidget, dashboardId: data.dashboardId }];
+          return {
+            ...dashboard,
+            dashboardWidgets: updatedWidgets,
+            isModified: true,
+            action: dashboard.action || 'update',
+          };
         });
         return newDashboards;
       });
@@ -298,7 +321,7 @@ export const handleModalClose = ({
     setActiveModal({
       type: 'widgetSetup',
       data: {
-        widget: options.openWidgetSetup.widget,
+        widgset: options.openWidgetSetup.widget,
         updatedWidget: {
           ...options.openWidgetSetup.widget,
           title: options.openWidgetSetup.widget.title || '',
@@ -313,7 +336,6 @@ export const handleModalClose = ({
     widgetSetupModal.open();
   } else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
     if (options.fromSave) {
-      // Call handleModalSave for save actions, regardless of animationComplete
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
   }
@@ -351,8 +373,6 @@ export const renderModalContent = ({
   handleSheetSave,
   handleFolderSave,
   setSheets,
-  activeDashboard,
-  metrics,
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
@@ -455,7 +475,7 @@ export const renderModalContent = ({
       return (
         <WidgetSizeModal
           handleClose={handleModalClose}
-          onSelectSize={() => {}}
+          onSelectSize={activeModal.data?.onSelectSize || (() => {})}
         />
       );
     case 'widgetView':
@@ -467,7 +487,6 @@ export const renderModalContent = ({
           handleClose={handleModalClose}
         />
       );
-    // Update in src/utils/modal/modalUtils.js Miss to match previous version
     case 'widgetSetup':
       return (
         <WidgetSetupModal

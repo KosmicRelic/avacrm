@@ -6,7 +6,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 
 const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClose }) => {
-  const { metrics, isDarkTheme } = useContext(MainContext);
+  const { metrics, isDarkTheme, dashboards, setDashboards } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [selectedCategory, setSelectedCategory] = useState(tempData.category || '');
   const [selectedMetric, setSelectedMetric] = useState(tempData.metric || '');
@@ -21,9 +21,50 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
       alert('Please select both a category and a metric to proceed.');
       return;
     }
-    console.log('Saving widget with tempData:', tempData);
+    const categoryData = metrics.find((cat) => cat.category === selectedCategory);
+    const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
+    if (!metricData) {
+      alert('Selected metric is invalid.');
+      return;
+    }
+
+    const updatedWidget = {
+      ...tempData.widget,
+      id: tempData.widget.id || `widget-${Date.now()}`,
+      title: selectedCategory,
+      metricId: metricData.id,
+      dashboardId: tempData.dashboardId,
+      size: tempData.widget.size || 'small', // Ensure size is preserved
+      position: tempData.widget.position || { row: 0, col: 0 }, // Preserve position
+    };
+
+    // Update dashboards with isModified and action flags
+    setDashboards((prev) => {
+      const targetDashboard = prev.find((d) => d.id === tempData.dashboardId);
+      if (!targetDashboard) {
+        console.error('Dashboard not found:', tempData.dashboardId);
+        return prev;
+      }
+      const widgetExists = targetDashboard.dashboardWidgets.some((w) => w.id === updatedWidget.id);
+      const updatedWidgets = widgetExists
+        ? targetDashboard.dashboardWidgets.map((w) =>
+            w.id === updatedWidget.id ? updatedWidget : w
+          )
+        : [...targetDashboard.dashboardWidgets, updatedWidget];
+      return prev.map((dashboard) =>
+        dashboard.id === tempData.dashboardId
+          ? {
+              ...dashboard,
+              dashboardWidgets: updatedWidgets,
+              isModified: true,
+              action: dashboard.action || 'update',
+            }
+          : dashboard
+      );
+    });
+
     handleClose({ fromSave: true });
-  }, [selectedCategory, selectedMetric, handleClose, tempData]);
+  }, [selectedCategory, selectedMetric, metrics, tempData, setDashboards, handleClose]);
 
   // Memoize the Save button handler
   const handleSave = useCallback(() => {
@@ -92,8 +133,8 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
           isRemove: false,
         },
       });
-      if (tempData.initialStep === 2) {
-        goToStep(2);
+      if (tempData.initialStep) {
+        goToStep(tempData.initialStep);
       }
       hasInitialized.current = true;
     }
@@ -149,55 +190,24 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
 
     prevSelectionsRef.current = currentSelections;
 
-    if (!selectedCategory || !selectedMetric) {
-      const newTempData = {
-        ...tempData,
-        updatedWidget: null,
-        category: selectedCategory,
-        metric: selectedMetric,
-        canClose: false,
-      };
-      setTempData(newTempData);
-      setActiveModalData(newTempData);
-      return;
-    }
-
-    const categoryData = metrics.find((cat) => cat.category === selectedCategory);
-    const metricData = categoryData?.metrics.find((m) => m.id === selectedMetric);
-
-    if (!metricData) {
-      const newTempData = {
-        ...tempData,
-        updatedWidget: null,
-        category: selectedCategory,
-        metric: selectedMetric,
-        canClose: false,
-      };
-      setTempData(newTempData);
-      setActiveModalData(newTempData);
-      return;
-    }
-
-    const updatedWidget = {
-      ...tempData.widget,
-      id: tempData.widget.id || `widget-${Date.now()}`,
-      title: selectedCategory,
-      metricId: metricData.id,
-      dashboardId: tempData.dashboardId,
-    };
-
     const newTempData = {
       ...tempData,
-      updatedWidget,
       category: selectedCategory,
       metric: selectedMetric,
-      dashboardId: tempData.dashboardId,
-      canClose: true,
+      updatedWidget: selectedCategory && selectedMetric ? {
+        ...tempData.widget,
+        id: tempData.widget.id || `widget-${Date.now()}`,
+        title: selectedCategory,
+        metricId: selectedMetric,
+        dashboardId: tempData.dashboardId,
+        size: tempData.widget.size || 'small',
+        position: tempData.widget.position || { row: 0, col: 0 },
+      } : null,
+      canClose: !!(selectedCategory && selectedMetric),
     };
     setTempData(newTempData);
     setActiveModalData(newTempData);
-    console.log('Updated tempData:', newTempData);
-  }, [selectedCategory, selectedMetric, metrics, setTempData, setActiveModalData, tempData]);
+  }, [selectedCategory, selectedMetric, tempData, setTempData, setActiveModalData]);
 
   const selectedMetrics = selectedCategory
     ? metrics.find((cat) => cat.category === selectedCategory)?.metrics || []
@@ -279,6 +289,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
                       setSelectedMetric('');
                     }}
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label="Select category"
                   >
                     <option value="">Select a category</option>
                     {metrics.map((cat) => (
@@ -293,6 +304,7 @@ const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClo
                     onChange={(e) => setSelectedMetric(e.target.value)}
                     disabled={!selectedCategory}
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label="Select metric"
                   >
                     <option value="">Select a metric</option>
                     {selectedMetrics.map((metric) => (

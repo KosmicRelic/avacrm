@@ -1,16 +1,15 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
 import { FaChevronRight } from 'react-icons/fa';
 import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 
-
+// Window component
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
   const { isDarkTheme, metrics } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Fetch metric data using metricId from metrics
   const metric = widget?.metricId
     ? metrics
         .flatMap((category) => category.metrics)
@@ -33,7 +32,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
       return;
     }
     if (editMode && onWidgetClick && widget) {
-      // For both blank and existing widgets, open WidgetSetupModal with the current widget
       onWidgetClick({
         type: 'widgetSetup',
         widget: {
@@ -48,11 +46,10 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   };
 
   const goToMetric = () => {
-    if(!editMode && onWidgetClick && widget && metric) {
-      // Navigate to Metrics component, select category, show metric details (Step 2)
+    if (!editMode && onWidgetClick && widget && metric) {
       onWidgetClick({ type: 'metric', widget, metric, step: 2 });
     }
-  }
+  };
 
   const handleDragStart = (e) => {
     if (!editMode) return;
@@ -66,8 +63,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   };
 
   const isBlank = !widget?.metricId || !metric;
-
-  // Determine if the metric is a chart type
   const isChartType = metric && ['line', 'pie', 'speedometer', 'bar'].includes(metric.type);
 
   return (
@@ -193,7 +188,7 @@ const DashboardPlane = ({
     large: 'large',
   };
 
-  const addWidget = () => {
+  const addWidget = useCallback(() => {
     const newWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       size: 'verySmall',
@@ -208,19 +203,21 @@ const DashboardPlane = ({
           return {
             ...dashboard,
             dashboardWidgets: [...dashboard.dashboardWidgets, newWidget],
+            isModified: true,
+            action: dashboard.action || 'update',
           };
         }
         return dashboard;
       });
       return [...newDashboards];
     });
-  };
+  }, [dashboardId, setDashboards]);
 
-  const calculateScore = (windows) => {
+  const calculateScore = useCallback((windows) => {
     return windows.reduce((sum, w) => (windowScores[w.size] || 0) + sum, 0);
-  };
+  }, []);
 
-  const canPlaceWindow = (size, row, col, skipWidgets = [], customGrid = null, currentWindows = windows) => {
+  const canPlaceWindow = useCallback((size, row, col, skipWidgets = [], customGrid = null, currentWindows = windows) => {
     const { width, height } = windowSizes[size] || windowSizes.small;
     if (row < 0 || col < 0 || row + height > gridRef.current.rows || col + width > gridRef.current.columns) {
       return false;
@@ -260,9 +257,9 @@ const DashboardPlane = ({
       }
     }
     return true;
-  };
+  }, [windows]);
 
-  const getValidPosition = (size, row, col) => {
+  const getValidPosition = useCallback((size, row, col) => {
     switch (size) {
       case 'verySmall':
         return { row, col };
@@ -275,9 +272,9 @@ const DashboardPlane = ({
       default:
         return { row: row <= 1 ? 0 : 2, col };
     }
-  };
+  }, []);
 
-  const findFreePosition = (size, skipWidgets = [], customGrid = null, currentWindows = []) => {
+  const findFreePosition = useCallback((size, skipWidgets = [], customGrid = null, currentWindows = []) => {
     const possiblePositions = [];
     if (size === 'verySmall') {
       for (let r = 0; r < 4; r++) {
@@ -307,9 +304,9 @@ const DashboardPlane = ({
       }
     }
     return null;
-  };
+  }, [canPlaceWindow]);
 
-  const updateValidDropCells = (widgetInfo) => {
+  const updateValidDropCells = useCallback((widgetInfo) => {
     if (!widgetInfo || !editMode) {
       setValidDropCells([]);
       return;
@@ -344,14 +341,13 @@ const DashboardPlane = ({
       canPlaceWindow(size, pos.row, pos.col, skipWidgets, null, windows)
     );
     setValidDropCells(validCells);
-  };
+  }, [editMode, dashboardId, windows, canPlaceWindow]);
 
-  const removeWindow = (index) => {
+  const removeWindow = useCallback((index) => {
     setWindows((prev) => {
       const windowToRemove = prev[index];
-      if (!windowToRemove) {
-        return prev;
-      }
+      if (!windowToRemove) return prev;
+
       const { size, position } = windowToRemove;
       const { width, height } = windowSizes[size] || windowSizes.small;
       for (let r = position.row; r < position.row + height; r++) {
@@ -362,27 +358,29 @@ const DashboardPlane = ({
         }
       }
       const newWindows = prev.filter((_, i) => i !== index);
-      updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
+      const updatedWidgets = newWindows.map((win) => ({ ...win.originalWidget, position: win.position }));
+
+      setDashboards((prevDashboards) => {
+        const newDashboards = prevDashboards.map((dashboard) => {
+          if (dashboard.id === dashboardId) {
+            const isEmpty = updatedWidgets.length === 0;
+            return {
+              ...dashboard,
+              dashboardWidgets: updatedWidgets,
+              isModified: true,
+              action: isEmpty ? 'remove' : 'update',
+            };
+          }
+          return dashboard;
+        });
+        return newDashboards;
+      });
+
       return newWindows;
     });
-  };
+  }, [dashboardId, setDashboards]);
 
-  useEffect(() => {
-    setDashboards((prev) => {
-      const newDashboards = prev.map((dashboard) => {
-        if (dashboard.id === dashboardId) {
-          return {
-            ...dashboard,
-            dashboardWidgets: windows.map((win) => ({ ...win.originalWidget, position: win.position })),
-          };
-        }
-        return dashboard;
-      });
-      return [...newDashboards];
-    });
-  }, [windows, dashboardId, setDashboards]);
-
-  const areWidgetsEqual = (prev, next) => {
+  const areWidgetsEqual = useCallback((prev, next) => {
     if (!prev || prev.length !== next.length) return false;
     return prev.every((p, i) => {
       const n = next[i];
@@ -395,9 +393,9 @@ const DashboardPlane = ({
         JSON.stringify(p.position || {}) === JSON.stringify(n.position || {})
       );
     });
-  };
+  }, []);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     try {
@@ -406,13 +404,13 @@ const DashboardPlane = ({
     } catch (error) {
       setValidDropCells([]);
     }
-  };
+  }, [updateValidDropCells]);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setValidDropCells([]);
-  };
+  }, []);
 
-  const handleDrop = (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
     setValidDropCells([]);
     const clientX = e.clientX;
@@ -426,7 +424,7 @@ const DashboardPlane = ({
     if (row >= 0 && row < 4 && col >= 0 && col < 2) {
       onDrop({ dashboardId, row, col });
     }
-  };
+  }, [dashboardId, onDrop]);
 
   useEffect(() => {
     if (areWidgetsEqual(prevWidgetsRef.current, initialWidgets)) {
@@ -497,7 +495,23 @@ const DashboardPlane = ({
       setAnimatingWidgets(newAnimatingWidgets);
       gridRef.current.occupied = tempGrid;
       prevWidgetsRef.current = uniqueWidgets;
-      updateWidgets(dashboardId, newWindows.map((win) => ({ ...win.originalWidget, position: win.position })));
+
+      const updatedWidgets = newWindows.map((win) => ({ ...win.originalWidget, position: win.position }));
+      setDashboards((prevDashboards) => {
+        const newDashboards = prevDashboards.map((dashboard) => {
+          if (dashboard.id === dashboardId) {
+            const isEmpty = updatedWidgets.length === 0;
+            return {
+              ...dashboard,
+              dashboardWidgets: updatedWidgets,
+              isModified: true,
+              action: isEmpty ? 'remove' : 'update',
+            };
+          }
+          return dashboard;
+        });
+        return newDashboards;
+      });
 
       const newPositions = {};
       newWindows.forEach((win) => {
@@ -513,7 +527,7 @@ const DashboardPlane = ({
     } catch (error) {
       console.error('Error in DashboardPlane useEffect:', error);
     }
-  }, [initialWidgets, dashboardId, updateWidgets]);
+  }, [initialWidgets, dashboardId, setDashboards, calculateScore, canPlaceWindow, findFreePosition]);
 
   return (
     <div

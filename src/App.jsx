@@ -303,7 +303,7 @@ function App() {
               metricId: widget.metricId || null,
               dashboardId: widget.dashboardId,
             },
-            category: widget.title || sêkịtừnnull,
+            category: widget.title || null,
             metric: widget.metricId || null,
             dashboardId: widget.dashboardId || activeDashboard?.id,
             initialStep: initialStep || 1,
