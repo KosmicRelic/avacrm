@@ -9,6 +9,8 @@ const fetchUserData = async ({
   setCardTemplates,
   setMetrics,
   setDashboards,
+  activeSheetName,
+  updateSheets = false,
 }) => {
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
@@ -55,66 +57,121 @@ const fetchUserData = async ({
 
   // Fetch data based on the route
   if (route === '/sheets') {
-    console.log('Fetching sheets for businessId:', businessId);
-    try {
-      // Fetch sheets
-      const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
-      const allSheets = sheetsSnapshot.docs.map((doc) => ({
-        docId: doc.id,
-        ...doc.data(),
-      }));
-      console.log('Sheets data received:', allSheets);
+    if (updateSheets) {
+      // --- Initial load: fetch sheets, structure, card templates, and cards for the first/active sheet ---
+      console.log('Fetching sheets for businessId:', businessId);
+      try {
+        // Fetch sheets
+        const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
+        const allSheets = sheetsSnapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        console.log('Sheets data received:', allSheets);
 
-      // Determine if user is a team member and get allowedSheetIds
-      const allowedSheetIds = await getAllowedSheetIds();
+        // Determine if user is a team member and get allowedSheetIds
+        const allowedSheetIds = await getAllowedSheetIds();
 
-      // Fetch sheets structure
-      const structureDoc = await getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
-      let structureData = structureDoc.exists() ? structureDoc.data().structure : [];
-      console.log('Sheets structure data received (raw):', structureData);
+        // Fetch sheets structure
+        const structureDoc = await getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
+        let structureData = structureDoc.exists() ? structureDoc.data().structure : [];
+        console.log('Sheets structure data received (raw):', structureData);
 
-      // Filter structure for team members
-      if (allowedSheetIds) {
-        const sheetIdToName = new Map(
-          allSheets.map((sheet) => [sheet.docId.toLowerCase(), sheet.sheetName?.toLowerCase()])
+        // Filter structure for team members
+        if (allowedSheetIds) {
+          const sheetIdToName = new Map(
+            allSheets.map((sheet) => [sheet.docId.toLowerCase(), sheet.sheetName?.toLowerCase()])
+          );
+          structureData = structureData.filter((entry) => {
+            const sheetId = [...sheetIdToName.entries()].find(
+              ([, name]) => name === entry.sheetName.toLowerCase()
+            )?.[0];
+            return sheetId && allowedSheetIds.includes(sheetId);
+          });
+          console.log('Filtered sheets structure for team member:', structureData);
+        }
+
+        setSheets && setSheets({ allSheets, structure: structureData });
+
+        // Fetch card templates (only on initial load)
+        await fetchCollection(
+          collection(db, 'businesses', businessId, 'cardTemplates'),
+          setCardTemplates,
+          [],
+          'Error fetching card templates:'
         );
-        structureData = structureData.filter((entry) => {
-          const sheetId = [...sheetIdToName.entries()].find(
-            ([, name]) => name === entry.sheetName.toLowerCase()
-          )?.[0];
-          return sheetId && allowedSheetIds.includes(sheetId);
+
+        // Determine which sheet to use: prefer passed activeSheetName, fallback to first in structure
+        let sheetNameToUse = activeSheetName;
+        if (!sheetNameToUse) {
+          if (structureData.length > 0) {
+            if (structureData[0].sheetName) {
+              sheetNameToUse = structureData[0].sheetName;
+            } else if (structureData[0].folderName && structureData[0].sheets?.length > 0) {
+              sheetNameToUse = structureData[0].sheets[0];
+            }
+          }
+        }
+        const activeSheet = allSheets.find(s => s.sheetName === sheetNameToUse);
+
+        // Fetch all cards, then filter by activeSheet.rows
+        const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'cards'));
+        let allCards = cardsSnapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+
+        let filteredCards = [];
+        if (activeSheet && Array.isArray(activeSheet.rows)) {
+          const rowIdsSet = new Set(activeSheet.rows);
+          filteredCards = allCards.filter(card => rowIdsSet.has(card.docId));
+        }
+        setCards && setCards(filteredCards);
+
+      } catch (error) {
+        console.error('Error fetching sheets:', {
+          code: error.code,
+          message: error.message,
+          businessId,
+          path: `businesses/${businessId}/sheets`,
+          userId: auth.currentUser?.uid || 'unknown',
+          timestamp: new Date().toISOString(),
         });
-        console.log('Filtered sheets structure for team member:', structureData);
+        setSheets && setSheets({ allSheets: [], structure: [] });
+        setCards && setCards([]);
       }
+    } else {
+      // --- Only fetch cards for the given sheet (no sheets/structure, no card templates) ---
+      try {
+        // Fetch all sheets (to get the active sheet's rows)
+        const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
+        const allSheets = sheetsSnapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        const activeSheet = allSheets.find(s => s.sheetName === activeSheetName);
 
-      setSheets({ allSheets, structure: structureData });
+        // Log which sheet's cards are being fetched
+        console.log(`[FetchUserData] Fetching cards for sheet: ${activeSheetName} (id: ${activeSheet?.docId || 'N/A'})`);
 
-      // Fetch all cards
-      await fetchCollection(
-        collection(db, 'businesses', businessId, 'cards'),
-        setCards,
-        [],
-        'Error fetching cards:'
-      );
+        // Fetch all cards, then filter by activeSheet.rows
+        const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'cards'));
+        let allCards = cardsSnapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
 
-      // Fetch card templates
-      await fetchCollection(
-        collection(db, 'businesses', businessId, 'cardTemplates'),
-        setCardTemplates,
-        [],
-        'Error fetching card templates:'
-      );
-    } catch (error) {
-      console.error('Error fetching sheets:', {
-        code: error.code,
-        message: error.message,
-        businessId,
-        path: `businesses/${businessId}/sheets`,
-        userId: auth.currentUser?.uid || 'unknown',
-        timestamp: new Date().toISOString(),
-      });
-      setSheets({ allSheets: [], structure: [] });
-      setCards([]);
+        let filteredCards = [];
+        if (activeSheet && Array.isArray(activeSheet.rows)) {
+          const rowIdsSet = new Set(activeSheet.rows);
+          filteredCards = allCards.filter(card => rowIdsSet.has(card.docId));
+        }
+        setCards && setCards(filteredCards);
+
+        // Do NOT fetch card templates here (they are not sheet-specific)
+      } catch (error) {
+        setCards && setCards([]);
+      }
     }
   } else if (route === '/dashboard' || route === '/metrics') {
     // Fetch dashboards
@@ -132,14 +189,6 @@ const fetchUserData = async ({
       [],
       'Error fetching metrics:'
     );
-
-    // Fetch all cards
-    // await fetchCollection(
-    //   collection(db, 'businesses', businessId, 'cards'),
-    //   setCards,
-    //   [],
-    //   'Error fetching cards:'
-    // );
   }
 
   // Return an empty cleanup function since no listeners are set up

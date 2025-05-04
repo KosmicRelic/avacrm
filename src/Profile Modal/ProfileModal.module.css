@@ -27,23 +27,23 @@
 }
 
 @keyframes fadeIn {
-  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
-  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } /* Light mode, match Modal */
+  /* from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } */
 }
 
 @keyframes fadeInDark {
-  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
-  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } /* Dark mode, match Modal */
+  /* from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); } */
 }
 
 @keyframes fadeOut {
-  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
-  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Light mode */
+  /* from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
+  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } */
 }
 
 @keyframes fadeOutDark {
-  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
-  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } /* Dark mode */
+  /* from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px); }
+  to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } */
 }
 
 .profileContent {
@@ -52,7 +52,7 @@
   left: 100%; /* Start off-screen to the right */
   width: 400px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(10px);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -64,7 +64,7 @@
 }
 
 .profileContent.darkTheme {
-  background: rgba(44, 44, 46, 0.7);
+  background: rgba(44, 44, 46, 0.4);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -155,7 +155,7 @@
   font-size: 15px;
   font-weight: 500;
   color: #000000;
-  background: rgba(255, 255, 255, 0.6); /* Light mode button */
+  background: rgba(229, 229, 234, 0.5);
   border: none;
   border-radius: 10px;
   cursor: pointer;

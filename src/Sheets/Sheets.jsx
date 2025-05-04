@@ -27,9 +27,17 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
+
+  // Filter cards to only those in the active sheet's rows
+  const sheetRowIds = useMemo(() => activeSheet?.rows || [], [activeSheet]);
+  const sheetCards = useMemo(
+    () => cards.filter(card => sheetRowIds.includes(card.id || card.docId)),
+    [cards, sheetRowIds]
+  );
+
   const filters = activeSheet?.filters || {};
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
@@ -65,7 +73,7 @@ const Sheets = ({
   }, [sheets.structure, activeSheetName]);
 
   const filteredRows = useMemo(() => {
-    return rows.filter((row) =>
+    return sheetCards.filter((row) =>
       Object.entries(filters).every(([headerKey, filter]) => {
         const header = headers.find((h) => h.key === headerKey);
         const rowValue = row[headerKey];
@@ -122,7 +130,7 @@ const Sheets = ({
         }
       })
     );
-  }, [rows, filters, headers]);
+  }, [sheetCards, filters, headers]);
 
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];
@@ -168,9 +176,10 @@ const Sheets = ({
   const handleSheetClick = useCallback((sheetName) => {
     console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
     if (sheetName !== activeSheetName) {
+      setActiveSheetName(sheetName); // <-- update context, triggers refetch
       onSheetChange(sheetName);
     }
-  }, [activeSheetName, onSheetChange]);
+  }, [activeSheetName, onSheetChange, setActiveSheetName]);
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 

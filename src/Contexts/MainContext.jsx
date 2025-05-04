@@ -30,6 +30,7 @@ export const MainContextProvider = ({ children }) => {
   const [editMode, setEditMode] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [activeSheetName, setActiveSheetName] = useState(null);
 
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
@@ -42,6 +43,7 @@ export const MainContextProvider = ({ children }) => {
   });
   const isUpdatingCardsFromTemplate = useRef(false);
   const isBatchProcessing = useRef(false);
+  const lastFetchedSheetId = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -107,6 +109,8 @@ export const MainContextProvider = ({ children }) => {
               setCardTemplates,
               setMetrics,
               setDashboards,
+              activeSheetName: null,
+              updateSheets: true, // <-- only update sheets on initial load
             });
 
             if (currentRoute === '/sheets') hasFetched.current.sheets = true;
@@ -143,6 +147,34 @@ export const MainContextProvider = ({ children }) => {
 
     return () => unsubscribeAuth();
   }, [navigate, isSignup, location.pathname]);
+
+  // Fetch cards for the active sheet whenever it changes (but not if it's the same sheet id)
+  useEffect(() => {
+    if (
+      user &&
+      businessId &&
+      location.pathname === '/sheets' &&
+      activeSheetName
+    ) {
+      // Find the sheet id for the activeSheetName
+      const sheetObj = sheets.allSheets.find(s => s.sheetName === activeSheetName);
+      const sheetId = sheetObj?.docId;
+      if (!sheetId || lastFetchedSheetId.current === sheetId) {
+        return;
+      }
+      lastFetchedSheetId.current = sheetId;
+      fetchUserData({
+        businessId,
+        route: '/sheets',
+        setCards,
+        setCardTemplates,
+        setMetrics,
+        setDashboards,
+        activeSheetName,
+        updateSheets: false,
+      });
+    }
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets]);
 
   // Batch update effect for Firebase synchronization
   useEffect(() => {
@@ -434,6 +466,8 @@ export const MainContextProvider = ({ children }) => {
         setUserAuthChecked,
         isSignup,
         setIsSignup,
+        activeSheetName,
+        setActiveSheetName,
       }}
     >
       {children}
