@@ -8,9 +8,12 @@ import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 
-const CardsTemplate = ({ tempData, setTempData }) => {
-  const { cardTemplates, isDarkTheme } = useContext(MainContext);
+const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
+  const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
+
+  // Use the prop if provided, otherwise fallback to context
+  const businessId = businessIdProp || businessIdContext;
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
     (tempData.currentCardTemplates || cardTemplates).map((t) => {
@@ -1381,7 +1384,7 @@ CardsTemplate.propTypes = {
           PropTypes.shape({
             name: PropTypes.string,
             keys: PropTypes.arrayOf(PropTypes.string),
-          })
+          })  
         ),
         isModified: PropTypes.bool,
         action: PropTypes.oneOf(["add", "update", "remove", null]),
@@ -1389,6 +1392,7 @@ CardsTemplate.propTypes = {
     ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
+  businessId: PropTypes.string, // <-- add this line
 };
 
 export default CardsTemplate;

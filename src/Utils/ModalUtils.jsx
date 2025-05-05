@@ -10,8 +10,10 @@ import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from '../Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from '../Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from '../Modal/MetricsModal/MetricsModal';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { UpdateCardsTypeOfCardsFunction } from '../Firebase/Firebase Functions/User Functions/UpdateCardsTypeOfCardsFunction'; // Adjust path
 
-export const handleModalSave = ({
+export const handleModalSave = async ({
   modalType,
   data,
   setSheets,
@@ -30,6 +32,8 @@ export const handleModalSave = ({
   metrics,
   dashboards,
   setActiveModal,
+  cardTemplates,
+  businessId, // <-- businessId must be passed in from the calling component!
 }) => {
   switch (modalType) {
     case 'headers':
@@ -87,7 +91,6 @@ export const handleModalSave = ({
               return item;
             }),
           };
-          // Mark structure as modified if sheet name changed
           if (activeSheetName !== data.sheetName) {
             updatedSheets.structure = { ...updatedSheets.structure, isModified: true, action: 'update' };
           }
@@ -122,7 +125,7 @@ export const handleModalSave = ({
         });
         if (data.newOrder[0]?.sheetName) {
           handleSheetChange(data.newOrder[0].sheetName);
-        } else if (data.newOrder[0]?.folderName && data.newOrder[0].sheets?.length > 0) {
+        } else if (data.newOrder[0]?.folderName && data.newOrder[0]?.sheets?.length > 0) {
           handleSheetChange(data.newOrder[0].sheets[0]);
         }
       } else {
@@ -134,11 +137,56 @@ export const handleModalSave = ({
         data.onComplete();
       }
       break;
-    case 'cardsTemplate':
-      if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-        setCardTemplates([...data.currentCardTemplates]);
+      case 'cardsTemplate': {
+        if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
+          setCardTemplates([...data.currentCardTemplates]);
+      
+          if (!businessId) {
+            console.warn('Cannot update cards: businessId is missing');
+            alert('Error: Business ID is missing. Please ensure your account is properly configured.');
+            return;
+          }
+      
+          // Collect all templates where typeOfCards has changed
+          const updates = data.currentCardTemplates
+            .map((newTemplate) => {
+              const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
+              if (
+                oldTemplate &&
+                newTemplate.isModified &&
+                newTemplate.action === 'update' &&
+                oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
+                oldTemplate.typeOfCards &&
+                newTemplate.typeOfCards
+              ) {
+                return {
+                  oldTypeOfCards: oldTemplate.typeOfCards,
+                  newTypeOfCards: newTemplate.typeOfCards,
+                };
+              }
+              return null;
+            })
+            .filter((update) => update !== null);
+      
+          if (updates.length === 0) {
+            // console.log('No card template updates required');
+            return;
+          }
+      
+          try {
+            // console.log('Calling UpdateCardsTypeOfCardsFunction with:', { businessId, updates });
+            const result = await UpdateCardsTypeOfCardsFunction({ businessId, updates });
+            // console.log('UpdateCardsTypeOfCardsFunction result:', JSON.stringify(result, null, 2));
+          } catch (error) {
+            console.error('Error calling UpdateCardsTypeOfCardsFunction:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
+            alert(`Failed to update card templates. Error: ${error.message}`);
+          }
+        } else {
+          console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
+        }
+        break;
       }
-      break;
     case 'folderOperations':
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {
@@ -191,13 +239,12 @@ export const handleModalSave = ({
                 ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ];
-              // Mark affected sheets as modified
               folderSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
             }
           });
           return {
             ...prev,
-            structure: [...currentStructure], // Ensure structure is always an array
+            structure: [...currentStructure],
             allSheets: prev.allSheets.map((sheet) =>
               modifiedSheets.has(sheet.sheetName)
                 ? { ...sheet, isModified: true, action: 'update' }
@@ -219,7 +266,7 @@ export const handleModalSave = ({
             structure: [
               ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
               ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-            ], // Ensure structure is always an array
+            ],
             allSheets: prev.allSheets.map((sheet) =>
               folderSheets.includes(sheet.sheetName)
                 ? { ...sheet, isModified: true, action: 'update' }
@@ -308,7 +355,6 @@ export const handleModalClose = ({
   if (activeModal?.type === 'folderOperations') {
     if (options.fromSave || options.fromDelete) {
       const modalData = {
-        ...activeModal.data,
         tempData: options.tempData || activeModal.data.tempData || {},
       };
       handleModalSave({ modalType: 'folderOperations', data: modalData });
@@ -317,7 +363,7 @@ export const handleModalClose = ({
     setActiveModal({
       type: 'widgetSetup',
       data: {
-        widgset: options.openWidgetSetup.widget,
+        widget: options.openWidgetSetup.widget,
         updatedWidget: {
           ...options.openWidgetSetup.widget,
           title: options.openWidgetSetup.widget.title || '',
@@ -369,6 +415,7 @@ export const renderModalContent = ({
   handleSheetSave,
   handleFolderSave,
   setSheets,
+  businessId, // <-- add this to the argument list if not already present
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
@@ -437,6 +484,7 @@ export const renderModalContent = ({
           }
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
+          businessId={businessId} // <-- pass businessId as a prop
         />
       );
     case 'sheetFolder':

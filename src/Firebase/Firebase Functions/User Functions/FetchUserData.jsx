@@ -18,14 +18,14 @@ const fetchUserData = async ({
 }) => {
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
-    console.log('Fetching data for path:', path.path, 'with businessId:', businessId);
+    // console.log('Fetching data for path:', path.path, 'with businessId:', businessId);
     try {
       const snapshot = await getDocs(path);
       const data = snapshot.docs.map((doc) => ({
         docId: doc.id,
         ...doc.data(),
       }));
-      console.log('Data received for', path.path, ':', data);
+      // console.log('Data received for', path.path, ':', data);
       setState(data);
     } catch (error) {
       console.error(errorMessage, {
@@ -61,7 +61,7 @@ const fetchUserData = async ({
 
   // Reset cache only if businessId changes
   if (businessId !== currentBusinessId && fetchedSheetIds.size > 0) {
-    console.log('Resetting fetchedSheetIds cache due to businessId change:', { old: currentBusinessId, new: businessId });
+    // console.log('Resetting fetchedSheetIds cache due to businessId change:', { old: currentBusinessId, new: businessId });
     fetchedSheetIds.clear();
     currentBusinessId = businessId;
   }
@@ -70,7 +70,7 @@ const fetchUserData = async ({
   if (route === '/sheets') {
     let allSheets = [];
     if (updateSheets) {
-      console.log('Fetching sheets for businessId:', businessId);
+      // console.log('Fetching sheets for businessId:', businessId);
       try {
         // Fetch sheets
         const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
@@ -78,7 +78,7 @@ const fetchUserData = async ({
           docId: doc.id,
           ...doc.data(),
         }));
-        console.log('Sheets data received:', allSheets);
+        // console.log('Sheets data received:', allSheets);
 
         // Determine if user is a team member and get allowedSheetIds
         const allowedSheetIds = await getAllowedSheetIds();
@@ -86,7 +86,7 @@ const fetchUserData = async ({
         // Fetch sheets structure
         const structureDoc = await getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
         let structureData = structureDoc.exists() ? structureDoc.data().structure : [];
-        console.log('Sheets structure data received (raw):', structureData);
+        // console.log('Sheets structure data received (raw):', structureData);
 
         // Filter structure for team members
         if (allowedSheetIds) {
@@ -99,7 +99,7 @@ const fetchUserData = async ({
             )?.[0];
             return sheetId && allowedSheetIds.includes(sheetId);
           });
-          console.log('Filtered sheets structure for team member:', structureData);
+          // console.log('Filtered sheets structure for team member:', structureData);
         }
 
         setSheets && setSheets({ allSheets, structure: structureData });
@@ -147,12 +147,12 @@ const fetchUserData = async ({
     }
 
     // Log the received activeSheetName
-    console.log('Received activeSheetName:', activeSheetName);
+    // console.log('Received activeSheetName:', activeSheetName);
 
     // Determine which sheet to use
     let sheetNameToUse = activeSheetName;
     if (!sheetNameToUse && updateSheets) {
-      console.log('No activeSheetName provided, falling back to first sheet in structure');
+      // console.log('No activeSheetName provided, falling back to first sheet in structure');
       const structureDoc = await getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
       const structureData = structureDoc.exists() ? structureDoc.data().structure : [];
       if (structureData?.length > 0) {
@@ -166,22 +166,22 @@ const fetchUserData = async ({
 
     // If no sheetNameToUse, default to "Leads" if available
     if (!sheetNameToUse) {
-      console.log('No sheetNameToUse determined, defaulting to "Leads" if available');
+      // console.log('No sheetNameToUse determined, defaulting to "Leads" if available');
       const leadsSheet = allSheets.find((s) => s.sheetName === 'Leads');
       sheetNameToUse = leadsSheet ? 'Leads' : allSheets[0]?.sheetName;
     }
 
-    console.log('Selected sheetNameToUse:', sheetNameToUse);
+    // console.log('Selected sheetNameToUse:', sheetNameToUse);
 
     const activeSheet = allSheets.find((s) => s.sheetName === sheetNameToUse);
     if (!activeSheet) {
-      console.log(`No active sheet found for sheetName: ${sheetNameToUse}`);
+      // console.log(`No active sheet found for sheetName: ${sheetNameToUse}`);
       setCards && setCards([]);
       return () => {};
     }
 
     const sheetId = activeSheet.docId;
-    console.log('Active sheet ID:', sheetId);
+    // console.log('Active sheet ID:', sheetId);
 
     // Check if cards for this sheet have already been fetched
     if (fetchedSheetIds.has(sheetId)) {
@@ -192,7 +192,7 @@ const fetchUserData = async ({
     fetchedSheetIds.add(sheetId);
 
     // Fetch cards for the active sheet
-    console.log(`[FetchUserData] Fetching cards for sheet: ${sheetNameToUse} (id: ${sheetId})`);
+    // console.log(`[FetchUserData] Fetching cards for sheet: ${sheetNameToUse} (id: ${sheetId})`);
     try {
       const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'cards'));
       const allCards = cardsSnapshot.docs.map((doc) => ({
@@ -206,7 +206,7 @@ const fetchUserData = async ({
         const rowIdsSet = new Set(activeSheet.rows.map(String));
         filteredCards = allCards.filter((card) => rowIdsSet.has(String(card.docId)));
       }
-      console.log('Filtered cards:', filteredCards);
+      // console.log('Filtered cards:', filteredCards);
       // Merge cards for this sheet into the cards array, removing old ones for this sheet
       setCards && setCards(prevCards => {
         // Remove cards that belong to this sheet (by docId in activeSheet.rows)
@@ -243,12 +243,12 @@ const fetchUserData = async ({
   }
 
   return () => {
-    console.log('No Firestore listeners to clean up for businessId:', businessId);
+    // console.log('No Firestore listeners to clean up for businessId:', businessId);
   };
 };
 
 export const resetFetchedSheetIds = () => {
-  console.log('Resetting fetchedSheetIds cache');
+  // console.log('Resetting fetchedSheetIds cache');
   fetchedSheetIds.clear();
   currentBusinessId = null;
 };

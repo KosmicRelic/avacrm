@@ -12,9 +12,10 @@ const resend = new Resend('re_C1GAhxiY_KvM6xMG96EHQwAZnC6Cp2k5s');
 // CORS configuration
 const corsOptions = {
   origin: true, // Allow all origins, adjust for production
-  methods: ['POST'],
+  methods: ['Content-Type', 'POST'],
   credentials: true,
 };
+const corsMiddleware = cors(corsOptions);
 
 exports.businessSignUp = functions.https.onCall(async (data, context) => {
   try {
@@ -1341,4 +1342,126 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
 
     throw new functions.https.HttpsError(errorCode, errorMessage);
   }
+});
+
+exports.updateCardsTypeOfCards = functions.https.onRequest((req, res) => {
+  corsMiddleware(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      functions.logger.info('Handling OPTIONS request for CORS preflight');
+      return res.status(204).send('');
+    }
+
+    try {
+      functions.logger.info('updateCardsTypeOfCards called', {
+        method: req.method,
+        headers: req.headers,
+        rawBody: req.body,
+      });
+
+      if (req.method !== 'POST') {
+        functions.logger.error('Invalid method:', { method: req.method });
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+
+      const authHeader = req.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        functions.logger.error('Missing or invalid Authorization header');
+        return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+      }
+
+      const idToken = authHeader.split('Bearer ')[1];
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+        functions.logger.info('Authenticated user:', { uid: decodedToken.uid });
+      } catch (error) {
+        functions.logger.error('Token verification failed:', { error: error.message });
+        return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+      }
+
+      let body;
+      if (req.get('Content-Type') === 'application/json') {
+        try {
+          body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        } catch (error) {
+          functions.logger.error('Failed to parse JSON body', { error: error.message });
+          return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+      } else {
+        functions.logger.error('Invalid Content-Type', { contentType: req.get('Content-Type') });
+        return res.status(400).json({ error: 'Content-Type must be application/json' });
+      }
+
+      const { businessId, updates } = body || {};
+
+      functions.logger.info('Parsed body', { businessId, updates });
+
+      if (!businessId || !updates || !Array.isArray(updates)) {
+        functions.logger.error('Missing required fields', { businessId, updates });
+        return res.status(400).json({
+          error: `Missing required fields: ${!businessId ? 'businessId ' : ''}${!updates ? 'updates ' : ''}${
+            updates && !Array.isArray(updates) ? 'updates must be an array' : ''
+          }`,
+        });
+      }
+
+      const businessDoc = await admin.firestore().collection('businesses').doc(businessId).get();
+      if (!businessDoc.exists) {
+        functions.logger.error('Business not found:', { businessId });
+        return res.status(404).json({ error: 'Business not found' });
+      }
+
+      const batch = admin.firestore().batch();
+      let totalUpdatedCount = 0;
+      const messages = [];
+
+      for (const { oldTypeOfCards, newTypeOfCards } of updates) {
+        if (!oldTypeOfCards || !newTypeOfCards) {
+          functions.logger.warn('Skipping update: Missing fields', { oldTypeOfCards, newTypeOfCards });
+          messages.push(`Skipping update: Missing oldTypeOfCards or newTypeOfCards`);
+          continue;
+        }
+
+        // Query cards in the correct subcollection
+        functions.logger.info('Querying cards:', { businessId, oldTypeOfCards });
+        const cardsRef = admin
+          .firestore()
+          .collection('businesses')
+          .doc(businessId)
+          .collection('cards')
+          .where('typeOfCards', '==', oldTypeOfCards);
+        const snapshot = await cardsRef.get();
+
+        if (snapshot.empty) {
+          functions.logger.info('No cards found:', { oldTypeOfCards });
+          messages.push(`No cards found for typeOfCards: ${oldTypeOfCards}`);
+          continue;
+        }
+
+        snapshot.forEach((doc) => {
+          functions.logger.info('Updating card:', { cardId: doc.id, newTypeOfCards });
+          batch.update(doc.ref, { typeOfCards: newTypeOfCards });
+        });
+
+        totalUpdatedCount += snapshot.size;
+        messages.push(`Updated ${snapshot.size} cards from ${oldTypeOfCards} to ${newTypeOfCards}`);
+      }
+
+      functions.logger.info('Committing batch with updates:', { totalUpdatedCount });
+      await batch.commit();
+
+      functions.logger.info('Batch committed successfully:', { totalUpdatedCount });
+      return res.status(200).json({
+        success: true,
+        message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
+        updatedCount: totalUpdatedCount,
+      });
+    } catch (error) {
+      functions.logger.error('updateCardsTypeOfCards failed', {
+        error: error.message,
+        stack: error.stack,
+      });
+      return res.status(500).json({ error: `Failed to update cards: ${error.message}` });
+    }
+  });
 });

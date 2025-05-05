@@ -311,35 +311,6 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        const templateChanges = modifiedCardTemplates.filter(
-          (template) => template.isModified && (template.action === 'add' || template.action === 'update')
-        );
-        const typeOfCardsChanges = templateChanges
-          .filter((current) => {
-            const prev = prevStates.current.cardTemplates.find((t) => t.docId === current.docId);
-            return prev && prev.typeOfCards !== current.typeOfCards;
-          })
-          .map((current) => ({
-            docId: current.docId,
-            oldTypeOfCards: prevStates.current.cardTemplates.find((t) => t.docId === current.docId)?.typeOfCards,
-            newTypeOfCards: current.typeOfCards,
-          }));
-
-        let updatedCards = [...cards];
-        if (typeOfCardsChanges.length > 0) {
-          isUpdatingCardsFromTemplate.current = true;
-          updatedCards = cards.map((card) => {
-            const change = typeOfCardsChanges.find((c) => c.oldTypeOfCards === card.typeOfCards);
-            if (change) {
-              const cardDocRef = doc(stateConfig.cards.collectionPath(), card.docId);
-              batch.set(cardDocRef, { typeOfCards: change.newTypeOfCards }, { merge: true });
-              hasChanges = true;
-              return { ...card, typeOfCards: change.newTypeOfCards, isModified: true, action: 'update' };
-            }
-            return card;
-          });
-        }
-
         const collectionsToCheck = ['sheets', 'metrics'];
         for (const stateKey of collectionsToCheck) {
           const config = stateConfig[stateKey];
@@ -416,9 +387,6 @@ export const MainContextProvider = ({ children }) => {
                 return template;
               })
           );
-          if (typeOfCardsChanges.length > 0) {
-            setCards(updatedCards);
-          }
         }
       } catch (error) {
         console.error('Error processing Firestore updates:', error);
@@ -466,6 +434,7 @@ export const MainContextProvider = ({ children }) => {
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
+
   return (
     <MainContext.Provider
       value={{
@@ -500,6 +469,7 @@ export const MainContextProvider = ({ children }) => {
         setActiveSheetName,
         sheetCardsFetched,
         setSheetCardsFetched,
+        businessId,
       }}
     >
       {children}
