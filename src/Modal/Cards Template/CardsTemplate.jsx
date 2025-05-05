@@ -1204,6 +1204,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   value={newHeaderType}
                   onChange={(e) => setNewHeaderType(e.target.value)}
                   className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  disabled
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
