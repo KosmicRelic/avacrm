@@ -11,7 +11,8 @@ import MetricsCategories from '../Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from '../Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from '../Modal/MetricsModal/MetricsModal';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { UpdateCardsTypeOfCardsFunction } from '../Firebase/Firebase Functions/User Functions/UpdateCardsTypeOfCardsFunction'; // Adjust path
+import { UpdateCardsTypeOfCardsFunction } from '../Firebase/Firebase Functions/User Functions/UpdateCardsTypeOfCardsFunction';
+import { UpdateCardsDeleteHeadersFunction } from '../Firebase/Firebase Functions/User Functions/UpdateCardsDeleteHeadersFunction';
 
 export const handleModalSave = async ({
   modalType,
@@ -33,7 +34,7 @@ export const handleModalSave = async ({
   dashboards,
   setActiveModal,
   cardTemplates,
-  businessId, // <-- businessId must be passed in from the calling component!
+  businessId,
 }) => {
   switch (modalType) {
     case 'headers':
@@ -137,56 +138,81 @@ export const handleModalSave = async ({
         data.onComplete();
       }
       break;
-      case 'cardsTemplate': {
-        if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-          setCardTemplates([...data.currentCardTemplates]);
-      
-          if (!businessId) {
-            console.warn('Cannot update cards: businessId is missing');
-            alert('Error: Business ID is missing. Please ensure your account is properly configured.');
-            return;
-          }
-      
-          // Collect all templates where typeOfCards has changed
-          const updates = data.currentCardTemplates
-            .map((newTemplate) => {
-              const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
-              if (
-                oldTemplate &&
-                newTemplate.isModified &&
-                newTemplate.action === 'update' &&
-                oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
-                oldTemplate.typeOfCards &&
-                newTemplate.typeOfCards
-              ) {
-                return {
-                  oldTypeOfCards: oldTemplate.typeOfCards,
-                  newTypeOfCards: newTemplate.typeOfCards,
-                };
-              }
-              return null;
-            })
-            .filter((update) => update !== null);
-      
-          if (updates.length === 0) {
-            // console.log('No card template updates required');
-            return;
-          }
-      
-          try {
-            // console.log('Calling UpdateCardsTypeOfCardsFunction with:', { businessId, updates });
-            const result = await UpdateCardsTypeOfCardsFunction({ businessId, updates });
-            // console.log('UpdateCardsTypeOfCardsFunction result:', JSON.stringify(result, null, 2));
-          } catch (error) {
-            console.error('Error calling UpdateCardsTypeOfCardsFunction:', error);
-            console.error('Error details:', JSON.stringify(error, null, 2));
-            alert(`Failed to update card templates. Error: ${error.message}`);
-          }
-        } else {
-          console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
+    case 'cardsTemplate': {
+      if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
+        if (!businessId) {
+          console.warn('Cannot update cards: businessId is missing');
+          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
+          return;
         }
-        break;
+
+        // Handle typeOfCards updates
+        const typeOfCardsUpdates = data.currentCardTemplates
+          .map((newTemplate) => {
+            const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
+            if (
+              oldTemplate &&
+              newTemplate.isModified &&
+              newTemplate.action === 'update' &&
+              oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
+              oldTemplate.typeOfCards &&
+              newTemplate.typeOfCards
+            ) {
+              return {
+                oldTypeOfCards: oldTemplate.typeOfCards,
+                newTypeOfCards: newTemplate.typeOfCards,
+              };
+            }
+            return null;
+          })
+          .filter((update) => update !== null);
+
+        // Only send deleted header keys for templates where headers were deleted
+        const deletedHeadersUpdates = data.currentCardTemplates
+          .map((newTemplate) => {
+            const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
+            if (!oldTemplate) return null;
+            const oldKeys = oldTemplate.headers.map((h) => h.key);
+            const newKeys = newTemplate.headers.map((h) => h.key);
+            const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
+            if (deletedKeys.length > 0) {
+              return {
+                typeOfCards: oldTemplate.typeOfCards,
+                deletedKeys,
+              };
+            }
+            return null;
+          })
+          .filter((update) => update !== null && update.deletedKeys.length > 0);
+
+        try {
+          // Update typeOfCards if needed
+          if (typeOfCardsUpdates.length > 0) {
+            console.log('Calling UpdateCardsTypeOfCardsFunction with:', { businessId, updates: typeOfCardsUpdates });
+            const result = await UpdateCardsTypeOfCardsFunction({ businessId, updates: typeOfCardsUpdates });
+            console.log('UpdateCardsTypeOfCardsFunction result:', JSON.stringify(result, null, 2));
+          }
+
+          // Only send deleted header keys for templates where headers were deleted
+          if (deletedHeadersUpdates.length > 0) {
+            console.log('Calling UpdateCardsDeleteHeadersFunction with:', { businessId, updates: deletedHeadersUpdates });
+            const result = await UpdateCardsDeleteHeadersFunction({ businessId, updates: deletedHeadersUpdates });
+            console.log('UpdateCardsDeleteHeadersFunction result:', JSON.stringify(result, null, 2));
+          }
+
+          // Always update cardTemplates after backend calls
+          setCardTemplates([...data.currentCardTemplates]);
+        } catch (error) {
+          console.error('Error updating cards:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          alert(`Failed to update card templates. Error: ${error.message}`);
+          return;
+        }
+      } else {
+        console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
       }
+      break;
+    }
     case 'folderOperations':
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {

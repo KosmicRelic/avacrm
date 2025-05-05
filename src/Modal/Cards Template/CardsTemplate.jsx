@@ -7,32 +7,28 @@ import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaInfoCircle } from "r
 import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
+import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
-  // Use the prop if provided, otherwise fallback to context
   const businessId = businessIdProp || businessIdContext;
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates).map((t) => {
-      const headers = t.headers.map((h) => ({
+    (tempData.currentCardTemplates || cardTemplates).map((t) => ({
+      ...t,
+      headers: t.headers.map((h) => ({
         ...h,
         isUsed: h.key === "id" || h.key === "typeOfCards" ? true : h.isUsed ?? false,
-      }));
-      const sections = t.sections.map((s) => ({
+      })),
+      sections: t.sections.map((s) => ({
         ...s,
         keys: s.keys.includes("id") || s.keys.includes("typeOfCards") ? s.keys : [...s.keys],
-      }));
-      return {
-        ...t,
-        headers: headers || [],
-        sections,
-        isModified: t.isModified || false, // Preserve existing isModified if present
-        action: t.action || null, // Preserve existing action if present
-      };
-    })
+      })),
+      isModified: t.isModified || false,
+      action: t.action || null,
+    }))
   );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
@@ -50,10 +46,29 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
   const [navigationDirection, setNavigationDirection] = useState(null);
+  const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const keyRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
   const prevStepRef = useRef(currentStep);
+  const lastTempDataRef = useRef({ currentCardTemplates, deletedHeaderKeys });
+
+  // Memoize currentCardTemplates to prevent unnecessary re-renders
+  useEffect(() => {
+    prevCardTemplatesRef.current = currentCardTemplates;
+  }, [currentCardTemplates]);
+
+  // Update tempData only when necessary (prevent infinite loop)
+  useEffect(() => {
+    if (
+      !isEqual(lastTempDataRef.current.currentCardTemplates, currentCardTemplates) ||
+      !isEqual(lastTempDataRef.current.deletedHeaderKeys, deletedHeaderKeys)
+    ) {
+      setTempData({ currentCardTemplates, deletedHeaderKeys });
+      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCardTemplates, deletedHeaderKeys, setTempData]);
 
   // Reset header form
   const resetHeaderForm = useCallback(() => {
@@ -87,15 +102,79 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     setNavigationDirection("backward");
   }, [currentStep, goBack, editMode, resetHeaderForm]);
 
-  // Sync currentCardTemplates to tempData
-  useEffect(() => {
-    const templatesChanged = JSON.stringify(currentCardTemplates) !== JSON.stringify(prevCardTemplatesRef.current);
-    if (templatesChanged) {
-      setTempData({ currentCardTemplates });
-      prevCardTemplatesRef.current = currentCardTemplates;
-    }
-  }, [currentCardTemplates, setTempData]);
+  const deleteHeader = useCallback(
+    (index) => {
+      if (selectedTemplateIndex === null) return;
+      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
+      if (header.key === "id" || header.key === "typeOfCards") {
+        alert("The 'ID' or 'Type of Cards' field cannot be deleted.");
+        return;
+      }
+      const headerName = header.name;
+      if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
+        setDeletedHeaderKeys((prev) => [...new Set([...prev, header.key])]); // Avoid duplicates
+        setCurrentCardTemplates((prev) => {
+          const newTemplates = [...prev];
+          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+          const deletedKey = currentTemplate.headers[index].key;
+          currentTemplate.headers = currentTemplate.headers.filter((_, i) => i !== index);
+          currentTemplate.sections = currentTemplate.sections.map((section) => ({
+            ...section,
+            keys: section.keys.filter((k) => k !== deletedKey),
+          }));
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
+          return newTemplates;
+        });
+        setActiveHeaderIndex(null);
+        setNavigationDirection("backward");
+        goBack();
+      }
+    },
+    [selectedTemplateIndex, goBack]
+  );
 
+  const handleDeleteSection = useCallback(
+    (index) => {
+      if (selectedTemplateIndex === null) return;
+      const section = currentCardTemplates[selectedTemplateIndex].sections[index];
+      if (section.name === "Card Data") {
+        alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
+        return;
+      }
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "id" || key === "typeOfCards");
+      if (sectionContainsProtectedKey) {
+        alert("This section cannot be deleted because it contains the 'ID' or 'Type of Cards' field.");
+        return;
+      }
+      if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
+        setDeletedHeaderKeys((prev) => [...new Set([...prev, ...section.keys])]); // Avoid duplicates
+        setCurrentCardTemplates((prev) => {
+          const newTemplates = [...prev];
+          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+          const deletedSection = currentTemplate.sections[index];
+          currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
+          currentTemplate.headers = currentTemplate.headers.map((h) =>
+            h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
+          );
+          newTemplates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
+          return newTemplates;
+        });
+        setNavigationDirection("backward");
+        goBack();
+      }
+    },
+    [selectedTemplateIndex, goBack]
+  );
+
+  // ... (Rest of the component remains unchanged)
   // Validate header name
   const validateHeader = useCallback(
     (name, existingHeaders, isUpdate = false, index = null) => {
@@ -181,30 +260,30 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         alert("Please select a section for the field.");
         return;
       }
-
+  
       const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
       const isProtected = currentHeader.key === "id" || currentHeader.key === "typeOfCards";
-
+  
       if (isProtected && newHeaderSection !== "Card Data") {
         alert("The 'ID' and 'Type of Cards' fields must remain in the 'Card Data' section.");
         return;
       }
-
+  
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
         const existingHeader = currentTemplate.headers[index];
         const oldSection = existingHeader.section;
-
+  
         currentTemplate.headers[index] = {
           ...existingHeader,
           name: newHeaderName.trim(),
           type: newHeaderType,
           section: newHeaderSection,
           isUsed: isProtected ? true : true,
-          ...(newHeaderType === "dropdown" ? { options: [...newHeaderOptions] } : { options: undefined }),
+          ...(newHeaderType === "dropdown" ? { options: [...newHeaderOptions] } : {}), // Omit options if not dropdown
         };
-
+  
         if (oldSection !== newHeaderSection) {
           currentTemplate.sections = currentTemplate.sections.map((section) => {
             if (section.name === oldSection) {
@@ -216,7 +295,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             return section;
           });
         }
-
+  
         newTemplates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
@@ -230,41 +309,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       goBack();
     },
     [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack]
-  );
-
-  // Delete header
-  const deleteHeader = useCallback(
-    (index) => {
-      if (selectedTemplateIndex === null) return;
-      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
-      if (header.key === "id" || header.key === "typeOfCards") {
-        alert("The 'ID' or 'Type of Cards' field cannot be deleted.");
-        return;
-      }
-      const headerName = header.name;
-      if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-          const deletedKey = currentTemplate.headers[index].key;
-          currentTemplate.headers = currentTemplate.headers.filter((_, i) => i !== index);
-          currentTemplate.sections = currentTemplate.sections.map((section) => ({
-            ...section,
-            keys: section.keys.filter((k) => k !== deletedKey),
-          }));
-          newTemplates[selectedTemplateIndex] = {
-            ...currentTemplate,
-            isModified: true,
-            action: currentTemplate.action || "update",
-          };
-          return newTemplates;
-        });
-        setActiveHeaderIndex(null);
-        setNavigationDirection("backward");
-        goBack();
-      }
-    },
-    [selectedTemplateIndex, goBack]
   );
 
   // Save header (add or update)
@@ -581,45 +625,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     [selectedTemplateIndex]
   );
 
-  // Delete section
-  const handleDeleteSection = useCallback(
-    (index) => {
-      if (selectedTemplateIndex === null) return;
-      const section = currentCardTemplates[selectedTemplateIndex].sections[index];
-      
-      if (section.name === "Card Data") {
-        alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
-        return;
-      }
-
-      const sectionContainsProtectedKey = section.keys.some((key) => key === "id" || key === "typeOfCards");
-      if (sectionContainsProtectedKey) {
-        alert("This section cannot be deleted because it contains the 'ID' or 'Type of Cards' field.");
-        return;
-      }
-      if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-          const deletedSection = currentTemplate.sections[index];
-          currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
-          currentTemplate.headers = currentTemplate.headers.map((h) =>
-            h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
-          );
-          newTemplates[selectedTemplateIndex] = {
-            ...currentTemplate,
-            isModified: true,
-            action: currentTemplate.action || "update",
-          };
-          return newTemplates;
-        });
-        setNavigationDirection("backward");
-        goBack();
-      }
-    },
-    [selectedTemplateIndex, goBack]
-  );
-
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
@@ -705,7 +710,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          return newTemplates;
         });
         setTimeout(() => setDraggedIndex(newIndex), 0);
       }
@@ -859,7 +863,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          return newTemplates;
         });
       }
     },
@@ -1072,6 +1075,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       type: "text",
                     };
                     const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
+                    const isProtected = header.key === "id" || header.key === "typeOfCards";
                     return (
                       <div
                         ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
@@ -1079,7 +1083,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         className={`${styles.keyItem} ${
                           draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
                         } ${isDarkTheme ? styles.darkTheme : ""}`}
-                        draggable={!(key === "id" || key === "typeOfCards")}
+                        draggable={!isProtected}
                         onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
                         onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
                         onDragEnd={() => !editMode && handleDragEnd()}
@@ -1088,7 +1092,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         onTouchEnd={() => !editMode && handleTouchEnd()}
                         onClick={() => !editMode && toggleKeySelection(currentSectionIndex, header.key)}
                       >
-                        {editMode && header.key !== "id" && header.key !== "typeOfCards" && (
+                        {editMode && !isProtected && (
                           <button
                             className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                             onClick={(e) => {
@@ -1115,17 +1119,20 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         </div>
                         {!editMode && (
                           <div className={styles.headerActions}>
-                            <button
-                              className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                headerIndex !== -1 && handleEditHeader(headerIndex);
-                              }}
-                            >
-                              <FaInfoCircle />
-                            </button>
+                            {/* Hide info icon for id and typeOfCards */}
+                            {!isProtected && (
+                              <button
+                                className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  headerIndex !== -1 && handleEditHeader(headerIndex);
+                                }}
+                              >
+                                <FaInfoCircle />
+                              </button>
+                            )}
                             <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              {header.key === "id" || header.key === "typeOfCards" ? "" : "☰"}
+                              {isProtected ? "" : "☰"}
                             </span>
                           </div>
                         )}
@@ -1192,6 +1199,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                 className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Prevent focus/edit for id and typeOfCards */}
                 <input
                   type="text"
                   value={newHeaderName}
@@ -1199,6 +1207,16 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   onKeyPress={handleKeyPress}
                   placeholder="Field Name"
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  disabled={
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards"
+                  }
+                  tabIndex={
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards"
+                      ? -1
+                      : 0
+                  }
                 />
                 <select
                   value={newHeaderType}
@@ -1393,7 +1411,7 @@ CardsTemplate.propTypes = {
     ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  businessId: PropTypes.string, // <-- add this line
+  businessId: PropTypes.string,
 };
 
 export default CardsTemplate;

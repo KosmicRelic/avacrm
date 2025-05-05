@@ -1,12 +1,12 @@
 import { getAuth } from 'firebase/auth';
-import { app } from '../../../firebase'; // Adjust path to your Firebase config
+import { app } from '../../../firebase';
 
-export const UpdateCardsTypeOfCardsFunction = async ({ businessId, updates }) => {
+export const UpdateCardsRenameHeaderFunction = async ({ businessId, updates }) => {
   try {
-    // console.log('Sending to updateCardsTypeOfCards:', {
-    //   businessId,
-    //   updates,
-    // });
+    console.log('Sending to updateCardsRenameHeader:', {
+      businessId,
+      updates,
+    });
 
     const auth = getAuth(app);
     const token = await auth.currentUser?.getIdToken();
@@ -16,7 +16,7 @@ export const UpdateCardsTypeOfCardsFunction = async ({ businessId, updates }) =>
     }
 
     const response = await fetch(
-      'https://updatecardsdeleteheaders-lsdm7txq6q-uc.a.run.app',
+      'https://updatecardsrenameheader-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL
       {
         method: 'POST',
         headers: {
@@ -28,24 +28,24 @@ export const UpdateCardsTypeOfCardsFunction = async ({ businessId, updates }) =>
     );
 
     if (!response.ok) {
-      let errorMessage = 'Failed to update cards';
+      let errorMessage = 'Failed to rename card fields';
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
       } catch (jsonError) {
-        functions.logger.error('Failed to parse error response:', jsonError);
+        console.error('Failed to parse error response:', jsonError);
       }
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
-    // console.log('updateCardsTypeOfCards response:', result);
+    console.log('updateCardsRenameHeader response:', result);
     return result;
   } catch (error) {
-    console.error('UpdateCardsTypeOfCards error:', {
+    console.error('UpdateCardsRenameHeader error:', {
       message: error.message,
       details: error.details,
     });
-    throw new Error(error.message || 'Failed to update cards');
+    throw new Error(error.message || 'Failed to rename card fields');
   }
 };
