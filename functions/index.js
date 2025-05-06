@@ -11,9 +11,10 @@ const auth = admin.auth();
 const resend = new Resend('re_C1GAhxiY_KvM6xMG96EHQwAZnC6Cp2k5s');
 // CORS configuration
 const corsOptions = {
-  origin: true, // Allow all origins, adjust for production
-  methods: ['Content-Type', 'POST'],
-  credentials: true,
+  origin: true, // Change to your domain for production, e.g. 'https://www.apx.gr'
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
 };
 const corsMiddleware = cors(corsOptions);
 
@@ -1547,4 +1548,92 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       return res.status(500).json({ error: `Failed to update templates and cards: ${error.message}` });
     }
   });
+});
+
+exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
+  try {
+    // Accept data in the same structure as teamMemberSignUp
+    const {
+      teamMemberUid,
+      businessId,
+      callerUid, // still needed for permission check
+      // Accept but ignore these for deletion
+      email,
+      phone,
+      invitationCode,
+      name,
+      surname,
+    } = data.data || data || {};
+
+    if (!callerUid || !businessId || !teamMemberUid) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        `Missing required fields: ${!callerUid ? 'callerUid ' : ''}${!businessId ? 'businessId ' : ''}${!teamMemberUid ? 'teamMemberUid' : ''}`
+      );
+    }
+
+    if (teamMemberUid === callerUid) {
+      throw new functions.https.HttpsError('invalid-argument', 'Cannot delete yourself');
+    }
+
+    // Verify caller exists in Firebase Authentication
+    try {
+      await admin.auth().getUser(callerUid);
+    } catch (authError) {
+      if (authError.code === 'auth/user-not-found') {
+        throw new functions.https.HttpsError('not-found', 'Caller does not exist');
+      }
+      throw new functions.https.HttpsError('internal', 'Failed to verify caller');
+    }
+
+    // Verify business exists and caller is the owner
+    const businessDocRef = admin.firestore().collection('businesses').doc(businessId);
+    const businessDoc = await businessDocRef.get();
+    if (!businessDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Business not found');
+    }
+    const businessData = businessDoc.data();
+    if (businessData.businessInfo.ownerUid !== callerUid) {
+      throw new functions.https.HttpsError('permission-denied', 'Only the business owner can delete team members');
+    }
+
+    // Verify team member exists
+    const teamMemberDocRef = businessDocRef.collection('teamMembers').doc(teamMemberUid);
+    const teamMemberDoc = await teamMemberDocRef.get();
+    if (!teamMemberDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Team member not found');
+    }
+
+    // Perform deletion using a batch
+    const batch = admin.firestore().batch();
+    batch.delete(teamMemberDocRef);
+
+    // Delete user document if it exists
+    const userDocRef = admin.firestore().collection('users').doc(teamMemberUid);
+    const userDoc = await userDocRef.get();
+    if (userDoc.exists) {
+      batch.delete(userDocRef);
+    }
+
+    // Commit Firestore batch
+    await batch.commit();
+
+    // Delete Firebase Authentication user
+    try {
+      await admin.auth().deleteUser(teamMemberUid);
+    } catch (authError) {
+      if (authError.code !== 'auth/user-not-found') {
+        throw authError;
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Team member deleted successfully',
+    };
+  } catch (error) {
+    let statusCode = error.code || 'internal';
+    let errorMessage = error.message || 'Failed to delete team member';
+    throw new functions.https.HttpsError(statusCode, errorMessage);
+  }
 });

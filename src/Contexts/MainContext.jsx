@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc } from 'firebase/firestore';
 import fetchUserData, { resetFetchedSheetIds } from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 export const MainContext = createContext();
@@ -33,7 +33,7 @@ export const MainContextProvider = ({ children }) => {
   const [activeSheetName, setActiveSheetName] = useState(null);
   const [sheetCardsFetched, setSheetCardsFetched] = useState({});
   const [pendingInvitations, setPendingInvitations] = useState(0);
-  const [newTeamMembers, setNewTeamMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [bannerQueue, setBannerQueue] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
@@ -162,9 +162,9 @@ export const MainContextProvider = ({ children }) => {
         setCardTemplates([]);
         setMetrics([]);
         setDashboards([]);
+        setTeamMembers([]);
         setActiveSheetName(null);
         setPendingInvitations(0);
-        setNewTeamMembers([]);
         setBannerQueue([]);
         processedTeamMembers.current.clear();
         displayedMessages.current.clear();
@@ -216,34 +216,36 @@ export const MainContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user || !businessId) {
-      setNewTeamMembers([]);
+      setTeamMembers([]);
       setBannerQueue([]);
       return;
     }
-  
+
     const setupListener = () => {
       const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
       const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
+        const members = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+        setTeamMembers(members);
+        console.log('Team members updated:', members);
+
         for (const change of snapshot.docChanges()) {
           if (change.type === 'added') {
             const newMember = { uid: change.doc.id, ...change.doc.data() };
             console.log('New team member detected:', newMember);
-  
+
             if (!newMember.displayJoinedMessage) {
               console.log('Skipping team member without displayJoinedMessage:', newMember.uid);
-              processedTeamMembers.current.add(newMember.uid);
               continue;
             }
-  
+
             if (processedTeamMembers.current.has(newMember.uid)) {
               console.log('Skipping already processed team member:', newMember.uid);
               continue;
             }
             processedTeamMembers.current.add(newMember.uid);
-  
-            // Use name and surname for the banner message
+
             addBannerMessage(`${newMember.name} ${newMember.surname} has joined the team!`, 'success');
-  
+
             try {
               const teamMemberDocRef = doc(db, 'businesses', businessId, 'teamMembers', newMember.uid);
               await updateDoc(teamMemberDocRef, {
@@ -262,10 +264,10 @@ export const MainContextProvider = ({ children }) => {
           setTimeout(setupListener, 5000);
         }
       });
-  
+
       return unsubscribe;
     };
-  
+
     const unsubscribe = setupListener();
     return () => unsubscribe();
   }, [user, businessId]);
@@ -309,7 +311,6 @@ export const MainContextProvider = ({ children }) => {
     if (location.pathname.startsWith('/sheets/')) {
       const sheetName = location.pathname.split('/sheets/')[1];
       if (sheetName && sheetName !== activeSheetName) {
-        console.log('Setting activeSheetName from URL:', decodeURIComponent(sheetName));
         setActiveSheetName(decodeURIComponent(sheetName));
       }
     }
@@ -571,8 +572,8 @@ export const MainContextProvider = ({ children }) => {
         setSheetCardsFetched,
         businessId,
         pendingInvitations,
-        newTeamMembers,
-        setNewTeamMembers,
+        teamMembers,
+        setTeamMembers,
         bannerQueue,
         setBannerQueue,
         addBannerMessage,

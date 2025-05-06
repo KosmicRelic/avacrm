@@ -1,25 +1,30 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { MainContext } from '../Contexts/MainContext';
-import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
-import { Navigate } from 'react-router-dom';
 import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash } from 'react-icons/fa';
+import { getAuth } from 'firebase/auth';
+import { DeleteTeamMemberFunction } from '../Firebase/Firebase Functions/User Functions/DeleteTeamMemberFunction';
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { user, isDarkTheme, addBannerMessage } = useContext(MainContext);
+  const {
+    user,
+    isDarkTheme,
+    addBannerMessage,
+    businessId,
+    teamMembers,
+    sheets,
+    dashboards,
+    cardTemplates,
+  } = useContext(MainContext);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessages, setErrorMessages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
-  const [availableSheets, setAvailableSheets] = useState([]);
-  const [availableDashboards, setAvailableDashboards] = useState([]);
-  const [availableCardTemplates, setAvailableCardTemplates] = useState([]);
   const [selectedTeamMemberUids, setSelectedTeamMemberUids] = useState([]);
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedDashboards, setSelectedDashboards] = useState([]);
@@ -30,6 +35,20 @@ export default function Settings() {
   const [animationDirection, setAnimationDirection] = useState('enter');
   const [animationType, setAnimationType] = useState('slide');
 
+  // Map MainContext data to expected format: { id, name }
+  const sheetItems = sheets.allSheets.map(sheet => ({
+    id: sheet.docId,
+    name: sheet.sheetName,
+  }));
+  const dashboardItems = dashboards.map(dashboard => ({
+    id: dashboard.docId,
+    name: dashboard.name || `Dashboard ${dashboard.docId}`,
+  }));
+  const cardTemplateItems = cardTemplates.map(template => ({
+    id: template.docId,
+    name: template.name || `Template ${template.docId}`,
+  }));
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -37,105 +56,6 @@ export default function Settings() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Fetch team members, sheets, dashboards, and card templates on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log('fetchData: User:', user ? { uid: user.uid, email: user.email } : 'No user');
-      if (!user || !user.uid) {
-        setErrorMessages([t('settings.noAuthenticatedUser', { defaultValue: 'No authenticated user found' })]);
-        return;
-      }
-
-      const errors = [];
-
-      // Fetch team members
-      try {
-        const teamMembersRef = collection(db, 'businesses', user.uid, 'teamMembers');
-        const teamMembersSnap = await getDocs(teamMembersRef);
-        const teamMembersData = teamMembersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-        setTeamMembers(teamMembersData);
-        console.log('Team Members Fetched:', teamMembersData);
-      } catch (err) {
-        console.error('Error fetching teamMembers:', err);
-        errors.push(
-          t('settings.errorFetchingData', {
-            message: `teamMembers: ${err.message || 'Permission denied'}`,
-            defaultValue: 'Failed to load team members or resources: {message}',
-          })
-        );
-        setTeamMembers([]);
-      }
-
-      // Fetch sheets
-      try {
-        const sheetsRef = collection(db, 'businesses', user.uid, 'sheets');
-        const sheetsSnap = await getDocs(sheetsRef);
-        setAvailableSheets(
-          sheetsSnap.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().sheetName || `Sheet ${doc.id}`,
-          }))
-        );
-      } catch (err) {
-        console.error('Error fetching sheets:', err);
-        errors.push(
-          t('settings.errorFetchingData', {
-            message: `sheets: ${err.message || 'Permission denied'}`,
-            defaultValue: 'Failed to load team members or resources: {message}',
-          })
-        );
-        setAvailableSheets([]);
-      }
-
-      // Fetch dashboards
-      try {
-        const dashboardsRef = collection(db, 'businesses', user.uid, 'dashboards');
-        const dashboardsSnap = await getDocs(dashboardsRef);
-        setAvailableDashboards(
-          dashboardsSnap.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().name || `Dashboard ${doc.id}`,
-          }))
-        );
-      } catch (err) {
-        console.error('Error fetching dashboards:', err);
-        errors.push(
-          t('settings.errorFetchingData', {
-            message: `dashboards: ${err.message || 'Permission denied'}`,
-            defaultValue: 'Failed to load team members or resources: {message}',
-          })
-        );
-        setAvailableDashboards([]);
-      }
-
-      // Fetch card templates
-      try {
-        const cardTemplatesRef = collection(db, 'businesses', user.uid, 'cardTemplates');
-        const cardTemplatesSnap = await getDocs(cardTemplatesRef);
-        setAvailableCardTemplates(
-          cardTemplatesSnap.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().name || `Template ${doc.id}`,
-          }))
-        );
-      } catch (err) {
-        console.error('Error fetching cardTemplates:', err);
-        errors.push(
-          t('settings.errorFetchingData', {
-            message: `cardTemplates: ${err.message || 'Permission denied'}`,
-            defaultValue: 'Failed to load team members or resources: {message}',
-          })
-        );
-        setAvailableCardTemplates([]);
-      }
-
-      if (errors.length > 0) {
-        setErrorMessages(errors);
-      }
-    };
-    fetchData();
-  }, [user, t]);
 
   // Fetch pending invitations only when viewing invitations
   useEffect(() => {
@@ -156,13 +76,13 @@ export default function Settings() {
         const invitationsSnap = await getDocs(invitationsQuery);
         const invitationsData = invitationsSnap.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
         console.log('Invitations Fetched:', invitationsData.map(inv => ({
           id: inv.id,
           email: inv.email,
           invitedBy: inv.invitedBy,
-          status: inv.status
+          status: inv.status,
         })));
         setPendingInvitations(invitationsData);
       } catch (err) {
@@ -170,8 +90,8 @@ export default function Settings() {
         setErrorMessages([
           t('settings.errorFetchingData', {
             message: `invitations: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
-            defaultValue: 'Failed to load team members or resources: {message}',
-          })
+            defaultValue: 'Failed to load resources: {message}',
+          }),
         ]);
         setPendingInvitations([]);
       }
@@ -184,11 +104,11 @@ export default function Settings() {
   useEffect(() => {
     if (successMessage) {
       addBannerMessage(successMessage, 'success');
-      setSuccessMessage(''); // Clear immediately after queuing
+      setSuccessMessage('');
     }
     if (errorMessages.length > 0) {
       addBannerMessage(errorMessages.join('; '), 'error');
-      setErrorMessages([]); // Clear immediately after queuing
+      setErrorMessages([]);
     }
   }, [successMessage, errorMessages, addBannerMessage]);
 
@@ -206,7 +126,56 @@ export default function Settings() {
         t('settings.errorDeletingInvitation', {
           message: err.message || 'Unknown error',
           defaultValue: 'Failed to delete invitation: {message}',
-        })
+        }),
+      ]);
+    }
+  };
+
+  const handleDeleteTeamMember = async (uid) => {
+    if (!user || !user.uid || !businessId) {
+      console.error('handleDeleteTeamMember: Missing user or businessId', { user, businessId });
+      setErrorMessages([t('settings.noAuthenticatedUser', { defaultValue: 'No authenticated user found' })]);
+      return;
+    }
+    if (uid === user.uid) {
+      setErrorMessages([t('settings.cannotDeleteSelf', { defaultValue: 'You cannot delete yourself' })]);
+      return;
+    }
+    const teamMember = teamMembers.find((tm) => tm.uid === uid);
+    if (!teamMember) {
+      setErrorMessages([t('settings.teamMemberNotFound', { defaultValue: 'Team member not found' })]);
+      return;
+    }
+    if (!window.confirm(t('settings.confirmDeleteTeamMember', { email: teamMember.email || 'this user' }))) {
+      return;
+    }
+
+    try {
+      console.log('handleDeleteTeamMember: Deleting team member:', uid);
+      const result = await DeleteTeamMemberFunction({
+        callerUid: user.uid,
+        businessId,
+        teamMemberUid: uid,
+        email: teamMember.email,
+        phone: teamMember.phone,
+        invitationCode: '', // Not used for deletion, but included for consistency
+        name: teamMember.name,
+        surname: teamMember.surname,
+      });
+
+      if (result.success) {
+        setSuccessMessage(t('settings.teamMemberDeleted', { defaultValue: 'Team member deleted successfully' }));
+        console.log('handleDeleteTeamMember: Team member deleted successfully:', uid);
+      } else {
+        throw new Error(result.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error deleting team member:', err.message, err);
+      setErrorMessages([
+        t('settings.errorDeletingTeamMember', {
+          message: err.message || 'Unknown error',
+          defaultValue: 'Failed to delete team member: {message}',
+        }),
       ]);
     }
   };
@@ -238,9 +207,9 @@ export default function Settings() {
       cardTemplates: selectedCardTemplates,
     }[type];
     const items = {
-      sheets: availableSheets,
-      dashboards: availableDashboards,
-      cardTemplates: availableCardTemplates,
+      sheets: sheetItems,
+      dashboards: dashboardItems,
+      cardTemplates: cardTemplateItems,
     }[type];
 
     console.log(`toggleOption: Type: ${type}, Value: ${value}, Current:`, selected);
@@ -273,10 +242,14 @@ export default function Settings() {
       setErrorMessages([t('settings.noTeamMembersSelected', { defaultValue: 'Please select at least one team member' })]);
       return;
     }
+    if (!businessId) {
+      setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
+      return;
+    }
     try {
       console.log('saveAccess: Saving access for UIDs:', selectedTeamMemberUids);
       for (const uid of selectedTeamMemberUids) {
-        const teamMemberRef = doc(db, 'businesses', user.uid, 'teamMembers', uid);
+        const teamMemberRef = doc(db, 'businesses', businessId, 'teamMembers', uid);
         const teamMemberDoc = await getDoc(teamMemberRef);
         if (!teamMemberDoc.exists()) {
           throw new Error(t('settings.teamMemberNotFound'));
@@ -285,17 +258,15 @@ export default function Settings() {
 
         const newData = {
           ...currentData,
-          allowedSheetIds: selectedSheets.includes('all') ? availableSheets.map(s => s.id) : selectedSheets.filter(id => id !== 'all'),
-          allowedDashboardIds: selectedDashboards.includes('all') ? availableDashboards.map(d => d.id) : selectedDashboards.filter(id => id !== 'all'),
-          allowedCardTemplateIds: selectedCardTemplates.includes('all') ? availableCardTemplates.map(t => t.id) : selectedCardTemplates.filter(id => id !== 'all'),
+          allowedSheetIds: selectedSheets.includes('all') ? sheetItems.map(s => s.id) : selectedSheets.filter(id => id !== 'all'),
+          allowedDashboardIds: selectedDashboards.includes('all') ? dashboardItems.map(d => d.id) : selectedDashboards.filter(id => id !== 'all'),
+          allowedCardTemplateIds: selectedCardTemplates.includes('all') ? cardTemplateItems.map(t => t.id) : selectedCardTemplates.filter(id => id !== 'all'),
           permissions: selectedPermissions,
         };
 
         await setDoc(teamMemberRef, newData, { merge: false });
 
-        setTeamMembers(prev =>
-          prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm))
-        );
+        // Note: teamMembers is updated via MainContext listener
       }
       setSuccessMessage(t('settings.accessUpdated'));
       setSelectedTeamMemberUids([]);
@@ -337,6 +308,10 @@ export default function Settings() {
       setErrorMessages([t('settings.enterValidEmail')]);
       return;
     }
+    if (!businessId) {
+      setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
+      return;
+    }
     setIsGenerating(true);
     setErrorMessages([]);
     setSuccessMessage('');
@@ -351,45 +326,62 @@ export default function Settings() {
       if (!userDoc.exists()) {
         throw new Error(t('settings.userDataNotFound'));
       }
-      const businessId = userDoc.data().uid;
-      const response = await fetch(
-        'https://us-central1-avacrm-6900e.cloudfunctions.net/sendInvitationEmail',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            businessId,
-            invitedBy: user.uid,
-            businessEmail: user.email,
-            permissions: {
-              role: 'editor',
-              allowedSheetIds: [],
-              allowedDashboardIds: [],
-              allowedCardTemplateIds: [],
-            },
-          }),
-        }
-      );
-      const result = await response.json();
-      if (response.ok && result.status === 'success') {
-        setSuccessMessage(result.message);
-        setEmail('');
-        console.log('handleGenerateInvitation: Invitation sent successfully');
-        // Refresh invitations if in viewInvitations step
-        if (currentStep === 'viewInvitations') {
-          const invitationsQuery = query(
-            collection(db, 'invitations'),
-            where('status', '==', 'pending'),
-            where('invitedBy', '==', user.uid)
+      const token = await currentUser.getIdToken(true);
+      console.log('Generated token for invitation:', token.substring(0, 10) + '...');
+
+      const maxRetries = 3;
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          const response = await fetch(
+            'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app', // Replace with your actual sendInvitationEmail function URL
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                email,
+                businessId,
+                invitedBy: user.uid,
+                businessEmail: user.email,
+                permissions: {
+                  role: 'editor',
+                  allowedSheetIds: [],
+                  allowedDashboardIds: [],
+                  allowedCardTemplateIds: [],
+                },
+              }),
+            }
           );
-          const invitationsSnap = await getDocs(invitationsQuery);
-          const invitationsData = invitationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setPendingInvitations(invitationsData);
-          console.log('handleGenerateInvitation: Refreshed invitations:', invitationsData);
+
+          const result = await response.json();
+          if (response.ok && result.status === 'success') {
+            setSuccessMessage(result.message);
+            setEmail('');
+            console.log('handleGenerateInvitation: Invitation sent successfully');
+            if (currentStep === 'viewInvitations') {
+              const invitationsQuery = query(
+                collection(db, 'invitations'),
+                where('status', '==', 'pending'),
+                where('invitedBy', '==', user.uid)
+              );
+              const invitationsSnap = await getDocs(invitationsQuery);
+              const invitationsData = invitationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setPendingInvitations(invitationsData);
+              console.log('handleGenerateInvitation: Refreshed invitations:', invitationsData);
+            }
+            return;
+          } else {
+            throw new Error(result.error || t('settings.failedToSendInvitation'));
+          }
+        } catch (error) {
+          attempt++;
+          if (attempt === maxRetries) throw error;
+          console.warn(`Retry ${attempt}/${maxRetries} after error:`, error.message);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
         }
-      } else {
-        throw new Error(result.error || t('settings.failedToSendInvitation'));
       }
     } catch (err) {
       console.error('Error sending invitation:', err);
@@ -493,8 +485,8 @@ export default function Settings() {
                     ? styles.animateEnterMobile
                     : styles.animateExitMobile
                   : animationDirection === 'enter'
-                  ? styles.animateEnterDesktop
-                  : styles.animateExitDesktop
+                    ? styles.animateEnterDesktop
+                    : styles.animateExitDesktop
                 : styles.noAnimation
             }`}
           >
@@ -627,15 +619,27 @@ export default function Settings() {
                 {teamMembers.length > 0 ? (
                   <div className={styles.teamMemberList}>
                     {teamMembers.map(tm => (
-                      <button
+                      <div
                         key={tm.uid}
-                        onClick={() => toggleTeamMemberSelection(tm.uid)}
-                        className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        aria-label={t('settings.editAccessFor', { email: tm.email })}
+                        className={`${styles.teamMemberItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                       >
-                        <span>{tm.email}</span>
-                        <FaChevronRight className={styles.arrowIcon} />
-                      </button>
+                        <button
+                          onClick={() => toggleTeamMemberSelection(tm.uid)}
+                          className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          aria-label={t('settings.editAccessFor', { email: tm.email })}
+                        >
+                          <span>{tm.email}</span>
+                          <FaChevronRight className={styles.arrowIcon} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeamMember(tm.uid)}
+                          className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          aria-label={t('settings.deleteTeamMember', { email: tm.email })}
+                          disabled={tm.uid === user.uid}
+                        >
+                          <FaTrash className={styles.deleteIcon} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -699,7 +703,7 @@ export default function Settings() {
                       <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
                     )}
                   </button>
-                  {availableSheets.map(sheet => (
+                  {sheetItems.map(sheet => (
                     <button
                       key={sheet.id}
                       onClick={() => toggleOption('sheets', sheet.id)}
@@ -733,7 +737,7 @@ export default function Settings() {
                       <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
                     )}
                   </button>
-                  {availableDashboards.map(dashboard => (
+                  {dashboardItems.map(dashboard => (
                     <button
                       key={dashboard.id}
                       onClick={() => toggleOption('dashboards', dashboard.id)}
@@ -767,7 +771,7 @@ export default function Settings() {
                       <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
                     )}
                   </button>
-                  {availableCardTemplates.map(template => (
+                  {cardTemplateItems.map(template => (
                     <button
                       key={template.id}
                       onClick={() => toggleOption('cardTemplates', template.id)}
