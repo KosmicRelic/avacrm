@@ -76,7 +76,7 @@ function App() {
     isDarkTheme,
     user,
     userAuthChecked,
-    businessId, // <-- add this to your destructure from MainContext
+    businessId,
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -398,7 +398,9 @@ function App() {
     handleFolderSave,
     handlePinToggle,
     handleDeleteSheet,
-    businessId, // <-- add this line
+    businessId,
+    cards,
+    setCards,
   };
 
   const showHeader =

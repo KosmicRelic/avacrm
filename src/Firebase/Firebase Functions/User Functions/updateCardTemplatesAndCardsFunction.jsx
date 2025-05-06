@@ -1,9 +1,9 @@
 import { getAuth } from 'firebase/auth';
-import { app } from '../../../firebase';
+import { app } from '../../../firebase'; // Adjust path to your Firebase config
 
-export const UpdateCardsRenameHeaderFunction = async ({ businessId, updates }) => {
+export const updateCardTemplatesAndCardsFunction = async ({ businessId, updates }) => {
   try {
-    console.log('Sending to updateCardsRenameHeader:', {
+    console.log('Sending to updateCardTemplatesAndCards:', {
       businessId,
       updates,
     });
@@ -16,7 +16,7 @@ export const UpdateCardsRenameHeaderFunction = async ({ businessId, updates }) =
     }
 
     const response = await fetch(
-      'https://updatecardsrenameheader-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL
+      'https://updatecardtemplatesandcards-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL for updateCardTemplatesAndCards
       {
         method: 'POST',
         headers: {
@@ -28,7 +28,7 @@ export const UpdateCardsRenameHeaderFunction = async ({ businessId, updates }) =
     );
 
     if (!response.ok) {
-      let errorMessage = 'Failed to rename card fields';
+      let errorMessage = 'Failed to update templates and cards';
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
@@ -39,13 +39,13 @@ export const UpdateCardsRenameHeaderFunction = async ({ businessId, updates }) =
     }
 
     const result = await response.json();
-    console.log('updateCardsRenameHeader response:', result);
+    console.log('updateCardTemplatesAndCards response:', result);
     return result;
   } catch (error) {
-    console.error('UpdateCardsRenameHeader error:', {
+    console.error('updateCardTemplatesAndCards error:', {
       message: error.message,
       details: error.details,
     });
-    throw new Error(error.message || 'Failed to rename card fields');
+    throw new Error(error.message || 'Failed to update templates and cards');
   }
 };

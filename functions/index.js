@@ -1344,7 +1344,7 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
   }
 });
 
-exports.updateCardsTypeOfCards = functions.https.onRequest((req, res) => {
+exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
   corsMiddleware(req, res, async () => {
     if (req.method === 'OPTIONS') {
       functions.logger.info('Handling OPTIONS request for CORS preflight');
@@ -1352,7 +1352,7 @@ exports.updateCardsTypeOfCards = functions.https.onRequest((req, res) => {
     }
 
     try {
-      functions.logger.info('updateCardsTypeOfCards called', {
+      functions.logger.info('updateCardTemplatesAndCards called', {
         method: req.method,
         headers: req.headers,
         rawBody: req.body,
@@ -1412,139 +1412,34 @@ exports.updateCardsTypeOfCards = functions.https.onRequest((req, res) => {
       }
 
       const batch = admin.firestore().batch();
-      let totalUpdatedCount = 0;
+      let totalUpdatedCards = 0;
+      let totalUpdatedTemplates = 0;
       const messages = [];
 
-      for (const { oldTypeOfCards, newTypeOfCards } of updates) {
-        if (!oldTypeOfCards || !newTypeOfCards) {
-          functions.logger.warn('Skipping update: Missing fields', { oldTypeOfCards, newTypeOfCards });
-          messages.push(`Skipping update: Missing oldTypeOfCards or newTypeOfCards`);
+      for (const update of updates) {
+        const { docId, typeOfCards, newTypeOfCards, deletedKeys, newTemplate, action } = update;
+
+        if (!docId || !typeOfCards) {
+          functions.logger.warn('Skipping update: Missing docId or typeOfCards', { docId, typeOfCards });
+          messages.push(`Skipping update: Missing docId or typeOfCards for ${docId || 'unknown'}`);
           continue;
         }
 
-        // Query cards in the correct subcollection
-        functions.logger.info('Querying cards:', { businessId, oldTypeOfCards });
-        const cardsRef = admin
+        const templateRef = admin
           .firestore()
           .collection('businesses')
           .doc(businessId)
-          .collection('cards')
-          .where('typeOfCards', '==', oldTypeOfCards);
-        const snapshot = await cardsRef.get();
+          .collection('cardTemplates')
+          .doc(docId);
 
-        if (snapshot.empty) {
-          functions.logger.info('No cards found:', { oldTypeOfCards });
-          messages.push(`No cards found for typeOfCards: ${oldTypeOfCards}`);
+        if (action === 'remove') {
+          functions.logger.info('Deleting cardTemplate:', { docId });
+          batch.delete(templateRef);
+          totalUpdatedTemplates += 1;
+          messages.push(`Deleted cardTemplate: ${docId}`);
           continue;
         }
 
-        snapshot.forEach((doc) => {
-          functions.logger.info('Updating card:', { cardId: doc.id, newTypeOfCards });
-          batch.update(doc.ref, { typeOfCards: newTypeOfCards });
-        });
-
-        totalUpdatedCount += snapshot.size;
-        messages.push(`Updated ${snapshot.size} cards from ${oldTypeOfCards} to ${newTypeOfCards}`);
-      }
-
-      functions.logger.info('Committing batch with updates:', { totalUpdatedCount });
-      await batch.commit();
-
-      functions.logger.info('Batch committed successfully:', { totalUpdatedCount });
-      return res.status(200).json({
-        success: true,
-        message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
-        updatedCount: totalUpdatedCount,
-      });
-    } catch (error) {
-      functions.logger.error('updateCardsTypeOfCards failed', {
-        error: error.message,
-        stack: error.stack,
-      });
-      return res.status(500).json({ error: `Failed to update cards: ${error.message}` });
-    }
-  });
-});
-
-exports.updateCardsDeleteHeaders = functions.https.onRequest((req, res) => {
-  corsMiddleware(req, res, async () => {
-    if (req.method === 'OPTIONS') {
-      functions.logger.info('Handling OPTIONS request for CORS preflight');
-      return res.status(204).send('');
-    }
-
-    try {
-      functions.logger.info('updateCardsDeleteHeaders called', {
-        method: req.method,
-        headers: req.headers,
-        rawBody: req.body,
-      });
-
-      if (req.method !== 'POST') {
-        functions.logger.error('Invalid method:', { method: req.method });
-        return res.status(405).json({ error: 'Method not allowed' });
-      }
-
-      const authHeader = req.get('Authorization');
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        functions.logger.error('Missing or invalid Authorization header');
-        return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
-      }
-
-      const idToken = authHeader.split('Bearer ')[1];
-      let decodedToken;
-      try {
-        decodedToken = await admin.auth().verifyIdToken(idToken);
-        functions.logger.info('Authenticated user:', { uid: decodedToken.uid });
-      } catch (error) {
-        functions.logger.error('Token verification failed:', { error: error.message });
-        return res.status(401).json({ error: 'Unauthorized: Invalid token' });
-      }
-
-      let body;
-      if (req.get('Content-Type') === 'application/json') {
-        try {
-          body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-        } catch (error) {
-          functions.logger.error('Failed to parse JSON body', { error: error.message });
-          return res.status(400).json({ error: 'Invalid JSON payload' });
-        }
-      } else {
-        functions.logger.error('Invalid Content-Type', { contentType: req.get('Content-Type') });
-        return res.status(400).json({ error: 'Content-Type must be application/json' });
-      }
-
-      const { businessId, updates } = body || {};
-
-      functions.logger.info('Parsed body', { businessId, updates });
-
-      if (!businessId || !updates || !Array.isArray(updates)) {
-        functions.logger.error('Missing required fields', { businessId, updates });
-        return res.status(400).json({
-          error: `Missing required fields: ${!businessId ? 'businessId ' : ''}${!updates ? 'updates ' : ''}${
-            updates && !Array.isArray(updates) ? 'updates must be an array' : ''
-          }`,
-        });
-      }
-
-      const businessDoc = await admin.firestore().collection('businesses').doc(businessId).get();
-      if (!businessDoc.exists) {
-        functions.logger.error('Business not found:', { businessId });
-        return res.status(404).json({ error: 'Business not found' });
-      }
-
-      const batch = admin.firestore().batch();
-      let totalUpdatedCount = 0;
-      const messages = [];
-
-      for (const { typeOfCards, deletedKeys } of updates) {
-        if (!typeOfCards || !deletedKeys || !Array.isArray(deletedKeys)) {
-          functions.logger.warn('Skipping update: Missing fields', { typeOfCards, deletedKeys });
-          messages.push(`Skipping update: Missing typeOfCards or deletedKeys`);
-          continue;
-        }
-
-        functions.logger.info('Querying cards:', { businessId, typeOfCards });
         const cardsRef = admin
           .firestore()
           .collection('businesses')
@@ -1556,55 +1451,79 @@ exports.updateCardsDeleteHeaders = functions.https.onRequest((req, res) => {
         if (snapshot.empty) {
           functions.logger.info('No cards found:', { typeOfCards });
           messages.push(`No cards found for typeOfCards: ${typeOfCards}`);
-          continue;
-        }
+        } else {
+          snapshot.forEach((doc) => {
+            const cardData = doc.data();
+            const updateData = {};
 
-        snapshot.forEach((doc) => {
-          const cardData = doc.data();
-          const updateData = {};
+            if (deletedKeys && Array.isArray(deletedKeys)) {
+              deletedKeys.forEach((key) => {
+                if (key in cardData) {
+                  updateData[key] = admin.firestore.FieldValue.delete();
+                }
+              });
 
-          // Remove deleted keys from top-level fields
-          deletedKeys.forEach((key) => {
-            if (key in cardData) {
-              updateData[key] = admin.firestore.FieldValue.delete();
+              if (cardData.history && Array.isArray(cardData.history)) {
+                const updatedHistory = cardData.history.filter(
+                  (entry) => !deletedKeys.includes(entry.field)
+                );
+                if (updatedHistory.length !== cardData.history.length) {
+                  updateData.history = updatedHistory;
+                }
+              }
+            }
+
+            if (newTypeOfCards && newTypeOfCards !== typeOfCards) {
+              updateData.typeOfCards = newTypeOfCards;
+            }
+
+            if (Object.keys(updateData).length > 0) {
+              functions.logger.info('Updating card:', { cardId: doc.id, updateData });
+              batch.update(doc.ref, updateData);
             }
           });
 
-          // Update history array to remove entries with deleted keys
-          if (cardData.history && Array.isArray(cardData.history)) {
-            const updatedHistory = cardData.history.filter(
-              (entry) => !deletedKeys.includes(entry.field)
-            );
-            if (updatedHistory.length !== cardData.history.length) {
-              updateData.history = updatedHistory;
-            }
-          }
+          totalUpdatedCards += snapshot.size;
+          messages.push(
+            `Processed ${snapshot.size} cards for typeOfCards: ${typeOfCards}${
+              deletedKeys && deletedKeys.length > 0 ? `, deleted keys: ${deletedKeys.join(', ')}` : ''
+            }${newTypeOfCards ? `, updated to newTypeOfCards: ${newTypeOfCards}` : ''}`
+          );
+        }
 
-          if (Object.keys(updateData).length > 0) {
-            functions.logger.info('Updating card:', { cardId: doc.id, updateData });
-            batch.update(doc.ref, updateData);
-          }
-        });
-
-        totalUpdatedCount += snapshot.size;
-        messages.push(`Processed ${snapshot.size} cards for typeOfCards: ${typeOfCards}, deleted keys: ${deletedKeys.join(', ')}`);
+        if (newTemplate) {
+          functions.logger.info('Updating cardTemplate:', { docId, newTemplate });
+          batch.set(templateRef, newTemplate);
+          totalUpdatedTemplates += 1;
+          messages.push(`Updated cardTemplate: ${docId}, typeOfCards: ${newTemplate.typeOfCards}`);
+        } else if (newTypeOfCards) {
+          const updateData = {
+            typeOfCards: newTypeOfCards,
+            name: newTypeOfCards,
+          };
+          functions.logger.info('Partially updating cardTemplate:', { docId, updateData });
+          batch.update(templateRef, updateData);
+          totalUpdatedTemplates += 1;
+          messages.push(`Partially updated cardTemplate: ${docId}`);
+        }
       }
 
-      functions.logger.info('Committing batch with updates:', { totalUpdatedCount });
+      functions.logger.info('Committing batch with updates:', { totalUpdatedCards, totalUpdatedTemplates });
       await batch.commit();
 
-      functions.logger.info('Batch committed successfully:', { totalUpdatedCount });
+      functions.logger.info('Batch committed successfully:', { totalUpdatedCards, totalUpdatedTemplates });
       return res.status(200).json({
         success: true,
         message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
-        updatedCount: totalUpdatedCount,
+        updatedCardsCount: totalUpdatedCards,
+        updatedTemplatesCount: totalUpdatedTemplates,
       });
     } catch (error) {
-      functions.logger.error('updateCardsDeleteHeaders failed', {
+      functions.logger.error('updateCardTemplatesAndCards failed', {
         error: error.message,
         stack: error.stack,
       });
-      return res.status(500).json({ error: `Failed to update cards: ${error.message}` });
+      return res.status(500).json({ error: `Failed to update templates and cards: ${error.message}` });
     }
   });
 });
