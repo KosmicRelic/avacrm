@@ -1228,32 +1228,47 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
   try {
     functions.logger.info('teamMemberSignUp started', { rawData: data });
 
-    const { email, password, phone, invitationCode } = data.data || data || {};
+    const { email, password, phone, invitationCode, name, surname } = data.data || data || {};
 
     functions.logger.info('Destructured data', {
       email,
       password: password ? '[REDACTED]' : undefined,
       phone,
       invitationCode,
+      name,
+      surname,
     });
 
-    if (!email || !password || !phone || !invitationCode) {
+    // Validate required fields
+    if (!email || !password || !phone || !invitationCode || !name || !surname) {
       throw new functions.https.HttpsError(
         'invalid-argument',
-        `Missing required fields: ${!email ? 'email ' : ''}${!password ? 'password ' : ''}${!phone ? 'phone ' : ''}${!invitationCode ? 'invitationCode' : ''}`
+        `Missing required fields: ${!email ? 'email ' : ''}${!password ? 'password ' : ''}${!phone ? 'phone ' : ''}${!invitationCode ? 'invitationCode ' : ''}${!name ? 'name ' : ''}${!surname ? 'surname' : ''}`
       );
     }
 
+    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid email format');
     }
 
+    // Validate phone format
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (!phoneRegex.test(phone)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid phone number format');
     }
 
+    // Validate name and surname (basic validation: non-empty strings, no special characters)
+    const nameRegex = /^[a-zA-Z\s-]+$/;
+    if (!nameRegex.test(name) || name.trim().length === 0) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid name format');
+    }
+    if (!nameRegex.test(surname) || surname.trim().length === 0) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid surname format');
+    }
+
+    // Check invitation
     const invitationQuery = await db
       .collection('invitations')
       .where('invitationCode', '==', invitationCode)
@@ -1288,6 +1303,8 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       uid: user.uid,
       email: user.email,
       phone,
+      name: name.trim(),
+      surname: surname.trim(),
       role: 'team_member',
       businessId,
       businessName,
@@ -1302,12 +1319,15 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       uid: user.uid,
       email: user.email,
       phone,
+      name: name.trim(),
+      surname: surname.trim(),
       role: 'team_member',
       joinedAt: new Date().toISOString(),
       allowedSheetIds: permissions.allowedSheetIds || [],
       allowedDashboardIds: permissions.allowedDashboardIds || [],
       allowedCardTemplateIds: permissions.allowedCardTemplateIds || [],
       permissions: permissions.role || 'viewer',
+      displayJoinedMessage: true,
     });
 
     functions.logger.info('Deleting invitation', { invitationId: invitationDoc.id });
@@ -1329,6 +1349,7 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
     let errorMessage = error.message || 'Internal server error';
 
     if (errorCode === 'invalid-argument' || errorCode === 'not-found' || errorCode === 'failed-precondition') {
+      // Pass through specific errors
     } else if (error.code === 'auth/email-already-in-use') {
       errorCode = 'already-exists';
       errorMessage = 'Email is already in use';

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, deleteField } from 'firebase/firestore';
 import fetchUserData, { resetFetchedSheetIds } from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 export const MainContext = createContext();
@@ -32,8 +32,10 @@ export const MainContextProvider = ({ children }) => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeSheetName, setActiveSheetName] = useState(null);
   const [sheetCardsFetched, setSheetCardsFetched] = useState({});
+  const [pendingInvitations, setPendingInvitations] = useState(0);
+  const [newTeamMembers, setNewTeamMembers] = useState([]);
+  const [bannerQueue, setBannerQueue] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
-
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
   const prevStates = useRef({
@@ -45,8 +47,9 @@ export const MainContextProvider = ({ children }) => {
   });
   const isUpdatingCardsFromTemplate = useRef(false);
   const isBatchProcessing = useRef(false);
-  const lastFetchedSheetId = useRef(null);
-  const isFetching = useRef(false); // Track ongoing fetches
+  const isFetching = useRef(false);
+  const processedTeamMembers = useRef(new Set());
+  const displayedMessages = useRef(new Set());
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,11 +59,23 @@ export const MainContextProvider = ({ children }) => {
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
+  const addBannerMessage = (message, type = 'success') => {
+    const messageId = `${message}-${type}-${Date.now()}`;
+    if (displayedMessages.current.has(messageId)) {
+      return;
+    }
+    displayedMessages.current.add(messageId);
+    setBannerQueue((prev) => [
+      ...prev,
+      { message, type, id: messageId },
+    ]);
+  };
+
   useEffect(() => {
     themeRef.current = isDarkTheme ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', themeRef.current);
     document.body.style.backgroundColor = isDarkTheme ? 'black' : 'rgb(243, 242, 248)';
-    document.body.style.color = isDarkTheme ? 'rgb(243, 242, 248)' : 'rgb(0, 0, 0)';
+    document.body.style.color = isDarkTheme ? 'rgb(0, 0, 0)' : 'rgb(243, 242, 248)';
   }, [isDarkTheme]);
 
   useEffect(() => {
@@ -148,6 +163,11 @@ export const MainContextProvider = ({ children }) => {
         setMetrics([]);
         setDashboards([]);
         setActiveSheetName(null);
+        setPendingInvitations(0);
+        setNewTeamMembers([]);
+        setBannerQueue([]);
+        processedTeamMembers.current.clear();
+        displayedMessages.current.clear();
         hasFetched.current = { sheets: false, dashboard: false, metrics: false };
         prevStates.current = {
           sheets: { allSheets: [], structure: [] },
@@ -166,23 +186,106 @@ export const MainContextProvider = ({ children }) => {
   }, [navigate, isSignup, location.pathname]);
 
   useEffect(() => {
+    if (!user || !user.uid) return;
+
+    const setupListener = () => {
+      const invitationsQuery = query(
+        collection(db, 'invitations'),
+        where('status', '==', 'pending'),
+        where('invitedBy', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(invitationsQuery, (snapshot) => {
+        const invitationCount = snapshot.size;
+        console.log('Pending invitations count:', invitationCount);
+        setPendingInvitations(invitationCount);
+      }, (error) => {
+        console.error('Error listening to invitations:', error);
+        if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
+          console.log('Retrying invitations listener in 5 seconds...');
+          setTimeout(setupListener, 5000);
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    const unsubscribe = setupListener();
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !businessId) {
+      setNewTeamMembers([]);
+      setBannerQueue([]);
+      return;
+    }
+  
+    const setupListener = () => {
+      const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
+      const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+          if (change.type === 'added') {
+            const newMember = { uid: change.doc.id, ...change.doc.data() };
+            console.log('New team member detected:', newMember);
+  
+            if (!newMember.displayJoinedMessage) {
+              console.log('Skipping team member without displayJoinedMessage:', newMember.uid);
+              processedTeamMembers.current.add(newMember.uid);
+              continue;
+            }
+  
+            if (processedTeamMembers.current.has(newMember.uid)) {
+              console.log('Skipping already processed team member:', newMember.uid);
+              continue;
+            }
+            processedTeamMembers.current.add(newMember.uid);
+  
+            // Use name and surname for the banner message
+            addBannerMessage(`${newMember.name} ${newMember.surname} has joined the team!`, 'success');
+  
+            try {
+              const teamMemberDocRef = doc(db, 'businesses', businessId, 'teamMembers', newMember.uid);
+              await updateDoc(teamMemberDocRef, {
+                displayJoinedMessage: null,
+              });
+              console.log('Removed displayJoinedMessage for:', newMember.uid);
+            } catch (error) {
+              console.error('Error removing displayJoinedMessage:', error);
+            }
+          }
+        }
+      }, (error) => {
+        console.error('Error listening to team members:', error);
+        if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
+          console.log('Retrying team members listener in 5 seconds...');
+          setTimeout(setupListener, 5000);
+        }
+      });
+  
+      return unsubscribe;
+    };
+  
+    const unsubscribe = setupListener();
+    return () => unsubscribe();
+  }, [user, businessId]);
+
+  useEffect(() => {
     if (
       user &&
       businessId &&
       location.pathname === '/sheets' &&
       activeSheetName
     ) {
-      const sheetObj = sheets.allSheets.find(s => s.sheetName === activeSheetName);
+      const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
       if (
         !sheetId ||
         sheetCardsFetched[sheetId] ||
         fetchingSheetIdsRef.current.has(sheetId)
       ) {
-        // Already fetched or currently fetching for this sheetId
         return;
       }
-      // Mark as fetching to avoid race conditions
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
@@ -194,14 +297,12 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then(() => {
-        setSheetCardsFetched(prev => ({ ...prev, [sheetId]: true }));
+        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
       }).catch(() => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-    // DO NOT include sheetCardsFetched in the dependency array!
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets]);
 
   useEffect(() => {
@@ -434,7 +535,6 @@ export const MainContextProvider = ({ children }) => {
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
-
   return (
     <MainContext.Provider
       value={{
@@ -470,6 +570,12 @@ export const MainContextProvider = ({ children }) => {
         sheetCardsFetched,
         setSheetCardsFetched,
         businessId,
+        pendingInvitations,
+        newTeamMembers,
+        setNewTeamMembers,
+        bannerQueue,
+        setBannerQueue,
+        addBannerMessage,
       }}
     >
       {children}

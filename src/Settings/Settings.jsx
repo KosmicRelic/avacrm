@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore'; // Added query, where
+import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
 import { Navigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash } f
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { user, isDarkTheme } = useContext(MainContext);
+  const { user, isDarkTheme, addBannerMessage } = useContext(MainContext);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessages, setErrorMessages] = useState([]);
@@ -180,15 +180,17 @@ export default function Settings() {
     fetchInvitations();
   }, [currentStep, user, t]);
 
+  // Queue success/error messages for banner
   useEffect(() => {
-    if (successMessage || errorMessages.length > 0) {
-      const timer = setTimeout(() => {
-        setSuccessMessage('');
-        setErrorMessages([]);
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (successMessage) {
+      addBannerMessage(successMessage, 'success');
+      setSuccessMessage(''); // Clear immediately after queuing
     }
-  }, [successMessage, errorMessages]);
+    if (errorMessages.length > 0) {
+      addBannerMessage(errorMessages.join('; '), 'error');
+      setErrorMessages([]); // Clear immediately after queuing
+    }
+  }, [successMessage, errorMessages, addBannerMessage]);
 
   const handleDeleteInvitation = async (invitationId) => {
     try {
@@ -440,14 +442,6 @@ export default function Settings() {
 
   return (
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      {(successMessage || errorMessages.length > 0) && (
-        <div
-          className={`${styles.banner} ${successMessage ? styles.success : styles.error} ${isDarkTheme ? styles.darkTheme : ''}`}
-        >
-          {successMessage || errorMessages.join('; ')}
-        </div>
-      )}
-
       <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {t('settings.title')}

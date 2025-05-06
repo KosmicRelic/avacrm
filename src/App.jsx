@@ -32,6 +32,7 @@ import {
 // Memoized ProtectedRoute to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
   const { user, userAuthChecked } = useContext(MainContext);
+  const location = useLocation();
 
   if (!userAuthChecked && !user) {
     return null;
@@ -77,6 +78,8 @@ function App() {
     user,
     userAuthChecked,
     businessId,
+    bannerQueue,
+    setBannerQueue,
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -98,12 +101,42 @@ function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeDashboardId, setActiveDashboardId] = useState(null);
   const [selectedMetricData, setSelectedMetricData] = useState(null);
+  const [currentBanner, setCurrentBanner] = useState(null);
+  const [isBannerExiting, setIsBannerExiting] = useState(false);
 
   useEffect(() => {
     if (dashboards && dashboards.length > 0 && !activeDashboardId) {
       setActiveDashboardId(dashboards[0].id);
     }
   }, [dashboards, activeDashboardId]);
+
+  // Handle banner display and animation
+  useEffect(() => {
+    if (bannerQueue.length === 0 && !currentBanner) {
+      return;
+    }
+
+    let timer;
+    if (!currentBanner && bannerQueue.length > 0) {
+      // Show new banner
+      setCurrentBanner(bannerQueue[0]);
+      setIsBannerExiting(false);
+    } else if (currentBanner && !isBannerExiting) {
+      // Start exit animation after display duration
+      timer = setTimeout(() => {
+        setIsBannerExiting(true);
+      }, 3000); // Display duration
+    } else if (isBannerExiting) {
+      // Clear banner and dequeue after exit animation
+      timer = setTimeout(() => {
+        setBannerQueue((prev) => prev.slice(1));
+        setCurrentBanner(null);
+        setIsBannerExiting(false);
+      }, 800); // Exit animation (300ms) + pause (500ms)
+    }
+
+    return () => clearTimeout(timer);
+  }, [bannerQueue, currentBanner, isBannerExiting, setBannerQueue]);
 
   const activeSheet = useMemo(
     () => sheets?.allSheets?.find((sheet) => sheet.isActive) || null,
@@ -409,6 +442,17 @@ function App() {
 
   return (
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {currentBanner && (
+        <div
+          className={`${styles.banner} ${
+            currentBanner.type === 'success' ? styles.success : styles.error
+          } ${isDarkTheme ? styles.darkTheme : ''} ${
+            isBannerExiting ? styles.bannerExit : styles.bannerVisible
+          }`}
+        >
+          {currentBanner.message}
+        </div>
+      )}
       {showHeader && (
         <ProtectedRoute>
           <AppHeader

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './BusinessSignUp.module.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -12,7 +12,7 @@ export default function TeamMemberSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { code } = useParams();
-  const { user, setIsSignup } = React.useContext(MainContext);
+  const { user, setIsSignup } = useContext(MainContext);
   const auth = getAuth();
 
   const [email, setEmail] = useState('');
@@ -29,6 +29,14 @@ export default function TeamMemberSignUp() {
   const [phoneFocused, setPhoneFocused] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
 
+  const [name, setName] = useState('');
+  const [nameFocused, setNameFocused] = useState(false);
+  const [nameError, setNameError] = useState(false);
+
+  const [surname, setSurname] = useState('');
+  const [surnameFocused, setSurnameFocused] = useState(false);
+  const [surnameError, setSurnameError] = useState(false);
+
   const [invitationCode] = useState(code || '');
   const [invitationCodeError, setInvitationCodeError] = useState(false);
   const [invitationDetails, setInvitationDetails] = useState(null);
@@ -37,16 +45,17 @@ export default function TeamMemberSignUp() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupError, setSignupError] = useState('');
 
+  // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
 
+  // Validate invitation code
   useEffect(() => {
     if (invitationCode) {
-      // Invitation validation is handled by the Cloud Function
-      setInvitationDetails({ invitationCode }); // Placeholder for rendering
+      setInvitationDetails({ invitationCode, businessName: 'the team' });
     } else {
       setInvitationCodeError(true);
       setSignupError(t('teamMemberSignUp.error.invalidCode'));
@@ -54,13 +63,19 @@ export default function TeamMemberSignUp() {
   }, [invitationCode, t]);
 
   const isValidEmail = (email) => {
+    const normalizedEmail = email.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return emailRegex.test(normalizedEmail);
   };
 
   const isValidPhone = (phone) => {
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     return phoneRegex.test(phone);
+  };
+
+  const isValidName = (value) => {
+    const nameRegex = /^[a-zA-Z\s-]+$/;
+    return nameRegex.test(value) && value.trim().length > 0;
   };
 
   const checkPasswordRequirements = (password) => {
@@ -84,6 +99,7 @@ export default function TeamMemberSignUp() {
   const handleInputChange = (setter, setError) => (e) => {
     const value = e.target.value;
     setter(value);
+    setSignupError(''); // Clear signup error on input change
     if (setError) {
       setError(false);
     }
@@ -96,43 +112,93 @@ export default function TeamMemberSignUp() {
     if (setter === setPhone) {
       setPhoneError(!isValidPhone(value) && value !== '');
     }
+    if (setter === setName) {
+      setNameError(!isValidName(value) && value !== '');
+    }
+    if (setter === setSurname) {
+      setSurnameError(!isValidName(value) && value !== '');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const isEmailValid = isValidEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const isEmailValid = isValidEmail(normalizedEmail);
     const isPasswordValid = password && passwordRequirements.length === 0;
     const isPhoneValid = isValidPhone(phone);
+    const isNameValid = isValidName(name);
+    const isSurnameValid = isValidName(surname);
     const isInvitationCodeValid = invitationCode && !invitationCodeError;
 
     setEmailError(!isEmailValid);
     setPasswordError(!isPasswordValid);
     setPhoneError(!isPhoneValid);
+    setNameError(!isNameValid);
+    setSurnameError(!isSurnameValid);
     setInvitationCodeError(!isInvitationCodeValid);
 
-    if (isEmailValid && isPasswordValid && isPhoneValid && isInvitationCodeValid) {
+    if (isEmailValid && isPasswordValid && isPhoneValid && isNameValid && isSurnameValid && isInvitationCodeValid) {
       try {
         setIsSubmitting(true);
         setSignupError('');
         setIsSignup(true);
 
+        // Call Cloud Function to create team member
         await TeamMemberSignUpFunction({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
           phone: phone.trim(),
+          name: name.trim(),
+          surname: surname.trim(),
           invitationCode,
         });
 
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+        // Sign in the new user
+        await signInWithEmailAndPassword(auth, normalizedEmail, password);
 
-        setSignupSuccess(true);
+        // Delay success and navigation to allow Firestore listener to process
+        setTimeout(() => {
+          setSignupSuccess(true);
+          setIsSubmitting(false);
+          navigate('/dashboard');
+        }, 1500); // Increased to 1.5s to ensure banner triggers
       } catch (error) {
         setIsSubmitting(false);
         setSignupSuccess(false);
         setIsSignup(false);
-        setSignupError(error.message || t('teamMemberSignUp.error.generic'));
-        setInvitationCodeError(error.code === 'not-found' || error.code === 'failed-precondition');
+        let errorMessage = t('teamMemberSignUp.error.generic');
+        switch (error.code) {
+          case 'already-exists':
+            errorMessage = t('teamMemberSignUp.error.emailInUse');
+            setEmailError(true);
+            break;
+          case 'not-found':
+            errorMessage = t('teamMemberSignUp.error.invalidCode');
+            setInvitationCodeError(true);
+            break;
+          case 'failed-precondition':
+            errorMessage = t('teamMemberSignUp.error.expiredCode');
+            setInvitationCodeError(true);
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = t('teamMemberSignUp.error.signInFailed');
+            break;
+          case 'invalid-argument':
+            if (error.message.includes('name')) {
+              errorMessage = t('teamMemberSignUp.error.invalidName');
+              setNameError(true);
+            } else if (error.message.includes('surname')) {
+              errorMessage = t('teamMemberSignUp.error.invalidSurname');
+              setSurnameError(true);
+            } else {
+              errorMessage = error.message;
+            }
+            break;
+          default:
+            errorMessage = error.message || t('teamMemberSignUp.error.generic');
+        }
+        setSignupError(errorMessage);
       }
     }
   };
@@ -155,12 +221,64 @@ export default function TeamMemberSignUp() {
             <h2 className={styles.title}>{t('teamMemberSignUp.signup')}</h2>
             <p className={styles.subText}>
               {invitationDetails
-                ? t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName || 'the team' })
+                ? t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName })
                 : t('teamMemberSignUp.shortTextGeneric')}
             </p>
           </header>
 
           <form className={styles.form} onSubmit={handleSubmit}>
+            <div
+              className={`${styles.inputContainer} ${nameError ? styles.error : ''}`}
+            >
+              <label
+                className={`${styles.label} ${
+                  nameFocused || name ? styles.focused : ''
+                } ${nameError ? styles.errorText : ''}`}
+              >
+                {t('teamMemberSignUp.name')}*
+              </label>
+              <input
+                type="text"
+                className={styles.inputField}
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => setNameFocused(name !== '')}
+                value={name}
+                onChange={handleInputChange(setName, setNameError)}
+                disabled={isSubmitting}
+              />
+              {nameError && (
+                <p className={styles.errorText}>
+                  {t('teamMemberSignUp.error.invalidName')}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`${styles.inputContainer} ${surnameError ? styles.error : ''}`}
+            >
+              <label
+                className={`${styles.label} ${
+                  surnameFocused || surname ? styles.focused : ''
+                } ${surnameError ? styles.errorText : ''}`}
+              >
+                {t('teamMemberSignUp.surname')}*
+              </label>
+              <input
+                type="text"
+                className={styles.inputField}
+                onFocus={() => setSurnameFocused(true)}
+                onBlur={() => setSurnameFocused(surname !== '')}
+                value={surname}
+                onChange={handleInputChange(setSurname, setSurnameError)}
+                disabled={isSubmitting}
+              />
+              {surnameError && (
+                <p className={styles.errorText}>
+                  {t('teamMemberSignUp.error.invalidSurname')}
+                </p>
+              )}
+            </div>
+
             <div
               className={`${styles.inputContainer} ${emailError ? styles.error : ''}`}
             >
@@ -252,7 +370,6 @@ export default function TeamMemberSignUp() {
                 value={phone}
                 onChange={handleInputChange(setPhone, setPhoneError)}
                 disabled={isSubmitting}
-                placeholder="+1234567890"
               />
               {phoneError && (
                 <p className={styles.errorText}>
@@ -276,6 +393,8 @@ export default function TeamMemberSignUp() {
                 !password ||
                 passwordRequirements.length > 0 ||
                 !isValidPhone(phone) ||
+                !isValidName(name) ||
+                !isValidName(surname) ||
                 !invitationCode ||
                 invitationCodeError
               }

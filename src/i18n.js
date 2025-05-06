@@ -114,6 +114,8 @@ i18n
             createAccount: "Create Account",
             alreadyHaveAccount: "Already have an account?",
             signin: "Sign In",
+            name: "Name",
+            surname: "Surname",
             successMessage: "Account created successfully! Redirecting...",
             passwordRequirement: {
               minLength: "Password must be at least 8 characters",
