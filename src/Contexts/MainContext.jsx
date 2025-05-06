@@ -117,16 +117,13 @@ export const MainContextProvider = ({ children }) => {
             (currentRoute === '/metrics' && !hasFetched.current.metrics)
           ) {
             if (currentRoute === '/sheets' && !activeSheetName) {
-              console.log('Setting default activeSheetName to "Leads"');
               setActiveSheetName('Leads');
             }
 
             if (isFetching.current) {
-              console.log('Skipping fetch: another fetch is in progress');
               return;
             }
 
-            console.log('Initial fetch with activeSheetName:', activeSheetName || 'Leads');
             isFetching.current = true;
             await fetchUserData({
               businessId: fetchedBusinessId,
@@ -154,7 +151,6 @@ export const MainContextProvider = ({ children }) => {
 
         setIsDataLoaded(true);
       } else {
-        console.log('User logged out, resetting state and cache');
         setUser(null);
         setBusinessId(null);
         setSheets({ allSheets: [], structure: [] });
@@ -197,12 +193,10 @@ export const MainContextProvider = ({ children }) => {
 
       const unsubscribe = onSnapshot(invitationsQuery, (snapshot) => {
         const invitationCount = snapshot.size;
-        console.log('Pending invitations count:', invitationCount);
         setPendingInvitations(invitationCount);
       }, (error) => {
         console.error('Error listening to invitations:', error);
         if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
-          console.log('Retrying invitations listener in 5 seconds...');
           setTimeout(setupListener, 5000);
         }
       });
@@ -226,20 +220,16 @@ export const MainContextProvider = ({ children }) => {
       const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
         const members = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
         setTeamMembers(members);
-        console.log('Team members updated:', members);
 
         for (const change of snapshot.docChanges()) {
           if (change.type === 'added') {
             const newMember = { uid: change.doc.id, ...change.doc.data() };
-            console.log('New team member detected:', newMember);
 
             if (!newMember.displayJoinedMessage) {
-              console.log('Skipping team member without displayJoinedMessage:', newMember.uid);
               continue;
             }
 
             if (processedTeamMembers.current.has(newMember.uid)) {
-              console.log('Skipping already processed team member:', newMember.uid);
               continue;
             }
             processedTeamMembers.current.add(newMember.uid);
@@ -251,7 +241,6 @@ export const MainContextProvider = ({ children }) => {
               await updateDoc(teamMemberDocRef, {
                 displayJoinedMessage: null,
               });
-              console.log('Removed displayJoinedMessage for:', newMember.uid);
             } catch (error) {
               console.error('Error removing displayJoinedMessage:', error);
             }
@@ -260,7 +249,6 @@ export const MainContextProvider = ({ children }) => {
       }, (error) => {
         console.error('Error listening to team members:', error);
         if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
-          console.log('Retrying team members listener in 5 seconds...');
           setTimeout(setupListener, 5000);
         }
       });

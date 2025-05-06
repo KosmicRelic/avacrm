@@ -1,13 +1,12 @@
 .appContainer {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }
 
 .contentWrapper {
   flex: 1;
-  overflow-y: auto;
-  padding: 0;
+  overflow-y: auto; /* Content scrolls */
+  padding: 0px; /* Padding for content */
   margin: 0;
   background-color: rgb(243, 242, 248);
   transition: background 0.3s ease;

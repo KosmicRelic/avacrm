@@ -10,21 +10,16 @@ import { DeleteTeamMemberFunction } from '../Firebase/Firebase Functions/User Fu
 
 export default function Settings() {
   const { t } = useTranslation();
-  const {
-    user,
-    isDarkTheme,
-    addBannerMessage,
-    businessId,
-    teamMembers,
-    sheets,
-    dashboards,
-    cardTemplates,
-  } = useContext(MainContext);
+  const { user, isDarkTheme, addBannerMessage, businessId } = useContext(MainContext);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessages, setErrorMessages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [sheets, setSheets] = useState([]);
+  const [dashboards, setDashboards] = useState([]);
+  const [cardTemplates, setCardTemplates] = useState([]);
   const [selectedTeamMemberUids, setSelectedTeamMemberUids] = useState([]);
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [selectedDashboards, setSelectedDashboards] = useState([]);
@@ -34,19 +29,20 @@ export default function Settings() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [animationDirection, setAnimationDirection] = useState('enter');
   const [animationType, setAnimationType] = useState('slide');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Map MainContext data to expected format: { id, name }
-  const sheetItems = sheets.allSheets.map(sheet => ({
-    id: sheet.docId,
+  // Map data to expected format: { id, name }
+  const sheetItems = sheets.map(sheet => ({
+    id: sheet.docId || sheet.id,
     name: sheet.sheetName,
   }));
   const dashboardItems = dashboards.map(dashboard => ({
-    id: dashboard.docId,
-    name: dashboard.name || `Dashboard ${dashboard.docId}`,
+    id: dashboard.docId || dashboard.id,
+    name: dashboard.name || `Dashboard ${dashboard.docId || dashboard.id}`,
   }));
   const cardTemplateItems = cardTemplates.map(template => ({
-    id: template.docId,
-    name: template.name || `Template ${template.docId}`,
+    id: template.docId || template.name,
+    name: template.name || `Template ${template.docId || template.name}`,
   }));
 
   useEffect(() => {
@@ -57,17 +53,79 @@ export default function Settings() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch pending invitations only when viewing invitations
+  // Fetch data for team members, sheets, dashboards, and card templates when navigating to manageTeam
   useEffect(() => {
-    console.log('Invitations useEffect: currentStep:', currentStep, 'user:', user ? { uid: user.uid, email: user.email } : 'No user');
+    if (currentStep !== 'manageTeam' || !user || !user.uid || !businessId) {
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch team members
+        const teamMembersQuery = query(collection(db, 'businesses', businessId, 'teamMembers'));
+        const teamMembersSnap = await getDocs(teamMembersQuery);
+        const teamMembersData = teamMembersSnap.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data(),
+        }));
+        setTeamMembers(teamMembersData);
+
+        // Fetch sheets
+        const sheetsQuery = query(collection(db, 'businesses', businessId, 'sheets'));
+        const sheetsSnap = await getDocs(sheetsQuery);
+        const sheetsData = sheetsSnap.docs.map(doc => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        setSheets(sheetsData);
+
+        // Fetch dashboards
+        const dashboardsQuery = query(collection(db, 'businesses', businessId, 'dashboards'));
+        const dashboardsSnap = await getDocs(dashboardsQuery);
+        const dashboardsData = dashboardsSnap.docs.map(doc => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        setDashboards(dashboardsData);
+
+        // Fetch card templates
+        const cardTemplatesQuery = query(collection(db, 'businesses', businessId, 'cardTemplates'));
+        const cardTemplatesSnap = await getDocs(cardTemplatesQuery);
+        const cardTemplatesData = cardTemplatesSnap.docs.map(doc => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        setCardTemplates(cardTemplatesData);
+      } catch (err) {
+        console.error('Error fetching data:', err, 'Code:', err.code, 'Message:', err.message);
+        setErrorMessages([
+          t('settings.errorFetchingData', {
+            message: `resources: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
+            defaultValue: 'Failed to load resources: {message}',
+          }),
+        ]);
+        setTeamMembers([]);
+        setSheets([]);
+        setDashboards([]);
+        setCardTemplates([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentStep, user, businessId, t]);
+
+  // Fetch pending invitations only when navigating to viewInvitations
+  useEffect(() => {
     if (currentStep !== 'viewInvitations' || !user || !user.uid) {
-      console.log('Skipping fetchInvitations: currentStep:', currentStep, 'user:', user ? user.uid : 'No user');
       return;
     }
 
     const fetchInvitations = async () => {
+      setIsLoading(true);
       try {
-        console.log('fetchInvitations: Querying invitations for invitedBy:', user.uid);
         const invitationsQuery = query(
           collection(db, 'invitations'),
           where('status', '==', 'pending'),
@@ -78,12 +136,6 @@ export default function Settings() {
           id: doc.id,
           ...doc.data(),
         }));
-        console.log('Invitations Fetched:', invitationsData.map(inv => ({
-          id: inv.id,
-          email: inv.email,
-          invitedBy: inv.invitedBy,
-          status: inv.status,
-        })));
         setPendingInvitations(invitationsData);
       } catch (err) {
         console.error('Error fetching invitations:', err, 'Code:', err.code, 'Message:', err.message);
@@ -94,6 +146,8 @@ export default function Settings() {
           }),
         ]);
         setPendingInvitations([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -114,12 +168,10 @@ export default function Settings() {
 
   const handleDeleteInvitation = async (invitationId) => {
     try {
-      console.log('handleDeleteInvitation: Deleting invitation:', invitationId);
       const invitationRef = doc(db, 'invitations', invitationId);
       await deleteDoc(invitationRef);
       setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId));
       setSuccessMessage(t('settings.invitationDeleted', { defaultValue: 'Invitation deleted successfully' }));
-      console.log('handleDeleteInvitation: Invitation deleted successfully:', invitationId);
     } catch (err) {
       console.error('Error deleting invitation:', err);
       setErrorMessages([
@@ -133,7 +185,6 @@ export default function Settings() {
 
   const handleDeleteTeamMember = async (uid) => {
     if (!user || !user.uid || !businessId) {
-      console.error('handleDeleteTeamMember: Missing user or businessId', { user, businessId });
       setErrorMessages([t('settings.noAuthenticatedUser', { defaultValue: 'No authenticated user found' })]);
       return;
     }
@@ -151,7 +202,6 @@ export default function Settings() {
     }
 
     try {
-      console.log('handleDeleteTeamMember: Deleting team member:', uid);
       const result = await DeleteTeamMemberFunction({
         callerUid: user.uid,
         businessId,
@@ -164,8 +214,8 @@ export default function Settings() {
       });
 
       if (result.success) {
+        setTeamMembers(prev => prev.filter(tm => tm.uid !== uid));
         setSuccessMessage(t('settings.teamMemberDeleted', { defaultValue: 'Team member deleted successfully' }));
-        console.log('handleDeleteTeamMember: Team member deleted successfully:', uid);
       } else {
         throw new Error(result.error || 'Unknown error');
       }
@@ -181,7 +231,6 @@ export default function Settings() {
   };
 
   const toggleTeamMemberSelection = (uid) => {
-    console.log('toggleTeamMemberSelection: Selected UID:', uid);
     setSelectedTeamMemberUids([uid]);
     const teamMember = teamMembers.find(tm => tm.uid === uid);
     if (teamMember) {
@@ -211,8 +260,6 @@ export default function Settings() {
       dashboards: dashboardItems,
       cardTemplates: cardTemplateItems,
     }[type];
-
-    console.log(`toggleOption: Type: ${type}, Value: ${value}, Current:`, selected);
 
     if (value === 'all') {
       setters[type](prev => {
@@ -247,7 +294,6 @@ export default function Settings() {
       return;
     }
     try {
-      console.log('saveAccess: Saving access for UIDs:', selectedTeamMemberUids);
       for (const uid of selectedTeamMemberUids) {
         const teamMemberRef = doc(db, 'businesses', businessId, 'teamMembers', uid);
         const teamMemberDoc = await getDoc(teamMemberRef);
@@ -266,7 +312,10 @@ export default function Settings() {
 
         await setDoc(teamMemberRef, newData, { merge: false });
 
-        // Note: teamMembers is updated via MainContext listener
+        // Update local teamMembers state
+        setTeamMembers(prev =>
+          prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm))
+        );
       }
       setSuccessMessage(t('settings.accessUpdated'));
       setSelectedTeamMemberUids([]);
@@ -280,7 +329,6 @@ export default function Settings() {
       if (selectedTeamMemberUids.includes(user.uid)) {
         window.location.reload();
       }
-      console.log('saveAccess: Access updated successfully');
     } catch (err) {
       console.error('Error saving access:', err);
       setErrorMessages([t('settings.errorUpdatingAccess', { message: err.message || 'Unknown error' })]);
@@ -288,7 +336,6 @@ export default function Settings() {
   };
 
   const cancelEditing = () => {
-    console.log('cancelEditing: Resetting selections');
     setSelectedTeamMemberUids([]);
     setSelectedSheets([]);
     setSelectedDashboards([]);
@@ -297,6 +344,12 @@ export default function Settings() {
     setAnimationDirection('exit');
     setAnimationType('none');
     setCurrentStep('manageTeam');
+  };
+
+  const hasPendingInvitationForEmail = (email) => {
+    return pendingInvitations.some(
+      inv => inv.email?.toLowerCase() === email.toLowerCase()
+    );
   };
 
   const handleGenerateInvitation = async () => {
@@ -308,6 +361,10 @@ export default function Settings() {
       setErrorMessages([t('settings.enterValidEmail')]);
       return;
     }
+    if (hasPendingInvitationForEmail(email)) {
+      setErrorMessages([t('settings.invitationAlreadyExists', { defaultValue: 'An invitation for this email already exists.' })]);
+      return;
+    }
     if (!businessId) {
       setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
       return;
@@ -316,7 +373,6 @@ export default function Settings() {
     setErrorMessages([]);
     setSuccessMessage('');
     try {
-      console.log('handleGenerateInvitation: Sending invitation to:', email);
       const auth = getAuth();
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -327,14 +383,13 @@ export default function Settings() {
         throw new Error(t('settings.userDataNotFound'));
       }
       const token = await currentUser.getIdToken(true);
-      console.log('Generated token for invitation:', token.substring(0, 10) + '...');
 
       const maxRetries = 3;
       let attempt = 0;
       while (attempt < maxRetries) {
         try {
           const response = await fetch(
-            'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app', // Replace with your actual sendInvitationEmail function URL
+            'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app',
             {
               method: 'POST',
               headers: {
@@ -360,7 +415,6 @@ export default function Settings() {
           if (response.ok && result.status === 'success') {
             setSuccessMessage(result.message);
             setEmail('');
-            console.log('handleGenerateInvitation: Invitation sent successfully');
             if (currentStep === 'viewInvitations') {
               const invitationsQuery = query(
                 collection(db, 'invitations'),
@@ -370,7 +424,6 @@ export default function Settings() {
               const invitationsSnap = await getDocs(invitationsQuery);
               const invitationsData = invitationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setPendingInvitations(invitationsData);
-              console.log('handleGenerateInvitation: Refreshed invitations:', invitationsData);
             }
             return;
           } else {
@@ -379,8 +432,7 @@ export default function Settings() {
         } catch (error) {
           attempt++;
           if (attempt === maxRetries) throw error;
-          console.warn(`Retry ${attempt}/${maxRetries} after error:`, error.message);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
     } catch (err) {
@@ -392,7 +444,6 @@ export default function Settings() {
   };
 
   const handleStepChange = (step) => {
-    console.log('handleStepChange: From:', currentStep, 'To:', step);
     const isForward = (
       (currentStep === 'main' && (step === 'invitations' || step === 'manageTeam')) ||
       (currentStep === 'main' && (step === 'sendInvitation' || step === 'viewInvitations' || step === 'editAccess')) ||
@@ -571,7 +622,11 @@ export default function Settings() {
                   <span>{t('settings.back')}</span>
                 </button>
                 <h2>{t('settings.viewPendingInvitations')}</h2>
-                {pendingInvitations.length > 0 ? (
+                {isLoading ? (
+                  <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    {t('settings.loading', { defaultValue: 'Loading...' })}
+                  </p>
+                ) : pendingInvitations.length > 0 ? (
                   <div className={styles.invitationList}>
                     {pendingInvitations.map(inv => (
                       <div key={inv.id} className={`${styles.invitationItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -616,7 +671,11 @@ export default function Settings() {
                   <span>{t('settings.back')}</span>
                 </button>
                 <h2>{t('settings.manageTeamAccess')}</h2>
-                {teamMembers.length > 0 ? (
+                {isLoading ? (
+                  <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    {t('settings.loading', { defaultValue: 'Loading...' })}
+                  </p>
+                ) : teamMembers.length > 0 ? (
                   <div className={styles.teamMemberList}>
                     {teamMembers.map(tm => (
                       <div
