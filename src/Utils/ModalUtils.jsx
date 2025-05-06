@@ -190,9 +190,9 @@ export const handleModalSave = async ({
     
         try {
           if (updates.length > 0) {
-            console.log('Calling updateCardTemplatesAndCardsFunction with:', { businessId, updates });
+            // console.log('Calling updateCardTemplatesAndCardsFunction with:', { businessId, updates });
             const result = await updateCardTemplatesAndCardsFunction({ businessId, updates });
-            console.log('updateCardTemplatesAndCardsFunction result:', JSON.stringify(result, null, 2));
+            // console.log('updateCardTemplatesAndCardsFunction result:', JSON.stringify(result, null, 2));
     
             if (!result.success) {
               throw new Error(result.error || 'Failed to update templates and cards');
@@ -223,7 +223,7 @@ export const handleModalSave = async ({
     
             setCards(updatedCards);
           } else {
-            console.log('No changes detected in cardTemplates');
+            // console.log('No changes detected in cardTemplates');
           }
         } catch (error) {
           console.error('Error updating templates and cards:', error);

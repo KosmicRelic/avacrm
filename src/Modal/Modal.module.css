@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0);
   backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
@@ -52,21 +52,21 @@
 
 @keyframes fadeInMobile {
   from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px);}
-  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px);}
+  to { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);}
 }
 
 @keyframes fadeInMobileDark {
   from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px);}
-  to { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px);}
+  to { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);}
 }
 
 @keyframes fadeOutMobile {
-  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px);}
+  from { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);}
   to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px);}
 }
 
 @keyframes fadeOutMobileDark {
-  from { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(10px);}
+  from { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);}
   to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px);}
 }
 

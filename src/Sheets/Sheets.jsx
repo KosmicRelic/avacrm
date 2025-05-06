@@ -174,7 +174,7 @@ const Sheets = ({
   }, [sortedRows, searchQuery, visibleHeaders]);
 
   const handleSheetClick = useCallback((sheetName) => {
-    console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
+    // console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
     if (sheetName !== activeSheetName) {
       setActiveSheetName(sheetName); // <-- update context, triggers refetch
       onSheetChange(sheetName);
@@ -240,7 +240,7 @@ const Sheets = ({
 
   const handleFolderClick = useCallback(
     (folderName) => {
-      console.log('[Sheets] handleFolderClick:', { folderName });
+      // console.log('[Sheets] handleFolderClick:', { folderName });
       onOpenFolderModal(folderName);
     },
     [onOpenFolderModal]

@@ -52,7 +52,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
       )
       .map((sheet) => sheet.sheetName);
 
-    console.log('Available sheets for Step 2:', sheetsList);
+    // console.log('Available sheets for Step 2:', sheetsList);
     return sheetsList;
   }, [sheets.allSheets, nestedSheetsSet]);
 
@@ -74,7 +74,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
     });
     setDisplayedSheets((prev) => {
       const updatedSheets = prev.filter((sheet) => !selectedSheets.includes(sheet));
-      console.log('Updated displayedSheets after remove:', updatedSheets);
+      // console.log('Updated displayedSheets after remove:', updatedSheets);
       return updatedSheets;
     });
     setSelectedSheets([]);
@@ -99,7 +99,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
     });
     setDisplayedSheets((prev) => {
       const updatedSheets = [...new Set([...prev, ...selectedSheets])];
-      console.log('Updated displayedSheets after add:', updatedSheets);
+      // console.log('Updated displayedSheets after add:', updatedSheets);
       return updatedSheets;
     });
     setSelectedSheets([]);
@@ -152,7 +152,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
       }
     });
     setDisplayedSheets(initialSheets);
-    console.log('Initialized displayedSheets:', initialSheets);
+    // console.log('Initialized displayedSheets:', initialSheets);
   }, [folderSheets, tempData?.actions, folderName]);
 
   // Initialize modal steps (run once)
