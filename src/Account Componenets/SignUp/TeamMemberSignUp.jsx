@@ -11,7 +11,7 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 export default function TeamMemberSignUp() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { code } = useParams();
+  const { code, businessName } = useParams(); // Extract businessName and code
   const { user, setIsSignup } = useContext(MainContext);
   const auth = getAuth();
 
@@ -52,15 +52,15 @@ export default function TeamMemberSignUp() {
     }
   }, [user, navigate]);
 
-  // Validate invitation code
+  // Validate invitation code and set business name
   useEffect(() => {
-    if (invitationCode) {
-      setInvitationDetails({ invitationCode, businessName: 'the team' });
+    if (invitationCode && businessName) {
+      setInvitationDetails({ invitationCode, businessName });
     } else {
       setInvitationCodeError(true);
       setSignupError(t('teamMemberSignUp.error.invalidCode'));
     }
-  }, [invitationCode, t]);
+  }, [invitationCode, businessName, t]);
 
   const isValidEmail = (email) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -207,6 +207,19 @@ export default function TeamMemberSignUp() {
     setPasswordVisible(!passwordVisible);
   };
 
+  // Fallback for subtext if translation fails
+  const getSubText = () => {
+    if (!invitationDetails) {
+      return t('teamMemberSignUp.shortTextGeneric');
+    }
+    const translated = t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName });
+    // Check if translation contains the placeholder
+    if (translated.includes('{businessName}')) {
+      return `Join ${invitationDetails.businessName} as a team member`;
+    }
+    return translated;
+  };
+
   return (
     <div className={styles.container}>
       {!signupSuccess && (
@@ -219,11 +232,7 @@ export default function TeamMemberSignUp() {
           </h1>
           <header className={styles.header}>
             <h2 className={styles.title}>{t('teamMemberSignUp.signup')}</h2>
-            <p className={styles.subText}>
-              {invitationDetails
-                ? t('teamMemberSignUp.shortText', { businessName: invitationDetails.businessName })
-                : t('teamMemberSignUp.shortTextGeneric')}
-            </p>
+            <p className={styles.subText}>{getSubText()}</p>
           </header>
 
           <form className={styles.form} onSubmit={handleSubmit}>

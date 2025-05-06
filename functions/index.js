@@ -1207,7 +1207,7 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         html: `
           <h1>Team Invitation</h1>
           <p>You've been invited to join the ${businessName} team!</p>
-          <p>Click <a href="https://www.apx.gr/signup/teammember/${invitationCode}">here</a> to accept your invitation.</p>
+          <p>Click <a href="https://www.apx.gr/signup/${businessName}/teammember/${invitationCode}">here</a> to accept your invitation.</p>
           <p>If you have any questions, contact ${businessEmail}</p>
         `,
       });

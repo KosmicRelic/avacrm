@@ -34,15 +34,18 @@ const ProtectedRoute = React.memo(({ children }) => {
   const { user, userAuthChecked } = useContext(MainContext);
   const location = useLocation();
 
-  if (!userAuthChecked && !user) {
-    return null;
+  if (!userAuthChecked) {
+    return null; // Wait for auth check to complete
   }
+
+  // Check if the path is for team member signup
+  const isTeamMemberSignup = location.pathname.match(/^\/signup\/[^/]+\/teammember\/[^/]+$/);
 
   if (
     !user &&
     userAuthChecked &&
     !['/signup/business', '/signin'].includes(location.pathname) &&
-    !location.pathname.startsWith('/signup/teammember/')
+    !isTeamMemberSignup
   ) {
     return <Navigate to="/signin" replace />;
   }
@@ -438,7 +441,7 @@ function App() {
 
   const showHeader =
     !['/signin', '/signup/business'].includes(location.pathname) &&
-    !location.pathname.startsWith('/signup/teammember/');
+    !location.pathname.startsWith('/signup/');
 
   return (
     <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -534,7 +537,7 @@ function App() {
           />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup/business" element={<BusinessSignUp />} />
-          <Route path="/signup/teammember/:code" element={<TeamMemberSignUp />} />
+          <Route path="/signup/:businessName/teammember/:code" element={<TeamMemberSignUp />} />
         </Routes>
         {activeModal && (
           <Modal
