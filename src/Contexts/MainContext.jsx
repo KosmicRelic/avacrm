@@ -104,6 +104,7 @@ export const MainContextProvider = ({ children }) => {
         const currentRoute = location.pathname;
         let fetchedBusinessId = firebaseUser.uid;
         try {
+          // Fetch userDoc and businessId as early as possible
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists() && userDoc.data().businessId) {
@@ -111,12 +112,13 @@ export const MainContextProvider = ({ children }) => {
           }
           setBusinessId(fetchedBusinessId);
 
-          if (
-            (currentRoute === '/sheets' && !hasFetched.current.sheets) ||
-            (currentRoute === '/dashboard' && !hasFetched.current.dashboard) ||
-            (currentRoute === '/metrics' && !hasFetched.current.metrics)
-          ) {
-            if (currentRoute === '/sheets' && !activeSheetName) {
+          // Only fetch what is needed for the current route
+          const needsSheets = currentRoute === '/sheets' && !hasFetched.current.sheets;
+          const needsDashboard = currentRoute === '/dashboard' && !hasFetched.current.dashboard;
+          const needsMetrics = currentRoute === '/metrics' && !hasFetched.current.metrics;
+
+          if (needsSheets || needsDashboard || needsMetrics) {
+            if (needsSheets && !activeSheetName) {
               setActiveSheetName('Leads');
             }
 
@@ -125,24 +127,59 @@ export const MainContextProvider = ({ children }) => {
             }
 
             isFetching.current = true;
-            await fetchUserData({
-              businessId: fetchedBusinessId,
-              route: currentRoute,
-              setSheets,
-              setCards,
-              setCardTemplates,
-              setMetrics,
-              setDashboards,
-              activeSheetName: currentRoute === '/sheets' ? activeSheetName || 'Leads' : null,
-              updateSheets: true,
-            });
+
+            // Parallelize fetches if possible
+            const fetches = [];
+            if (needsSheets) {
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/sheets',
+                  setSheets,
+                  setCards,
+                  setCardTemplates,
+                  setMetrics,
+                  setDashboards,
+                  activeSheetName: activeSheetName || 'Leads',
+                  updateSheets: true,
+                })
+              );
+            }
+            if (needsDashboard) {
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/dashboard',
+                  setSheets,
+                  setCards,
+                  setCardTemplates,
+                  setMetrics,
+                  setDashboards,
+                  updateSheets: true,
+                })
+              );
+            }
+            if (needsMetrics) {
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/metrics',
+                  setSheets,
+                  setCards,
+                  setCardTemplates,
+                  setMetrics,
+                  setDashboards,
+                  updateSheets: true,
+                })
+              );
+            }
+            await Promise.all(fetches);
+
             isFetching.current = false;
 
-            if (currentRoute === '/sheets') hasFetched.current.sheets = true;
-            if (currentRoute === '/dashboard' || currentRoute === '/metrics') {
-              hasFetched.current.dashboard = true;
-              hasFetched.current.metrics = true;
-            }
+            if (needsSheets) hasFetched.current.sheets = true;
+            if (needsDashboard) hasFetched.current.dashboard = true;
+            if (needsMetrics) hasFetched.current.metrics = true;
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
