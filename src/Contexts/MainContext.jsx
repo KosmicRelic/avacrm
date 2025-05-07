@@ -209,7 +209,7 @@ export const MainContextProvider = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
-    if (!user || !businessId) {
+    if (!user || !businessId || user.uid !== businessId) {
       setTeamMembers([]);
       setBannerQueue([]);
       return;

@@ -31,7 +31,7 @@ export const TeamMemberSignUpFunction = async ({ email, password, phone, name, s
     try {
       const invitationsQuery = query(
         collection(db, 'invitations'),
-        where('code', '==', invitationCode),
+        where('invitationCode', '==', invitationCode), // Fixed 'code' to 'invitationCode'
         where('email', '==', normalizedEmail)
       );
       const invitationsSnap = await getDocs(invitationsQuery);
@@ -44,7 +44,7 @@ export const TeamMemberSignUpFunction = async ({ email, password, phone, name, s
       }
     } catch (error) {
       console.error('Error deleting invitation client-side:', error);
-      // Proceed even if deletion fails, as Cloud Function may have handled it
+      // Proceed even if deletion fails, as Cloud Function should have handled it
     }
 
     return result.data.userData;

@@ -1197,7 +1197,6 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
           dashboard: permissions.dashboard || false,
           metrics: permissions.metrics || false,
           sheets: permissions.sheets || false,
-          allowedSheetIds: permissions.allowedSheetIds || [],
         },
       });
 
@@ -1284,6 +1283,13 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
     const invitationData = invitationDoc.data();
     const { businessId, businessName, invitedBy, permissions } = invitationData;
 
+    functions.logger.info('Invitation data retrieved', {
+      businessId,
+      businessName,
+      invitedBy,
+      permissions,
+    });
+
     if (invitationData.email.toLowerCase() !== email.toLowerCase()) {
       throw new functions.https.HttpsError('invalid-argument', 'Email does not match invitation');
     }
@@ -1306,7 +1312,7 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       phone,
       name: name.trim(),
       surname: surname.trim(),
-      role: 'team_member',
+      userType: 'team_member',
       businessId,
       businessName,
       createdAt: new Date().toISOString(),
@@ -1322,12 +1328,9 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       phone,
       name: name.trim(),
       surname: surname.trim(),
-      role: 'team_member',
+      userType: 'team_member',
       joinedAt: new Date().toISOString(),
-      allowedSheetIds: permissions.allowedSheetIds || [],
-      allowedDashboardIds: permissions.allowedDashboardIds || [],
-      allowedCardTemplateIds: permissions.allowedCardTemplateIds || [],
-      permissions: permissions.role || 'viewer',
+      permissions: permissions, // Copy the entire permissions object
       displayJoinedMessage: true,
     });
 

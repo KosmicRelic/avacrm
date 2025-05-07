@@ -18,32 +18,26 @@ export default function Settings() {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [sheets, setSheets] = useState([]);
-  const [dashboards, setDashboards] = useState([]);
-  const [cardTemplates, setCardTemplates] = useState([]);
   const [selectedTeamMemberUids, setSelectedTeamMemberUids] = useState([]);
-  const [selectedSheets, setSelectedSheets] = useState([]);
-  const [selectedDashboards, setSelectedDashboards] = useState([]);
-  const [selectedCardTemplates, setSelectedCardTemplates] = useState([]);
-  const [selectedPermissions, setSelectedPermissions] = useState('viewer');
+  const [invitationPermissions, setInvitationPermissions] = useState({
+    dashboard: 'none',
+    metrics: 'none',
+    sheets: { role: 'none', allowedSheetIds: [] },
+    actions: 'none',
+    financials: 'none',
+  });
+  const [selectedPermissions, setSelectedPermissions] = useState({
+    dashboard: 'none',
+    metrics: 'none',
+    sheets: { role: 'none', allowedSheetIds: [] },
+    actions: 'none',
+    financials: 'none',
+  });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [animationDirection, setAnimationDirection] = useState('enter');
   const [animationType, setAnimationType] = useState('slide');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Map data to expected format: { id, name }
-  const sheetItems = sheets.map(sheet => ({
-    id: sheet.docId || sheet.id,
-    name: sheet.sheetName,
-  }));
-  const dashboardItems = dashboards.map(dashboard => ({
-    id: dashboard.docId || dashboard.id,
-    name: dashboard.name || `Dashboard ${dashboard.docId || dashboard.id}`,
-  }));
-  const cardTemplateItems = cardTemplates.map(template => ({
-    id: template.docId || template.name,
-    name: template.name || `Template ${template.docId || template.name}`,
-  }));
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,62 +47,44 @@ export default function Settings() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch data for team members, sheets, dashboards, and card templates when navigating to manageTeam
+  // Fetch team members and sheets when navigating to manageTeam or sendInvitation
   useEffect(() => {
-    if (currentStep !== 'manageTeam' || !user || !user.uid || !businessId) {
+    if (!['manageTeam', 'sendInvitation'].includes(currentStep) || !user || !user.uid || !businessId) {
       return;
     }
 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch team members
-        const teamMembersQuery = query(collection(db, 'businesses', businessId, 'teamMembers'));
-        const teamMembersSnap = await getDocs(teamMembersQuery);
-        const teamMembersData = teamMembersSnap.docs.map(doc => ({
-          uid: doc.id,
-          ...doc.data(),
-        }));
-        setTeamMembers(teamMembersData);
+        // Fetch team members for manageTeam
+        if (currentStep === 'manageTeam') {
+          const teamMembersQuery = query(collection(db, 'businesses', businessId, 'teamMembers'));
+          const teamMembersSnap = await getDocs(teamMembersQuery);
+          const teamMembersData = teamMembersSnap.docs.map(doc => ({
+            uid: doc.id,
+            ...doc.data(),
+          }));
+          setTeamMembers(teamMembersData);
+        }
 
         // Fetch sheets
         const sheetsQuery = query(collection(db, 'businesses', businessId, 'sheets'));
         const sheetsSnap = await getDocs(sheetsQuery);
         const sheetsData = sheetsSnap.docs.map(doc => ({
-          docId: doc.id,
+          id: doc.id,
           ...doc.data(),
         }));
         setSheets(sheetsData);
-
-        // Fetch dashboards
-        const dashboardsQuery = query(collection(db, 'businesses', businessId, 'dashboards'));
-        const dashboardsSnap = await getDocs(dashboardsQuery);
-        const dashboardsData = dashboardsSnap.docs.map(doc => ({
-          docId: doc.id,
-          ...doc.data(),
-        }));
-        setDashboards(dashboardsData);
-
-        // Fetch card templates
-        const cardTemplatesQuery = query(collection(db, 'businesses', businessId, 'cardTemplates'));
-        const cardTemplatesSnap = await getDocs(cardTemplatesQuery);
-        const cardTemplatesData = cardTemplatesSnap.docs.map(doc => ({
-          docId: doc.id,
-          ...doc.data(),
-        }));
-        setCardTemplates(cardTemplatesData);
       } catch (err) {
         console.error('Error fetching data:', err, 'Code:', err.code, 'Message:', err.message);
         setErrorMessages([
           t('settings.errorFetchingData', {
-            message: `resources: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
+            message: `data: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
             defaultValue: 'Failed to load resources: {message}',
           }),
         ]);
-        setTeamMembers([]);
+        if (currentStep === 'manageTeam') setTeamMembers([]);
         setSheets([]);
-        setDashboards([]);
-        setCardTemplates([]);
       } finally {
         setIsLoading(false);
       }
@@ -117,7 +93,7 @@ export default function Settings() {
     fetchData();
   }, [currentStep, user, businessId, t]);
 
-  // Fetch pending invitations only when navigating to viewInvitations
+  // Fetch pending invitations when navigating to viewInvitations
   useEffect(() => {
     if (currentStep !== 'viewInvitations' || !user || !user.uid) {
       return;
@@ -192,7 +168,7 @@ export default function Settings() {
       setErrorMessages([t('settings.cannotDeleteSelf', { defaultValue: 'You cannot delete yourself' })]);
       return;
     }
-    const teamMember = teamMembers.find((tm) => tm.uid === uid);
+    const teamMember = teamMembers.find(tm => tm.uid === uid);
     if (!teamMember) {
       setErrorMessages([t('settings.teamMemberNotFound', { defaultValue: 'Team member not found' })]);
       return;
@@ -208,7 +184,7 @@ export default function Settings() {
         teamMemberUid: uid,
         email: teamMember.email,
         phone: teamMember.phone,
-        invitationCode: '', // Not used for deletion, but included for consistency
+        invitationCode: '',
         name: teamMember.name,
         surname: teamMember.surname,
       });
@@ -234,54 +210,56 @@ export default function Settings() {
     setSelectedTeamMemberUids([uid]);
     const teamMember = teamMembers.find(tm => tm.uid === uid);
     if (teamMember) {
-      setSelectedSheets(teamMember.allowedSheetIds || []);
-      setSelectedDashboards(teamMember.allowedDashboardIds || []);
-      setSelectedCardTemplates(teamMember.allowedCardTemplateIds || []);
-      setSelectedPermissions(teamMember.permissions || 'viewer');
+      setSelectedPermissions({
+        dashboard: teamMember.permissions?.dashboard?.role || 'none',
+        metrics: teamMember.permissions?.metrics?.role || 'none',
+        sheets: {
+          role: teamMember.permissions?.sheets?.role || 'none',
+          allowedSheetIds: teamMember.permissions?.sheets?.allowedSheetIds || [],
+        },
+        actions: teamMember.permissions?.actions?.role || 'none',
+        financials: teamMember.permissions?.financials?.role || 'none',
+      });
     }
     setAnimationDirection('enter');
     setAnimationType('none');
     setCurrentStep('editAccess');
   };
 
-  const toggleOption = (type, value) => {
-    const setters = {
-      sheets: setSelectedSheets,
-      dashboards: setSelectedDashboards,
-      cardTemplates: setSelectedCardTemplates,
-    };
-    const selected = {
-      sheets: selectedSheets,
-      dashboards: selectedDashboards,
-      cardTemplates: selectedCardTemplates,
-    }[type];
-    const items = {
-      sheets: sheetItems,
-      dashboards: dashboardItems,
-      cardTemplates: cardTemplateItems,
-    }[type];
-
-    if (value === 'all') {
-      setters[type](prev => {
-        if (prev.includes('all') || prev.length === items.length) {
-          return [];
-        } else {
-          return ['all', ...items.map(item => item.id)];
-        }
-      });
+  const togglePermission = (type, role, isInvitation = false) => {
+    const setter = isInvitation ? setInvitationPermissions : setSelectedPermissions;
+    if (type === 'sheets') {
+      setter(prev => ({
+        ...prev,
+        sheets: {
+          ...prev.sheets,
+          role,
+          allowedSheetIds: role === 'none' ? [] : prev.sheets.allowedSheetIds,
+        },
+      }));
     } else {
-      setters[type](prev => {
-        if (prev.includes(value)) {
-          return prev.filter(v => v !== value && v !== 'all');
-        } else {
-          const newSelected = [...prev.filter(v => v !== 'all'), value];
-          if (newSelected.length === items.length) {
-            return ['all', ...newSelected];
-          }
-          return newSelected;
-        }
-      });
+      setter(prev => ({
+        ...prev,
+        [type]: role,
+      }));
     }
+  };
+
+  const toggleSheetSelection = (sheetId, isInvitation = false) => {
+    const setter = isInvitation ? setInvitationPermissions : setSelectedPermissions;
+    setter(prev => {
+      const currentIds = prev.sheets.allowedSheetIds || [];
+      const newIds = currentIds.includes(sheetId)
+        ? currentIds.filter(id => id !== sheetId)
+        : [...currentIds, sheetId];
+      return {
+        ...prev,
+        sheets: {
+          ...prev.sheets,
+          allowedSheetIds: newIds,
+        },
+      };
+    });
   };
 
   const saveAccess = async () => {
@@ -291,6 +269,10 @@ export default function Settings() {
     }
     if (!businessId) {
       setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
+      return;
+    }
+    if (selectedPermissions.sheets.role !== 'none' && selectedPermissions.sheets.allowedSheetIds.length === 0) {
+      setErrorMessages([t('settings.noSheetsSelected', { defaultValue: 'Please select at least one sheet' })]);
       return;
     }
     try {
@@ -304,10 +286,16 @@ export default function Settings() {
 
         const newData = {
           ...currentData,
-          allowedSheetIds: selectedSheets.includes('all') ? sheetItems.map(s => s.id) : selectedSheets.filter(id => id !== 'all'),
-          allowedDashboardIds: selectedDashboards.includes('all') ? dashboardItems.map(d => d.id) : selectedDashboards.filter(id => id !== 'all'),
-          allowedCardTemplateIds: selectedCardTemplates.includes('all') ? cardTemplateItems.map(t => t.id) : selectedCardTemplates.filter(id => id !== 'all'),
-          permissions: selectedPermissions,
+          permissions: {
+            dashboard: { role: selectedPermissions.dashboard },
+            metrics: { role: selectedPermissions.metrics },
+            sheets: {
+              role: selectedPermissions.sheets.role,
+              allowedSheetIds: selectedPermissions.sheets.allowedSheetIds,
+            },
+            actions: { role: selectedPermissions.actions },
+            financials: { role: selectedPermissions.financials },
+          },
         };
 
         await setDoc(teamMemberRef, newData, { merge: false });
@@ -319,10 +307,13 @@ export default function Settings() {
       }
       setSuccessMessage(t('settings.accessUpdated'));
       setSelectedTeamMemberUids([]);
-      setSelectedSheets([]);
-      setSelectedDashboards([]);
-      setSelectedCardTemplates([]);
-      setSelectedPermissions('viewer');
+      setSelectedPermissions({
+        dashboard: 'none',
+        metrics: 'none',
+        sheets: { role: 'none', allowedSheetIds: [] },
+        actions: 'none',
+        financials: 'none',
+      });
       setAnimationDirection('exit');
       setAnimationType('none');
       setCurrentStep('manageTeam');
@@ -337,19 +328,34 @@ export default function Settings() {
 
   const cancelEditing = () => {
     setSelectedTeamMemberUids([]);
-    setSelectedSheets([]);
-    setSelectedDashboards([]);
-    setSelectedCardTemplates([]);
-    setSelectedPermissions('viewer');
+    setSelectedPermissions({
+      dashboard: 'none',
+      metrics: 'none',
+      sheets: { role: 'none', allowedSheetIds: [] },
+      actions: 'none',
+      financials: 'none',
+    });
     setAnimationDirection('exit');
     setAnimationType('none');
     setCurrentStep('manageTeam');
   };
 
+  const cancelInvitation = () => {
+    setEmail('');
+    setInvitationPermissions({
+      dashboard: 'none',
+      metrics: 'none',
+      sheets: { role: 'none', allowedSheetIds: [] },
+      actions: 'none',
+      financials: 'none',
+    });
+    setAnimationDirection('exit');
+    setAnimationType('none');
+    setCurrentStep('invitations');
+  };
+
   const hasPendingInvitationForEmail = (email) => {
-    return pendingInvitations.some(
-      inv => inv.email?.toLowerCase() === email.toLowerCase()
-    );
+    return pendingInvitations.some(inv => inv.email?.toLowerCase() === email.toLowerCase());
   };
 
   const handleGenerateInvitation = async () => {
@@ -369,6 +375,10 @@ export default function Settings() {
       setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
       return;
     }
+    if (invitationPermissions.sheets.role !== 'none' && invitationPermissions.sheets.allowedSheetIds.length === 0) {
+      setErrorMessages([t('settings.noSheetsSelected', { defaultValue: 'Please select at least one sheet' })]);
+      return;
+    }
     setIsGenerating(true);
     setErrorMessages([]);
     setSuccessMessage('');
@@ -383,7 +393,7 @@ export default function Settings() {
         throw new Error(t('settings.userDataNotFound'));
       }
       const token = await currentUser.getIdToken(true);
-
+  
       const maxRetries = 3;
       let attempt = 0;
       while (attempt < maxRetries) {
@@ -402,19 +412,30 @@ export default function Settings() {
                 invitedBy: user.uid,
                 businessEmail: user.email,
                 permissions: {
-                  role: 'editor',
-                  allowedSheetIds: [],
-                  allowedDashboardIds: [],
-                  allowedCardTemplateIds: [],
+                  dashboard: { role: invitationPermissions.dashboard },
+                  metrics: { role: invitationPermissions.metrics },
+                  sheets: {
+                    role: invitationPermissions.sheets.role,
+                    allowedSheetIds: invitationPermissions.sheets.allowedSheetIds, // Only nested here
+                  },
+                  actions: { role: invitationPermissions.actions },
+                  financials: { role: invitationPermissions.financials },
                 },
               }),
             }
           );
-
+  
           const result = await response.json();
           if (response.ok && result.status === 'success') {
             setSuccessMessage(result.message);
             setEmail('');
+            setInvitationPermissions({
+              dashboard: 'none',
+              metrics: 'none',
+              sheets: { role: 'none', allowedSheetIds: [] },
+              actions: 'none',
+              financials: 'none',
+            });
             if (currentStep === 'viewInvitations') {
               const invitationsQuery = query(
                 collection(db, 'invitations'),
@@ -425,6 +446,9 @@ export default function Settings() {
               const invitationsData = invitationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setPendingInvitations(invitationsData);
             }
+            setAnimationDirection('exit');
+            setAnimationType('none');
+            setCurrentStep('invitations');
             return;
           } else {
             throw new Error(result.error || t('settings.failedToSendInvitation'));
@@ -444,12 +468,11 @@ export default function Settings() {
   };
 
   const handleStepChange = (step) => {
-    const isForward = (
+    const isForward =
       (currentStep === 'main' && (step === 'invitations' || step === 'manageTeam')) ||
       (currentStep === 'main' && (step === 'sendInvitation' || step === 'viewInvitations' || step === 'editAccess')) ||
       (currentStep === 'invitations' && (step === 'sendInvitation' || step === 'viewInvitations')) ||
-      (currentStep === 'manageTeam' && step === 'editAccess')
-    );
+      (currentStep === 'manageTeam' && step === 'editAccess');
 
     setAnimationDirection(isForward ? 'enter' : 'exit');
 
@@ -476,10 +499,20 @@ export default function Settings() {
 
     setCurrentStep(step);
     setSelectedTeamMemberUids([]);
-    setSelectedSheets([]);
-    setSelectedDashboards([]);
-    setSelectedCardTemplates([]);
-    setSelectedPermissions('viewer');
+    setSelectedPermissions({
+      dashboard: 'none',
+      metrics: 'none',
+      sheets: { role: 'none', allowedSheetIds: [] },
+      actions: 'none',
+      financials: 'none',
+    });
+    setInvitationPermissions({
+      dashboard: 'none',
+      metrics: 'none',
+      sheets: { role: 'none', allowedSheetIds: [] },
+      actions: 'none',
+      financials: 'none',
+    });
     setEmail('');
   };
 
@@ -600,14 +633,96 @@ export default function Settings() {
                     aria-label={t('settings.recipientEmail')}
                   />
                 </div>
-                <button
-                  onClick={handleGenerateInvitation}
-                  disabled={isGenerating}
-                  className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  aria-label={isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
-                >
-                  {isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
-                </button>
+                {['dashboard', 'metrics', 'sheets', 'actions', 'financials'].map(type => (
+                  <div key={type} className={styles.inputGroup}>
+                    <label>{t(`settings.${type}`)}</label>
+                    {type === 'sheets' ? (
+                      <>
+                        {['none', 'viewer', 'editor'].map(role => (
+                          <button
+                            key={role}
+                            onClick={() => togglePermission(type, role, true)}
+                            className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                              invitationPermissions.sheets.role === role ? styles.selected : ''
+                            }`}
+                            aria-label={t(`settings.${role}`)}
+                          >
+                            <span>{t(`settings.${role}`)}</span>
+                            {invitationPermissions.sheets.role === role ? (
+                              <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                            ) : (
+                              <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                            )}
+                          </button>
+                        ))}
+                        {invitationPermissions.sheets.role !== 'none' && (
+                          <div className={styles.sheetSelection}>
+                            <h4>{t('settings.selectSheets')}</h4>
+                            {isLoading ? (
+                              <p>{t('settings.loading')}</p>
+                            ) : sheets.length > 0 ? (
+                              sheets.map(sheet => (
+                                <div key={sheet.id} className={styles.sheetItem}>
+                                  <button
+                                    onClick={() => toggleSheetSelection(sheet.id, true)}
+                                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                                      invitationPermissions.sheets.allowedSheetIds.includes(sheet.id) ? styles.selected : ''
+                                    }`}
+                                    aria-label={t('settings.selectSheet', { name: sheet.name || sheet.id })}
+                                  >
+                                    <span>{sheet.sheetName || sheet.id}</span>
+                                    {invitationPermissions.sheets.allowedSheetIds.includes(sheet.id) ? (
+                                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                                    ) : (
+                                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                                    )}
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <p>{t('settings.noSheetsAvailable', { defaultValue: 'No sheets available' })}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      ['none', 'viewer', 'editor'].map(role => (
+                        <button
+                          key={role}
+                          onClick={() => togglePermission(type, role, true)}
+                          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                            invitationPermissions[type] === role ? styles.selected : ''
+                          }`}
+                          aria-label={t(`settings.${role}`)}
+                        >
+                          <span>{t(`settings.${role}`)}</span>
+                          {invitationPermissions[type] === role ? (
+                            <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                          ) : (
+                            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ))}
+                <div className={styles.buttonGroup}>
+                  <button
+                    onClick={handleGenerateInvitation}
+                    disabled={isGenerating}
+                    className={`${styles.button} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label={isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
+                  >
+                    {isGenerating ? t('settings.sending') : t('settings.sendInvitation')}
+                  </button>
+                  <button
+                    onClick={cancelInvitation}
+                    className={`${styles.button} ${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    aria-label={t('settings.cancel')}
+                  >
+                    {t('settings.cancel')}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -678,10 +793,7 @@ export default function Settings() {
                 ) : teamMembers.length > 0 ? (
                   <div className={styles.teamMemberList}>
                     {teamMembers.map(tm => (
-                      <div
-                        key={tm.uid}
-                        className={`${styles.teamMemberItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
+                      <div key={tm.uid} className={`${styles.teamMemberItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <button
                           onClick={() => toggleTeamMemberSelection(tm.uid)}
                           className={`${styles.teamMemberButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -726,128 +838,79 @@ export default function Settings() {
                       t('settings.unknownEmail', { defaultValue: 'Unknown Email' }),
                   })}
                 </h3>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.role')}</label>
-                  {['viewer', 'editor'].map(role => (
-                    <button
-                      key={role}
-                      onClick={() => setSelectedPermissions(role)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedPermissions === role ? styles.selected : ''
-                      }`}
-                      aria-label={t(`settings.${role}`)}
-                    >
-                      <span>{t(`settings.${role}`)}</span>
-                      {selectedPermissions === role ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.sheets')}</label>
-                  <button
-                    onClick={() => toggleOption('sheets', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedSheets.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allSheets')}
-                  >
-                    <span>{t('settings.allSheets')}</span>
-                    {selectedSheets.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                {['dashboard', 'metrics', 'sheets', 'actions', 'financials'].map(type => (
+                  <div key={type} className={styles.inputGroup}>
+                    <label>{t(`settings.${type}`)}</label>
+                    {type === 'sheets' ? (
+                      <>
+                        {['none', 'viewer', 'editor'].map(role => (
+                          <button
+                            key={role}
+                            onClick={() => togglePermission(type, role)}
+                            className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                              selectedPermissions.sheets.role === role ? styles.selected : ''
+                            }`}
+                            aria-label={t(`settings.${role}`)}
+                          >
+                            <span>{t(`settings.${role}`)}</span>
+                            {selectedPermissions.sheets.role === role ? (
+                              <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                            ) : (
+                              <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                            )}
+                          </button>
+                        ))}
+                        {selectedPermissions.sheets.role !== 'none' && (
+                          <div className={styles.sheetSelection}>
+                            <h4>{t('settings.selectSheets')}</h4>
+                            {isLoading ? (
+                              <p>{t('settings.loading')}</p>
+                            ) : sheets.length > 0 ? (
+                              sheets.map(sheet => (
+                                <div key={sheet.id} className={styles.sheetItem}>
+                                  <button
+                                    onClick={() => toggleSheetSelection(sheet.id)}
+                                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                                      selectedPermissions.sheets.allowedSheetIds.includes(sheet.id) ? styles.selected : ''
+                                    }`}
+                                    aria-label={t('settings.selectSheet', { name: sheet.name || sheet.id })}
+                                  >
+                                    <span>{sheet.sheetName || sheet.id}</span>
+                                    {selectedPermissions.sheets.allowedSheetIds.includes(sheet.id) ? (
+                                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                                    ) : (
+                                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                                    )}
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <p>{t('settings.noSheetsAvailable', { defaultValue: 'No sheets available' })}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                      ['none', 'viewer', 'editor'].map(role => (
+                        <button
+                          key={role}
+                          onClick={() => togglePermission(type, role)}
+                          className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                            selectedPermissions[type] === role ? styles.selected : ''
+                          }`}
+                          aria-label={t(`settings.${role}`)}
+                        >
+                          <span>{t(`settings.${role}`)}</span>
+                          {selectedPermissions[type] === role ? (
+                            <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                          ) : (
+                            <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                          )}
+                        </button>
+                      ))
                     )}
-                  </button>
-                  {sheetItems.map(sheet => (
-                    <button
-                      key={sheet.id}
-                      onClick={() => toggleOption('sheets', sheet.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedSheets.includes(sheet.id) ? styles.selected : ''
-                      }`}
-                      aria-label={sheet.name}
-                    >
-                      <span>{sheet.name}</span>
-                      {selectedSheets.includes(sheet.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.dashboards')}</label>
-                  <button
-                    onClick={() => toggleOption('dashboards', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedDashboards.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allDashboards')}
-                  >
-                    <span>{t('settings.allDashboards')}</span>
-                    {selectedDashboards.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    )}
-                  </button>
-                  {dashboardItems.map(dashboard => (
-                    <button
-                      key={dashboard.id}
-                      onClick={() => toggleOption('dashboards', dashboard.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedDashboards.includes(dashboard.id) ? styles.selected : ''
-                      }`}
-                      aria-label={dashboard.name}
-                    >
-                      <span>{dashboard.name}</span>
-                      {selectedDashboards.includes(dashboard.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t('settings.cardTemplates')}</label>
-                  <button
-                    onClick={() => toggleOption('cardTemplates', 'all')}
-                    className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      selectedCardTemplates.includes('all') ? styles.selected : ''
-                    }`}
-                    aria-label={t('settings.allCardTemplates')}
-                  >
-                    <span>{t('settings.allCardTemplates')}</span>
-                    {selectedCardTemplates.includes('all') ? (
-                      <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    ) : (
-                      <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                    )}
-                  </button>
-                  {cardTemplateItems.map(template => (
-                    <button
-                      key={template.id}
-                      onClick={() => toggleOption('cardTemplates', template.id)}
-                      className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        selectedCardTemplates.includes(template.id) ? styles.selected : ''
-                      }`}
-                      aria-label={template.name}
-                    >
-                      <span>{template.name}</span>
-                      {selectedCardTemplates.includes(template.id) ? (
-                        <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      ) : (
-                        <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                      )}
-                    </button>
-                  ))}
-                </div>
+                  </div>
+                ))}
                 <div className={styles.buttonGroup}>
                   <button
                     onClick={saveAccess}
