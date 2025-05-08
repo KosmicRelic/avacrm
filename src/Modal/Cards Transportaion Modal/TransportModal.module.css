@@ -15,7 +15,7 @@
   .sheetItem {
     padding: 13px 16px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
-    background: rgba(255, 255, 255, 0.95); /* Light mode */
+    background: rgba(229, 229, 234, 0.5);
     transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
     cursor: pointer;
     user-select: none;
@@ -27,7 +27,7 @@
   
   .sheetItem.darkTheme {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
-    background: rgba(44, 44, 46, 0.95); /* Dark mode */
+    background: rgba(56, 56, 60, 0.6); /* Dark mode */
   }
   
   .sheetItem.lastChild {

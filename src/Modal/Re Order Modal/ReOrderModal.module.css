@@ -2,14 +2,14 @@
   margin: 16px 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(229, 229, 234, 0.5);
   backdrop-filter: blur(20px);
   transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
 .sheetList.darkTheme {
-  background: rgba(58, 58, 60, 0.6);
+  background: rgba(56, 56, 60, 0.6);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 

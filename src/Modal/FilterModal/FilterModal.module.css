@@ -12,13 +12,14 @@
 
 .filterItem {
   padding: 12.5px 16px;
+  background: rgba(229, 229, 234, 0.5);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
 .filterItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
-  background: rgba(58, 58, 60, 0.6); /* Dark mode */
+  background: rgba(56, 56, 60, 0.6);
 }
 
 .filterItem:last-child {
@@ -34,7 +35,7 @@
 }
 
 .activeItem {
-  background: rgba(255, 255, 255, 0.6); /* Light mode */
+  background: rgba(229, 229, 234, 0.5);
   transition: background 0.3s ease;
 }
 

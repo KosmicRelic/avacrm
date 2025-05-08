@@ -19,13 +19,13 @@
 
 .sheetItem {
   padding: 13.5px 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(229, 229, 234, 0.5);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
 
 .sheetItem.darkTheme {
-  background: rgba(58, 58, 60, 0.6);
+  background: rgba(56, 56, 60, 0.6);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -128,7 +128,7 @@
   width: 100%;
   padding: 13.5px 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(229, 229, 234, 0.5);
   border: none;
   color: #007aff;
   font-size: 14px;
@@ -138,7 +138,7 @@
 }
 
 .actionButton.darkTheme {
-  background: rgba(58, 58, 60, 0.6);
+  background: rgba(56, 56, 60, 0.6);
   color: #0a84ff;
 }
 

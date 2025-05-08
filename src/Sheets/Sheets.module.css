@@ -138,6 +138,7 @@
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   transition: background 0.3s ease, box-shadow 0.3s ease;
+  z-index: 10;
 }
 
 .sheetTabs.darkTheme {
