@@ -232,6 +232,10 @@ export default function Settings() {
   const toggleSheetSelection = (sheetId, isInvitation = false) => {
     const setter = isInvitation ? setInvitationPermissions : setSelectedPermissions;
     setter(prev => {
+      // Prevent toggling if role is 'none'
+      if ((isInvitation ? prev.sheets?.role : prev.sheets?.role) === 'none') {
+        return prev;
+      }
       const currentIds = prev.sheets.allowedSheetIds || [];
       const newIds = currentIds.includes(sheetId)
         ? currentIds.filter(id => id !== sheetId)
@@ -268,21 +272,28 @@ export default function Settings() {
         }
         const currentData = teamMemberDoc.data();
 
-        const newData = {
-          ...currentData,
-          permissions: {
-            dashboard: { role: selectedPermissions.dashboard },
-            metrics: { role: selectedPermissions.metrics },
-            sheets: {
-              role: selectedPermissions.sheets.role,
-              allowedSheetIds: selectedPermissions.sheets.allowedSheetIds,
-            },
-            actions: { role: selectedPermissions.actions },
-            financials: { role: selectedPermissions.financials },
+        // Ensure permissions object is correctly structured
+        const updatedPermissions = {
+          dashboard: { role: selectedPermissions.dashboard },
+          metrics: { role: selectedPermissions.metrics },
+          sheets: {
+            role: selectedPermissions.sheets.role,
+            allowedSheetIds: selectedPermissions.sheets.allowedSheetIds || [],
           },
+          actions: { role: selectedPermissions.actions },
+          financials: { role: selectedPermissions.financials },
         };
 
-        await setDoc(teamMemberRef, newData, { merge: false });
+        // Merge with existing data to preserve other fields
+        const newData = {
+          ...currentData,
+          permissions: updatedPermissions,
+        };
+
+        // Update the document with the correct nested structure
+        await setDoc(teamMemberRef, newData, { merge: true });
+
+        // Update local state
         setTeamMembers(prev => prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm)));
       }
       setSuccessMessage(t('settings.accessUpdated'));
@@ -542,7 +553,6 @@ export default function Settings() {
 
       <div className={`${styles.teamAccessContainer} ${isMobile ? styles.mobile : ''}`}>
         <div
-          // Fixed: Removed invalid PREDICTED: prefix from className
           className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''} ${
             isMobile && currentStep !== 'main' ? styles.hidden : ''
           } ${isMobile && currentStep === 'main' && animationDirection === 'exit' ? styles.animateEnter : ''} ${
@@ -644,7 +654,7 @@ export default function Settings() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value.trim())} // Trim input to avoid spaces
+                    onChange={(e) => setEmail(e.target.value.trim())}
                     placeholder={t('settings.enterEmail')}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
                     aria-label={t('settings.recipientEmail')}

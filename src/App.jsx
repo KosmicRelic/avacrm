@@ -15,7 +15,7 @@ import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
 import Settings from './Settings/Settings';
-import FolderOperations from './Modal/Folder Modal/FolderModal'; // Added import
+import FolderOperations from './Modal/Folder Modal/FolderModal';
 import {
   handleModalSave,
   handleModalClose,
@@ -88,7 +88,7 @@ function App() {
     activeSheetName,
     setActiveSheetName,
     sheetCardsFetched,
-    setSheetCardsFetched, // Added to reset cache
+    setSheetCardsFetched,
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -209,6 +209,9 @@ function App() {
   const handleDeleteSheet = useCallback(
     (sheetName) => {
       if (!sheets) return;
+      const sheetToDelete = sheets.allSheets.find((sheet) => sheet.sheetName === sheetName);
+      if (!sheetToDelete) return;
+
       setSheets((prev) => {
         const updatedAllSheets = prev.allSheets.filter((sheet) => sheet.sheetName !== sheetName);
         const updatedStructure = prev.structure
@@ -235,10 +238,14 @@ function App() {
           allSheets: updatedAllSheets.map((sheet, index) => ({
             ...sheet,
             isActive: index === 0 && !newActiveSheet ? true : sheet.sheetName === newActiveSheet,
+            isModified: sheet.sheetName === sheetName ? true : sheet.isModified,
+            action: sheet.sheetName === sheetName ? 'remove' : sheet.action,
           })),
           structure: updatedStructure,
+          deletedSheetId: sheetToDelete.docId, // Pass docId for team members update
         };
       });
+
       if (activeSheetName === sheetName) {
         setActiveSheetName(newActiveSheet || 'Leads');
         handleSheetChange(newActiveSheet || 'Leads');
@@ -402,10 +409,9 @@ function App() {
         data: {
           folderName,
           onSheetSelect: (sheetName) => {
-            console.log('Selected sheet:', sheetName); // Debug log
+            console.log('Selected sheet:', sheetName);
             setActiveSheetName(sheetName);
             handleSheetChange(sheetName);
-            // Reset cache to force card refetch
             setSheetCardsFetched((prev) => ({
               ...prev,
               [sheetName]: false,
@@ -464,7 +470,7 @@ function App() {
     widgetViewModal,
     widgetSetupModal,
     metricsModal,
-    folderModal, // Added to modalUtilsProps
+    folderModal,
     activeDashboard,
     activeSheet,
     resolvedHeaders,

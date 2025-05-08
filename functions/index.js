@@ -1443,7 +1443,6 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
         actions: { role: permissions.actions.role || false },
         financials: { role: permissions.financials.role || false },
       },
-      allowedSheetIds: permissions.sheets.allowedSheetIds || [], // Maintain compatibility
       displayJoinedMessage: true,
     });
 

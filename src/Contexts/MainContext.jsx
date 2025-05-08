@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
 import fetchUserData, { resetFetchedSheetIds } from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 export const MainContext = createContext();
@@ -19,7 +19,7 @@ export const MainContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [businessId, setBusinessId] = useState(null);
   const [userAuthChecked, setUserAuthChecked] = useState(false);
-  const [sheets, setSheets] = useState({ allSheets: [], structure: [] });
+  const [sheets, setSheets] = useState({ allSheets: [], structure: [], deletedSheetId: null });
   const [cards, setCards] = useState([]);
   const [cardTemplates, setCardTemplates] = useState([]);
   const [metrics, setMetrics] = useState([]);
@@ -39,7 +39,7 @@ export const MainContextProvider = ({ children }) => {
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
   const prevStates = useRef({
-    sheets: { allSheets: [], structure: [] },
+    sheets: { allSheets: [], structure: [], deletedSheetId: null },
     cards: [],
     cardTemplates: [],
     metrics: [],
@@ -170,7 +170,7 @@ export const MainContextProvider = ({ children }) => {
       } else {
         setUser(null);
         setBusinessId(null);
-        setSheets({ allSheets: [], structure: [] });
+        setSheets({ allSheets: [], structure: [], deletedSheetId: null });
         setCards([]);
         setCardTemplates([]);
         setMetrics([]);
@@ -183,7 +183,7 @@ export const MainContextProvider = ({ children }) => {
         displayedMessages.current.clear();
         hasFetched.current = { sheets: false, dashboard: false, metrics: false };
         prevStates.current = {
-          sheets: { allSheets: [], structure: [] },
+          sheets: { allSheets: [], structure: [], deletedSheetId: null },
           cards: [],
           cardTemplates: [],
           metrics: [],
@@ -337,7 +337,7 @@ export const MainContextProvider = ({ children }) => {
     }
 
     // Skip updates if data is uninitialized (initial load)
-    if (sheets.allSheets.length === 0 && sheets.structure.length === 0) {
+    if (sheets.allSheets.length === 0 && sheets.structure.length === 0 && !sheets.deletedSheetId) {
       prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       return;
     }
@@ -396,7 +396,7 @@ export const MainContextProvider = ({ children }) => {
 
         // Handle card updates (allowed for all users if card is in accessible sheet rows)
         const modifiedCards = cards.filter((card) => card.isModified);
-        const accessibleSheets = sheets.allSheets; // From fetchUserData, includes allowed sheets only
+        const accessibleSheets = sheets.allSheets;
         const accessibleRowIds = new Set(
           accessibleSheets.flatMap((sheet) =>
             Array.isArray(sheet.rows) ? sheet.rows.map(String) : []
@@ -447,7 +447,7 @@ export const MainContextProvider = ({ children }) => {
             if (template.action === 'remove') {
               batch.delete(docRef);
               hasChanges = true;
-            } else if (template.action === 'add' || dashboard.action === 'update') {
+            } else if (template.action === 'add' || template.action === 'update') {
               const { isModified, action, docId, ...templateData } = template;
               batch.set(docRef, templateData);
               hasChanges = true;
@@ -494,6 +494,25 @@ export const MainContextProvider = ({ children }) => {
               }
             }
           }
+
+          // Handle team members' permissions for deleted sheets
+          if (sheets.deletedSheetId) {
+            const teamMembersSnapshot = await getDocs(collection(db, 'businesses', businessId, 'teamMembers'));
+            teamMembersSnapshot.forEach((teamMemberDoc) => {
+              const teamMemberData = teamMemberDoc.data();
+              const allowedSheetIds = teamMemberData.permissions?.sheets?.allowedSheetIds || [];
+              if (allowedSheetIds.includes(sheets.deletedSheetId)) {
+                const updatedAllowedSheetIds = allowedSheetIds.filter(
+                  (id) => id !== sheets.deletedSheetId
+                );
+                const docRef = doc(db, 'businesses', businessId, 'teamMembers', teamMemberDoc.id);
+                batch.update(docRef, {
+                  'permissions.sheets.allowedSheetIds': updatedAllowedSheetIds,
+                });
+                hasChanges = true;
+              }
+            });
+          }
         }
 
         if (hasChanges) {
@@ -532,6 +551,10 @@ export const MainContextProvider = ({ children }) => {
                   return template;
                 })
             );
+            // Clear deletedSheetId after successful commit
+            if (sheets.deletedSheetId) {
+              setSheets((prev) => ({ ...prev, deletedSheetId: null }));
+            }
           }
         }
       } catch (error) {
