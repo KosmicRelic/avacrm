@@ -11,7 +11,7 @@ const auth = admin.auth();
 const resend = new Resend('re_C1GAhxiY_KvM6xMG96EHQwAZnC6Cp2k5s');
 // CORS configuration
 const corsOptions = {
-  origin: true, // Change to your domain for production, e.g. 'https://www.apx.gr'
+  origin: ['https://www.apx.gr', 'http://localhost:5173'],
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false,
@@ -107,7 +107,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
             '100011', '100012', '100013', '100014', '100015', '100016', '100017', '100018', '100019', '100020',
           ],
           filters: {},
-          isActive: true,
+          isActive: false,
         },
         {
           id: 'campaignsSheet',
@@ -1160,7 +1160,7 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
 
       const { email, businessId, invitedBy, businessEmail, permissions } = body || {};
 
-      functions.logger.info('Parsed body', { email, businessId, invitedBy, permissions });
+      functions.logger.info('Parsed body', { email, businessId, invitedBy, businessEmail, permissions });
 
       if (!email || !businessId || !invitedBy || !permissions) {
         functions.logger.error('Missing required fields', { email, businessId, invitedBy, permissions });
@@ -1174,6 +1174,63 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         functions.logger.error('Invalid email format', { email });
         return res.status(400).json({ error: 'Invalid email format' });
       }
+
+      // Validate permissions structure
+      const validRoles = ['viewer', 'editor', 'none', false];
+      const validationErrors = [];
+
+      if (!permissions.dashboard || typeof permissions.dashboard !== 'object' || !('role' in permissions.dashboard)) {
+        validationErrors.push('dashboard: missing or invalid role');
+      } else if (!validRoles.includes(permissions.dashboard.role)) {
+        validationErrors.push(`dashboard: invalid role "${permissions.dashboard.role}"`);
+      }
+
+      if (!permissions.metrics || typeof permissions.metrics !== 'object' || !('role' in permissions.metrics)) {
+        validationErrors.push('metrics: missing or invalid role');
+      } else if (!validRoles.includes(permissions.metrics.role)) {
+        validationErrors.push(`metrics: invalid role "${permissions.metrics.role}"`);
+      }
+
+      if (!permissions.sheets || typeof permissions.sheets !== 'object' || !('role' in permissions.sheets)) {
+        validationErrors.push('sheets: missing or invalid role');
+      } else if (!validRoles.includes(permissions.sheets.role)) {
+        validationErrors.push(`sheets: invalid role "${permissions.sheets.role}"`);
+      }
+
+      if (!permissions.actions || typeof permissions.actions !== 'object' || !('role' in permissions.actions)) {
+        validationErrors.push('actions: missing or invalid role');
+      } else if (!validRoles.includes(permissions.actions.role)) {
+        validationErrors.push(`actions: invalid role "${permissions.actions.role}"`);
+      }
+
+      if (!permissions.financials || typeof permissions.financials !== 'object' || !('role' in permissions.financials)) {
+        validationErrors.push('financials: missing or invalid role');
+      } else if (!validRoles.includes(permissions.financials.role)) {
+        validationErrors.push(`financials: invalid role "${permissions.financials.role}"`);
+      }
+
+      if (!permissions.sheets || !Array.isArray(permissions.sheets.allowedSheetIds)) {
+        validationErrors.push('sheets.allowedSheetIds: must be an array');
+      }
+
+      if (validationErrors.length > 0) {
+        functions.logger.error('Invalid permissions structure', { permissions, validationErrors });
+        return res.status(400).json({
+          error: `Invalid permissions structure: ${validationErrors.join('; ')}`,
+        });
+      }
+
+      // Convert 'none' to false for storage
+      const normalizedPermissions = {
+        dashboard: { role: permissions.dashboard.role === 'none' ? false : permissions.dashboard.role },
+        metrics: { role: permissions.metrics.role === 'none' ? false : permissions.metrics.role },
+        sheets: {
+          role: permissions.sheets.role === 'none' ? false : permissions.sheets.role,
+          allowedSheetIds: permissions.sheets.allowedSheetIds || [],
+        },
+        actions: { role: permissions.actions.role === 'none' ? false : permissions.actions.role },
+        financials: { role: permissions.financials.role === 'none' ? false : permissions.financials.role },
+      };
 
       const businessDoc = await db.collection('businesses').doc(businessId).get();
       if (!businessDoc.exists) {
@@ -1193,33 +1250,79 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
         status: 'pending',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         invitedBy,
-        permissions: {
-          dashboard: permissions.dashboard || false,
-          metrics: permissions.metrics || false,
-          sheets: permissions.sheets || false,
-        },
+        permissions: normalizedPermissions,
       });
 
-      const emailResponse = await resend.emails.send({
-        from: `${businessName} Team <invitations@apx.gr>`,
+      // Enforce verified sender email (temporary fix)
+      const defaultSenderEmail = 'invitations@apx.gr';
+      let senderEmail = defaultSenderEmail;
+
+      // Only allow businessEmail if it’s from apx.gr
+      if (businessEmail && emailRegex.test(businessEmail)) {
+        if (businessEmail.endsWith('@apx.gr')) {
+          senderEmail = businessEmail;
+        } else {
+          functions.logger.warn('Invalid sender domain, using default', {
+            attemptedSender: businessEmail,
+            defaultSender: defaultSenderEmail,
+          });
+        }
+      }
+
+      functions.logger.info('Preparing to send email', {
+        from: `${businessName} Team <${senderEmail}>`,
         to: email,
-        subject: `You're Invited to Join ${businessName} Team!`,
-        html: `
-          <h1>Team Invitation</h1>
-          <p>You've been invited to join the ${businessName} team!</p>
-          <p>Click <a href="https://www.apx.gr/signup/${businessName}/teammember/${invitationCode}">here</a> to accept your invitation.</p>
-          <p>If you have any questions, contact ${businessEmail}</p>
-        `,
       });
 
-      functions.logger.info('Invitation email sent', { email, invitationCode });
+      // Send email via Resend
+      let emailResponse;
+      try {
+        emailResponse = await resend.emails.send({
+          from: `${businessName} Team <${senderEmail}>`,
+          to: email,
+          subject: `You're Invited to Join ${businessName} Team!`,
+          html: `
+            <h1>Team Invitation</h1>
+            <p>You've been invited to join the ${businessName} team!</p>
+            <p>Click <a href="https://www.apx.gr/signup/${encodeURIComponent(businessName)}/teammember/${invitationCode}">here</a> to accept your invitation.</p>
+            <p>If you have any questions, contact ${senderEmail}</p>
+          `,
+        });
+      } catch (emailError) {
+        functions.logger.error('Resend API request failed', {
+          error: emailError.message,
+          stack: emailError.stack,
+          senderEmail,
+          recipientEmail: email,
+        });
+        return res.status(500).json({ error: `Failed to send email: ${emailError.message}` });
+      }
+
+      // Check Resend response
+      if (emailResponse.error || !emailResponse.data?.id) {
+        functions.logger.error('Resend API returned an error or invalid response', {
+          emailResponse,
+          senderEmail,
+          recipientEmail: email,
+        });
+        return res.status(500).json({
+          error: `Failed to send email: ${emailResponse.error?.message || 'Invalid Resend API response'}`,
+        });
+      }
+
+      functions.logger.info('Invitation email sent', {
+        email,
+        invitationCode,
+        emailResponse: emailResponse.data,
+      });
       return res.status(200).json({ status: 'success', message: 'Invitation email sent successfully' });
     } catch (error) {
       functions.logger.error('sendInvitationEmail failed', {
         error: error.message,
         stack: error.stack,
+        code: error.code,
       });
-      return res.status(500).json({ error: 'Failed to send invitation email' });
+      return res.status(500).json({ error: `Failed to send invitation email: ${error.message}` });
     }
   });
 });
@@ -1259,7 +1362,7 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid phone number format');
     }
 
-    // Validate name and surname (basic validation: non-empty strings, no special characters)
+    // Validate name and surname
     const nameRegex = /^[a-zA-Z\s-]+$/;
     if (!nameRegex.test(name) || name.trim().length === 0) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid name format');
@@ -1330,7 +1433,17 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
       surname: surname.trim(),
       userType: 'team_member',
       joinedAt: new Date().toISOString(),
-      permissions: permissions, // Copy the entire permissions object
+      permissions: {
+        dashboard: { role: permissions.dashboard.role || false },
+        metrics: { role: permissions.metrics.role || false },
+        sheets: {
+          role: permissions.sheets.role || false,
+          allowedSheetIds: permissions.sheets.allowedSheetIds || [],
+        },
+        actions: { role: permissions.actions.role || false },
+        financials: { role: permissions.financials.role || false },
+      },
+      allowedSheetIds: permissions.sheets.allowedSheetIds || [], // Maintain compatibility
       displayJoinedMessage: true,
     });
 

@@ -51,10 +51,38 @@ const fetchUserData = async ({
     const user = auth.currentUser;
     if (!user || user.uid === businessId) return null; // Business owner
     const teamMemberDoc = await getDoc(doc(db, 'businesses', businessId, 'teamMembers', user.uid));
+    console.debug('Team member document fetched', {
+      exists: teamMemberDoc.exists(),
+      data: teamMemberDoc.exists() ? teamMemberDoc.data() : null,
+      userId: user.uid,
+      businessId,
+      timestamp: new Date().toISOString(),
+    });
     if (teamMemberDoc.exists()) {
-      return teamMemberDoc.data().allowedSheetIds || [];
+      const data = teamMemberDoc.data();
+      const allowedSheetIds = data.allowedSheetIds || data.permissions?.sheets?.allowedSheetIds || [];
+      console.debug('Allowed sheet IDs retrieved', {
+        allowedSheetIds,
+        userId: user.uid,
+        businessId,
+        timestamp: new Date().toISOString(),
+      });
+      return allowedSheetIds;
     }
     return [];
+  };
+
+  // Derive structure from sheets
+  const deriveStructureFromSheets = (sheets) => {
+    const structure = sheets.map((sheet) => ({
+      sheetName: sheet.sheetName,
+    }));
+    console.debug('Derived structure from sheets', {
+      structure,
+      sheetsCount: sheets.length,
+      timestamp: new Date().toISOString(),
+    });
+    return structure;
   };
 
   // Reset cache only if businessId changes
@@ -71,49 +99,70 @@ const fetchUserData = async ({
 
     if (updateSheets) {
       try {
-        // Parallel fetch: sheets, structure, allowedSheetIds, cardTemplates
-        const [
-          sheetsSnapshot,
-          structureDoc,
-          allowedSheetIdsResult,
-          cardTemplatesSnapshot
-        ] = await Promise.all([
-          getDocs(collection(db, 'businesses', businessId, 'sheets')),
-          getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure')),
-          getAllowedSheetIds(),
-          getDocs(collection(db, 'businesses', businessId, 'cardTemplates'))
+        const isBusinessUser = auth.currentUser?.uid === businessId;
+        allowedSheetIds = await getAllowedSheetIds();
+
+        // Parallelize fetching sheets and cardTemplates
+        let sheetsPromise, structureDocPromise, cardTemplatesPromise;
+        if (!isBusinessUser) {
+          // Team member: Fetch only allowed sheets
+          if (allowedSheetIds && allowedSheetIds.length > 0) {
+            sheetsPromise = Promise.all(
+              allowedSheetIds.map((sheetId) =>
+                getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId))
+              )
+            );
+          } else {
+            sheetsPromise = Promise.resolve([]);
+          }
+          structureDocPromise = Promise.resolve(null); // No structure doc for team member
+        } else {
+          // Business user: Fetch all sheets and structure doc in parallel
+          sheetsPromise = getDocs(collection(db, 'businesses', businessId, 'sheets'));
+          structureDocPromise = getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
+        }
+        cardTemplatesPromise = getDocs(collection(db, 'businesses', businessId, 'cardTemplates'));
+
+        // Await all in parallel
+        const [sheetsResult, structureDoc, cardTemplatesSnapshot] = await Promise.all([
+          sheetsPromise,
+          structureDocPromise,
+          cardTemplatesPromise,
         ]);
 
-        allSheets = sheetsSnapshot.docs.map((doc) => ({
-          docId: doc.id,
-          ...doc.data(),
-        }));
-
-        allowedSheetIds = allowedSheetIdsResult;
-
-        structureData = structureDoc.exists() ? structureDoc.data().structure : [];
-
-        // Filter structure for team members
-        if (allowedSheetIds) {
-          const sheetIdToName = new Map(
-            allSheets.map((sheet) => [sheet.docId.toLowerCase(), sheet.sheetName?.toLowerCase()])
-          );
-          structureData = structureData.filter((entry) => {
-            const sheetId = [...sheetIdToName.entries()].find(
-              ([, name]) => name === entry.sheetName.toLowerCase()
-            )?.[0];
-            return sheetId && allowedSheetIds.includes(sheetId);
-          });
-        }
-
-        // Set sheets and cardTemplates in a single batch update
-        setSheets && setSheets({ allSheets, structure: structureData });
-        setCardTemplates && setCardTemplates(
-          cardTemplatesSnapshot.docs.map((doc) => ({
+        if (!isBusinessUser) {
+          // Team member
+          allSheets = sheetsResult
+            .filter((doc) => doc && doc.exists && doc.exists())
+            .map((doc) => ({
+              docId: doc.id,
+              ...doc.data(),
+            }));
+          structureData = deriveStructureFromSheets(allSheets);
+        } else {
+          // Business user
+          allSheets = sheetsResult.docs.map((doc) => ({
             docId: doc.id,
             ...doc.data(),
-          }))
-        );
+          }));
+          if (structureDoc && structureDoc.exists()) {
+            const structure = structureDoc.data().structure;
+            structureData = Array.isArray(structure) && structure.length > 0
+              ? structure
+              : deriveStructureFromSheets(allSheets);
+          } else {
+            structureData = deriveStructureFromSheets(allSheets);
+          }
+        }
+
+        setSheets && setSheets({ allSheets, structure: structureData });
+        setCardTemplates &&
+          setCardTemplates(
+            cardTemplatesSnapshot.docs.map((doc) => ({
+              docId: doc.id,
+              ...doc.data(),
+            }))
+          );
       } catch (error) {
         console.error('Error fetching sheets:', {
           code: error.code,
@@ -152,7 +201,6 @@ const fetchUserData = async ({
     // Determine which sheet to use
     let sheetNameToUse = activeSheetName;
     if (!sheetNameToUse && updateSheets) {
-      // Use already fetched structureData if available
       const structure = structureData || [];
       if (structure?.length > 0) {
         if (structure[0].sheetName) {
@@ -169,19 +217,20 @@ const fetchUserData = async ({
 
     const activeSheet = allSheets.find((s) => s.sheetName === sheetNameToUse);
     if (!activeSheet) {
+      console.warn('Active sheet not found', { sheetNameToUse, allSheets });
       setCards && setCards([]);
       return () => {};
     }
 
     const sheetId = activeSheet.docId;
     if (fetchedSheetIds.has(sheetId)) {
+      console.debug('Sheet cards already fetched', { sheetId, sheetName: sheetNameToUse });
       return () => {};
     }
     fetchedSheetIds.add(sheetId);
 
     // Fetch cards for the active sheet
     try {
-      // Fetch all cards for the business, then filter for the active sheet
       const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'cards'));
       const allCards = cardsSnapshot.docs.map((doc) => ({
         docId: doc.id,
@@ -192,12 +241,21 @@ const fetchUserData = async ({
       if (activeSheet && Array.isArray(activeSheet.rows)) {
         const rowIdsSet = new Set(activeSheet.rows.map(String));
         filteredCards = allCards.filter((card) => rowIdsSet.has(String(card.docId)));
+        console.debug('Filtered cards for active sheet', {
+          sheetName: sheetNameToUse,
+          sheetId,
+          rowIds: Array.from(rowIdsSet),
+          filteredCardsCount: filteredCards.length,
+        });
+      } else {
+        console.warn('No rows found for active sheet', { sheetName: sheetNameToUse, activeSheet });
       }
-      setCards && setCards(prevCards => {
-        const sheetRowIds = new Set(activeSheet.rows.map(String));
-        const otherCards = prevCards.filter(card => !sheetRowIds.has(String(card.docId)));
-        return [...otherCards, ...filteredCards];
-      });
+      setCards &&
+        setCards((prevCards) => {
+          const sheetRowIds = new Set((activeSheet.rows || []).map(String));
+          const otherCards = prevCards.filter((card) => !sheetRowIds.has(String(card.docId)));
+          return [...otherCards, ...filteredCards];
+        });
     } catch (error) {
       console.error('Error fetching cards:', {
         code: error.code,
@@ -211,7 +269,7 @@ const fetchUserData = async ({
       setCards && setCards([]);
     }
   } else if (route === '/dashboard' || route === '/metrics') {
-    // Fetch dashboards and metrics in parallel
+    // Parallelize dashboard and metrics fetches
     await Promise.all([
       fetchCollection(
         collection(db, 'businesses', businessId, 'dashboards'),
@@ -224,13 +282,11 @@ const fetchUserData = async ({
         setMetrics,
         [],
         'Error fetching metrics:'
-      )
+      ),
     ]);
   }
 
-  return () => {
-    // No Firestore listeners to clean up for businessId
-  };
+  return () => {};
 };
 
 export const resetFetchedSheetIds = () => {

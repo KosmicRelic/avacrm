@@ -190,9 +190,7 @@ export const handleModalSave = async ({
     
         try {
           if (updates.length > 0) {
-            // console.log('Calling updateCardTemplatesAndCardsFunction with:', { businessId, updates });
             const result = await updateCardTemplatesAndCardsFunction({ businessId, updates });
-            // console.log('updateCardTemplatesAndCardsFunction result:', JSON.stringify(result, null, 2));
     
             if (!result.success) {
               throw new Error(result.error || 'Failed to update templates and cards');
@@ -222,12 +220,9 @@ export const handleModalSave = async ({
             });
     
             setCards(updatedCards);
-          } else {
-            // console.log('No changes detected in cardTemplates');
           }
         } catch (error) {
           console.error('Error updating templates and cards:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
           alert(`Failed to update card templates. Error: ${error.message}`);
           return;
         }
@@ -325,6 +320,9 @@ export const handleModalSave = async ({
         });
       }
       break;
+    case 'folderModal':
+      console.log('Saving folderModal, no action needed'); // Debug log
+      break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
         setMetrics((prev) =>
@@ -400,6 +398,7 @@ export const handleModalClose = ({
   widgetSetupModal,
   metricsModal,
   activeDashboard,
+  folderModal,
 }) => {
   if (activeModal?.type === 'folderOperations') {
     if (options.fromSave || options.fromDelete) {
@@ -430,6 +429,7 @@ export const handleModalClose = ({
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
   }
+  console.log('Closing modals, activeModal:', activeModal?.type); // Debug log
   setActiveModal(null);
   setEditMode(false);
   setSelectedTemplateIndex(null);
@@ -445,6 +445,7 @@ export const handleModalClose = ({
   widgetViewModal.close();
   widgetSetupModal.close();
   metricsModal.close();
+  folderModal?.close();
 };
 
 export const renderModalContent = ({
@@ -464,7 +465,7 @@ export const renderModalContent = ({
   handleSheetSave,
   handleFolderSave,
   setSheets,
-  businessId, // <-- add this to the argument list if not already present
+  businessId,
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
@@ -533,7 +534,7 @@ export const renderModalContent = ({
           }
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
-          businessId={businessId} // <-- pass businessId as a prop
+          businessId={businessId}
         />
       );
     case 'sheetFolder':
@@ -556,6 +557,20 @@ export const renderModalContent = ({
           folderName={activeModal.data.folderName}
           onSheetSelect={handleSheetChange}
           handleClose={handleModalClose}
+          tempData={activeModal.data.tempData || {}}
+          setTempData={(newData) =>
+            setActiveModal((prev) =>
+              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
+            )
+          }
+        />
+      );
+    case 'folderModal':
+      return (
+        <FolderOperations
+          folderName={activeModal.data.folderName}
+          onSheetSelect={activeModal.data.onSheetSelect}
+          handleClose={activeModal.data.handleClose}
           tempData={activeModal.data.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
@@ -720,4 +735,29 @@ export const onOpenFolderOperationsModal = ({
     data: { folderName, tempData: {} },
   });
   folderOperationsModal.open();
+};
+
+export const onOpenFolderModal = ({
+  folderName,
+  sheets,
+  setActiveModal,
+  folderModal,
+  onSheetSelect,
+}) => {
+  if (!sheets) return;
+  console.log('Opening folderModal for:', folderName); // Debug log
+  setActiveModal({
+    type: 'folderModal',
+    data: {
+      folderName,
+      onSheetSelect,
+      tempData: {},
+      handleClose: () => {
+        console.log('Closing folderModal'); // Debug log
+        folderModal.close();
+        setActiveModal(null);
+      },
+    },
+  });
+  folderModal.open();
 };

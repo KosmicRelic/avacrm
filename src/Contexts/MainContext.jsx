@@ -104,7 +104,6 @@ export const MainContextProvider = ({ children }) => {
         const currentRoute = location.pathname;
         let fetchedBusinessId = firebaseUser.uid;
         try {
-          // Fetch userDoc and businessId as early as possible
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists() && userDoc.data().businessId) {
@@ -112,78 +111,59 @@ export const MainContextProvider = ({ children }) => {
           }
           setBusinessId(fetchedBusinessId);
 
-          // Only fetch what is needed for the current route
-          const needsSheets = currentRoute === '/sheets' && !hasFetched.current.sheets;
-          const needsDashboard = currentRoute === '/dashboard' && !hasFetched.current.dashboard;
-          const needsMetrics = currentRoute === '/metrics' && !hasFetched.current.metrics;
-
-          if (needsSheets || needsDashboard || needsMetrics) {
-            if (needsSheets && !activeSheetName) {
-              setActiveSheetName('Leads');
-            }
-
-            if (isFetching.current) {
-              return;
-            }
-
-            isFetching.current = true;
-
-            // Parallelize fetches if possible
-            const fetches = [];
-            if (needsSheets) {
-              fetches.push(
-                fetchUserData({
-                  businessId: fetchedBusinessId,
-                  route: '/sheets',
-                  setSheets,
-                  setCards,
-                  setCardTemplates,
-                  setMetrics,
-                  setDashboards,
-                  activeSheetName: activeSheetName || 'Leads',
-                  updateSheets: true,
-                })
-              );
-            }
-            if (needsDashboard) {
-              fetches.push(
-                fetchUserData({
-                  businessId: fetchedBusinessId,
-                  route: '/dashboard',
-                  setSheets,
-                  setCards,
-                  setCardTemplates,
-                  setMetrics,
-                  setDashboards,
-                  updateSheets: true,
-                })
-              );
-            }
-            if (needsMetrics) {
-              fetches.push(
-                fetchUserData({
-                  businessId: fetchedBusinessId,
-                  route: '/metrics',
-                  setSheets,
-                  setCards,
-                  setCardTemplates,
-                  setMetrics,
-                  setDashboards,
-                  updateSheets: true,
-                })
-              );
-            }
-            await Promise.all(fetches);
-
-            isFetching.current = false;
-
-            if (needsSheets) hasFetched.current.sheets = true;
-            if (needsDashboard) hasFetched.current.dashboard = true;
-            if (needsMetrics) hasFetched.current.metrics = true;
+          // Only fetch what is needed for the current route, in parallel
+          const fetches = [];
+          if (currentRoute === '/sheets' && !hasFetched.current.sheets) {
+            if (!activeSheetName) setActiveSheetName('Leads');
+            fetches.push(
+              fetchUserData({
+                businessId: fetchedBusinessId,
+                route: '/sheets',
+                setSheets,
+                setCards,
+                setCardTemplates,
+                setMetrics,
+                setDashboards,
+                activeSheetName: activeSheetName || 'Leads',
+                updateSheets: true,
+              })
+            );
           }
+          if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
+            fetches.push(
+              fetchUserData({
+                businessId: fetchedBusinessId,
+                route: '/dashboard',
+                setSheets,
+                setCards,
+                setCardTemplates,
+                setMetrics,
+                setDashboards,
+                updateSheets: false,
+              })
+            );
+          }
+          if (currentRoute === '/metrics' && !hasFetched.current.metrics) {
+            fetches.push(
+              fetchUserData({
+                businessId: fetchedBusinessId,
+                route: '/metrics',
+                setSheets,
+                setCards,
+                setCardTemplates,
+                setMetrics,
+                setDashboards,
+                updateSheets: false,
+              })
+            );
+          }
+          await Promise.all(fetches);
+
+          if (currentRoute === '/sheets') hasFetched.current.sheets = true;
+          if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
+          if (currentRoute === '/metrics') hasFetched.current.metrics = true;
         } catch (error) {
           console.error('Error fetching user data:', error);
-          isFetching.current = false;
         }
 
         setIsDataLoaded(true);
@@ -308,11 +288,16 @@ export const MainContextProvider = ({ children }) => {
       const sheetId = sheetObj?.docId;
       if (
         !sheetId ||
-        sheetCardsFetched[sheetId] ||
         fetchingSheetIdsRef.current.has(sheetId)
       ) {
         return;
       }
+      // Reset cache for this sheet to ensure refetch
+      setSheetCardsFetched((prev) => {
+        const newFetched = { ...prev };
+        delete newFetched[sheetId];
+        return newFetched;
+      });
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
@@ -334,18 +319,25 @@ export const MainContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (location.pathname.startsWith('/sheets/')) {
-      const sheetName = location.pathname.split('/sheets/')[1];
+      const sheetName = decodeURIComponent(location.pathname.split('/sheets/')[1] || '');
       if (sheetName && sheetName !== activeSheetName) {
-        setActiveSheetName(decodeURIComponent(sheetName));
+        console.debug('Updating activeSheetName from URL', { sheetName, currentActiveSheetName: activeSheetName });
+        setActiveSheetName(sheetName);
       }
     }
-  }, [location.pathname]);
+  }, [location.pathname, activeSheetName]);
 
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded || isBatchProcessing.current) return;
 
     if (isUpdatingCardsFromTemplate.current) {
       isUpdatingCardsFromTemplate.current = false;
+      prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
+      return;
+    }
+
+    // Skip updates if data is uninitialized (initial load)
+    if (sheets.allSheets.length === 0 && sheets.structure.length === 0) {
       prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       return;
     }
@@ -399,8 +391,30 @@ export const MainContextProvider = ({ children }) => {
       let hasChanges = false;
 
       try {
+        // Check if user is a business user
+        const isBusinessUser = user.uid === businessId;
+
+        // Handle card updates (allowed for all users if card is in accessible sheet rows)
         const modifiedCards = cards.filter((card) => card.isModified);
+        const accessibleSheets = sheets.allSheets; // From fetchUserData, includes allowed sheets only
+        const accessibleRowIds = new Set(
+          accessibleSheets.flatMap((sheet) =>
+            Array.isArray(sheet.rows) ? sheet.rows.map(String) : []
+          )
+        );
+
         for (const card of modifiedCards) {
+          const isCardAccessible = isBusinessUser || accessibleRowIds.has(String(card.docId));
+          if (!isCardAccessible) {
+            console.warn('User not authorized to modify card', {
+              cardId: card.docId,
+              userId: user.uid,
+              businessId,
+              accessibleRowIds: Array.from(accessibleRowIds),
+            });
+            continue;
+          }
+
           const docRef = doc(stateConfig.cards.collectionPath(), card.docId);
           if (card.action === 'remove') {
             batch.delete(docRef);
@@ -412,69 +426,72 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
-        for (const dashboard of modifiedDashboards) {
-          const docRef = doc(stateConfig.dashboards.collectionPath(), dashboard.docId);
-          if (dashboard.action === 'remove') {
-            batch.delete(docRef);
-            hasChanges = true;
-          } else if (dashboard.action === 'add' || dashboard.action === 'update') {
-            const { isModified, action, docId, ...dashboardData } = dashboard;
-            batch.set(docRef, dashboardData);
-            hasChanges = true;
-          }
-        }
-
-        const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
-        for (const template of modifiedCardTemplates) {
-          const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
-          if (template.action === 'remove') {
-            batch.delete(docRef);
-            hasChanges = true;
-          } else if (template.action === 'add' || template.action === 'update') {
-            const { isModified, action, docId, ...templateData } = template;
-            batch.set(docRef, templateData);
-            hasChanges = true;
-          }
-        }
-
-        const collectionsToCheck = ['sheets', 'metrics'];
-        for (const stateKey of collectionsToCheck) {
-          const config = stateConfig[stateKey];
-          const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
-          const prevState = prevStates.current[stateKey];
-
-          const currentCollectionData = config.getCollectionData(currentState);
-          const prevCollectionData = config.getCollectionData(prevState);
-          const collectionChanges = detectCollectionChanges(currentCollectionData, prevCollectionData);
-
-          collectionChanges.added.forEach((item) => {
-            const docRef = doc(config.collectionPath(), item.docId);
-            const { docId, ...data } = item;
-            batch.set(docRef, data);
-            hasChanges = true;
-          });
-
-          collectionChanges.updated.forEach((item) => {
-            const docRef = doc(config.collectionPath(), item.docId);
-            const { docId, ...data } = item;
-            batch.set(docRef, data, { merge: true });
-            hasChanges = true;
-          });
-
-          collectionChanges.removed.forEach((docId) => {
-            const docRef = doc(config.collectionPath(), docId);
-            batch.delete(docRef);
-            hasChanges = true;
-          });
-
-          if (config.singleDoc) {
-            const currentSingleData = config.singleDoc.getData(currentState);
-            const prevSingleData = config.singleDoc.getData(prevState);
-            if (!isEqual(currentSingleData, prevSingleData)) {
-              const docRef = config.singleDoc.path();
-              batch.set(docRef, { [config.singleDoc.field]: currentSingleData });
+        // Handle sheets, dashboards, cardTemplates, metrics (business users only)
+        if (isBusinessUser) {
+          const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
+          for (const dashboard of modifiedDashboards) {
+            const docRef = doc(stateConfig.dashboards.collectionPath(), dashboard.docId);
+            if (dashboard.action === 'remove') {
+              batch.delete(docRef);
               hasChanges = true;
+            } else if (dashboard.action === 'add' || dashboard.action === 'update') {
+              const { isModified, action, docId, ...dashboardData } = dashboard;
+              batch.set(docRef, dashboardData);
+              hasChanges = true;
+            }
+          }
+
+          const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
+          for (const template of modifiedCardTemplates) {
+            const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
+            if (template.action === 'remove') {
+              batch.delete(docRef);
+              hasChanges = true;
+            } else if (template.action === 'add' || dashboard.action === 'update') {
+              const { isModified, action, docId, ...templateData } = template;
+              batch.set(docRef, templateData);
+              hasChanges = true;
+            }
+          }
+
+          const collectionsToCheck = ['sheets', 'metrics'];
+          for (const stateKey of collectionsToCheck) {
+            const config = stateConfig[stateKey];
+            const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
+            const prevState = prevStates.current[stateKey];
+
+            const currentCollectionData = config.getCollectionData(currentState);
+            const prevCollectionData = config.getCollectionData(prevState);
+            const collectionChanges = detectCollectionChanges(currentCollectionData, prevCollectionData);
+
+            collectionChanges.added.forEach((item) => {
+              const docRef = doc(config.collectionPath(), item.docId);
+              const { docId, ...data } = item;
+              batch.set(docRef, data);
+              hasChanges = true;
+            });
+
+            collectionChanges.updated.forEach((item) => {
+              const docRef = doc(config.collectionPath(), item.docId);
+              const { docId, ...data } = item;
+              batch.set(docRef, data, { merge: true });
+              hasChanges = true;
+            });
+
+            collectionChanges.removed.forEach((docId) => {
+              const docRef = doc(config.collectionPath(), docId);
+              batch.delete(docRef);
+              hasChanges = true;
+            });
+
+            if (config.singleDoc) {
+              const currentSingleData = config.singleDoc.getData(currentState);
+              const prevSingleData = config.singleDoc.getData(prevState);
+              if (!isEqual(currentSingleData, prevSingleData)) {
+                const docRef = config.singleDoc.path();
+                batch.set(docRef, { [config.singleDoc.field]: currentSingleData });
+                hasChanges = true;
+              }
             }
           }
         }
@@ -492,28 +509,30 @@ export const MainContextProvider = ({ children }) => {
                 return card;
               })
           );
-          setDashboards((prev) =>
-            prev
-              .filter((dashboard) => !(dashboard.isModified && dashboard.action === 'remove'))
-              .map((dashboard) => {
-                if (dashboard.isModified) {
-                  const { isModified, action, ...cleanDashboard } = dashboard;
-                  return cleanDashboard;
-                }
-                return dashboard;
-              })
-          );
-          setCardTemplates((prev) =>
-            prev
-              .filter((template) => !(template.isModified && template.action === 'remove'))
-              .map((template) => {
-                if (template.isModified) {
-                  const { isModified, action, ...cleanTemplate } = template;
-                  return cleanTemplate;
-                }
-                return template;
-              })
-          );
+          if (isBusinessUser) {
+            setDashboards((prev) =>
+              prev
+                .filter((dashboard) => !(dashboard.isModified && dashboard.action === 'remove'))
+                .map((dashboard) => {
+                  if (dashboard.isModified) {
+                    const { isModified, action, ...cleanDashboard } = dashboard;
+                    return cleanDashboard;
+                  }
+                  return dashboard;
+                })
+            );
+            setCardTemplates((prev) =>
+              prev
+                .filter((template) => !(template.isModified && template.action === 'remove'))
+                .map((template) => {
+                  if (template.isModified) {
+                    const { isModified, action, ...cleanTemplate } = template;
+                    return cleanTemplate;
+                  }
+                  return template;
+                })
+            );
+          }
         }
       } catch (error) {
         console.error('Error processing Firestore updates:', error);
@@ -560,6 +579,10 @@ export const MainContextProvider = ({ children }) => {
 
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
+
+  useEffect(() => {
+    console.log('Sheets:', sheets);
+  }, [sheets]);
 
   return (
     <MainContext.Provider

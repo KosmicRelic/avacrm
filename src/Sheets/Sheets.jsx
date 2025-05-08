@@ -174,9 +174,9 @@ const Sheets = ({
   }, [sortedRows, searchQuery, visibleHeaders]);
 
   const handleSheetClick = useCallback((sheetName) => {
-    // console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
+    console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
     if (sheetName !== activeSheetName) {
-      setActiveSheetName(sheetName); // <-- update context, triggers refetch
+      setActiveSheetName(sheetName);
       onSheetChange(sheetName);
     }
   }, [activeSheetName, onSheetChange, setActiveSheetName]);
@@ -240,10 +240,14 @@ const Sheets = ({
 
   const handleFolderClick = useCallback(
     (folderName) => {
-      // console.log('[Sheets] handleFolderClick:', { folderName });
-      onOpenFolderModal(folderName);
+      console.log('[Sheets] handleFolderClick:', { folderName });
+      onOpenFolderModal(folderName, (sheetName) => {
+        setActiveSheetName(sheetName);
+        onSheetChange(sheetName);
+        window.history.pushState({}, '', `/sheets/${encodeURIComponent(sheetName)}`);
+      });
     },
-    [onOpenFolderModal]
+    [onOpenFolderModal, onSheetChange, setActiveSheetName]
   );
 
   const handleSelectToggle = useCallback(() => {
@@ -392,7 +396,7 @@ const Sheets = ({
                           handleRemoveSelected();
                         }
                       }}
-                  >
+                    >
                       Remove
                     </button>
                   )}

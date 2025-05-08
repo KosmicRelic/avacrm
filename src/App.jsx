@@ -15,6 +15,7 @@ import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
 import Settings from './Settings/Settings';
+import FolderOperations from './Modal/Folder Modal/FolderModal'; // Added import
 import {
   handleModalSave,
   handleModalClose,
@@ -27,6 +28,7 @@ import {
   onOpenCardsTemplateModal,
   onOpenSheetFolderModal,
   onOpenFolderOperationsModal,
+  onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
 
 // Memoized ProtectedRoute to prevent unnecessary re-renders
@@ -83,6 +85,10 @@ function App() {
     businessId,
     bannerQueue,
     setBannerQueue,
+    activeSheetName,
+    setActiveSheetName,
+    sheetCardsFetched,
+    setSheetCardsFetched, // Added to reset cache
   } = useContext(MainContext);
 
   const navigate = useNavigate();
@@ -98,6 +104,7 @@ function App() {
   const widgetViewModal = useModal();
   const widgetSetupModal = useModal();
   const metricsModal = useModal();
+  const folderModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
@@ -121,31 +128,27 @@ function App() {
 
     let timer;
     if (!currentBanner && bannerQueue.length > 0) {
-      // Show new banner
       setCurrentBanner(bannerQueue[0]);
       setIsBannerExiting(false);
     } else if (currentBanner && !isBannerExiting) {
-      // Start exit animation after display duration
       timer = setTimeout(() => {
         setIsBannerExiting(true);
-      }, 3000); // Display duration
+      }, 3000);
     } else if (isBannerExiting) {
-      // Clear banner and dequeue after exit animation
       timer = setTimeout(() => {
         setBannerQueue((prev) => prev.slice(1));
         setCurrentBanner(null);
         setIsBannerExiting(false);
-      }, 800); // Exit animation (300ms) + pause (500ms)
+      }, 800);
     }
 
     return () => clearTimeout(timer);
   }, [bannerQueue, currentBanner, isBannerExiting, setBannerQueue]);
 
   const activeSheet = useMemo(
-    () => sheets?.allSheets?.find((sheet) => sheet.isActive) || null,
-    [sheets]
+    () => sheets?.allSheets?.find((sheet) => sheet.sheetName === activeSheetName) || null,
+    [sheets, activeSheetName]
   );
-  const activeSheetName = activeSheet?.sheetName;
 
   const activeDashboard = useMemo(() => {
     if (!dashboards) return null;
@@ -236,8 +239,12 @@ function App() {
           structure: updatedStructure,
         };
       });
+      if (activeSheetName === sheetName) {
+        setActiveSheetName(newActiveSheet || 'Leads');
+        handleSheetChange(newActiveSheet || 'Leads');
+      }
     },
-    [setSheets, sheets]
+    [setSheets, sheets, activeSheetName, setActiveSheetName, handleSheetChange]
   );
 
   const handleSheetSave = useCallback(
@@ -279,9 +286,10 @@ function App() {
           structure: [...prevSheets.structure, { sheetName: newSheetName }],
         };
       });
+      setActiveSheetName(newSheetName);
       handleSheetChange(newSheetName);
     },
-    [setSheets, handleSheetChange, sheets]
+    [setSheets, handleSheetChange, sheets, setActiveSheetName]
   );
 
   const handleFolderSave = useCallback(
@@ -386,6 +394,37 @@ function App() {
     []
   );
 
+  const handleOpenFolderModal = useCallback(
+    (folderName, onSheetSelect) => {
+      folderModal.open();
+      setActiveModal({
+        type: 'folderModal',
+        data: {
+          folderName,
+          onSheetSelect: (sheetName) => {
+            console.log('Selected sheet:', sheetName); // Debug log
+            setActiveSheetName(sheetName);
+            handleSheetChange(sheetName);
+            // Reset cache to force card refetch
+            setSheetCardsFetched((prev) => ({
+              ...prev,
+              [sheetName]: false,
+            }));
+            window.history.pushState({}, '', `/sheets/${encodeURIComponent(sheetName)}`);
+            onSheetSelect?.(sheetName);
+            folderModal.close();
+          },
+          tempData: {},
+          handleClose: () => {
+            folderModal.close();
+            setActiveModal(null);
+          },
+        },
+      });
+    },
+    [folderModal, setActiveSheetName, handleSheetChange, setSheetCardsFetched]
+  );
+
   useEffect(() => {
     if (activeOption !== 'metrics') {
       setSelectedMetricData(null);
@@ -425,6 +464,7 @@ function App() {
     widgetViewModal,
     widgetSetupModal,
     metricsModal,
+    folderModal, // Added to modalUtilsProps
     activeDashboard,
     activeSheet,
     resolvedHeaders,
@@ -508,9 +548,7 @@ function App() {
                     onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                   }
                   onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
-                  onOpenFolderModal={(folderName) =>
-                    onOpenFolderOperationsModal({ folderName, ...modalUtilsProps })
-                  }
+                  onOpenFolderModal={handleOpenFolderModal}
                 />
               </ProtectedRoute>
             }
@@ -559,6 +597,38 @@ function App() {
             tempData={activeModal.data}
           >
             {renderModalContent(modalUtilsProps)}
+          </Modal>
+        )}
+        {folderModal.isOpen && (
+          <Modal
+            onClose={(options) =>
+              handleModalClose({
+                options,
+                handleModalSave: (args) => handleModalSave({ ...args, ...modalUtilsProps }),
+                ...modalUtilsProps,
+              })
+            }
+            onSave={() =>
+              handleModalSave({
+                modalType: 'folderModal',
+                data: activeModal.data,
+                ...modalUtilsProps,
+              })
+            }
+            modalType="folderModal"
+            tempData={activeModal.data}
+          >
+            <FolderOperations
+              folderName={activeModal.data.folderName}
+              onSheetSelect={activeModal.data.onSheetSelect}
+              tempData={activeModal.data.tempData || {}}
+              setTempData={(newData) =>
+                setActiveModal((prev) =>
+                  prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
+                )
+              }
+              handleClose={activeModal.data.handleClose}
+            />
           </Modal>
         )}
         <ProfileModal

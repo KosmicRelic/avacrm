@@ -47,7 +47,7 @@ export default function Settings() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch team members and sheets when navigating to manageTeam or sendInvitation
+  // Fetch team members and sheets
   useEffect(() => {
     if (!['manageTeam', 'sendInvitation'].includes(currentStep) || !user || !user.uid || !businessId) {
       return;
@@ -56,7 +56,6 @@ export default function Settings() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch team members for manageTeam
         if (currentStep === 'manageTeam') {
           const teamMembersQuery = query(collection(db, 'businesses', businessId, 'teamMembers'));
           const teamMembersSnap = await getDocs(teamMembersQuery);
@@ -67,7 +66,6 @@ export default function Settings() {
           setTeamMembers(teamMembersData);
         }
 
-        // Fetch sheets
         const sheetsQuery = query(collection(db, 'businesses', businessId, 'sheets'));
         const sheetsSnap = await getDocs(sheetsQuery);
         const sheetsData = sheetsSnap.docs.map(doc => ({
@@ -76,13 +74,8 @@ export default function Settings() {
         }));
         setSheets(sheetsData);
       } catch (err) {
-        console.error('Error fetching data:', err, 'Code:', err.code, 'Message:', err.message);
-        setErrorMessages([
-          t('settings.errorFetchingData', {
-            message: `data: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
-            defaultValue: 'Failed to load resources: {message}',
-          }),
-        ]);
+        console.error('Error fetching data:', err);
+        setErrorMessages([t('settings.errorFetchingData', { message: err.message || 'Permission denied' })]);
         if (currentStep === 'manageTeam') setTeamMembers([]);
         setSheets([]);
       } finally {
@@ -93,7 +86,7 @@ export default function Settings() {
     fetchData();
   }, [currentStep, user, businessId, t]);
 
-  // Fetch pending invitations when navigating to viewInvitations
+  // Fetch pending invitations
   useEffect(() => {
     if (currentStep !== 'viewInvitations' || !user || !user.uid) {
       return;
@@ -114,13 +107,8 @@ export default function Settings() {
         }));
         setPendingInvitations(invitationsData);
       } catch (err) {
-        console.error('Error fetching invitations:', err, 'Code:', err.code, 'Message:', err.message);
-        setErrorMessages([
-          t('settings.errorFetchingData', {
-            message: `invitations: ${err.message || 'Permission denied'} (Code: ${err.code || 'unknown'})`,
-            defaultValue: 'Failed to load resources: {message}',
-          }),
-        ]);
+        console.error('Error fetching invitations:', err);
+        setErrorMessages([t('settings.errorFetchingData', { message: err.message || 'Permission denied' })]);
         setPendingInvitations([]);
       } finally {
         setIsLoading(false);
@@ -130,7 +118,7 @@ export default function Settings() {
     fetchInvitations();
   }, [currentStep, user, t]);
 
-  // Queue success/error messages for banner
+  // Handle success/error messages
   useEffect(() => {
     if (successMessage) {
       addBannerMessage(successMessage, 'success');
@@ -147,30 +135,25 @@ export default function Settings() {
       const invitationRef = doc(db, 'invitations', invitationId);
       await deleteDoc(invitationRef);
       setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId));
-      setSuccessMessage(t('settings.invitationDeleted', { defaultValue: 'Invitation deleted successfully' }));
+      setSuccessMessage(t('settings.invitationDeleted'));
     } catch (err) {
       console.error('Error deleting invitation:', err);
-      setErrorMessages([
-        t('settings.errorDeletingInvitation', {
-          message: err.message || 'Unknown error',
-          defaultValue: 'Failed to delete invitation: {message}',
-        }),
-      ]);
+      setErrorMessages([t('settings.errorDeletingInvitation', { message: err.message || 'Unknown error' })]);
     }
   };
 
   const handleDeleteTeamMember = async (uid) => {
     if (!user || !user.uid || !businessId) {
-      setErrorMessages([t('settings.noAuthenticatedUser', { defaultValue: 'No authenticated user found' })]);
+      setErrorMessages([t('settings.noAuthenticatedUser')]);
       return;
     }
     if (uid === user.uid) {
-      setErrorMessages([t('settings.cannotDeleteSelf', { defaultValue: 'You cannot delete yourself' })]);
+      setErrorMessages([t('settings.cannotDeleteSelf')]);
       return;
     }
     const teamMember = teamMembers.find(tm => tm.uid === uid);
     if (!teamMember) {
-      setErrorMessages([t('settings.teamMemberNotFound', { defaultValue: 'Team member not found' })]);
+      setErrorMessages([t('settings.teamMemberNotFound')]);
       return;
     }
     if (!window.confirm(t('settings.confirmDeleteTeamMember', { email: teamMember.email || 'this user' }))) {
@@ -191,18 +174,13 @@ export default function Settings() {
 
       if (result.success) {
         setTeamMembers(prev => prev.filter(tm => tm.uid !== uid));
-        setSuccessMessage(t('settings.teamMemberDeleted', { defaultValue: 'Team member deleted successfully' }));
+        setSuccessMessage(t('settings.teamMemberDeleted'));
       } else {
         throw new Error(result.error || 'Unknown error');
       }
     } catch (err) {
-      console.error('Error deleting team member:', err.message, err);
-      setErrorMessages([
-        t('settings.errorDeletingTeamMember', {
-          message: err.message || 'Unknown error',
-          defaultValue: 'Failed to delete team member: {message}',
-        }),
-      ]);
+      console.error('Error deleting team member:', err);
+      setErrorMessages([t('settings.errorDeletingTeamMember', { message: err.message || 'Unknown error' })]);
     }
   };
 
@@ -227,6 +205,12 @@ export default function Settings() {
   };
 
   const togglePermission = (type, role, isInvitation = false) => {
+    const validRoles = ['none', 'viewer', 'editor'];
+    if (!validRoles.includes(role)) {
+      console.error(`Invalid role for ${type}: ${role}`);
+      return;
+    }
+
     const setter = isInvitation ? setInvitationPermissions : setSelectedPermissions;
     if (type === 'sheets') {
       setter(prev => ({
@@ -234,7 +218,7 @@ export default function Settings() {
         sheets: {
           ...prev.sheets,
           role,
-          allowedSheetIds: role === 'none' ? [] : prev.sheets.allowedSheetIds,
+          allowedSheetIds: role === 'none' ? [] : prev.sheets.allowedSheetIds || [],
         },
       }));
     } else {
@@ -264,15 +248,15 @@ export default function Settings() {
 
   const saveAccess = async () => {
     if (selectedTeamMemberUids.length === 0) {
-      setErrorMessages([t('settings.noTeamMembersSelected', { defaultValue: 'Please select at least one team member' })]);
+      setErrorMessages([t('settings.noTeamMembersSelected')]);
       return;
     }
     if (!businessId) {
-      setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
+      setErrorMessages([t('settings.noBusinessId')]);
       return;
     }
     if (selectedPermissions.sheets.role !== 'none' && selectedPermissions.sheets.allowedSheetIds.length === 0) {
-      setErrorMessages([t('settings.noSheetsSelected', { defaultValue: 'Please select at least one sheet' })]);
+      setErrorMessages([t('settings.noSheetsSelected')]);
       return;
     }
     try {
@@ -299,11 +283,7 @@ export default function Settings() {
         };
 
         await setDoc(teamMemberRef, newData, { merge: false });
-
-        // Update local teamMembers state
-        setTeamMembers(prev =>
-          prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm))
-        );
+        setTeamMembers(prev => prev.map(tm => (tm.uid === uid ? { ...tm, ...newData } : tm)));
       }
       setSuccessMessage(t('settings.accessUpdated'));
       setSelectedTeamMemberUids([]);
@@ -367,16 +347,22 @@ export default function Settings() {
       setErrorMessages([t('settings.enterValidEmail')]);
       return;
     }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessages([t('settings.invalidEmailFormat')]);
+      return;
+    }
     if (hasPendingInvitationForEmail(email)) {
-      setErrorMessages([t('settings.invitationAlreadyExists', { defaultValue: 'An invitation for this email already exists.' })]);
+      setErrorMessages([t('settings.invitationAlreadyExists')]);
       return;
     }
     if (!businessId) {
-      setErrorMessages([t('settings.noBusinessId', { defaultValue: 'Business ID not found' })]);
+      setErrorMessages([t('settings.noBusinessId')]);
       return;
     }
     if (invitationPermissions.sheets.role !== 'none' && invitationPermissions.sheets.allowedSheetIds.length === 0) {
-      setErrorMessages([t('settings.noSheetsSelected', { defaultValue: 'Please select at least one sheet' })]);
+      setErrorMessages([t('settings.noSheetsSelected')]);
       return;
     }
     setIsGenerating(true);
@@ -393,7 +379,35 @@ export default function Settings() {
         throw new Error(t('settings.userDataNotFound'));
       }
       const token = await currentUser.getIdToken(true);
-  
+
+      // Validate permissions
+      const validRoles = ['none', 'viewer', 'editor'];
+      const isValidPermissions =
+        ['dashboard', 'metrics', 'actions', 'financials'].every(type => validRoles.includes(invitationPermissions[type])) &&
+        validRoles.includes(invitationPermissions.sheets.role) &&
+        Array.isArray(invitationPermissions.sheets.allowedSheetIds);
+
+      if (!isValidPermissions) {
+        console.error('Invalid invitationPermissions:', invitationPermissions);
+        throw new Error('Invalid permissions structure in frontend state');
+      }
+
+      // Convert permissions for backend
+      const backendPermissions = {
+        dashboard: { role: invitationPermissions.dashboard === 'none' ? false : invitationPermissions.dashboard },
+        metrics: { role: invitationPermissions.metrics === 'none' ? false : invitationPermissions.metrics },
+        sheets: {
+          role: invitationPermissions.sheets.role === 'none' ? false : invitationPermissions.sheets.role,
+          allowedSheetIds: invitationPermissions.sheets.allowedSheetIds || [],
+        },
+        actions: { role: invitationPermissions.actions === 'none' ? false : invitationPermissions.actions },
+        financials: { role: invitationPermissions.financials === 'none' ? false : invitationPermissions.financials },
+      };
+
+      // Log permissions for debugging
+      console.log('invitationPermissions:', JSON.stringify(invitationPermissions, null, 2));
+      console.log('backendPermissions:', JSON.stringify(backendPermissions, null, 2));
+
       const maxRetries = 3;
       let attempt = 0;
       while (attempt < maxRetries) {
@@ -411,20 +425,11 @@ export default function Settings() {
                 businessId,
                 invitedBy: user.uid,
                 businessEmail: user.email,
-                permissions: {
-                  dashboard: { role: invitationPermissions.dashboard },
-                  metrics: { role: invitationPermissions.metrics },
-                  sheets: {
-                    role: invitationPermissions.sheets.role,
-                    allowedSheetIds: invitationPermissions.sheets.allowedSheetIds, // Only nested here
-                  },
-                  actions: { role: invitationPermissions.actions },
-                  financials: { role: invitationPermissions.financials },
-                },
+                permissions: backendPermissions,
               }),
             }
           );
-  
+
           const result = await response.json();
           if (response.ok && result.status === 'success') {
             setSuccessMessage(result.message);
@@ -451,16 +456,27 @@ export default function Settings() {
             setCurrentStep('invitations');
             return;
           } else {
-            throw new Error(result.error || t('settings.failedToSendInvitation'));
+            throw new Error(
+              result.error || `HTTP ${response.status}: ${response.statusText || 'Failed to send invitation'}`
+            );
           }
         } catch (error) {
           attempt++;
-          if (attempt === maxRetries) throw error;
+          console.warn(`Retry ${attempt}/${maxRetries} for sending invitation: ${error.message}`);
+          if (attempt === maxRetries) {
+            throw new Error(`Failed after ${maxRetries} retries: ${error.message}`);
+          }
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
     } catch (err) {
-      console.error('Error sending invitation:', err);
+      console.error('Error sending invitation:', {
+        message: err.message,
+        stack: err.stack,
+        email,
+        businessId,
+        permissions: invitationPermissions,
+      });
       setErrorMessages([t('settings.errorSendingInvitation', { message: err.message || 'Unknown error' })]);
     } finally {
       setIsGenerating(false);
@@ -526,6 +542,7 @@ export default function Settings() {
 
       <div className={`${styles.teamAccessContainer} ${isMobile ? styles.mobile : ''}`}>
         <div
+          // Fixed: Removed invalid PREDICTED: prefix from className
           className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''} ${
             isMobile && currentStep !== 'main' ? styles.hidden : ''
           } ${isMobile && currentStep === 'main' && animationDirection === 'exit' ? styles.animateEnter : ''} ${
@@ -576,7 +593,7 @@ export default function Settings() {
           >
             {currentStep === 'main' && (
               <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {t('settings.selectOption', { defaultValue: 'Select an option to proceed' })}
+                {t('settings.selectOption')}
               </p>
             )}
 
@@ -627,7 +644,7 @@ export default function Settings() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.trim())} // Trim input to avoid spaces
                     placeholder={t('settings.enterEmail')}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
                     aria-label={t('settings.recipientEmail')}
@@ -643,19 +660,19 @@ export default function Settings() {
                             key={role}
                             onClick={() => togglePermission(type, role, true)}
                             className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                              invitationPermissions.sheets.role === role ? styles.selected : ''
+                              invitationPermissions.sheets?.role === role ? styles.selected : ''
                             }`}
                             aria-label={t(`settings.${role}`)}
                           >
                             <span>{t(`settings.${role}`)}</span>
-                            {invitationPermissions.sheets.role === role ? (
+                            {invitationPermissions.sheets?.role === role ? (
                               <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
                             ) : (
                               <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
                             )}
                           </button>
                         ))}
-                        {invitationPermissions.sheets.role !== 'none' && (
+                        {invitationPermissions.sheets?.role !== 'none' && (
                           <div className={styles.sheetSelection}>
                             <h4>{t('settings.selectSheets')}</h4>
                             {isLoading ? (
@@ -666,12 +683,12 @@ export default function Settings() {
                                   <button
                                     onClick={() => toggleSheetSelection(sheet.id, true)}
                                     className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                                      invitationPermissions.sheets.allowedSheetIds.includes(sheet.id) ? styles.selected : ''
+                                      invitationPermissions.sheets?.allowedSheetIds?.includes(sheet.id) ? styles.selected : ''
                                     }`}
-                                    aria-label={t('settings.selectSheet', { name: sheet.name || sheet.id })}
+                                    aria-label={t('settings.selectSheet', { name: sheet.sheetName || sheet.id })}
                                   >
                                     <span>{sheet.sheetName || sheet.id}</span>
-                                    {invitationPermissions.sheets.allowedSheetIds.includes(sheet.id) ? (
+                                    {invitationPermissions.sheets?.allowedSheetIds?.includes(sheet.id) ? (
                                       <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
                                     ) : (
                                       <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
@@ -680,7 +697,7 @@ export default function Settings() {
                                 </div>
                               ))
                             ) : (
-                              <p>{t('settings.noSheetsAvailable', { defaultValue: 'No sheets available' })}</p>
+                              <p>{t('settings.noSheetsAvailable')}</p>
                             )}
                           </div>
                         )}
@@ -739,7 +756,7 @@ export default function Settings() {
                 <h2>{t('settings.viewPendingInvitations')}</h2>
                 {isLoading ? (
                   <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    {t('settings.loading', { defaultValue: 'Loading...' })}
+                    {t('settings.loading')}
                   </p>
                 ) : pendingInvitations.length > 0 ? (
                   <div className={styles.invitationList}>
@@ -769,7 +786,7 @@ export default function Settings() {
                   </div>
                 ) : (
                   <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    {t('settings.noPendingInvitations', { defaultValue: 'No pending invitations' })}
+                    {t('settings.noPendingInvitations')}
                   </p>
                 )}
               </div>
@@ -788,7 +805,7 @@ export default function Settings() {
                 <h2>{t('settings.manageTeamAccess')}</h2>
                 {isLoading ? (
                   <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    {t('settings.loading', { defaultValue: 'Loading...' })}
+                    {t('settings.loading')}
                   </p>
                 ) : teamMembers.length > 0 ? (
                   <div className={styles.teamMemberList}>
@@ -815,7 +832,7 @@ export default function Settings() {
                   </div>
                 ) : (
                   <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    {t('settings.noTeamMembers', { defaultValue: 'No team members found' })}
+                    {t('settings.noTeamMembers')}
                   </p>
                 )}
               </div>
@@ -835,7 +852,7 @@ export default function Settings() {
                   {t('settings.editAccessFor', {
                     email:
                       teamMembers.find(tm => tm.uid === selectedTeamMemberUids[0])?.email ||
-                      t('settings.unknownEmail', { defaultValue: 'Unknown Email' }),
+                      t('settings.unknownEmail'),
                   })}
                 </h3>
                 {['dashboard', 'metrics', 'sheets', 'actions', 'financials'].map(type => (
@@ -848,19 +865,19 @@ export default function Settings() {
                             key={role}
                             onClick={() => togglePermission(type, role)}
                             className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                              selectedPermissions.sheets.role === role ? styles.selected : ''
+                              selectedPermissions.sheets?.role === role ? styles.selected : ''
                             }`}
                             aria-label={t(`settings.${role}`)}
                           >
                             <span>{t(`settings.${role}`)}</span>
-                            {selectedPermissions.sheets.role === role ? (
+                            {selectedPermissions.sheets?.role === role ? (
                               <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
                             ) : (
                               <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
                             )}
                           </button>
                         ))}
-                        {selectedPermissions.sheets.role !== 'none' && (
+                        {selectedPermissions.sheets?.role !== 'none' && (
                           <div className={styles.sheetSelection}>
                             <h4>{t('settings.selectSheets')}</h4>
                             {isLoading ? (
@@ -871,12 +888,12 @@ export default function Settings() {
                                   <button
                                     onClick={() => toggleSheetSelection(sheet.id)}
                                     className={`${styles.optionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                                      selectedPermissions.sheets.allowedSheetIds.includes(sheet.id) ? styles.selected : ''
+                                      selectedPermissions.sheets?.allowedSheetIds?.includes(sheet.id) ? styles.selected : ''
                                     }`}
-                                    aria-label={t('settings.selectSheet', { name: sheet.name || sheet.id })}
+                                    aria-label={t('settings.selectSheet', { name: sheet.sheetName || sheet.id })}
                                   >
                                     <span>{sheet.sheetName || sheet.id}</span>
-                                    {selectedPermissions.sheets.allowedSheetIds.includes(sheet.id) ? (
+                                    {selectedPermissions.sheets?.allowedSheetIds?.includes(sheet.id) ? (
                                       <FaRegCheckCircle className={`${styles.icon} ${styles.selected} ${isDarkTheme ? styles.darkTheme : ''}`} />
                                     ) : (
                                       <FaRegCircle className={`${styles.icon} ${isDarkTheme ? styles.darkTheme : ''}`} />
@@ -885,7 +902,7 @@ export default function Settings() {
                                 </div>
                               ))
                             ) : (
-                              <p>{t('settings.noSheetsAvailable', { defaultValue: 'No sheets available' })}</p>
+                              <p>{t('settings.noSheetsAvailable')}</p>
                             )}
                           </div>
                         )}
