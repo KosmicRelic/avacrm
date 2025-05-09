@@ -58,6 +58,7 @@ export const handleModalSave = async ({
       }
       break;
     case 'sheet':
+      // Handles saving EditSheetsModal data, including cardTypeFilters
       if (data?.sheetName && data.currentHeaders && sheets) {
         setSheets((prev) => {
           const updatedSheets = {
@@ -75,7 +76,8 @@ export const handleModalSave = async ({
                       visible: h.visible,
                       hidden: h.hidden,
                     })),
-                    typeOfCardsToDisplay: data.typeOfCardsToDisplay || [], // Save selected card types
+                    typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
+                    cardTypeFilters: data.cardTypeFilters || {}, // Persist cardTypeFilters (e.g., { Leads: { leadStatus: { condition: 'equals', value: 'New' } } })
                     isModified: true,
                     action: 'update',
                   }
@@ -426,6 +428,7 @@ export const handleModalClose = ({
     });
     widgetSetupModal.open();
   } else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
+    // When EditSheetsModal closes with fromSave: true, this triggers handleModalSave for 'sheet'
     if (options.fromSave) {
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
@@ -476,6 +479,7 @@ export const renderModalContent = ({
 
   switch (activeModal.type) {
     case 'sheet':
+      // Renders EditSheetsModal with tempData including cardTypeFilters
       return (
         <EditSheetsModal
           isEditMode={isSheetModalEditMode}
@@ -484,7 +488,8 @@ export const renderModalContent = ({
               sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
-              typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [], // Initialize with existing card types
+              typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
+              cardTypeFilters: activeSheet?.cardTypeFilters || {}, // Initialize with existing cardTypeFilters
             }
           }
           setTempData={setActiveModalData}
@@ -492,8 +497,8 @@ export const renderModalContent = ({
           onPinToggle={handlePinToggle}
           onDeleteSheet={handleDeleteSheet}
           handleClose={handleModalClose}
-          setActiveSheetName={handleSheetChange} // Pass setActiveSheetName for renaming
-          clearFetchedSheets={() => {}} // Placeholder, implement if needed
+          setActiveSheetName={handleSheetChange}
+          clearFetchedSheets={() => {}}
         />
       );
     case 'filter':
@@ -647,7 +652,8 @@ export const onEditSheet = ({
       sheetName: activeSheetName,
       currentHeaders: resolvedHeaders,
       rows: activeSheet?.rows || [],
-      typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [], // Initialize with existing card types
+      typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
+      cardTypeFilters: activeSheet?.cardTypeFilters || {}, // Initialize with existing cardTypeFilters
     },
   });
   sheetModal.open();

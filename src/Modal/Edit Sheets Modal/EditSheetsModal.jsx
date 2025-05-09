@@ -110,6 +110,41 @@ const EditSheetsModal = ({
     ];
   }, [sheets.allSheets, sheetName, currentHeaders, cardTemplates]);
 
+  // Function to generate filter summary for a card type (retained but not used in step 2)
+  const getFilterSummary = useCallback(
+    (cardType) => {
+      const filters = tempData.cardTypeFilters?.[cardType] || {};
+      const summaries = [];
+
+      Object.entries(filters).forEach(([headerKey, filter]) => {
+        const header = cardTemplates
+          .find((t) => t.typeOfCards === cardType)
+          ?.headers.find((h) => h.key === headerKey);
+        if (!header) return;
+
+        const headerName = header.name || headerKey;
+        if (header.type === 'number' && (filter.start || filter.end)) {
+          const start = filter.start || '';
+          const end = filter.end || '';
+          summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}`);
+        } else if (header.type === 'date' && (filter.start || filter.end)) {
+          const start = filter.start || '';
+          const end = filter.end || '';
+          summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}`);
+        } else if (header.type === 'dropdown' && filter.values?.length) {
+          summaries.push(`${headerName}: ${filter.values.join(', ')}`);
+        } else if (filter.value) {
+          const condition = filter.condition || filter.order || 'equals';
+          const prefix = header.type === 'number' ? { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[condition] || '' : condition;
+          summaries.push(`${headerName}: ${prefix} ${filter.value}`);
+        }
+      });
+
+      return summaries.length > 0 ? summaries.join('; ') : 'None';
+    },
+    [tempData.cardTypeFilters, cardTemplates]
+  );
+
   // Define onDoneClick callback
   const onDoneClick = useCallback(() => {
     console.log('[EditSheetsModal] Saving sheet:', { sheetName, currentHeaders, selectedCardTypes });
@@ -207,7 +242,7 @@ const EditSheetsModal = ({
       const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter;
       config = {
         showTitle: true,
-        showDoneButton: true,
+        showDoneButton: false,
         showBackButton: true,
         allowClose: false,
         title: `Filters for ${cardTypeName}`,
@@ -218,10 +253,6 @@ const EditSheetsModal = ({
         },
         leftButton: null,
         rightButton: null,
-        onDoneClick: () => {
-          setNavigationDirection('backward');
-          goToStep(2);
-        },
       };
     }
 
@@ -230,7 +261,7 @@ const EditSheetsModal = ({
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedCardTypeForFilter, cardTemplates, goToStep]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedCardTypeForFilter, cardTemplates]);
 
   // Sync tempData
   useEffect(() => {

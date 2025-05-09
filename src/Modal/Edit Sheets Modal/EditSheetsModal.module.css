@@ -269,7 +269,7 @@
 }
 
 .cardTypeItem {
-  padding: 12.5px 16px;
+  padding: 7px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   background: rgba(229, 229, 234, 0.5);
   transition: background 0.2s ease, border-bottom 0.3s ease;
@@ -638,18 +638,14 @@
   color: #007aff; /* Light mode */
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 12px;
+  padding: 6px 10px;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 8px;
   transition: all 0.2s ease, color 0.3s ease;
 }
 
 .actionButton.darkTheme {
   color: #0a84ff; /* Dark mode */
-}
-
-.actionButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode */
 }
 
 .actionButton.darkTheme:hover {

@@ -4,7 +4,7 @@ import styles from '../EditSheetsModal.module.css';
 import { MainContext } from '../../../Contexts/MainContext';
 import useClickOutside from '../../Hooks/UseClickOutside';
 
-const CardTypeFilter = ({ cardType, headers, tempData, setTempData, onDone }) => {
+const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
   const { isDarkTheme } = useContext(MainContext);
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
@@ -425,7 +425,6 @@ CardTypeFilter.propTypes = {
     cardTypeFilters: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
-  onDone: PropTypes.func,
 };
 
 export default CardTypeFilter;

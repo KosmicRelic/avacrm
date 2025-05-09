@@ -98,12 +98,16 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
             { key: 'email', name: 'Email', type: 'text', visible: true, hidden: false },
             { key: 'leadStatus', name: 'Lead Status', type: 'dropdown', options: ['New', 'Contacted', 'Qualified', 'Lost'], visible: true, hidden: false },
             { key: 'leadSource', name: 'Lead Source', type: 'dropdown', options: ['Website', 'Referral', 'Ad Campaign'], visible: true, hidden: false },
-            { key: 'followUpDate', name: ' oppression-Up Date', type: 'date', visible: true, hidden: false },
+            { key: 'followUpDate', name: 'Follow-Up Date', type: 'date', visible: true, hidden: false },
             { key: 'conversionValue', name: 'Conversion Value', type: 'number', visible: true, hidden: false },
           ],
           pinnedHeaders: ['id', 'name'],
           typeOfCardsToDisplay: ['Leads'],
-          filters: {},
+          cardTypeFilters: {
+            Leads: {
+              leadStatus: { condition: 'equals', value: 'New' }
+            }
+          },
           isActive: false,
         },
         {
@@ -121,7 +125,11 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           ],
           pinnedHeaders: ['id'],
           typeOfCardsToDisplay: ['Ad Campaigns'],
-          filters: {},
+          cardTypeFilters: {
+            'Ad Campaigns': {
+              status: { condition: 'equals', value: 'Active' }
+            }
+          },
           isActive: false,
         },
         {
@@ -136,7 +144,9 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           ],
           pinnedHeaders: ['id'],
           typeOfCardsToDisplay: ['Business Partners'],
-          filters: {},
+          cardTypeFilters: {
+            'Business Partners': {}
+          },
           isActive: false,
         },
         {
@@ -152,7 +162,9 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           ],
           pinnedHeaders: ['id'],
           typeOfCardsToDisplay: ['Payments'],
-          filters: {},
+          cardTypeFilters: {
+            Payments: {}
+          },
           isActive: false,
         },
       ],

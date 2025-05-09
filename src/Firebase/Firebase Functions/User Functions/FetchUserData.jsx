@@ -231,9 +231,10 @@ const fetchUserData = async ({
     }
     fetchedSheetIds.add(sheetId);
 
-    // Fetch cards based on typeOfCardsToDisplay
+    // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
     try {
       const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
+      const cardTypeFilters = activeSheet.cardTypeFilters || {};
       if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
         console.warn('No typeOfCardsToDisplay defined for active sheet', {
           sheetName: sheetNameToUse,
@@ -248,15 +249,53 @@ const fetchUserData = async ({
       const cardsToFetch = typeOfCardsToDisplay.filter((type) => !fetchedCardTypes.has(type));
 
       if (cardsToFetch.length > 0) {
-        // Fetch cards for each type that hasn't been fetched yet
-        const cardQueries = cardsToFetch.map((type) =>
-          getDocs(
-            query(
-              collection(db, 'businesses', businessId, 'cards'),
-              where('typeOfCards', '==', type)
-            )
-          )
-        );
+        // Fetch cards for each type that hasn't been fetched yet, applying filters
+        const cardQueries = cardsToFetch.map((type) => {
+          let cardQuery = query(
+            collection(db, 'businesses', businessId, 'cards'),
+            where('typeOfCards', '==', type)
+          );
+
+          // Apply cardTypeFilters for this card type
+          const filters = cardTypeFilters[type] || {};
+          Object.entries(filters).forEach(([field, filter]) => {
+            if (filter.start && filter.end) {
+              // Range filter
+              if (filter.start) {
+                cardQuery = query(cardQuery, where(field, '>=', filter.start));
+              }
+              if (filter.end) {
+                cardQuery = query(cardQuery, where(field, '<=', filter.end));
+              }
+            } else if (filter.value && filter.order) {
+              // Single value filter
+              const operatorMap = {
+                equals: '==',
+                greater: '>',
+                less: '<',
+                greaterOrEqual: '>=',
+                lessOrEqual: '<=',
+                on: '==',
+                before: '<',
+                after: '>',
+              };
+              const operator = operatorMap[filter.order] || '==';
+              cardQuery = query(cardQuery, where(field, operator, filter.value));
+            } else if (filter.values && filter.values.length > 0) {
+              // Dropdown (array contains) filter
+              cardQuery = query(cardQuery, where(field, 'in', filter.values));
+            } else if (filter.condition && filter.value) {
+              // Text filter
+              if (filter.condition === 'equals') {
+                cardQuery = query(cardQuery, where(field, '==', filter.value));
+              }
+              // Note: Firestore doesn't support 'contains', 'startsWith', or 'endsWith' natively
+              // For these, we'd need to implement client-side filtering or adjust the data model
+            }
+          });
+
+          return getDocs(cardQuery);
+        });
 
         const querySnapshots = await Promise.all(cardQueries);
         const newCards = querySnapshots.flatMap((snapshot) =>
@@ -276,6 +315,7 @@ const fetchUserData = async ({
           sheetId,
           types: cardsToFetch,
           cardsFetched: newCards.length,
+          filtersApplied: cardTypeFilters,
         });
       } else {
         console.debug('All card types already fetched', {
@@ -300,6 +340,7 @@ const fetchUserData = async ({
         sheetId,
         sheetName: sheetNameToUse,
         typeOfCardsToDisplay,
+        cardTypeFilters,
         userId: auth.currentUser?.uid || 'unknown',
         timestamp: new Date().toISOString(),
       });
