@@ -35,8 +35,6 @@ export default function Settings() {
   });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [animationDirection, setAnimationDirection] = useState('enter');
-  const [animationType, setAnimationType] = useState('slide');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -199,8 +197,6 @@ export default function Settings() {
         financials: teamMember.permissions?.financials?.role || 'none',
       });
     }
-    setAnimationDirection('enter');
-    setAnimationType('none');
     setCurrentStep('editAccess');
   };
 
@@ -305,8 +301,6 @@ export default function Settings() {
         actions: 'none',
         financials: 'none',
       });
-      setAnimationDirection('exit');
-      setAnimationType('none');
       setCurrentStep('manageTeam');
       if (selectedTeamMemberUids.includes(user.uid)) {
         window.location.reload();
@@ -326,8 +320,6 @@ export default function Settings() {
       actions: 'none',
       financials: 'none',
     });
-    setAnimationDirection('exit');
-    setAnimationType('none');
     setCurrentStep('manageTeam');
   };
 
@@ -340,8 +332,6 @@ export default function Settings() {
       actions: 'none',
       financials: 'none',
     });
-    setAnimationDirection('exit');
-    setAnimationType('none');
     setCurrentStep('invitations');
   };
 
@@ -462,8 +452,6 @@ export default function Settings() {
               const invitationsData = invitationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setPendingInvitations(invitationsData);
             }
-            setAnimationDirection('exit');
-            setAnimationType('none');
             setCurrentStep('invitations');
             return;
           } else {
@@ -495,35 +483,6 @@ export default function Settings() {
   };
 
   const handleStepChange = (step) => {
-    const isForward =
-      (currentStep === 'main' && (step === 'invitations' || step === 'manageTeam')) ||
-      (currentStep === 'main' && (step === 'sendInvitation' || step === 'viewInvitations' || step === 'editAccess')) ||
-      (currentStep === 'invitations' && (step === 'sendInvitation' || step === 'viewInvitations')) ||
-      (currentStep === 'manageTeam' && step === 'editAccess');
-
-    setAnimationDirection(isForward ? 'enter' : 'exit');
-
-    const slideTransitions = [
-      ['main', 'invitations'],
-      ['invitations', 'main'],
-      ['main', 'manageTeam'],
-      ['manageTeam', 'main'],
-      ['main', 'sendInvitation'],
-      ['sendInvitation', 'main'],
-      ['main', 'viewInvitations'],
-      ['viewInvitations', 'main'],
-      ['main', 'editAccess'],
-      ['editAccess', 'main'],
-      ['invitations', 'sendInvitation'],
-      ['sendInvitation', 'invitations'],
-      ['invitations', 'viewInvitations'],
-      ['viewInvitations', 'invitations'],
-    ];
-    const shouldSlide = slideTransitions.some(
-      ([from, to]) => (currentStep === from && step === to) || (currentStep === to && step === from)
-    );
-    setAnimationType(shouldSlide ? 'slide' : 'none');
-
     setCurrentStep(step);
     setSelectedTeamMemberUids([]);
     setSelectedPermissions({
@@ -555,8 +514,6 @@ export default function Settings() {
         <div
           className={`${styles.leftPane} ${isDarkTheme ? styles.darkTheme : ''} ${
             isMobile && currentStep !== 'main' ? styles.hidden : ''
-          } ${isMobile && currentStep === 'main' && animationDirection === 'exit' ? styles.animateEnter : ''} ${
-            isMobile && currentStep !== 'main' && animationDirection === 'enter' ? styles.animateExit : ''
           }`}
         >
           <button
@@ -585,26 +542,16 @@ export default function Settings() {
 
         <div
           className={`${styles.rightPane} ${isDarkTheme ? styles.darkTheme : ''} ${
-            isMobile && currentStep !== 'main' ? styles.fullScreen : ''
+            isMobile && currentStep === 'main' ? '' : styles.visible
           }`}
         >
-          <div
-            className={`${styles.contentWrapper} ${
-              animationType === 'slide'
-                ? isMobile
-                  ? animationDirection === 'enter'
-                    ? styles.animateEnterMobile
-                    : styles.animateExitMobile
-                  : animationDirection === 'enter'
-                    ? styles.animateEnterDesktop
-                    : styles.animateExitDesktop
-                : styles.noAnimation
-            }`}
-          >
+          <div className={styles.contentWrapper}>
             {currentStep === 'main' && (
-              <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {t('settings.selectOption')}
-              </p>
+              <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <p className={`${styles.noSelection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {t('settings.selectOption')}
+                </p>
+              </div>
             )}
 
             {currentStep === 'invitations' && (
