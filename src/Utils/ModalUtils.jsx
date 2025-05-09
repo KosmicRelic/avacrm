@@ -75,6 +75,7 @@ export const handleModalSave = async ({
                       visible: h.visible,
                       hidden: h.hidden,
                     })),
+                    typeOfCardsToDisplay: data.typeOfCardsToDisplay || [], // Save selected card types
                     isModified: true,
                     action: 'update',
                   }
@@ -321,7 +322,7 @@ export const handleModalSave = async ({
       }
       break;
     case 'folderModal':
-      console.log('Saving folderModal, no action needed'); // Debug log
+      console.log('Saving folderModal, no action needed');
       break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
@@ -429,7 +430,7 @@ export const handleModalClose = ({
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
   }
-  console.log('Closing modals, activeModal:', activeModal?.type); // Debug log
+  console.log('Closing modals, activeModal:', activeModal?.type);
   setActiveModal(null);
   setEditMode(false);
   setSelectedTemplateIndex(null);
@@ -483,6 +484,7 @@ export const renderModalContent = ({
               sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
+              typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [], // Initialize with existing card types
             }
           }
           setTempData={setActiveModalData}
@@ -490,6 +492,8 @@ export const renderModalContent = ({
           onPinToggle={handlePinToggle}
           onDeleteSheet={handleDeleteSheet}
           handleClose={handleModalClose}
+          setActiveSheetName={handleSheetChange} // Pass setActiveSheetName for renaming
+          clearFetchedSheets={() => {}} // Placeholder, implement if needed
         />
       );
     case 'filter':
@@ -643,6 +647,7 @@ export const onEditSheet = ({
       sheetName: activeSheetName,
       currentHeaders: resolvedHeaders,
       rows: activeSheet?.rows || [],
+      typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [], // Initialize with existing card types
     },
   });
   sheetModal.open();
@@ -745,7 +750,7 @@ export const onOpenFolderModal = ({
   onSheetSelect,
 }) => {
   if (!sheets) return;
-  console.log('Opening folderModal for:', folderName); // Debug log
+  console.log('Opening folderModal for:', folderName);
   setActiveModal({
     type: 'folderModal',
     data: {
@@ -753,7 +758,7 @@ export const onOpenFolderModal = ({
       onSheetSelect,
       tempData: {},
       handleClose: () => {
-        console.log('Closing folderModal'); // Debug log
+        console.log('Closing folderModal');
         folderModal.close();
         setActiveModal(null);
       },

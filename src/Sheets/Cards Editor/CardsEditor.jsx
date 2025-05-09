@@ -28,7 +28,7 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, setSheets, cardTemplates, headers, isDarkTheme, cards, setCards } = useContext(MainContext);
+  const { sheets, cardTemplates, headers, isDarkTheme, cards, setCards } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfCards
@@ -36,14 +36,18 @@ const CardsEditor = ({
     : null;
   const [selectedCardType, setSelectedCardType] = useState(initialTemplate?.name || '');
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
-  const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.id);
+  const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId);
   const [openSections, setOpenSections] = useState([]);
   const [isViewingHistory, setIsViewingHistory] = useState(false);
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
-  const cardTypeOptions = useMemo(() => cardTemplates?.map((template) => template.name) || [], [cardTemplates]);
+  const cardTypeOptions = useMemo(() => {
+    if (!selectedSheet) return [];
+    const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
+    return sheet?.typeOfCardsToDisplay || [];
+  }, [selectedSheet, sheets]);
 
   const selectedSections = useMemo(() => {
     const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
@@ -111,6 +115,18 @@ const CardsEditor = ({
     }
   }, [view, selectedSections]);
 
+  useEffect(() => {
+    // Automatically set card type if the sheet has only one typeOfCardsToDisplay
+    if (selectedSheet && !isEditing) {
+      const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
+      if (sheet?.typeOfCardsToDisplay?.length === 1) {
+        setSelectedCardType(sheet.typeOfCardsToDisplay[0]);
+      } else {
+        setSelectedCardType('');
+      }
+    }
+  }, [selectedSheet, sheets, isEditing]);
+
   const handleSelectionNext = useCallback(() => {
     if (!selectedSheet) {
       alert('Please select a sheet.');
@@ -129,8 +145,7 @@ const CardsEditor = ({
       ...prev,
       sheetName: selectedSheet,
       typeOfCards: template.name,
-      id: prev.id || uuidv4(),
-      docId: prev.docId || uuidv4(), // Ensure docId is set for new cards
+      docId: prev.docId || uuidv4(),
     }));
     setView('editor');
   }, [selectedSheet, selectedCardType, cardTemplates]);
@@ -144,7 +159,7 @@ const CardsEditor = ({
 
   const handleInputChange = useCallback(
     (key, value) => {
-      if (key === 'id' || key === 'typeOfCards') {
+      if (key === 'docId' || key === 'typeOfCards') {
         return;
       }
       if (!isViewingHistory) {
@@ -165,7 +180,7 @@ const CardsEditor = ({
       return;
     }
     const hasData = Object.keys(formData).some(
-      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'id' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
+      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
       alert('Please fill in at least one field to create a card.');
@@ -174,7 +189,6 @@ const CardsEditor = ({
 
     const newRow = {
       ...formData,
-      id: isEditing && initialRowData?.id ? initialRowData.id : formData.id || uuidv4(),
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId || uuidv4(),
       sheetName: selectedSheet,
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
@@ -187,10 +201,9 @@ const CardsEditor = ({
     const timestamp = { _seconds: Math.floor(Date.now() / 1000), _nanoseconds: 0 };
 
     if (isViewingHistory && selectedHistoryDate) {
-      const existingCard = cards.find((card) => card.id === initialRowData.id);
-      Object.keys(historicalFormData).forEach((key) => {
+      const existingCard = cards.find((card) => card.docId === initialRowData.docId);
+      Object.keys(historicalForm植物).forEach((key) => {
         if (
-          key !== 'id' &&
           key !== 'docId' &&
           key !== 'sheetName' &&
           key !== 'typeOfCards' &&
@@ -209,11 +222,10 @@ const CardsEditor = ({
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      const existingCard = cards.find((card) => card.id === initialRowData.id);
+      const existingCard = cards.find((card) => card.docId === initialRowData.docId);
       if (existingCard) {
         Object.keys(formData).forEach((key) => {
           if (
-            key !== 'id' &&
             key !== 'docId' &&
             key !== 'sheetName' &&
             key !== 'typeOfCards' &&
@@ -232,7 +244,6 @@ const CardsEditor = ({
     } else {
       Object.keys(formData).forEach((key) => {
         if (
-          key !== 'id' &&
           key !== 'docId' &&
           key !== 'sheetName' &&
           key !== 'typeOfCards' &&
@@ -272,51 +283,21 @@ const CardsEditor = ({
   ]);
 
   const handleDelete = useCallback(() => {
-    if (!isEditing || !initialRowData?.id) {
+    if (!isEditing || !initialRowData?.docId) {
       alert('No card to delete.');
       return;
     }
     if (window.confirm('Are you sure you want to delete this card? This action will remove it from all sheets.')) {
       setCards((prev) =>
         prev.map((card) =>
-          card.id === initialRowData.id
+          card.docId === initialRowData.docId
             ? { ...card, isModified: true, action: 'remove' }
             : card
         )
       );
-      setSheets((prev) => ({
-        ...prev,
-        allSheets: prev.allSheets.map((sheet) => ({
-          ...sheet,
-          rows: sheet.rows.filter((id) => id !== initialRowData.id),
-        })),
-      }));
       onClose();
     }
-  }, [isEditing, initialRowData, setCards, setSheets, onClose]);
-
-  const handleRemove = useCallback(() => {
-    if (!isEditing || !initialRowData?.id || !selectedSheet) {
-      alert('No card or sheet selected to remove.');
-      return;
-    }
-    const currentSheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-    if (currentSheet?.id === 'primarySheet') {
-      alert('Cannot remove a card from the primary sheet. Use Delete to remove it entirely.');
-      return;
-    }
-    if (window.confirm(`Are you sure you want to remove this card from "${selectedSheet}"? It will remain in other sheets.`)) {
-      setSheets((prev) => ({
-        ...prev,
-        allSheets: prev.allSheets.map((sheet) =>
-          sheet.sheetName === selectedSheet
-            ? { ...sheet, rows: sheet.rows.filter((id) => id !== initialRowData.id) }
-            : sheet
-        ),
-      }));
-      onClose();
-    }
-  }, [isEditing, initialRowData, selectedSheet, sheets, setSheets, onClose]);
+  }, [isEditing, initialRowData, setCards, onClose]);
 
   const toggleSection = useCallback((sectionName) => {
     setOpenSections((prev) =>
@@ -447,7 +428,7 @@ const CardsEditor = ({
                       aria-label="Select a card type"
                     >
                       <option value="">Select a card type</option>
-                      {cardTypeOptions.map((type) => ( 
+                      {cardTypeOptions.map((type) => (
                         <option key={type} value={type}>
                           {type}
                         </option>
@@ -526,7 +507,7 @@ const CardsEditor = ({
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
                                   readOnly={isViewingHistory}
-                                  disabled = {field.key == "typeOfCards"||field.key == "id"?true:false}
+                                  disabled={field.key === 'typeOfCards' || field.key === 'docId'}
                                 />
                               )}
                             </div>
@@ -554,13 +535,6 @@ const CardsEditor = ({
                       View History
                     </button>
                     <button
-                      className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={handleRemove}
-                      aria-label="Remove card from sheet"
-                    >
-                      Remove from Sheet
-                    </button>
-                    <button
                       className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={handleDelete}
                       aria-label="Delete card"
@@ -583,7 +557,7 @@ CardsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   initialRowData: PropTypes.shape({
-    id: PropTypes.string,
+    docId: PropTypes.string,
     sheetName: PropTypes.string,
     typeOfCards: PropTypes.string,
     history: PropTypes.array,

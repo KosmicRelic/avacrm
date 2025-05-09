@@ -1,8 +1,9 @@
-import { collection, doc, getDocs, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
 
-// Module-level cache to track fetched sheet IDs and current businessId
+// Module-level cache to track fetched sheet IDs, card types, and current businessId
 const fetchedSheetIds = new Set();
+const fetchedCardTypes = new Set();
 let currentBusinessId = null;
 
 const fetchUserData = async ({
@@ -86,8 +87,9 @@ const fetchUserData = async ({
   };
 
   // Reset cache only if businessId changes
-  if (businessId !== currentBusinessId && fetchedSheetIds.size > 0) {
+  if (businessId !== currentBusinessId && (fetchedSheetIds.size > 0 || fetchedCardTypes.size > 0)) {
     fetchedSheetIds.clear();
+    fetchedCardTypes.clear();
     currentBusinessId = businessId;
   }
 
@@ -178,7 +180,7 @@ const fetchUserData = async ({
       }
     } else {
       try {
-        // Only fetch sheets for active sheet's rows
+        // Only fetch sheets for active sheet
         const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
         allSheets = sheetsSnapshot.docs.map((doc) => ({
           docId: doc.id,
@@ -229,32 +231,66 @@ const fetchUserData = async ({
     }
     fetchedSheetIds.add(sheetId);
 
-    // Fetch cards for the active sheet
+    // Fetch cards based on typeOfCardsToDisplay
     try {
-      const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'cards'));
-      const allCards = cardsSnapshot.docs.map((doc) => ({
-        docId: doc.id,
-        ...doc.data(),
-      }));
-
-      let filteredCards = [];
-      if (activeSheet && Array.isArray(activeSheet.rows)) {
-        const rowIdsSet = new Set(activeSheet.rows.map(String));
-        filteredCards = allCards.filter((card) => rowIdsSet.has(String(card.docId)));
-        console.debug('Filtered cards for active sheet', {
+      const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
+      if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
+        console.warn('No typeOfCardsToDisplay defined for active sheet', {
           sheetName: sheetNameToUse,
           sheetId,
-          rowIds: Array.from(rowIdsSet),
-          filteredCardsCount: filteredCards.length,
+          activeSheet,
+        });
+        setCards && setCards([]);
+        return () => {};
+      }
+
+      let filteredCards = [];
+      const cardsToFetch = typeOfCardsToDisplay.filter((type) => !fetchedCardTypes.has(type));
+
+      if (cardsToFetch.length > 0) {
+        // Fetch cards for each type that hasn't been fetched yet
+        const cardQueries = cardsToFetch.map((type) =>
+          getDocs(
+            query(
+              collection(db, 'businesses', businessId, 'cards'),
+              where('typeOfCards', '==', type)
+            )
+          )
+        );
+
+        const querySnapshots = await Promise.all(cardQueries);
+        const newCards = querySnapshots.flatMap((snapshot) =>
+          snapshot.docs.map((doc) => ({
+            docId: doc.id,
+            ...doc.data(),
+          }))
+        );
+
+        // Update cache
+        cardsToFetch.forEach((type) => fetchedCardTypes.add(type));
+
+        // Combine with existing cards
+        filteredCards = newCards;
+        console.debug('Fetched cards for types', {
+          sheetName: sheetNameToUse,
+          sheetId,
+          types: cardsToFetch,
+          cardsFetched: newCards.length,
         });
       } else {
-        console.warn('No rows found for active sheet', { sheetName: sheetNameToUse, activeSheet });
+        console.debug('All card types already fetched', {
+          sheetName: sheetNameToUse,
+          sheetId,
+          types: typeOfCardsToDisplay,
+        });
       }
+
+      // Merge with previously fetched cards for other sheets
       setCards &&
         setCards((prevCards) => {
-          const sheetRowIds = new Set((activeSheet.rows || []).map(String));
-          const otherCards = prevCards.filter((card) => !sheetRowIds.has(String(card.docId)));
-          return [...otherCards, ...filteredCards];
+          const existingCardIds = new Set(prevCards.map((card) => card.docId));
+          const newCards = filteredCards.filter((card) => !existingCardIds.has(card.docId));
+          return [...prevCards, ...newCards];
         });
     } catch (error) {
       console.error('Error fetching cards:', {
@@ -263,6 +299,7 @@ const fetchUserData = async ({
         businessId,
         sheetId,
         sheetName: sheetNameToUse,
+        typeOfCardsToDisplay,
         userId: auth.currentUser?.uid || 'unknown',
         timestamp: new Date().toISOString(),
       });
@@ -291,6 +328,7 @@ const fetchUserData = async ({
 
 export const resetFetchedSheetIds = () => {
   fetchedSheetIds.clear();
+  fetchedCardTypes.clear();
   currentBusinessId = null;
 };
 

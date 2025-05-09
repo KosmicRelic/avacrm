@@ -12,7 +12,6 @@ import { BiSolidSpreadsheet } from 'react-icons/bi';
 
 const Sheets = ({
   headers,
-  rows,
   sheets,
   setSheets,
   activeSheetName,
@@ -31,11 +30,11 @@ const Sheets = ({
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
 
-  // Filter cards to only those in the active sheet's rows
-  const sheetRowIds = useMemo(() => activeSheet?.rows || [], [activeSheet]);
+  // Filter cards to only those matching the active sheet's typeOfCardsToDisplay
+  const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const sheetCards = useMemo(
-    () => cards.filter(card => sheetRowIds.includes(card.id || card.docId)),
-    [cards, sheetRowIds]
+    () => cards.filter((card) => sheetCardTypes.includes(card.typeOfCards)),
+    [cards, sheetCardTypes]
   );
 
   const filters = activeSheet?.filters || {};
@@ -173,13 +172,16 @@ const Sheets = ({
     );
   }, [sortedRows, searchQuery, visibleHeaders]);
 
-  const handleSheetClick = useCallback((sheetName) => {
-    console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
-    if (sheetName !== activeSheetName) {
-      setActiveSheetName(sheetName);
-      onSheetChange(sheetName);
-    }
-  }, [activeSheetName, onSheetChange, setActiveSheetName]);
+  const handleSheetClick = useCallback(
+    (sheetName) => {
+      console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
+      if (sheetName !== activeSheetName) {
+        setActiveSheetName(sheetName);
+        onSheetChange(sheetName);
+      }
+    },
+    [activeSheetName, onSheetChange, setActiveSheetName]
+  );
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
@@ -189,7 +191,7 @@ const Sheets = ({
         setIsEditorOpen(true);
         setSelectedRow(null);
       } else {
-        const fullCard = cards.find((card) => card.id === rowData.id) || rowData;
+        const fullCard = cards.find((card) => card.docId === rowData.docId) || rowData;
         setSelectedRow(fullCard);
         setIsEditorOpen(true);
         setIsClosing(false);
@@ -210,32 +212,21 @@ const Sheets = ({
 
   const handleEditorSave = useCallback(
     (updatedRow, isEditing) => {
-      const rowId = updatedRow.id;
-      const newCardData = { ...updatedRow, id: rowId, isModified: true, action: isEditing ? 'update' : 'add' };
-
-      const activeSheet = sheets.allSheets.find((s) => s.sheetName === updatedRow.sheetName);
-      const sheetRows = activeSheet ? activeSheet.rows : [];
+      const rowId = updatedRow.docId;
+      const newCardData = { ...updatedRow, isModified: true, action: isEditing ? 'update' : 'add' };
 
       if (!isEditing) {
-        setSheets((prev) => ({
-          ...prev,
-          allSheets: prev.allSheets.map((sheet) =>
-            sheet.sheetName === updatedRow.sheetName
-              ? { ...sheet, rows: [...sheet.rows, rowId] }
-              : sheet
-          ),
-        }));
         setCards((prev) => [...prev, newCardData]);
       } else {
         setCards((prev) =>
-          prev.map((card) => (card.id === rowId ? newCardData : card))
+          prev.map((card) => (card.docId === rowId ? newCardData : card))
         );
-        onCardSave(newCardData);
       }
+      onCardSave(newCardData);
       setSelectedRow(newCardData);
       setIsEditorOpen(false);
     },
-    [rows, setSheets, setCards, onCardSave, sheets.allSheets]
+    [onCardSave, setCards]
   );
 
   const handleFolderClick = useCallback(
@@ -258,7 +249,7 @@ const Sheets = ({
   const handleRowSelect = useCallback(
     (rowData) => {
       if (isSelectMode && !rowData.isAddNew) {
-        const rowId = rowData.id;
+        const rowId = rowData.docId;
         setSelectedRowIds((prev) =>
           prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
         );
@@ -273,7 +264,7 @@ const Sheets = ({
     if (selectedRowIds.length === finalRows.length) {
       setSelectedRowIds([]);
     } else {
-      setSelectedRowIds(finalRows.filter((row) => !row.isAddNew).map((row) => row.id));
+      setSelectedRowIds(finalRows.filter((row) => !row.isAddNew).map((row) => row.docId));
     }
   }, [finalRows, selectedRowIds]);
 
@@ -294,38 +285,14 @@ const Sheets = ({
   const handleDeleteSelected = useCallback(() => {
     setCards((prev) =>
       prev.map((card) =>
-        selectedRowIds.includes(card.id)
+        selectedRowIds.includes(card.docId)
           ? { ...card, isModified: true, action: 'remove' }
           : card
       )
     );
-    setSheets((prev) => ({
-      ...prev,
-      allSheets: prev.allSheets.map((sheet) => ({
-        ...sheet,
-        rows: sheet.rows.filter((id) => !selectedRowIds.includes(id)),
-      })),
-    }));
     setSelectedRowIds([]);
     setIsSelectMode(false);
-  }, [selectedRowIds, setCards, setSheets]);
-
-  const handleRemoveSelected = useCallback(() => {
-    if (isPrimarySheet) {
-      alert("Cards cannot be removed from the primary sheet 'All Cards'.");
-      return;
-    }
-    setSheets((prev) => ({
-      ...prev,
-      allSheets: prev.allSheets.map((sheet) =>
-        sheet.sheetName === activeSheetName
-          ? { ...sheet, rows: sheet.rows.filter((id) => !selectedRowIds.includes(id)) }
-          : sheet
-      ),
-    }));
-    setSelectedRowIds([]);
-    setIsSelectMode(false);
-  }, [selectedRowIds, activeSheetName, setSheets, isPrimarySheet]);
+  }, [selectedRowIds, setCards]);
 
   const TableContent = (
     <div className={styles.tableContent}>
@@ -384,22 +351,6 @@ const Sheets = ({
                   >
                     Delete
                   </button>
-                  {!isPrimarySheet && (
-                    <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Are you sure you want to remove the selected cards from this sheet?'
-                          )
-                        ) {
-                          handleRemoveSelected();
-                        }
-                      }}
-                    >
-                      Remove
-                    </button>
-                  )}
                 </>
               )}
             </>
@@ -439,7 +390,7 @@ const Sheets = ({
         </div>
         <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <RowComponent
-            rowData={{ id: 'Add New Card', isAddNew: true }}
+            rowData={{ docId: 'Add New Card', isAddNew: true }}
             headerNames={visibleHeaders.map((h) => h.key)}
             onClick={() => handleRowClick({ isAddNew: true })}
             isSelected={false}
@@ -454,7 +405,7 @@ const Sheets = ({
                 rowData={rowData}
                 headerNames={visibleHeaders.map((h) => h.key)}
                 onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData.id)}
+                isSelected={selectedRowIds.includes(rowData.docId)}
                 isSelectMode={isSelectMode}
                 onSelect={handleRowSelect}
               />
@@ -525,7 +476,7 @@ const Sheets = ({
             }`}
           >
             <CardsEditor
-              key={selectedRow?.id || Date.now()}
+              key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
               initialRowData={selectedRow}
@@ -539,7 +490,7 @@ const Sheets = ({
         <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {isEditorOpen ? (
             <CardsEditor
-              key={selectedRow?.id || Date.now()}
+              key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
               initialRowData={selectedRow}
@@ -567,7 +518,6 @@ Sheets.propTypes = {
       hidden: PropTypes.bool,
     })
   ).isRequired,
-  rows: PropTypes.array.isRequired,
   sheets: PropTypes.shape({
     allSheets: PropTypes.array.isRequired,
     structure: PropTypes.array.isRequired,

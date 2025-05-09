@@ -394,23 +394,24 @@ export const MainContextProvider = ({ children }) => {
         // Check if user is a business user
         const isBusinessUser = user.uid === businessId;
 
-        // Handle card updates (allowed for all users if card is in accessible sheet rows)
+        // Handle card updates (allowed for all users if card is in accessible sheet's typeOfCardsToDisplay)
         const modifiedCards = cards.filter((card) => card.isModified);
         const accessibleSheets = sheets.allSheets;
-        const accessibleRowIds = new Set(
+        const accessibleCardTypes = new Set(
           accessibleSheets.flatMap((sheet) =>
-            Array.isArray(sheet.rows) ? sheet.rows.map(String) : []
+            Array.isArray(sheet.typeOfCardsToDisplay) ? sheet.typeOfCardsToDisplay : []
           )
         );
 
         for (const card of modifiedCards) {
-          const isCardAccessible = isBusinessUser || accessibleRowIds.has(String(card.docId));
+          const isCardAccessible = isBusinessUser || accessibleCardTypes.has(card.typeOfCards);
           if (!isCardAccessible) {
             console.warn('User not authorized to modify card', {
               cardId: card.docId,
+              cardType: card.typeOfCards,
               userId: user.uid,
               businessId,
-              accessibleRowIds: Array.from(accessibleRowIds),
+              accessibleCardTypes: Array.from(accessibleCardTypes),
             });
             continue;
           }
