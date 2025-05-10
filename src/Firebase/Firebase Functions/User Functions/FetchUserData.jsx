@@ -1,9 +1,8 @@
 import { collection, doc, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
 
-// Module-level cache to track fetched sheet IDs, card types, and current businessId
-const fetchedSheetIds = new Set();
-const fetchedCardTypes = new Set();
+// Module-level cache to track fetched sheets and current businessId
+const fetchedSheets = new Map(); // Maps cacheKey to true
 let currentBusinessId = null;
 
 const fetchUserData = async ({
@@ -87,9 +86,8 @@ const fetchUserData = async ({
   };
 
   // Reset cache only if businessId changes
-  if (businessId !== currentBusinessId && (fetchedSheetIds.size > 0 || fetchedCardTypes.size > 0)) {
-    fetchedSheetIds.clear();
-    fetchedCardTypes.clear();
+  if (businessId !== currentBusinessId && fetchedSheets.size > 0) {
+    fetchedSheets.clear();
     currentBusinessId = businessId;
   }
 
@@ -225,16 +223,28 @@ const fetchUserData = async ({
     }
 
     const sheetId = activeSheet.docId;
-    if (fetchedSheetIds.has(sheetId)) {
-      console.debug('Sheet cards already fetched', { sheetId, sheetName: sheetNameToUse });
+    const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
+    const cardTypeFilters = activeSheet.cardTypeFilters || {};
+
+    // Create a unique cache key based on sheetId, typeOfCardsToDisplay, and cardTypeFilters
+    const cacheKey = JSON.stringify({
+      sheetId,
+      types: typeOfCardsToDisplay.sort(), // Sort to ensure consistent ordering
+      filters: cardTypeFilters,
+    });
+
+    if (fetchedSheets.has(cacheKey)) {
+      console.debug('Sheet cards already fetched', {
+        sheetId,
+        sheetName: sheetNameToUse,
+        cacheKey,
+      });
       return () => {};
     }
-    fetchedSheetIds.add(sheetId);
+    fetchedSheets.set(cacheKey, true);
 
     // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
     try {
-      const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
-      const cardTypeFilters = activeSheet.cardTypeFilters || {};
       if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
         console.warn('No typeOfCardsToDisplay defined for active sheet', {
           sheetName: sheetNameToUse,
@@ -246,82 +256,80 @@ const fetchUserData = async ({
       }
 
       let filteredCards = [];
-      const cardsToFetch = typeOfCardsToDisplay.filter((type) => !fetchedCardTypes.has(type));
-
-      if (cardsToFetch.length > 0) {
-        // Fetch cards for each type that hasn't been fetched yet, applying filters
-        const cardQueries = cardsToFetch.map((type) => {
-          let cardQuery = query(
-            collection(db, 'businesses', businessId, 'cards'),
-            where('typeOfCards', '==', type)
-          );
-
-          // Apply cardTypeFilters for this card type
-          const filters = cardTypeFilters[type] || {};
-          Object.entries(filters).forEach(([field, filter]) => {
-            if (filter.start && filter.end) {
-              // Range filter
-              if (filter.start) {
-                cardQuery = query(cardQuery, where(field, '>=', filter.start));
-              }
-              if (filter.end) {
-                cardQuery = query(cardQuery, where(field, '<=', filter.end));
-              }
-            } else if (filter.value && filter.order) {
-              // Single value filter
-              const operatorMap = {
-                equals: '==',
-                greater: '>',
-                less: '<',
-                greaterOrEqual: '>=',
-                lessOrEqual: '<=',
-                on: '==',
-                before: '<',
-                after: '>',
-              };
-              const operator = operatorMap[filter.order] || '==';
-              cardQuery = query(cardQuery, where(field, operator, filter.value));
-            } else if (filter.values && filter.values.length > 0) {
-              // Dropdown (array contains) filter
-              cardQuery = query(cardQuery, where(field, 'in', filter.values));
-            } else if (filter.condition && filter.value) {
-              // Text filter
-              if (filter.condition === 'equals') {
-                cardQuery = query(cardQuery, where(field, '==', filter.value));
-              }
-              // Note: Firestore doesn't support 'contains', 'startsWith', or 'endsWith' natively
-              // For these, we'd need to implement client-side filtering or adjust the data model
-            }
-          });
-
-          return getDocs(cardQuery);
+      for (const type of typeOfCardsToDisplay) {
+        // Create a type-specific cache key to track fetched card types with filters
+        const typeCacheKey = JSON.stringify({
+          type,
+          filters: cardTypeFilters[type] || {},
         });
 
-        const querySnapshots = await Promise.all(cardQueries);
-        const newCards = querySnapshots.flatMap((snapshot) =>
-          snapshot.docs.map((doc) => ({
-            docId: doc.id,
-            ...doc.data(),
-          }))
+        if (fetchedSheets.has(typeCacheKey)) {
+          console.debug('Card type already fetched for this sheet', {
+            sheetName: sheetNameToUse,
+            sheetId,
+            type,
+            filters: cardTypeFilters[type] || {},
+          });
+          continue;
+        }
+        fetchedSheets.set(typeCacheKey, true);
+
+        let cardQuery = query(
+          collection(db, 'businesses', businessId, 'cards'),
+          where('typeOfCards', '==', type)
         );
 
-        // Update cache
-        cardsToFetch.forEach((type) => fetchedCardTypes.add(type));
-
-        // Combine with existing cards
-        filteredCards = newCards;
-        console.debug('Fetched cards for types', {
-          sheetName: sheetNameToUse,
-          sheetId,
-          types: cardsToFetch,
-          cardsFetched: newCards.length,
-          filtersApplied: cardTypeFilters,
+        // Apply cardTypeFilters for this card type
+        const filters = cardTypeFilters[type] || {};
+        Object.entries(filters).forEach(([field, filter]) => {
+          if (filter.start && filter.end) {
+            // Range filter
+            if (filter.start) {
+              cardQuery = query(cardQuery, where(field, '>=', filter.start));
+            }
+            if (filter.end) {
+              cardQuery = query(cardQuery, where(field, '<=', filter.end));
+            }
+          } else if (filter.value && filter.order) {
+            // Single value filter
+            const operatorMap = {
+              equals: '==',
+              greater: '>',
+              less: '<',
+              greaterOrEqual: '>=',
+              lessOrEqual: '<=',
+              on: '==',
+              before: '<',
+              after: '>',
+            };
+            const operator = operatorMap[filter.order] || '==';
+            cardQuery = query(cardQuery, where(field, operator, filter.value));
+          } else if (filter.values && filter.values.length > 0) {
+            // Dropdown (array contains) filter
+            cardQuery = query(cardQuery, where(field, 'in', filter.values));
+          } else if (filter.condition && filter.value) {
+            // Text filter
+            if (filter.condition === 'equals') {
+              cardQuery = query(cardQuery, where(field, '==', filter.value));
+            }
+            // Note: Firestore doesn't support 'contains', 'startsWith', or 'endsWith' natively
+            // For these, client-side filtering is needed
+          }
         });
-      } else {
-        console.debug('All card types already fetched', {
+
+        const snapshot = await getDocs(cardQuery);
+        const newCards = snapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+
+        filteredCards.push(...newCards);
+        console.debug('Fetched cards for type', {
           sheetName: sheetNameToUse,
           sheetId,
-          types: typeOfCardsToDisplay,
+          type,
+          cardsFetched: newCards.length,
+          filtersApplied: cardTypeFilters[type] || {},
         });
       }
 
@@ -368,8 +376,7 @@ const fetchUserData = async ({
 };
 
 export const resetFetchedSheetIds = () => {
-  fetchedSheetIds.clear();
-  fetchedCardTypes.clear();
+  fetchedSheets.clear();
   currentBusinessId = null;
 };
 

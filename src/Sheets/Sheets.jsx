@@ -32,6 +32,7 @@ const Sheets = ({
 
   // Filter cards to only those matching the active sheet's typeOfCardsToDisplay
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
+  const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
   const sheetCards = useMemo(
     () => cards.filter((card) => sheetCardTypes.includes(card.typeOfCards)),
     [cards, sheetCardTypes]
@@ -71,8 +72,76 @@ const Sheets = ({
     }
   }, [sheets.structure, activeSheetName]);
 
+  // Apply cardTypeFilters client-side
   const filteredRows = useMemo(() => {
-    return sheetCards.filter((row) =>
+    return sheetCards.filter((card) => {
+      // Skip if no cardTypeFilters for this card's type
+      const filtersForType = cardTypeFilters[card.typeOfCards] || {};
+      if (Object.keys(filtersForType).length === 0) return true;
+
+      // Check all filters for this card type
+      return Object.entries(filtersForType).every(([headerKey, filter]) => {
+        const header = headers.find((h) => h.key === headerKey);
+        const cardValue = card[headerKey];
+        if (!filter || !header) return true;
+
+        switch (header.type) {
+          case 'number':
+            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+            const numValue = Number(cardValue) || 0;
+            if (filter.start || filter.end) {
+              const startNum = filter.start ? Number(filter.start) : -Infinity;
+              const endNum = filter.end ? Number(filter.end) : Infinity;
+              return numValue >= startNum && numValue <= endNum;
+            }
+            if (!filter.value) return true;
+            const filterNum = Number(filter.value);
+            switch (filter.order) {
+              case 'greater': return numValue > filterNum;
+              case 'less': return numValue < filterNum;
+              case 'greaterOrEqual': return numValue >= filterNum;
+              case 'lessOrEqual': return numValue <= filterNum;
+              default: return numValue === filterNum;
+            }
+          case 'date':
+            if (!filter.start && !filter.end && !filter.value) return true;
+            const dateValue = cardValue ? new Date(cardValue) : null;
+            if (!dateValue) return false;
+            if (filter.start || filter.end) {
+              const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
+              const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
+              return dateValue >= startDate && dateValue <= endDate;
+            }
+            if (!filter.value) return true;
+            const filterDate = new Date(filter.value);
+            switch (filter.order) {
+              case 'before': return dateValue < filterDate;
+              case 'after': return dateValue > filterDate;
+              default: return dateValue.toDateString() === filterDate.toDateString();
+            }
+          case 'dropdown':
+            if (!filter.values || filter.values.length === 0) return true;
+            return filter.values.includes(String(cardValue));
+          case 'text':
+            if (!filter.value) return true;
+            const strValue = String(cardValue || '').toLowerCase();
+            const filterStr = filter.value.toLowerCase();
+            switch (filter.condition) {
+              case 'contains': return strValue.includes(filterStr);
+              case 'startsWith': return strValue.startsWith(filterStr);
+              case 'endsWith': return strValue.endsWith(filterStr);
+              default: return strValue === filterStr;
+            }
+          default:
+            return true;
+        }
+      });
+    });
+  }, [sheetCards, cardTypeFilters, headers]);
+
+  // Apply additional filters from activeSheet.filters (if any)
+  const filteredWithSheetFilters = useMemo(() => {
+    return filteredRows.filter((row) =>
       Object.entries(filters).every(([headerKey, filter]) => {
         const header = headers.find((h) => h.key === headerKey);
         const rowValue = row[headerKey];
@@ -129,11 +198,12 @@ const Sheets = ({
         }
       })
     );
-  }, [sheetCards, filters, headers]);
+  }, [filteredRows, filters, headers]);
 
+  // Apply sorting based on filter sortOrder
   const sortedRows = useMemo(() => {
-    const sorted = [...filteredRows];
-    const sortCriteria = Object.entries(filters)
+    const sorted = [...filteredWithSheetFilters];
+    const sortCriteria = Object.entries({ ...filters, ...Object.values(cardTypeFilters).reduce((acc, typeFilters) => ({ ...acc, ...typeFilters }), {}) })
       .filter(([_, filter]) => filter.sortOrder)
       .map(([headerKey, filter]) => ({
         key: headerKey,
@@ -163,8 +233,9 @@ const Sheets = ({
       });
     }
     return sorted;
-  }, [filteredRows, filters, headers]);
+  }, [filteredWithSheetFilters, filters, cardTypeFilters, headers]);
 
+  // Apply search query
   const finalRows = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return sortedRows.filter((row) =>
