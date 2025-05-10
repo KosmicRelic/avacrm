@@ -2,7 +2,7 @@ import { collection, doc, getDocs, getDoc, query, where } from 'firebase/firesto
 import { db, auth } from '../../../firebase';
 
 // Module-level cache to track fetched sheets and current businessId
-const fetchedSheets = new Map(); // Maps sheetId to Set of typeOfCards
+const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfCards to { filters }
 let currentBusinessId = null;
 
 const fetchUserData = async ({
@@ -228,7 +228,7 @@ const fetchUserData = async ({
 
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {
-      fetchedSheets.set(sheetId, new Set());
+      fetchedSheets.set(sheetId, new Map());
     }
 
     // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
@@ -245,6 +245,21 @@ const fetchUserData = async ({
 
       let filteredCards = [];
       for (const type of typeOfCardsToDisplay) {
+        // Invalidate cache if cardTypeFilters have changed
+        const cacheKey = `${sheetId}:${type}`;
+        const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
+        const currentFilters = cardTypeFilters[type] || {};
+        if (cachedFilters && JSON.stringify(cachedFilters) !== JSON.stringify(currentFilters)) {
+          console.debug('Card type filters changed, invalidating cache', {
+            sheetName: sheetNameToUse,
+            sheetId,
+            type,
+            previousFilters: cachedFilters,
+            currentFilters,
+          });
+          fetchedSheets.get(sheetId).delete(type);
+        }
+
         // Check if this card type has already been fetched for this sheet
         if (fetchedSheets.get(sheetId).has(type)) {
           console.debug('Card type already fetched for this sheet', {
@@ -254,7 +269,7 @@ const fetchUserData = async ({
           });
           continue;
         }
-        fetchedSheets.get(sheetId).add(type);
+        fetchedSheets.get(sheetId).set(type, { filters: currentFilters });
 
         let cardQuery = query(
           collection(db, 'businesses', businessId, 'cards'),
@@ -266,9 +281,9 @@ const fetchUserData = async ({
         const clientSideFilters = [];
 
         // Handle userFilter (restrictByUser)
-        if (filters.userFilter && filters.userFilter.headerKey && filters.userFilter.value) {
-          const { headerKey, value, condition } = filters.userFilter;
-          if (condition === 'equals') {
+        if (filters.userFilter && filters.userFilter.headerKey && filters.userFilter.condition === 'equals') {
+          const { headerKey, value } = filters.userFilter;
+          if (value) {
             cardQuery = query(cardQuery, where(headerKey, '==', value));
             console.debug('Applied userFilter', {
               sheetName: sheetNameToUse,
@@ -276,15 +291,15 @@ const fetchUserData = async ({
               type,
               headerKey,
               value,
-              condition,
+              condition: 'equals',
             });
           } else {
-            console.warn('Unsupported userFilter condition', {
+            console.warn('userFilter value missing, skipping', {
               sheetName: sheetNameToUse,
               sheetId,
               type,
               headerKey,
-              condition,
+              condition: 'equals',
             });
           }
         }

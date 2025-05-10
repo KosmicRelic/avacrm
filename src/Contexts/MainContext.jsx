@@ -321,6 +321,34 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [location.pathname, activeSheetName]);
 
+  // New effect to reset sheetCardsFetched when cardTypeFilters change
+  useEffect(() => {
+    if (!user || !businessId || !isDataLoaded) return;
+
+    // Monitor changes to cardTypeFilters in sheets
+    const currentSheet = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
+    const currentCardTypeFilters = currentSheet?.cardTypeFilters || {};
+    const prevCardTypeFilters = prevStates.current.sheets.allSheets.find(
+      (s) => s.sheetName === activeSheetName
+    )?.cardTypeFilters || {};
+
+    if (JSON.stringify(currentCardTypeFilters) !== JSON.stringify(prevCardTypeFilters)) {
+      console.debug('cardTypeFilters changed, resetting sheetCardsFetched', {
+        sheetName: activeSheetName,
+        sheetId: currentSheet?.docId,
+        currentFilters: currentCardTypeFilters,
+        prevFilters: prevCardTypeFilters,
+      });
+      if (currentSheet?.docId) {
+        setSheetCardsFetched((prev) => {
+          const newFetched = { ...prev };
+          delete newFetched[currentSheet.docId];
+          return newFetched;
+        });
+      }
+    }
+  }, [sheets, activeSheetName, user, businessId, isDataLoaded, setSheetCardsFetched]);
+
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded || isBatchProcessing.current) return;
 

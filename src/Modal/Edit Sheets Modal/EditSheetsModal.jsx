@@ -48,8 +48,18 @@ const EditSheetsModal = ({
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
 
+  // Initialize tempData.cardTypeFilters if undefined
+  useEffect(() => {
+    if (!tempData.cardTypeFilters) {
+      setTempData({
+        ...tempData,
+        cardTypeFilters: {},
+      });
+    }
+  }, [tempData, setTempData]);
+
   // Find sheet ID
-  const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.id;
+  const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
   // Get all available headers from sheets and card templates
   const allHeaders = useMemo(() => {
@@ -78,7 +88,7 @@ const EditSheetsModal = ({
     const commonHeaders = [];
     if (cardTemplates.length > 0) {
       const firstTemplateHeaders = cardTemplates[0].headers.filter(
-        (header) => header.isUsed !== false && ['id', 'typeOfCards'].includes(header.key)
+        (header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key)
       );
       commonHeaders.push(
         ...firstTemplateHeaders.map((header) => ({
@@ -117,6 +127,15 @@ const EditSheetsModal = ({
       const summaries = [];
 
       Object.entries(filters).forEach(([headerKey, filter]) => {
+        if (headerKey === 'userFilter') {
+          if (filter.headerKey) {
+            const header = cardTemplates
+              .find((t) => t.typeOfCards === cardType)
+              ?.headers.find((h) => h.key === filter.headerKey);
+            summaries.push(`${header?.name || filter.headerKey} = Current User`);
+          }
+          return;
+        }
         const header = cardTemplates
           .find((t) => t.typeOfCards === cardType)
           ?.headers.find((h) => h.key === headerKey);
@@ -148,12 +167,12 @@ const EditSheetsModal = ({
   // Define onDoneClick callback
   const onDoneClick = useCallback(() => {
     console.log('[EditSheetsModal] Saving sheet:', { sheetName, currentHeaders, selectedCardTypes });
-    setTempData({ 
-      sheetName, 
-      currentHeaders, 
-      rows, 
-      typeOfCardsToDisplay: selectedCardTypes, 
-      cardTypeFilters: tempData.cardTypeFilters || {} 
+    setTempData({
+      sheetName,
+      currentHeaders,
+      rows,
+      typeOfCardsToDisplay: selectedCardTypes,
+      cardTypeFilters: tempData.cardTypeFilters || {},
     });
     if (sheetName !== tempData.sheetName) {
       console.log('[EditSheetsModal] Updating activeSheetName:', sheetName);
@@ -271,12 +290,12 @@ const EditSheetsModal = ({
 
   // Sync tempData
   useEffect(() => {
-    const newTempData = { 
-      sheetName, 
-      currentHeaders, 
-      rows, 
-      typeOfCardsToDisplay: selectedCardTypes, 
-      cardTypeFilters: tempData.cardTypeFilters || {} 
+    const newTempData = {
+      sheetName,
+      currentHeaders,
+      rows,
+      typeOfCardsToDisplay: selectedCardTypes,
+      cardTypeFilters: tempData.cardTypeFilters || {},
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
@@ -293,12 +312,15 @@ const EditSheetsModal = ({
   const toggleCardTypeSelection = useCallback((type) => {
     setSelectedCardTypes((prev) => {
       if (prev.includes(type)) {
+        const updatedFilters = { ...tempData.cardTypeFilters };
+        delete updatedFilters[type];
+        setTempData({ ...tempData, cardTypeFilters: updatedFilters });
         return prev.filter((t) => t !== type);
       } else {
         return [...prev, type];
       }
     });
-  }, []);
+  }, [tempData, setTempData]);
 
   // Drag-and-drop and touch handlers
   const handleDragStart = useCallback((e, index) => {
@@ -441,11 +463,24 @@ const EditSheetsModal = ({
     [sheetId]
   );
 
-  const handleFilterClick = useCallback((typeOfCards) => {
-    setSelectedCardTypeForFilter(typeOfCards);
-    setNavigationDirection('forward');
-    goToStep(3);
-  }, [goToStep]);
+  const handleFilterClick = useCallback(
+    (typeOfCards) => {
+      // Initialize cardTypeFilters for this cardType if not present
+      if (!tempData.cardTypeFilters?.[typeOfCards]) {
+        setTempData({
+          ...tempData,
+          cardTypeFilters: {
+            ...tempData.cardTypeFilters,
+            [typeOfCards]: {},
+          },
+        });
+      }
+      setSelectedCardTypeForFilter(typeOfCards);
+      setNavigationDirection('forward');
+      goToStep(3);
+    },
+    [goToStep, tempData, setTempData]
+  );
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -653,6 +688,7 @@ const EditSheetsModal = ({
                 headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
                 tempData={tempData}
                 setTempData={setTempData}
+                showFilterSummary={true}
               />
             )}
           </div>

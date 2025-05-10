@@ -58,8 +58,27 @@ export const handleModalSave = async ({
       }
       break;
     case 'sheet':
-      // Handles saving EditSheetsModal data, including cardTypeFilters
       if (data?.sheetName && data.currentHeaders && sheets) {
+        // Clean cardTypeFilters to remove undefined values and empty filters
+        const cleanedCardTypeFilters = {};
+        Object.entries(data.cardTypeFilters || {}).forEach(([cardType, filters]) => {
+          const cleanedFilters = {};
+          Object.entries(filters).forEach(([key, filter]) => {
+            const cleanedFilter = {};
+            Object.entries(filter).forEach(([field, value]) => {
+              if (value !== undefined && value !== null) {
+                cleanedFilter[field] = value;
+              }
+            });
+            if (Object.keys(cleanedFilter).length > 0) {
+              cleanedFilters[key] = cleanedFilter;
+            }
+          });
+          if (Object.keys(cleanedFilters).length > 0) {
+            cleanedCardTypeFilters[cardType] = cleanedFilters;
+          }
+        });
+
         setSheets((prev) => {
           const updatedSheets = {
             ...prev,
@@ -77,7 +96,7 @@ export const handleModalSave = async ({
                       hidden: h.hidden,
                     })),
                     typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
-                    cardTypeFilters: data.cardTypeFilters || {}, // Persist cardTypeFilters (e.g., { Leads: { leadStatus: { condition: 'equals', value: 'New' } } })
+                    cardTypeFilters: cleanedCardTypeFilters, // Use cleaned filters
                     isModified: true,
                     action: 'update',
                   }

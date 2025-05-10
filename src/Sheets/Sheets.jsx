@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Sheets.module.css';
 import RowComponent from './Row Template/RowComponent';
@@ -26,7 +26,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched, user } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const sheetId = activeSheet?.docId;
@@ -54,11 +54,11 @@ const Sheets = ({
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
             // Handle userFilter (restrictByUser)
-            if (filter.headerKey && filter.value && filter.condition === 'equals') {
+            if (filter.headerKey && filter.condition === 'equals') {
               const cardValue = card[filter.headerKey];
-              return cardValue === filter.value;
+              return cardValue === user.uid;
             }
-            return true; // Skip unsupported userFilter conditions
+            return true; // Skip if no headerKey or unsupported condition
           }
 
           const header = headers.find((h) => h.key === field);
@@ -76,7 +76,7 @@ const Sheets = ({
               const numValue = Number(value) || 0;
               if (filter.start || filter.end) {
                 const startNum = filter.start ? Number(filter.start) : -Infinity;
-                const endNum = filter.end ? Number(filter.end) : Infinity; // Fixed syntax error
+                const endNum = filter.end ? Number(filter.end) : Infinity;
                 return numValue >= startNum && numValue <= endNum;
               }
               if (!filter.value || !filter.order) return true;
@@ -134,7 +134,7 @@ const Sheets = ({
           }
         });
       });
-  }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName]);
+  }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName, user.uid]);
 
   // Apply global filters (activeSheet.filters) if present
   const filteredWithGlobalFilters = useMemo(() => {

@@ -3,14 +3,15 @@ import PropTypes from 'prop-types';
 import styles from '../EditSheetsModal.module.css';
 import { MainContext } from '../../../Contexts/MainContext';
 import useClickOutside from '../../Hooks/UseClickOutside';
+import { MdFilterAlt } from 'react-icons/md';
 
-const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
-  const { isDarkTheme } = useContext(MainContext);
+const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSummary = true }) => {
+  const { isDarkTheme, user } = useContext(MainContext);
   const [dateRangeMode, setDateRangeMode] = useState(
     useMemo(() => {
       const initial = {};
       Object.entries(tempData.cardTypeFilters?.[cardType] || {}).forEach(([key, filter]) => {
-        if (filter.start || filter.end) initial[key] = true;
+        if (key !== 'userFilter' && (filter.start || filter.end)) initial[key] = true;
       });
       return initial;
     }, [tempData.cardTypeFilters, cardType])
@@ -19,13 +20,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
     useMemo(() => {
       const initial = {};
       Object.entries(tempData.cardTypeFilters?.[cardType] || {}).forEach(([key, filter]) => {
-        if (filter.start || filter.end) initial[key] = true;
+        if (key !== 'userFilter' && (filter.start || filter.end)) initial[key] = true;
       });
       return initial;
     }, [tempData.cardTypeFilters, cardType])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const [showUserFilterForm, setShowUserFilterForm] = useState(false);
   const filterActionsRef = useRef(null);
+  const userFilterRef = useRef(null);
 
   // Initialize filter values for this card type
   useEffect(() => {
@@ -73,32 +76,55 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
   const applyFilters = useCallback(
     (filters) => {
       const cleanedFilters = Object.fromEntries(
-        Object.entries(filters).map(([key, filter]) => {
-          if (numberRangeMode[key]) {
-            return [
-              key,
-              {
+        Object.entries(filters)
+          .map(([key, filter]) => {
+            // Initialize the cleaned filter object
+            let cleanedFilter = {};
+
+            if (key === 'userFilter') {
+              if (filter.headerKey) {
+                cleanedFilter = {
+                  headerKey: filter.headerKey,
+                  condition: 'equals',
+                  value: user.uid, // Set to current user's UID
+                };
+              }
+              return [key, cleanedFilter];
+            }
+
+            if (numberRangeMode[key]) {
+              cleanedFilter = {
                 start: filter.start ? Number(filter.start) : undefined,
                 end: filter.end ? Number(filter.end) : undefined,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          } else if (filter.order && filter.value) {
-            return [
-              key,
-              {
+              };
+            } else if (dateRangeMode[key]) {
+              cleanedFilter = {
+                start: filter.start || undefined,
+                end: filter.end || undefined,
+              };
+            } else if (filter.order && filter.value) {
+              cleanedFilter = {
                 order: filter.order,
                 value: filter.type === 'number' ? Number(filter.value) : filter.value,
-                sortOrder: filter.sortOrder || undefined,
-              },
-            ];
-          }
-          return [key, filter];
-        })
+              };
+            } else if (filter.values?.length) {
+              cleanedFilter = { values: filter.values };
+            }
+
+            // Only include sortOrder if it has a valid value
+            if (filter.sortOrder === 'ascending' || filter.sortOrder === 'descending') {
+              cleanedFilter.sortOrder = filter.sortOrder;
+            }
+
+            // Return the filter entry only if it has meaningful data
+            return [key, Object.keys(cleanedFilter).length > 0 ? cleanedFilter : {}];
+          })
+          .filter(([_, filter]) => Object.keys(filter).length > 0) // Remove empty filter objects
       );
+
       updateTempFilters(cleanedFilters);
     },
-    [numberRangeMode, updateTempFilters]
+    [numberRangeMode, dateRangeMode, updateTempFilters, user.uid]
   );
 
   const handleFilterChange = useCallback(
@@ -111,6 +137,19 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
       applyFilters(updatedFilters);
     },
     [filterValues, applyFilters]
+  );
+
+  const handleUserFilterChange = useCallback(
+    (headerKey) => {
+      const newFilter = {
+        headerKey: headerKey || undefined,
+        condition: 'equals',
+        value: headerKey ? user.uid : undefined, // Set to current user's UID
+      };
+      const updatedFilters = { ...filterValues, userFilter: headerKey ? newFilter : {} };
+      applyFilters(updatedFilters);
+    },
+    [filterValues, applyFilters, user.uid]
   );
 
   const handleDropdownChange = useCallback(
@@ -156,16 +195,24 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
     [filterValues, applyFilters]
   );
 
+  const clearUserFilter = useCallback(() => {
+    const updatedFilters = { ...filterValues, userFilter: {} };
+    applyFilters(updatedFilters);
+    setShowUserFilterForm(false);
+  }, [filterValues, applyFilters]);
+
   const handleReset = useCallback(() => {
     const clearedFilters = {};
     applyFilters(clearedFilters);
     setDateRangeMode({});
     setNumberRangeMode({});
     setActiveFilterIndex(null);
+    setShowUserFilterForm(false);
   }, [applyFilters]);
 
   const isFilterEmpty = (filter) =>
-    Object.keys(filter).length === 0 || (!filter.start && !filter.end && !filter.value && !filter.values?.length);
+    Object.keys(filter).length === 0 ||
+    (!filter.start && !filter.end && !filter.value && !filter.values?.length && !filter.headerKey);
 
   const getFilterSummary = useCallback(
     (header) => {
@@ -190,30 +237,105 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
           if (dateRangeMode[header.key]) {
             const start = filter.start || '';
             const end = filter.end || '';
-            return `${start}${start && end ? ' – ' : ''}${end}`.trim();
+            const sortOrder = filter.sortOrder || '';
+            return `${start}${start && end ? ' – ' : ''}${end}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
           } else {
             const order = filter.order || 'on';
             const value = filter.value || '';
-            return value ? `${order} ${value}` : 'None';
+            const sortOrder = filter.sortOrder || '';
+            return value ? `${order} ${value}${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
           }
-        case 'dropdown':
+        case 'dropdown': {
           const values = filter.values || [];
-          return values.length > 0 ? values.join(', ') : 'None';
-        case 'text':
+          const sortOrder = filter.sortOrder || '';
+          return values.length > 0 ? `${values.join(', ')}${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
+        }
+        case 'text': {
           const condition = filter.condition || 'equals';
           const value = filter.value || '';
-          return value ? `${condition} "${value}"` : 'None';
-        default:
-          return filter.value ? `"${filter.value}"` : 'None';
+          const sortOrder = filter.sortOrder || '';
+          return value ? `${condition} "${value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
+        }
+        default: {
+          const sortOrder = filter.sortOrder || '';
+          return filter.value ? `"${filter.value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
+        }
       }
     },
     [filterValues, numberRangeMode, dateRangeMode]
   );
 
+  const userFilterSummary = useMemo(() => {
+    const filter = filterValues.userFilter || {};
+    if (!filter.headerKey) return 'None';
+    const header = visibleHeaders.find((h) => h.key === filter.headerKey);
+    return `${header?.name || filter.headerKey} = Current User`;
+  }, [filterValues, visibleHeaders]);
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      Object.entries(filterValues).some(([key, filter]) => !isFilterEmpty(filter)) ||
+      !!filterValues.userFilter?.headerKey
+    );
+  }, [filterValues]);
+
   useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
+  useClickOutside(userFilterRef, showUserFilterForm, () => setShowUserFilterForm(false));
 
   return (
     <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {/* Restrict by User Section */}
+      <div
+        className={`${styles.filterItem} ${showUserFilterForm ? styles.activeItem : ''} ${
+          isDarkTheme ? styles.darkTheme : ''
+        }`}
+        onClick={() => setShowUserFilterForm((prev) => !prev)}
+      >
+        <div className={styles.filterRow}>
+          <div className={styles.filterNameType}>
+            <span>Restrict by User</span>
+          </div>
+          <div className={styles.primaryButtons}>
+            {showFilterSummary ? (
+              <span className={styles.filterSummary}>{userFilterSummary}</span>
+            ) : (
+              <MdFilterAlt
+                className={`${styles.filterIcon} ${
+                  filterValues.userFilter?.headerKey ? styles.active : ''
+                }`}
+              />
+            )}
+          </div>
+        </div>
+        {showUserFilterForm && (
+          <div
+            className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+            ref={userFilterRef}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <select
+              value={filterValues.userFilter?.headerKey || ''}
+              onChange={(e) => handleUserFilterChange(e.target.value || '')}
+              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              <option value="">No User Filter</option>
+              {visibleHeaders.map((header) => (
+                <option key={header.key} value={header.key}>
+                  {header.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={clearUserFilter}
+              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Regular Filters */}
       {visibleHeaders.map((header, index) => (
         <div
           key={header.key}
@@ -227,7 +349,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
               <span>{header.name}</span>
             </div>
             <div className={styles.primaryButtons}>
-              <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+              {showFilterSummary ? (
+                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+              ) : (
+                <MdFilterAlt
+                  className={`${styles.filterIcon} ${
+                    !isFilterEmpty(filterValues[header.key]) ? styles.active : ''
+                  }`}
+                />
+              )}
             </div>
           </div>
           {activeFilterIndex === index && (
@@ -329,6 +459,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
                     >
                       Exact
                     </button>
+                    <select
+                      value={filterValues[header.key]?.sortOrder || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      <option value="">Sort...</option>
+                      <option value="ascending">Ascending</option>
+                      <option value="descending">Descending</option>
+                    </select>
                   </>
                 ) : (
                   <>
@@ -353,21 +492,41 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
                     >
                       Range
                     </button>
+                    <select
+                      value={filterValues[header.key]?.sortOrder || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      <option value="">Sort...</option>
+                      <option value="ascending">Ascending</option>
+                      <option value="descending">Descending</option>
+                    </select>
                   </>
                 )
               ) : header.type === 'dropdown' ? (
-                <select
-                  multiple
-                  value={filterValues[header.key]?.values || []}
-                  onChange={(e) => handleDropdownChange(header.key, e)}
-                  className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                >
-                  {header.options.map((option, idx) => (
-                    <option key={`${header.key}-option-${idx}`} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    multiple
+                    value={filterValues[header.key]?.values || []}
+                    onChange={(e) => handleDropdownChange(header.key, e)}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    {header.options.map((option, idx) => (
+                      <option key={`${header.key}-option-${idx}`} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterValues[header.key]?.sortOrder || ''}
+                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    <option value="">Sort...</option>
+                    <option value="ascending">Ascending</option>
+                    <option value="descending">Descending</option>
+                  </select>
+                </>
               ) : (
                 <>
                   <select
@@ -387,6 +546,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
                     placeholder="Value"
                     className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                   />
+                  <select
+                    value={filterValues[header.key]?.sortOrder || ''}
+                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    <option value="">Sort...</option>
+                    <option value="ascending">Ascending</option>
+                    <option value="descending">Descending</option>
+                  </select>
                 </>
               )}
               <button
@@ -403,6 +571,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
         <button
           onClick={handleReset}
           className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          disabled={!hasActiveFilters}
         >
           Reset All
         </button>
@@ -426,6 +595,7 @@ CardTypeFilter.propTypes = {
     cardTypeFilters: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
+  showFilterSummary: PropTypes.bool,
 };
 
 export default CardTypeFilter;
