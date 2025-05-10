@@ -26,20 +26,199 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
+  const sheetId = activeSheet?.docId;
+  const isLoading = sheetId && !sheetCardsFetched[sheetId];
 
-  // Filter cards to only those matching the active sheet's typeOfCardsToDisplay
+  // Filter cards based on typeOfCardsToDisplay and cardTypeFilters
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
-  const sheetCards = useMemo(
-    () => cards.filter((card) => sheetCardTypes.includes(card.typeOfCards)),
-    [cards, sheetCardTypes]
-  );
-
-  const filters = activeSheet?.filters || {};
+  const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
+
+  const sheetCards = useMemo(() => {
+    if (!activeSheet) return [];
+    console.debug('Applying cardTypeFilters in Sheets', {
+      activeSheetName,
+      sheetCardTypes,
+      cardTypeFilters,
+      cardsCount: cards.length,
+    });
+
+    return cards
+      .filter((card) => sheetCardTypes.includes(card.typeOfCards))
+      .filter((card) => {
+        const filters = cardTypeFilters[card.typeOfCards] || {};
+        return Object.entries(filters).every(([field, filter]) => {
+          if (field === 'userFilter') {
+            // Handle userFilter (restrictByUser)
+            if (filter.headerKey && filter.value && filter.condition === 'equals') {
+              const cardValue = card[filter.headerKey];
+              return cardValue === filter.value;
+            }
+            return true; // Skip unsupported userFilter conditions
+          }
+
+          const header = headers.find((h) => h.key === field);
+          const value = card[field];
+          if (!filter || !header) {
+            if (!header) {
+              console.warn('Header not found for cardTypeFilter', { field, cardType: card.typeOfCards, activeSheetName });
+            }
+            return true;
+          }
+
+          switch (header.type) {
+            case 'number':
+              if (!filter.start && !filter.end && !filter.value) return true;
+              const numValue = Number(value) || 0;
+              if (filter.start || filter.end) {
+                const startNum = filter.start ? Number(filter.start) : -Infinity;
+                const endNum = filter.end ? Number(filter.end) : Infinity; // Fixed syntax error
+                return numValue >= startNum && numValue <= endNum;
+              }
+              if (!filter.value || !filter.order) return true;
+              const filterNum = Number(filter.value);
+              switch (filter.order) {
+                case 'greater':
+                  return numValue > filterNum;
+                case 'less':
+                  return numValue < filterNum;
+                case 'greaterOrEqual':
+                  return numValue >= filterNum;
+                case 'lessOrEqual':
+                  return numValue <= filterNum;
+                default:
+                  return numValue === filterNum;
+              }
+            case 'date':
+              if (!filter.start && !filter.end && !filter.value) return true;
+              const dateValue = value ? new Date(value) : null;
+              if (!dateValue) return false;
+              if (filter.start || filter.end) {
+                const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
+                const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
+                return dateValue >= startDate && dateValue <= endDate;
+              }
+              if (!filter.value || !filter.order) return true;
+              const filterDate = new Date(filter.value);
+              switch (filter.order) {
+                case 'before':
+                  return dateValue < filterDate;
+                case 'after':
+                  return dateValue > filterDate;
+                default:
+                  return dateValue.toDateString() === filterDate.toDateString();
+              }
+            case 'dropdown':
+              if (!filter.values || filter.values.length === 0) return true;
+              return filter.values.includes(value);
+            case 'text':
+              if (!filter.value || !filter.condition) return true;
+              const strValue = String(value || '').toLowerCase();
+              const filterStr = filter.value.toLowerCase();
+              switch (filter.condition) {
+                case 'contains':
+                  return strValue.includes(filterStr);
+                case 'startsWith':
+                  return strValue.startsWith(filterStr);
+                case 'endsWith':
+                  return strValue.endsWith(filterStr);
+                default:
+                  return strValue === filterStr;
+              }
+            default:
+              return true;
+          }
+        });
+      });
+  }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName]);
+
+  // Apply global filters (activeSheet.filters) if present
+  const filteredWithGlobalFilters = useMemo(() => {
+    console.debug('Applying global filters in Sheets', {
+      activeSheetName,
+      globalFilters,
+      sheetCardsCount: sheetCards.length,
+    });
+
+    return sheetCards.filter((row) =>
+      Object.entries(globalFilters).every(([headerKey, filter]) => {
+        const header = headers.find((h) => h.key === headerKey);
+        const rowValue = row[headerKey];
+        if (!filter || !header) {
+          if (!header) {
+            console.warn('Header not found for global filter', { headerKey, activeSheetName });
+          }
+          return true;
+        }
+
+        switch (header.type) {
+          case 'number':
+            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+            const numValue = Number(rowValue) || 0;
+            if (filter.start || filter.end) {
+              const startNum = filter.start ? Number(filter.start) : -Infinity;
+              const endNum = filter.end ? Number(filter.end) : Infinity;
+              return numValue >= startNum && numValue <= endNum;
+            }
+            if (!filter.value) return true;
+            const filterNum = Number(filter.value);
+            switch (filter.order) {
+              case 'greater':
+                return numValue > filterNum;
+              case 'less':
+                return numValue < filterNum;
+              case 'greaterOrEqual':
+                return numValue >= filterNum;
+              case 'lessOrEqual':
+                return numValue <= filterNum;
+              default:
+                return numValue === filterNum;
+            }
+          case 'date':
+            if (!filter.start && !filter.end && !filter.value) return true;
+            const dateValue = new Date(rowValue);
+            if (filter.start || filter.end) {
+              const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
+              const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
+              return dateValue >= startDate && dateValue <= endDate;
+            }
+            if (!filter.value) return true;
+            const filterDate = new Date(filter.value);
+            switch (filter.order) {
+              case 'before':
+                return dateValue < filterDate;
+              case 'after':
+                return dateValue > filterDate;
+              default:
+                return dateValue.toDateString() === filterDate.toDateString();
+            }
+          case 'dropdown':
+            if (!filter.values || filter.values.length === 0) return true;
+            return filter.values.includes(rowValue);
+          case 'text':
+            if (!filter.value) return true;
+            const strValue = String(rowValue || '').toLowerCase();
+            const filterStr = filter.value.toLowerCase();
+            switch (filter.condition) {
+              case 'contains':
+                return strValue.includes(filterStr);
+              case 'startsWith':
+                return strValue.startsWith(filterStr);
+              case 'endsWith':
+                return strValue.endsWith(filterStr);
+              default:
+                return strValue === filterStr;
+            }
+          default:
+            return true;
+        }
+      })
+    );
+  }, [sheetCards, globalFilters, headers, activeSheetName]);
 
   const scrollContainerRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -72,148 +251,40 @@ const Sheets = ({
     }
   }, [sheets.structure, activeSheetName]);
 
-  // Apply cardTypeFilters client-side
+  // Apply search query
   const filteredRows = useMemo(() => {
-    return sheetCards.filter((card) => {
-      // Skip if no cardTypeFilters for this card's type
-      const filtersForType = cardTypeFilters[card.typeOfCards] || {};
-      if (Object.keys(filtersForType).length === 0) return true;
-
-      // Check all filters for this card type
-      return Object.entries(filtersForType).every(([headerKey, filter]) => {
-        const header = headers.find((h) => h.key === headerKey);
-        const cardValue = card[headerKey];
-        if (!filter || !header) return true;
-
-        switch (header.type) {
-          case 'number':
-            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
-            const numValue = Number(cardValue) || 0;
-            if (filter.start || filter.end) {
-              const startNum = filter.start ? Number(filter.start) : -Infinity;
-              const endNum = filter.end ? Number(filter.end) : Infinity;
-              return numValue >= startNum && numValue <= endNum;
-            }
-            if (!filter.value) return true;
-            const filterNum = Number(filter.value);
-            switch (filter.order) {
-              case 'greater': return numValue > filterNum;
-              case 'less': return numValue < filterNum;
-              case 'greaterOrEqual': return numValue >= filterNum;
-              case 'lessOrEqual': return numValue <= filterNum;
-              default: return numValue === filterNum;
-            }
-          case 'date':
-            if (!filter.start && !filter.end && !filter.value) return true;
-            const dateValue = cardValue ? new Date(cardValue) : null;
-            if (!dateValue) return false;
-            if (filter.start || filter.end) {
-              const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
-              const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
-              return dateValue >= startDate && dateValue <= endDate;
-            }
-            if (!filter.value) return true;
-            const filterDate = new Date(filter.value);
-            switch (filter.order) {
-              case 'before': return dateValue < filterDate;
-              case 'after': return dateValue > filterDate;
-              default: return dateValue.toDateString() === filterDate.toDateString();
-            }
-          case 'dropdown':
-            if (!filter.values || filter.values.length === 0) return true;
-            return filter.values.includes(String(cardValue));
-          case 'text':
-            if (!filter.value) return true;
-            const strValue = String(cardValue || '').toLowerCase();
-            const filterStr = filter.value.toLowerCase();
-            switch (filter.condition) {
-              case 'contains': return strValue.includes(filterStr);
-              case 'startsWith': return strValue.startsWith(filterStr);
-              case 'endsWith': return strValue.endsWith(filterStr);
-              default: return strValue === filterStr;
-            }
-          default:
-            return true;
-        }
-      });
+    console.debug('Applying search query in Sheets', {
+      activeSheetName,
+      searchQuery,
+      filteredCardsCount: filteredWithGlobalFilters.length,
     });
-  }, [sheetCards, cardTypeFilters, headers]);
 
-  // Apply additional filters from activeSheet.filters (if any)
-  const filteredWithSheetFilters = useMemo(() => {
-    return filteredRows.filter((row) =>
-      Object.entries(filters).every(([headerKey, filter]) => {
-        const header = headers.find((h) => h.key === headerKey);
-        const rowValue = row[headerKey];
-        if (!filter || !header) return true;
-
-        switch (header.type) {
-          case 'number':
-            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
-            const numValue = Number(rowValue) || 0;
-            if (filter.start || filter.end) {
-              const startNum = filter.start ? Number(filter.start) : -Infinity;
-              const endNum = filter.end ? Number(filter.end) : Infinity;
-              return numValue >= startNum && numValue <= endNum;
-            }
-            if (!filter.value) return true;
-            const filterNum = Number(filter.value);
-            switch (filter.order) {
-              case 'greater': return numValue > filterNum;
-              case 'less': return numValue < filterNum;
-              case 'greaterOrEqual': return numValue >= filterNum;
-              case 'lessOrEqual': return numValue <= filterNum;
-              default: return numValue === filterNum;
-            }
-          case 'date':
-            if (!filter.start && !filter.end && !filter.value) return true;
-            const dateValue = new Date(rowValue);
-            if (filter.start || filter.end) {
-              const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
-              const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
-              return dateValue >= startDate && dateValue <= endDate;
-            }
-            if (!filter.value) return true;
-            const filterDate = new Date(filter.value);
-            switch (filter.order) {
-              case 'before': return dateValue < filterDate;
-              case 'after': return dateValue > filterDate;
-              default: return dateValue.toDateString() === filterDate.toDateString();
-            }
-          case 'dropdown':
-            if (!filter.values || filter.values.length === 0) return true;
-            return filter.values.includes(rowValue);
-          case 'text':
-            if (!filter.value) return true;
-            const strValue = String(rowValue || '').toLowerCase();
-            const filterStr = filter.value.toLowerCase();
-            switch (filter.condition) {
-              case 'contains': return strValue.includes(filterStr);
-              case 'startsWith': return strValue.startsWith(filterStr);
-              case 'endsWith': return strValue.endsWith(filterStr);
-              default: return strValue === filterStr;
-            }
-          default:
-            return true;
-        }
-      })
+    const query = searchQuery.toLowerCase();
+    return filteredWithGlobalFilters.filter((row) =>
+      visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
     );
-  }, [filteredRows, filters, headers]);
+  }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
-  // Apply sorting based on filter sortOrder
+  // Apply sorting based on cardTypeFilters' sortOrder
   const sortedRows = useMemo(() => {
-    const sorted = [...filteredWithSheetFilters];
-    const sortCriteria = Object.entries({ ...filters, ...Object.values(cardTypeFilters).reduce((acc, typeFilters) => ({ ...acc, ...typeFilters }), {}) })
-      .filter(([_, filter]) => filter.sortOrder)
-      .map(([headerKey, filter]) => ({
-        key: headerKey,
-        sortOrder: filter.sortOrder,
-        type: headers.find((h) => h.key === headerKey)?.type || 'text',
-      }));
+    const sorted = [...filteredRows];
+    const sortCriteria = Object.entries(cardTypeFilters)
+      .flatMap(([type, filters]) =>
+        Object.entries(filters)
+          .filter(([_, filter]) => filter.sortOrder)
+          .map(([field, filter]) => ({
+            key: field,
+            sortOrder: filter.sortOrder,
+            type: headers.find((h) => h.key === field)?.type || 'text',
+            appliesToCardType: type,
+          }))
+      );
 
     if (sortCriteria.length > 0) {
+      console.debug('Applying sort criteria in Sheets', { activeSheetName, sortCriteria });
       sorted.sort((a, b) => {
-        for (const { key, sortOrder, type } of sortCriteria) {
+        for (const { key, sortOrder, type, appliesToCardType } of sortCriteria) {
+          if (appliesToCardType && a.typeOfCards !== appliesToCardType) continue;
           let aValue = a[key];
           let bValue = b[key];
           if (type === 'number') {
@@ -233,15 +304,9 @@ const Sheets = ({
       });
     }
     return sorted;
-  }, [filteredWithSheetFilters, filters, cardTypeFilters, headers]);
+  }, [filteredRows, cardTypeFilters, headers, activeSheetName]);
 
-  // Apply search query
-  const finalRows = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return sortedRows.filter((row) =>
-      visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
-    );
-  }, [sortedRows, searchQuery, visibleHeaders]);
+  const finalRows = useMemo(() => sortedRows, [sortedRows]);
 
   const handleSheetClick = useCallback(
     (sheetName) => {
@@ -371,7 +436,9 @@ const Sheets = ({
         <div className={styles.buttonGroup}>
           {!isSelectMode ? (
             <button
-              className={`${styles.filterButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              className={`${styles.filterButton} ${
+                isDarkTheme ? styles.darkTheme : ''
+              } ${Object.keys(cardTypeFilters).length > 0 ? styles.active : ''}`}
               onClick={onFilter}
             >
               <MdFilterAlt size={20} />
@@ -449,42 +516,48 @@ const Sheets = ({
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
       >
-        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          {isSelectMode && (
-            <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
-          )}
-          {visibleHeaders.map((header) => (
-            <div key={header.key} className={styles.headerCell}>
-              {header.name}
+        {isLoading ? (
+          <div className={styles.loading}>Loading cards...</div>
+        ) : (
+          <>
+            <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {isSelectMode && (
+                <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
+              )}
+              {visibleHeaders.map((header) => (
+                <div key={header.key} className={styles.headerCell}>
+                  {header.name}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <RowComponent
-            rowData={{ docId: 'Add New Card', isAddNew: true }}
-            headerNames={visibleHeaders.map((h) => h.key)}
-            onClick={() => handleRowClick({ isAddNew: true })}
-            isSelected={false}
-            isSelectMode={isSelectMode}
-            onSelect={handleSelectToggle}
-            onAddRow={() => handleRowClick({ isAddNew: true })}
-          />
-          {finalRows.length > 0 ? (
-            finalRows.map((rowData, rowIndex) => (
+            <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
               <RowComponent
-                key={rowIndex}
-                rowData={rowData}
+                rowData={{ docId: 'Add New Card', isAddNew: true }}
                 headerNames={visibleHeaders.map((h) => h.key)}
-                onClick={() => handleRowSelect(rowData)}
-                isSelected={selectedRowIds.includes(rowData.docId)}
+                onClick={() => handleRowClick({ isAddNew: true })}
+                isSelected={false}
                 isSelectMode={isSelectMode}
-                onSelect={handleRowSelect}
+                onSelect={handleSelectToggle}
+                onAddRow={() => handleRowClick({ isAddNew: true })}
               />
-            ))
-          ) : (
-            <div className={styles.noResults}>No results found</div>
-          )}
-        </div>
+              {finalRows.length > 0 ? (
+                finalRows.map((rowData, rowIndex) => (
+                  <RowComponent
+                    key={rowIndex}
+                    rowData={rowData}
+                    headerNames={visibleHeaders.map((h) => h.key)}
+                    onClick={() => handleRowSelect(rowData)}
+                    isSelected={selectedRowIds.includes(rowData.docId)}
+                    isSelectMode={isSelectMode}
+                    onSelect={handleRowSelect}
+                  />
+                ))
+              ) : (
+                <div className={styles.noResults}>No results found</div>
+              )}
+            </div>
+          </>
+        )}
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
         <button

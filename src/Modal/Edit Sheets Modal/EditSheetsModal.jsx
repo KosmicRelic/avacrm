@@ -110,7 +110,7 @@ const EditSheetsModal = ({
     ];
   }, [sheets.allSheets, sheetName, currentHeaders, cardTemplates]);
 
-  // Function to generate filter summary for a card type (retained but not used in step 2)
+  // Function to generate filter summary for a card type
   const getFilterSummary = useCallback(
     (cardType) => {
       const filters = tempData.cardTypeFilters?.[cardType] || {};
@@ -148,7 +148,13 @@ const EditSheetsModal = ({
   // Define onDoneClick callback
   const onDoneClick = useCallback(() => {
     console.log('[EditSheetsModal] Saving sheet:', { sheetName, currentHeaders, selectedCardTypes });
-    setTempData({ sheetName, currentHeaders, rows, typeOfCardsToDisplay: selectedCardTypes, cardTypeFilters: tempData.cardTypeFilters });
+    setTempData({ 
+      sheetName, 
+      currentHeaders, 
+      rows, 
+      typeOfCardsToDisplay: selectedCardTypes, 
+      cardTypeFilters: tempData.cardTypeFilters || {} 
+    });
     if (sheetName !== tempData.sheetName) {
       console.log('[EditSheetsModal] Updating activeSheetName:', sheetName);
       setActiveSheetName(sheetName);
@@ -632,6 +638,7 @@ const EditSheetsModal = ({
                             aria-label={`Filter ${template.name || template.typeOfCards}`}
                           >
                             <FaFilter />
+                            <span className={styles.filterSummary}>{getFilterSummary(template.typeOfCards)}</span>
                           </button>
                         </div>
                       </div>

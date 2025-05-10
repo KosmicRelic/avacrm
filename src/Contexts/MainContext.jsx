@@ -4,7 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
-import fetchUserData, { resetFetchedSheetIds } from '../Firebase/Firebase Functions/User Functions/FetchUserData';
+import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 export const MainContext = createContext();
 
@@ -190,7 +190,6 @@ export const MainContextProvider = ({ children }) => {
           dashboards: [],
         };
         setIsDataLoaded(false);
-        resetFetchedSheetIds();
       }
       setUserAuthChecked(true);
     });
@@ -288,16 +287,11 @@ export const MainContextProvider = ({ children }) => {
       const sheetId = sheetObj?.docId;
       if (
         !sheetId ||
-        fetchingSheetIdsRef.current.has(sheetId)
+        fetchingSheetIdsRef.current.has(sheetId) ||
+        sheetCardsFetched[sheetId]
       ) {
         return;
       }
-      // Reset cache for this sheet to ensure refetch
-      setSheetCardsFetched((prev) => {
-        const newFetched = { ...prev };
-        delete newFetched[sheetId];
-        return newFetched;
-      });
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
@@ -315,7 +309,7 @@ export const MainContextProvider = ({ children }) => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
   useEffect(() => {
     if (location.pathname.startsWith('/sheets/')) {

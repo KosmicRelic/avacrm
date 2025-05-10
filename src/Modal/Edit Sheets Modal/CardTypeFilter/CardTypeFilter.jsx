@@ -58,6 +58,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData }) => {
 
   const updateTempFilters = useCallback(
     (newFilters) => {
+      console.debug('Updating cardTypeFilters', { cardType, newFilters });
       setTempData({
         ...tempData,
         cardTypeFilters: {

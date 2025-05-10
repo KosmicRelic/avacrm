@@ -2,7 +2,7 @@ import { collection, doc, getDocs, getDoc, query, where } from 'firebase/firesto
 import { db, auth } from '../../../firebase';
 
 // Module-level cache to track fetched sheets and current businessId
-const fetchedSheets = new Map(); // Maps cacheKey to true
+const fetchedSheets = new Map(); // Maps sheetId to Set of typeOfCards
 let currentBusinessId = null;
 
 const fetchUserData = async ({
@@ -226,22 +226,10 @@ const fetchUserData = async ({
     const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
     const cardTypeFilters = activeSheet.cardTypeFilters || {};
 
-    // Create a unique cache key based on sheetId, typeOfCardsToDisplay, and cardTypeFilters
-    const cacheKey = JSON.stringify({
-      sheetId,
-      types: typeOfCardsToDisplay.sort(), // Sort to ensure consistent ordering
-      filters: cardTypeFilters,
-    });
-
-    if (fetchedSheets.has(cacheKey)) {
-      console.debug('Sheet cards already fetched', {
-        sheetId,
-        sheetName: sheetNameToUse,
-        cacheKey,
-      });
-      return () => {};
+    // Initialize cache for this sheetId if not present
+    if (!fetchedSheets.has(sheetId)) {
+      fetchedSheets.set(sheetId, new Set());
     }
-    fetchedSheets.set(cacheKey, true);
 
     // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
     try {
@@ -257,22 +245,16 @@ const fetchUserData = async ({
 
       let filteredCards = [];
       for (const type of typeOfCardsToDisplay) {
-        // Create a type-specific cache key to track fetched card types with filters
-        const typeCacheKey = JSON.stringify({
-          type,
-          filters: cardTypeFilters[type] || {},
-        });
-
-        if (fetchedSheets.has(typeCacheKey)) {
+        // Check if this card type has already been fetched for this sheet
+        if (fetchedSheets.get(sheetId).has(type)) {
           console.debug('Card type already fetched for this sheet', {
             sheetName: sheetNameToUse,
             sheetId,
             type,
-            filters: cardTypeFilters[type] || {},
           });
           continue;
         }
-        fetchedSheets.set(typeCacheKey, true);
+        fetchedSheets.get(sheetId).add(type);
 
         let cardQuery = query(
           collection(db, 'businesses', businessId, 'cards'),
@@ -281,8 +263,36 @@ const fetchUserData = async ({
 
         // Apply cardTypeFilters for this card type
         const filters = cardTypeFilters[type] || {};
+        const clientSideFilters = [];
+
+        // Handle userFilter (restrictByUser)
+        if (filters.userFilter && filters.userFilter.headerKey && filters.userFilter.value) {
+          const { headerKey, value, condition } = filters.userFilter;
+          if (condition === 'equals') {
+            cardQuery = query(cardQuery, where(headerKey, '==', value));
+            console.debug('Applied userFilter', {
+              sheetName: sheetNameToUse,
+              sheetId,
+              type,
+              headerKey,
+              value,
+              condition,
+            });
+          } else {
+            console.warn('Unsupported userFilter condition', {
+              sheetName: sheetNameToUse,
+              sheetId,
+              type,
+              headerKey,
+              condition,
+            });
+          }
+        }
+
+        // Apply other cardTypeFilters
         Object.entries(filters).forEach(([field, filter]) => {
-          if (filter.start && filter.end) {
+          if (field === 'userFilter') return; // Skip userFilter as it's handled above
+          if (filter.start || filter.end) {
             // Range filter
             if (filter.start) {
               cardQuery = query(cardQuery, where(field, '>=', filter.start));
@@ -311,20 +321,49 @@ const fetchUserData = async ({
             // Text filter
             if (filter.condition === 'equals') {
               cardQuery = query(cardQuery, where(field, '==', filter.value));
+            } else {
+              // Non-equals text filters (contains, startsWith, endsWith) are handled client-side
+              clientSideFilters.push({ field, filter });
             }
-            // Note: Firestore doesn't support 'contains', 'startsWith', or 'endsWith' natively
-            // For these, client-side filtering is needed
           }
         });
 
+        console.debug('Applying Firestore query with filters', {
+          sheetName: sheetNameToUse,
+          sheetId,
+          type,
+          queryFilters: Object.keys(filters).filter((f) => f !== 'userFilter'),
+          clientSideFilters: clientSideFilters.map((f) => f.field),
+        });
+
         const snapshot = await getDocs(cardQuery);
-        const newCards = snapshot.docs.map((doc) => ({
+        let newCards = snapshot.docs.map((doc) => ({
           docId: doc.id,
           ...doc.data(),
         }));
 
+        // Apply client-side filtering for text conditions not supported by Firestore
+        if (clientSideFilters.length > 0) {
+          newCards = newCards.filter((card) => {
+            return clientSideFilters.every(({ field, filter }) => {
+              const cardValue = String(card[field] || '').toLowerCase();
+              const filterValue = filter.value?.toLowerCase() || '';
+              switch (filter.condition) {
+                case 'contains':
+                  return cardValue.includes(filterValue);
+                case 'startsWith':
+                  return cardValue.startsWith(filterValue);
+                case 'endsWith':
+                  return cardValue.endsWith(filterValue);
+                default:
+                  return true;
+              }
+            });
+          });
+        }
+
         filteredCards.push(...newCards);
-        console.debug('Fetched cards for type', {
+        console.debug('Fetched and filtered cards for type', {
           sheetName: sheetNameToUse,
           sheetId,
           type,
