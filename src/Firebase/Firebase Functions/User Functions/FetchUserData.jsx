@@ -51,22 +51,9 @@ const fetchUserData = async ({
     const user = auth.currentUser;
     if (!user || user.uid === businessId) return null; // Business owner
     const teamMemberDoc = await getDoc(doc(db, 'businesses', businessId, 'teamMembers', user.uid));
-    console.debug('Team member document fetched', {
-      exists: teamMemberDoc.exists(),
-      data: teamMemberDoc.exists() ? teamMemberDoc.data() : null,
-      userId: user.uid,
-      businessId,
-      timestamp: new Date().toISOString(),
-    });
     if (teamMemberDoc.exists()) {
       const data = teamMemberDoc.data();
       const allowedSheetIds = data.allowedSheetIds || data.permissions?.sheets?.allowedSheetIds || [];
-      console.debug('Allowed sheet IDs retrieved', {
-        allowedSheetIds,
-        userId: user.uid,
-        businessId,
-        timestamp: new Date().toISOString(),
-      });
       return allowedSheetIds;
     }
     return [];
@@ -77,11 +64,6 @@ const fetchUserData = async ({
     const structure = sheets.map((sheet) => ({
       sheetName: sheet.sheetName,
     }));
-    console.debug('Derived structure from sheets', {
-      structure,
-      sheetsCount: sheets.length,
-      timestamp: new Date().toISOString(),
-    });
     return structure;
   };
 
@@ -250,23 +232,11 @@ const fetchUserData = async ({
         const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
         const currentFilters = cardTypeFilters[type] || {};
         if (cachedFilters && JSON.stringify(cachedFilters) !== JSON.stringify(currentFilters)) {
-          console.debug('Card type filters changed, invalidating cache', {
-            sheetName: sheetNameToUse,
-            sheetId,
-            type,
-            previousFilters: cachedFilters,
-            currentFilters,
-          });
           fetchedSheets.get(sheetId).delete(type);
         }
 
         // Check if this card type has already been fetched for this sheet
         if (fetchedSheets.get(sheetId).has(type)) {
-          console.debug('Card type already fetched for this sheet', {
-            sheetName: sheetNameToUse,
-            sheetId,
-            type,
-          });
           continue;
         }
         fetchedSheets.get(sheetId).set(type, { filters: currentFilters });
@@ -279,30 +249,6 @@ const fetchUserData = async ({
         // Apply cardTypeFilters for this card type
         const filters = cardTypeFilters[type] || {};
         const clientSideFilters = [];
-
-        // Handle userFilter (restrictByUser)
-        if (filters.userFilter && filters.userFilter.headerKey && filters.userFilter.condition === 'equals') {
-          const { headerKey, value } = filters.userFilter;
-          if (value) {
-            cardQuery = query(cardQuery, where(headerKey, '==', value));
-            console.debug('Applied userFilter', {
-              sheetName: sheetNameToUse,
-              sheetId,
-              type,
-              headerKey,
-              value,
-              condition: 'equals',
-            });
-          } else {
-            console.warn('userFilter value missing, skipping', {
-              sheetName: sheetNameToUse,
-              sheetId,
-              type,
-              headerKey,
-              condition: 'equals',
-            });
-          }
-        }
 
         // Apply other cardTypeFilters
         Object.entries(filters).forEach(([field, filter]) => {
@@ -343,14 +289,6 @@ const fetchUserData = async ({
           }
         });
 
-        console.debug('Applying Firestore query with filters', {
-          sheetName: sheetNameToUse,
-          sheetId,
-          type,
-          queryFilters: Object.keys(filters).filter((f) => f !== 'userFilter'),
-          clientSideFilters: clientSideFilters.map((f) => f.field),
-        });
-
         const snapshot = await getDocs(cardQuery);
         let newCards = snapshot.docs.map((doc) => ({
           docId: doc.id,
@@ -378,13 +316,6 @@ const fetchUserData = async ({
         }
 
         filteredCards.push(...newCards);
-        console.debug('Fetched and filtered cards for type', {
-          sheetName: sheetNameToUse,
-          sheetId,
-          type,
-          cardsFetched: newCards.length,
-          filtersApplied: cardTypeFilters[type] || {},
-        });
       }
 
       // Merge with previously fetched cards for other sheets

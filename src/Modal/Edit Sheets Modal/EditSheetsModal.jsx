@@ -166,7 +166,6 @@ const EditSheetsModal = ({
 
   // Define onDoneClick callback
   const onDoneClick = useCallback(() => {
-    console.log('[EditSheetsModal] Saving sheet:', { sheetName, currentHeaders, selectedCardTypes });
     setTempData({
       sheetName,
       currentHeaders,
@@ -175,7 +174,6 @@ const EditSheetsModal = ({
       cardTypeFilters: tempData.cardTypeFilters || {},
     });
     if (sheetName !== tempData.sheetName) {
-      console.log('[EditSheetsModal] Updating activeSheetName:', sheetName);
       setActiveSheetName(sheetName);
       clearFetchedSheets();
     }
@@ -673,7 +671,7 @@ const EditSheetsModal = ({
                             aria-label={`Filter ${template.name || template.typeOfCards}`}
                           >
                             <FaFilter />
-                            <span className={styles.filterSummary}>{getFilterSummary(template.typeOfCards)}</span>
+                            {/* <span className={styles.filterSummary}>{getFilterSummary(template.typeOfCards)}</span> */}
                           </button>
                         </div>
                       </div>

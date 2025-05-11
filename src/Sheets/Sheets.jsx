@@ -9,6 +9,7 @@ import { MdFilterAlt } from 'react-icons/md';
 import { MainContext } from '../Contexts/MainContext';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
+import { ImSpinner2 } from 'react-icons/im';
 
 const Sheets = ({
   headers,
@@ -32,6 +33,23 @@ const Sheets = ({
   const sheetId = activeSheet?.docId;
   const isLoading = sheetId && !sheetCardsFetched[sheetId];
 
+  const [spinnerVisible, setSpinnerVisible] = useState(false);
+  const [spinnerFading, setSpinnerFading] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      setSpinnerVisible(true);
+      setSpinnerFading(false);
+    } else if (spinnerVisible) {
+      setSpinnerFading(true);
+      const timeout = setTimeout(() => {
+        setSpinnerVisible(false);
+        setSpinnerFading(false);
+      }, 400); // match CSS fade duration
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Filter cards based on typeOfCardsToDisplay and cardTypeFilters
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
@@ -40,12 +58,6 @@ const Sheets = ({
 
   const sheetCards = useMemo(() => {
     if (!activeSheet) return [];
-    console.debug('Applying cardTypeFilters in Sheets', {
-      activeSheetName,
-      sheetCardTypes,
-      cardTypeFilters,
-      cardsCount: cards.length,
-    });
 
     return cards
       .filter((card) => sheetCardTypes.includes(card.typeOfCards))
@@ -138,12 +150,6 @@ const Sheets = ({
 
   // Apply global filters (activeSheet.filters) if present
   const filteredWithGlobalFilters = useMemo(() => {
-    console.debug('Applying global filters in Sheets', {
-      activeSheetName,
-      globalFilters,
-      sheetCardsCount: sheetCards.length,
-    });
-
     return sheetCards.filter((row) =>
       Object.entries(globalFilters).every(([headerKey, filter]) => {
         const header = headers.find((h) => h.key === headerKey);
@@ -253,12 +259,6 @@ const Sheets = ({
 
   // Apply search query
   const filteredRows = useMemo(() => {
-    console.debug('Applying search query in Sheets', {
-      activeSheetName,
-      searchQuery,
-      filteredCardsCount: filteredWithGlobalFilters.length,
-    });
-
     const query = searchQuery.toLowerCase();
     return filteredWithGlobalFilters.filter((row) =>
       visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
@@ -281,7 +281,6 @@ const Sheets = ({
       );
 
     if (sortCriteria.length > 0) {
-      console.debug('Applying sort criteria in Sheets', { activeSheetName, sortCriteria });
       sorted.sort((a, b) => {
         for (const { key, sortOrder, type, appliesToCardType } of sortCriteria) {
           if (appliesToCardType && a.typeOfCards !== appliesToCardType) continue;
@@ -310,7 +309,6 @@ const Sheets = ({
 
   const handleSheetClick = useCallback(
     (sheetName) => {
-      console.log('[Sheets] handleSheetClick:', { sheetName, currentActiveSheetName: activeSheetName });
       if (sheetName !== activeSheetName) {
         setActiveSheetName(sheetName);
         onSheetChange(sheetName);
@@ -367,7 +365,6 @@ const Sheets = ({
 
   const handleFolderClick = useCallback(
     (folderName) => {
-      console.log('[Sheets] handleFolderClick:', { folderName });
       onOpenFolderModal(folderName, (sheetName) => {
         setActiveSheetName(sheetName);
         onSheetChange(sheetName);
@@ -516,8 +513,13 @@ const Sheets = ({
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
       >
-        {isLoading ? (
-          <div className={styles.loading}>Loading cards...</div>
+        {spinnerVisible ? (
+          <div className={`${styles.spinnerContainer} ${spinnerFading ? styles.spinnerFadeOut : ''}`}>
+            <ImSpinner2
+              className={`${styles.iconSpinner} ${isDarkTheme ? styles.iconSpinnerDark : styles.iconSpinnerLight}`}
+              size={24}
+            />
+          </div>
         ) : (
           <>
             <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>

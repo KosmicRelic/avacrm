@@ -9,6 +9,7 @@
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out forwards;
+  backdrop-filter: blur(10px);
 }
 
 .modalOverlay.darkTheme {

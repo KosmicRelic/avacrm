@@ -333,12 +333,6 @@ export const MainContextProvider = ({ children }) => {
     )?.cardTypeFilters || {};
 
     if (JSON.stringify(currentCardTypeFilters) !== JSON.stringify(prevCardTypeFilters)) {
-      console.debug('cardTypeFilters changed, resetting sheetCardsFetched', {
-        sheetName: activeSheetName,
-        sheetId: currentSheet?.docId,
-        currentFilters: currentCardTypeFilters,
-        prevFilters: prevCardTypeFilters,
-      });
       if (currentSheet?.docId) {
         setSheetCardsFetched((prev) => {
           const newFetched = { ...prev };
@@ -627,7 +621,7 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
   useEffect(() => {
-    console.log('Sheets:', sheets);
+    // console.log('Sheets:', sheets);
   }, [sheets]);
 
   return (

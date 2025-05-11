@@ -261,7 +261,6 @@ const CardsEditor = ({
       newRow.history = [...newRow.history, ...newHistory];
     }
 
-    console.log('CardsEditor saving card:', newRow);
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);

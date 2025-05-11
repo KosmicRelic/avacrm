@@ -343,7 +343,7 @@ export const handleModalSave = async ({
       }
       break;
     case 'folderModal':
-      console.log('Saving folderModal, no action needed');
+      // console.log('Saving folderModal, no action needed');
       break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
@@ -452,7 +452,7 @@ export const handleModalClose = ({
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
   }
-  console.log('Closing modals, activeModal:', activeModal?.type);
+  // console.log('Closing modals, activeModal:', activeModal?.type);
   setActiveModal(null);
   setEditMode(false);
   setSelectedTemplateIndex(null);
@@ -775,7 +775,7 @@ export const onOpenFolderModal = ({
   onSheetSelect,
 }) => {
   if (!sheets) return;
-  console.log('Opening folderModal for:', folderName);
+  // console.log('Opening folderModal for:', folderName);
   setActiveModal({
     type: 'folderModal',
     data: {
@@ -783,7 +783,7 @@ export const onOpenFolderModal = ({
       onSheetSelect,
       tempData: {},
       handleClose: () => {
-        console.log('Closing folderModal');
+        // console.log('Closing folderModal');
         folderModal.close();
         setActiveModal(null);
       },
