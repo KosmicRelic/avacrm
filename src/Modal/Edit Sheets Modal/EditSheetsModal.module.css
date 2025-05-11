@@ -7,8 +7,7 @@
   background: transparent;
 }
 
-.sheetNameInput,
-.addHeaderSelect {
+.sheetNameInput {
   width: 100%;
   padding: 15px 16px;
   border: none;
@@ -17,42 +16,27 @@
   background: rgba(229, 229, 234, 0.5);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
-  -webkit-appearance: none;
-  appearance: none;
   margin-bottom: 20px;
-  flex: 0 0 auto;
   font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.02em;
   text-align: center;
 }
 
-.sheetNameInput.darkTheme,
-.addHeaderSelect.darkTheme {
+.sheetNameInput.darkTheme {
   color: #ffffff;
   background: rgba(56, 56, 60, 0.6);
 }
 
-.sheetNameInput:focus,
-.addHeaderSelect:focus {
+.sheetNameInput:focus {
   outline: none;
   background: rgba(229, 229, 234, 0.5);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.sheetNameInput.darkTheme:focus,
-.addHeaderSelect.darkTheme:focus {
+.sheetNameInput.darkTheme:focus {
   background: rgba(72, 72, 74, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.addHeaderSelect {
-  padding-right: 32px;
-  background: rgba(229, 229, 234, 0.5);
-}
-
-.addHeaderSelect.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
 }
 
 .headerList {
@@ -74,9 +58,6 @@
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
   cursor: default;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   position: relative;
 }
 
@@ -178,7 +159,6 @@
 .actionButton.pinned:hover {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
-  transform: rotate(-45deg);
 }
 
 .actionButton.darkTheme.pinned:hover {
@@ -216,9 +196,6 @@
   cursor: grab;
   padding: 4px;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   transition: color 0.3s ease;
 }
 
@@ -269,16 +246,12 @@
 }
 
 .cardTypeItem {
-  padding: 7px 16px;
+  padding: 13.5px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   background: rgba(229, 229, 234, 0.5);
   transition: background 0.2s ease, border-bottom 0.3s ease;
   cursor: pointer;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  position: relative;
 }
 
 .cardTypeItem.darkTheme {
@@ -295,13 +268,14 @@
 }
 
 .cardTypeItem.darkTheme:hover {
-  background: rgba(56, 56, 60, 0.6);
+  background: rgba(72, 72, 74, 0.8);
 }
 
 .cardTypeRow {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 8px;
 }
 
 .cardTypeActions {
@@ -392,69 +366,78 @@
 }
 
 .buttonContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   margin: 16px 0;
-  align-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.03);
+  transition: background 0.3s ease;
 }
 
-.cardsButton {
-  width: 100%;
-  padding: 15px 16px;
-  border: none;
-  border-radius: 12px;
-  color: #007aff;
-  background: rgba(229, 229, 234, 0.5);
-  box-sizing: border-box;
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  text-align: center;
-  cursor: pointer;
-}
-
-.cardsButton.darkTheme {
-  color: #0a84ff;
+.buttonContainer.darkTheme {
   background: rgba(56, 56, 60, 0.6);
 }
 
-.cardsButton:focus,
-.cardsButton:hover {
-  outline: none;
+.navItem {
+  padding: 13.5px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.5);
+  transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.navItem.darkTheme {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(56, 56, 60, 0.6);
+}
+
+.navItem:last-child {
+  border-bottom: none;
+}
+
+.navItem:hover {
   background: rgba(245, 245, 247, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.cardsButton.darkTheme:focus,
-.cardsButton.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+.navItem.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.8);
 }
 
-/* Filter styles adapted from FilterModal.module.css */
+.navName {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+  display: block;
+}
+
+.navItem.darkTheme .navName {
+  color: #ffffff;
+}
+
 .filterList {
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.6); /* Light mode: iOS white */
+  background: rgba(255, 255, 255, 0.6);
   transition: background 0.3s ease;
 }
 
 .filterList.darkTheme {
-  background: rgba(58, 58, 60, 0.6); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6);
 }
 
 .filterItem {
   padding: 12.5px 16px;
   background: rgba(229, 229, 234, 0.5);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Light mode */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
 .filterItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(56, 56, 60, 0.6);
 }
 
@@ -463,11 +446,11 @@
 }
 
 .filterItem:hover:not(.activeItem) {
-  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .filterItem.darkTheme:hover:not(.activeItem) {
-  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .activeItem {
@@ -476,7 +459,7 @@
 }
 
 .activeItem.darkTheme {
-  background: rgba(58, 58, 60, 0.6); /* Dark mode */
+  background: rgba(58, 58, 60, 0.6);
 }
 
 .filterRow {
@@ -498,25 +481,25 @@
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #000000; /* Light mode */
+  color: #000000;
   transition: color 0.3s ease;
 }
 
 .filterList.darkTheme .filterNameType span {
-  color: #ffffff; /* Dark mode: white for header names */
+  color: #ffffff;
 }
 
 .filterSummary {
   flex: 0 0 auto;
   letter-spacing: 0.02em;
-  color: #6e6e73; /* Light mode: neutral gray */
+  color: #6e6e73;
   font-size: 14px;
   font-weight: 400;
   transition: color 0.3s ease;
 }
 
 .filterSummary.darkTheme {
-  color: #8e8e93; /* Dark mode: lighter gray */
+  color: #8e8e93;
 }
 
 .filterActions {
@@ -537,7 +520,7 @@
   border-radius: 10px;
   font-size: 14px;
   font-weight: 400;
-  color: #1d1d1f; /* Light mode */
+  color: #1d1d1f;
   background: rgba(243, 242, 248);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
@@ -546,8 +529,8 @@
 .filterInput.darkTheme,
 .filterSelect.darkTheme,
 .filterSelectNoChevron.darkTheme {
-  color: #ffffff; /* Dark mode */
-  background: rgba(72, 72, 74, 0.6); /* Dark mode */
+  color: #ffffff;
+  background: rgba(72, 72, 74, 0.6);
 }
 
 .filterSelect {
@@ -558,7 +541,7 @@
 }
 
 .filterSelect.darkTheme {
-  background: rgba(72, 72, 74, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; /* Dark mode */
+  background: rgba(72, 72, 74, 0.6) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
 }
 
 .filterSelectNoChevron {
@@ -577,7 +560,7 @@
 .filterInput.darkTheme:focus,
 .filterSelect.darkTheme:focus,
 .filterSelectNoChevron.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.6); /* Dark mode */
+  background: rgba(72, 72, 74, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -595,47 +578,47 @@
   width: 100%;
   height: 100px;
   padding: 8px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Light mode */
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
-  color: #1d1d1f; /* Light mode */
+  color: #1d1d1f;
   background: rgba(243, 242, 248);
   box-sizing: border-box;
   transition: all 0.2s ease, border 0.3s ease, color 0.3s ease, background 0.3s ease;
 }
 
 .filterMultiSelect.darkTheme {
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode */
-  color: #ffffff; /* Dark mode */
-  background: rgba(58, 58, 60, 0.6); /* Dark mode */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  background: rgba(58, 58, 60, 0.6);
 }
 
 .filterMultiSelect:focus {
   outline: none;
-  border-color: #007aff; /* Light mode */
+  border-color: #007aff;
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
 .filterMultiSelect.darkTheme:focus {
-  border-color: #0a84ff; /* Dark mode */
+  border-color: #0a84ff;
   box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
 }
 
 .separator {
-  color: #6e6e73; /* Light mode */
+  color: #6e6e73;
   font-size: 14px;
   transition: color 0.3s ease;
 }
 
 .separator.darkTheme {
-  color: #8e8e93; /* Dark mode */
+  color: #8e8e93;
 }
 
 .actionButton {
   background: none;
   border: none;
-  color: #007aff; /* Light mode */
+  color: #007aff;
   font-size: 14px;
   font-weight: 500;
   padding: 6px 10px;
@@ -645,26 +628,26 @@
 }
 
 .actionButton.darkTheme {
-  color: #0a84ff; /* Dark mode */
+  color: #0a84ff;
 }
 
 .actionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode */
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .actionButton:disabled {
-  color: #d2d2d7; /* Light mode */
+  color: #d2d2d7;
   cursor: not-allowed;
 }
 
 .actionButton.darkTheme:disabled {
-  color: #636366; /* Dark mode: muted gray */
+  color: #636366;
 }
 
 .resetButton {
   background: none;
   border: none;
-  color: #ff453a; /* Light mode: iOS red */
+  color: #ff453a;
   font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
@@ -674,21 +657,21 @@
 }
 
 .resetButton.darkTheme {
-  color: #ff453a; /* Dark mode: keep same red */
+  color: #ff453a;
 }
 
 .resetButton:hover {
-  background: rgba(255, 69, 58, 0.1); /* Light mode */
+  background: rgba(255, 69, 58, 0.1);
 }
 
 .resetButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2); /* Dark mode */
+  background: rgba(255, 69, 58, 0.2);
 }
 
 .clearButton {
   background: none;
   border: none;
-  color: #007aff; /* Light mode */
+  color: #007aff;
   font-size: 14px;
   font-weight: 600;
   padding: 8px 12px;
@@ -698,19 +681,61 @@
 }
 
 .clearButton.darkTheme {
-  color: #0a84ff; /* Dark mode */
+  color: #0a84ff;
 }
 
 .clearButton:hover {
-  background: rgba(0, 122, 255, 0.1); /* Light mode */
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .clearButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode */
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .footer {
   display: flex;
   justify-content: center;
   padding: 10px 0;
+}
+
+.cardTypeRow {
+  display: flex;
+  justify-content: space-between; /* Changed to space-between to push items to edges */
+  align-items: center;
+  gap: 8px;
+  width: 100%; /* Ensure the row takes full width */
+}
+
+.cardTypeActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* Push actions to the right */
+}
+
+.cardTypeName {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+}
+
+.customCheckbox {
+  display: flex;
+  align-items: center;
+  color: #007aff;
+}
+
+/* Ensure filter summary aligns properly */
+.filterSummary {
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+  color: #6e6e73;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.3s ease;
+  text-align: right; /* Align text to the right */
 }

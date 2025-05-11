@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaFilter } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaThumbtack, FaFilter, FaChevronRight } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
@@ -42,6 +42,7 @@ const EditSheetsModal = ({
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [selectedCardTypes, setSelectedCardTypes] = useState(tempData.typeOfCardsToDisplay || []);
   const [navigationDirection, setNavigationDirection] = useState(null);
+  const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
   const headerRefs = useRef(new Map());
   const hasInitialized = useRef(false);
@@ -61,7 +62,7 @@ const EditSheetsModal = ({
   // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
-  // Get all available headers from templates only (remove sheets headers)
+  // Get all available headers from templates
   const allHeaders = useMemo(() => {
     const commonHeaders = [];
     if (cardTemplates.length > 0) {
@@ -94,7 +95,7 @@ const EditSheetsModal = ({
       { sheetName: 'Common', headers: commonHeaders },
       ...templateHeaders,
     ];
-  }, [cardTemplates, currentHeaders, sheetName]);
+  }, [cardTemplates]);
 
   // Function to generate filter summary for a card type
   const getFilterSummary = useCallback(
@@ -178,6 +179,9 @@ const EditSheetsModal = ({
     if (!hasInitialized.current) {
       const steps = [
         { title: isEditMode ? 'Edit Sheet' : 'Create Sheet', rightButton: null },
+        { title: 'Headers', rightButton: null },
+        { title: 'Select Templates', rightButton: null },
+        { title: 'Select Headers', rightButton: null },
         { title: 'Select Card Types', rightButton: null },
         { title: 'Filters', rightButton: null },
       ];
@@ -228,7 +232,7 @@ const EditSheetsModal = ({
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: 'Select Card Types',
+        title: 'Headers',
         backButtonTitle: step1Title,
         backButton: {
           label: `< ${step1Title}`,
@@ -238,6 +242,52 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 3) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Select Templates',
+        backButtonTitle: 'Headers',
+        backButton: {
+          label: `< Headers`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 4) {
+      const templateName = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders;
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: `Headers for ${templateName}`,
+        backButtonTitle: 'Select Templates',
+        backButton: {
+          label: `< Select Templates`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 5) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Select Card Types',
+        backButtonTitle: 'Headers',
+        backButton: {
+          label: `< Headers`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 6) {
       const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter;
       config = {
         showTitle: true,
@@ -260,7 +310,7 @@ const EditSheetsModal = ({
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedCardTypeForFilter, cardTemplates]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
 
   // Sync tempData
   useEffect(() => {
@@ -295,6 +345,28 @@ const EditSheetsModal = ({
       }
     });
   }, [tempData, setTempData]);
+
+  // Toggle header selection
+  const toggleHeaderSelection = useCallback((header) => {
+    setCurrentHeaders((prev) => {
+      const exists = prev.some((h) => h.key === header.key);
+      if (exists) {
+        return prev.filter((h) => h.key !== header.key);
+      } else {
+        return [
+          ...prev,
+          {
+            key: header.key,
+            name: header.name,
+            type: header.type,
+            options: header.options || [],
+            visible: true,
+            hidden: false,
+          },
+        ];
+      }
+    });
+  }, []);
 
   // Drag-and-drop and touch handlers
   const handleDragStart = useCallback((e, index) => {
@@ -407,26 +479,6 @@ const EditSheetsModal = ({
     });
   }, []);
 
-  const addHeader = useCallback((headerKey, headerDetails) => {
-    setCurrentHeaders((prev) => {
-      if (prev.some((h) => h.key === headerKey)) {
-        console.warn(`Duplicate header key "${headerKey}" ignored`);
-        return prev;
-      }
-      return [
-        ...prev,
-        {
-          key: headerKey,
-          name: headerDetails.name,
-          type: headerDetails.type,
-          options: headerDetails.options || [],
-          visible: true,
-          hidden: false,
-        },
-      ];
-    });
-  }, []);
-
   const handleSheetNameChange = useCallback(
     (e) => {
       if (sheetId === 'primarySheet') {
@@ -439,7 +491,6 @@ const EditSheetsModal = ({
 
   const handleFilterClick = useCallback(
     (typeOfCards) => {
-      // Initialize cardTypeFilters for this cardType if not present
       if (!tempData.cardTypeFilters?.[typeOfCards]) {
         setTempData({
           ...tempData,
@@ -451,15 +502,24 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      goToStep(3);
+      goToStep(6);
     },
     [goToStep, tempData, setTempData]
+  );
+
+  const handleTemplateClick = useCallback(
+    (typeOfCards) => {
+      setSelectedTemplateForHeaders(typeOfCards);
+      setNavigationDirection('forward');
+      goToStep(4);
+    },
+    [goToStep]
   );
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3].map((step) => (
+        {[1, 2, 3, 4, 5, 6].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -482,59 +542,85 @@ const EditSheetsModal = ({
                   disabled={sheetId === 'primarySheet'}
                 />
                 <div className={styles.buttonContainer}>
-                  <button
+                  <div
                     onClick={() => {
                       setNavigationDirection('forward');
                       goToStep(2);
                     }}
-                    className={`${styles.cardsButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    aria-label="Select Card Types"
-                  >
-                    Cards
-                  </button>
-                </div>
-                <select
-                  onChange={(e) => {
-                    const [sourceName, headerKey] = e.target.value.split(':');
-                    if (headerKey) {
-                      const source = allHeaders.find((sh) => sh.sheetName === sourceName);
-                      const headerDetails = source?.headers.find((h) => h.key === headerKey);
-                      if (headerDetails) {
-                        addHeader(headerKey, headerDetails);
+                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    role="button"
+                    aria-label="Manage Headers"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setNavigationDirection('forward');
+                        goToStep(2);
                       }
-                    }
-                    e.target.value = '';
+                    }}
+                  >
+                    <span className={styles.navName}>Headers</span>
+                  </div>
+                  <div
+                    onClick={() => {
+                      setNavigationDirection('forward');
+                      goToStep(5);
+                    }}
+                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    role="button"
+                    aria-label="Select Card Types"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setNavigationDirection('forward');
+                        goToStep(5);
+                      }
+                    }}
+                  >
+                    <span className={styles.navName}>Cards</span>
+                  </div>
+                </div>
+                {isEditMode && sheetId !== 'primarySheet' && (
+                  <div className={styles.deleteButtonContainer}>
+                    <button
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Are you sure you want to delete the sheet "${sheetName}"? This action cannot be undone.`
+                          )
+                        ) {
+                          onDeleteSheet(sheetName);
+                          handleClose({ fromDelete: true });
+                        }
+                      }}
+                      className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      aria-label="Delete Sheet"
+                    >
+                      Delete Sheet
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <div
+                  onClick={() => {
+                    setNavigationDirection('forward');
+                    goToStep(3);
                   }}
-                  className={`${styles.addHeaderSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  role="button"
+                  aria-label="Add Column"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setNavigationDirection('forward');
+                      goToStep(3);
+                    }
+                  }}
                 >
-                  <option value="">Add Column</option>
-                  {allHeaders.map((source) =>
-                    source.sheetName === 'Common' ? (
-                      source.headers.map((header) => (
-                        <option
-                          key={`Common:${header.key}`}
-                          value={`Common:${header.key}`}
-                          disabled={currentHeaders.some((ch) => ch.key === header.key)}
-                        >
-                          {header.name} ({header.type})
-                        </option>
-                      ))
-                    ) : (
-                      <optgroup key={source.sheetName} label={source.sheetName}>
-                        {source.headers
-                          .filter((h) => !currentHeaders.some((ch) => ch.key === h.key))
-                          .map((header) => (
-                            <option
-                              key={`${source.sheetName}:${header.key}`}
-                              value={`${source.sheetName}:${header.key}`}
-                            >
-                              {header.name} ({header.type})
-                            </option>
-                          ))}
-                      </optgroup>
-                    )
-                  )}
-                </select>
+                  <span className={styles.navName}>Add Column</span>
+                </div>
                 <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentHeaders.map((header, index) => (
                     <div
@@ -593,29 +679,69 @@ const EditSheetsModal = ({
                     </div>
                   ))}
                 </div>
-                {isEditMode && sheetId !== 'primarySheet' && (
-                  <div className={styles.deleteButtonContainer}>
-                    <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Are you sure you want to delete the sheet "${sheetName}"? This action cannot be undone.`
-                          )
-                        ) {
-                          onDeleteSheet(sheetName);
-                          handleClose({ fromDelete: true });
-                        }
-                      }}
-                      className={`${styles.deleteSheetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      aria-label="Delete Sheet"
-                    >
-                      Delete Sheet
-                    </button>
-                  </div>
-                )}
               </>
             )}
-            {step === 2 && (
+            {step === 3 && (
+              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {cardTemplates.length === 0 ? (
+                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    No templates available
+                  </div>
+                ) : (
+                  cardTemplates.map((template) => (
+                    <div
+                      key={template.typeOfCards}
+                      className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => handleTemplateClick(template.typeOfCards)}
+                    >
+                      <div className={styles.cardTypeRow}>
+                        <span className={styles.cardTypeName}>{template.name || template.typeOfCards}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            {step === 4 && (
+              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {(() => {
+                  const selectedTemplate = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
+                  const templateHeaders = selectedTemplate?.headers
+                    .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
+                    .map((header) => ({
+                      key: header.key,
+                      name: header.name,
+                      type: header.type,
+                      options: header.options || [],
+                    })) || [];
+                  return templateHeaders.length === 0 ? (
+                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No headers available
+                    </div>
+                  ) : (
+                    templateHeaders.map((header) => (
+                      <div
+                        key={header.key}
+                        className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => toggleHeaderSelection(header)}
+                      >
+                        <div className={styles.cardTypeRow}>
+                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {currentHeaders.some((h) => h.key === header.key) ? (
+                              <FaRegCheckCircle size={18} className={styles.checked} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
+                          </span>
+                          <span className={styles.cardTypeName}>{header.name || header.key}</span>
+                        </div>
+                      </div>
+                    ))
+                  );
+                })()}
+              </div>
+            )}
+            {step === 5 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {cardTemplates.length === 0 ? (
                   <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -646,7 +772,7 @@ const EditSheetsModal = ({
                             className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                             aria-label={`Filter ${template.name || template.typeOfCards}`}
                           >
-                            <FaFilter />
+                            <FaChevronRight />
                             {/* <span className={styles.filterSummary}>{getFilterSummary(template.typeOfCards)}</span> */}
                           </button>
                         </div>
@@ -656,7 +782,7 @@ const EditSheetsModal = ({
                 )}
               </div>
             )}
-            {step === 3 && (
+            {step === 6 && (
               <CardTypeFilter
                 cardType={selectedCardTypeForFilter}
                 headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
