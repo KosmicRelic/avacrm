@@ -61,30 +61,8 @@ const EditSheetsModal = ({
   // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
-  // Get all available headers from sheets and card templates
+  // Get all available headers from templates only (remove sheets headers)
   const allHeaders = useMemo(() => {
-    const headersBySheet = sheets.allSheets
-      .filter((sheet) => sheet.sheetName !== sheetName)
-      .map((sheet) => ({
-        sheetName: sheet.sheetName,
-        headers: (sheet.headers || []).map((header) => ({
-          key: header.key,
-          name: header.name,
-          type: header.type,
-          options: header.options || [],
-        })),
-      }));
-
-    const currentSheetHeaders = {
-      sheetName: sheetName || 'Current Sheet',
-      headers: currentHeaders.map((header) => ({
-        key: header.key,
-        name: header.name,
-        type: header.type,
-        options: header.options || [],
-      })),
-    };
-
     const commonHeaders = [];
     if (cardTemplates.length > 0) {
       const firstTemplateHeaders = cardTemplates[0].headers.filter(
@@ -114,11 +92,9 @@ const EditSheetsModal = ({
 
     return [
       { sheetName: 'Common', headers: commonHeaders },
-      currentSheetHeaders,
-      ...headersBySheet,
       ...templateHeaders,
     ];
-  }, [sheets.allSheets, sheetName, currentHeaders, cardTemplates]);
+  }, [cardTemplates, currentHeaders, sheetName]);
 
   // Function to generate filter summary for a card type
   const getFilterSummary = useCallback(

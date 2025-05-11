@@ -513,6 +513,18 @@ const Sheets = ({
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
       >
+        {/* Always render the header */}
+        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          {isSelectMode && (
+            <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
+          )}
+          {visibleHeaders.map((header) => (
+            <div key={header.key} className={styles.headerCell}>
+              {header.name}
+            </div>
+          ))}
+        </div>
+        {/* Spinner overlays the body, but header is always visible */}
         {spinnerVisible ? (
           <div className={`${styles.spinnerContainer} ${spinnerFading ? styles.spinnerFadeOut : ''}`}>
             <ImSpinner2
@@ -521,44 +533,32 @@ const Sheets = ({
             />
           </div>
         ) : (
-          <>
-            <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {isSelectMode && (
-                <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
-              )}
-              {visibleHeaders.map((header) => (
-                <div key={header.key} className={styles.headerCell}>
-                  {header.name}
-                </div>
-              ))}
-            </div>
-            <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              <RowComponent
-                rowData={{ docId: 'Add New Card', isAddNew: true }}
-                headerNames={visibleHeaders.map((h) => h.key)}
-                onClick={() => handleRowClick({ isAddNew: true })}
-                isSelected={false}
-                isSelectMode={isSelectMode}
-                onSelect={handleSelectToggle}
-                onAddRow={() => handleRowClick({ isAddNew: true })}
-              />
-              {finalRows.length > 0 ? (
-                finalRows.map((rowData, rowIndex) => (
-                  <RowComponent
-                    key={rowIndex}
-                    rowData={rowData}
-                    headerNames={visibleHeaders.map((h) => h.key)}
-                    onClick={() => handleRowSelect(rowData)}
-                    isSelected={selectedRowIds.includes(rowData.docId)}
-                    isSelectMode={isSelectMode}
-                    onSelect={handleRowSelect}
-                  />
-                ))
-              ) : (
-                <div className={styles.noResults}>No results found</div>
-              )}
-            </div>
-          </>
+          <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <RowComponent
+              rowData={{ docId: 'Add New Card', isAddNew: true }}
+              headerNames={visibleHeaders.map((h) => h.key)}
+              onClick={() => handleRowClick({ isAddNew: true })}
+              isSelected={false}
+              isSelectMode={isSelectMode}
+              onSelect={handleSelectToggle}
+              onAddRow={() => handleRowClick({ isAddNew: true })}
+            />
+            {finalRows.length > 0 ? (
+              finalRows.map((rowData, rowIndex) => (
+                <RowComponent
+                  key={rowIndex}
+                  rowData={rowData}
+                  headerNames={visibleHeaders.map((h) => h.key)}
+                  onClick={() => handleRowSelect(rowData)}
+                  isSelected={selectedRowIds.includes(rowData.docId)}
+                  isSelectMode={isSelectMode}
+                  onSelect={handleRowSelect}
+                />
+              ))
+            ) : (
+              <div className={styles.noResults}>No results found</div>
+            )}
+          </div>
         )}
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
