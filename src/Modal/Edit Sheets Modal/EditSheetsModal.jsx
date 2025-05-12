@@ -170,7 +170,7 @@ const EditSheetsModal = ({
   const handleBackClick = useCallback(() => {
     setNavigationDirection('backward');
     goBack();
-  }, [goBack, currentStep]);
+  }, [goBack]);
 
   // Initialize modal steps (run once)
   useEffect(() => {
@@ -184,6 +184,7 @@ const EditSheetsModal = ({
         { title: 'Select Card Templates', rightButton: null },
         { title: 'Template Options', rightButton: null },
         { title: 'Filters', rightButton: null },
+        { title: 'Sort Options', rightButton: null }, // Step 9
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -205,6 +206,7 @@ const EditSheetsModal = ({
   // Update navigation direction and debug step changes
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
+      console.log('Current step changed to:', currentStep); // Debug log
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
       prevStepRef.current = currentStep;
     }
@@ -326,6 +328,22 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: `Filters for ${cardTypeName}`,
+        backButtonTitle: 'Template Options',
+        backButton: {
+          label: `< Template Options`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 9) {
+      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: `Sort Options for ${cardTypeName}`,
         backButtonTitle: 'Template Options',
         backButton: {
           label: `< Template Options`,
@@ -523,6 +541,7 @@ const EditSheetsModal = ({
   const handleFilterClick = useCallback(
     (typeOfCards) => {
       if (!typeOfCards) {
+        console.log('handleFilterClick: No typeOfCards provided');
         return;
       }
       if (!tempData.cardTypeFilters?.[typeOfCards]) {
@@ -536,9 +555,8 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      setTimeout(() => {
-        goToStep(8);
-      }, 50);
+      console.log('handleFilterClick: Navigating to step 8 for', typeOfCards); // Debug log
+      goToStep(8);
     },
     [goToStep, tempData, setTempData]
   );
@@ -547,6 +565,7 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedTemplateForHeaders(typeOfCards);
       setNavigationDirection('forward');
+      console.log('handleTemplateClick: Navigating to step 4 for', typeOfCards); // Debug log
       goToStep(4);
     },
     [goToStep]
@@ -555,6 +574,7 @@ const EditSheetsModal = ({
   const handleAddCardTemplateClick = useCallback((e) => {
     e.stopPropagation();
     setNavigationDirection('forward');
+    console.log('handleAddCardTemplateClick: Navigating to step 6'); // Debug log
     goToStep(6);
   }, [goToStep]);
 
@@ -562,20 +582,23 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
+      console.log('handleTemplateOptionsClick: Navigating to step 7 for', typeOfCards); // Debug log
       goToStep(7);
     },
     [goToStep]
   );
 
   const handleSortClick = useCallback((typeOfCards) => {
-    // Placeholder for sort functionality
-    alert(`Sort functionality for ${typeOfCards} is not yet implemented.`);
-  }, []);
+    console.log('handleSortClick: Called with typeOfCards:', typeOfCards, 'Navigating to step 9'); // Debug log
+    setSelectedCardTypeForFilter(typeOfCards);
+    setNavigationDirection('forward');
+    goToStep(9);
+  }, [goToStep]);
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -601,6 +624,7 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
+                      console.log('Navigating to step 2: Headers'); // Debug log
                       goToStep(2);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -610,6 +634,7 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
+                        console.log('Keydown: Navigating to step 2: Headers'); // Debug log
                         goToStep(2);
                       }
                     }}
@@ -619,6 +644,7 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
+                      console.log('Navigating to step 5: Cards'); // Debug log
                       goToStep(5);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -628,6 +654,7 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
+                        console.log('Keydown: Navigating to step 5: Cards'); // Debug log
                         goToStep(5);
                       }
                     }}
@@ -662,6 +689,7 @@ const EditSheetsModal = ({
                 <div
                   onClick={() => {
                     setNavigationDirection('forward');
+                    console.log('Navigating to step 3: Select Templates'); // Debug log
                     goToStep(3);
                   }}
                   className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -671,6 +699,7 @@ const EditSheetsModal = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       setNavigationDirection('forward');
+                      console.log('Keydown: Navigating to step 3: Select Templates'); // Debug log
                       goToStep(3);
                     }
                   }}
@@ -889,6 +918,7 @@ const EditSheetsModal = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
+                      console.log('Keydown: Triggering handleSortClick for step 9'); // Debug log
                       handleSortClick(selectedCardTypeForFilter);
                     }
                   }}
@@ -916,6 +946,46 @@ const EditSheetsModal = ({
                   </div>
                 )}
               </>
+            )}
+            {step === 9 && (
+              <div className={styles.buttonContainer}>
+                <div
+                  onClick={() => {
+                    console.log('Clicked Cards Fetch Limit'); // Debug log
+                    alert('Cards Fetch Limit functionality is not yet implemented.');
+                  }}
+                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  role="button"
+                  aria-label="Cards Fetch Limit"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      console.log('Keydown: Cards Fetch Limit'); // Debug log
+                      alert('Cards Fetch Limit functionality is not yet implemented.');
+                    }
+                  }}
+                >
+                  <span className={styles.navName}>Cards Fetch Limit</span>
+                </div>
+                <div
+                  onClick={() => {
+                    console.log('Clicked Sort by Filters'); // Debug log
+                    alert('Sort by Filters functionality is not yet implemented.');
+                  }}
+                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  role="button"
+                  aria-label="Sort by Filters"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      console.log('Keydown: Sort by Filters'); // Debug log
+                      alert('Sort by Filters functionality is not yet implemented.');
+                    }
+                  }}
+                >
+                  <span className={styles.navName}>Sort by Filters</span>
+                </div>
+              </div>
             )}
           </div>
         ))}
