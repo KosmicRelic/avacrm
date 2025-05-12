@@ -29,8 +29,6 @@ const EditSheetsModal = ({
       if (!seenKeys.has(header.key)) {
         seenKeys.add(header.key);
         uniqueHeaders.push({ ...header });
-      } else {
-        console.warn(`Duplicate key "${header.key}" removed from initial currentHeaders`);
       }
     });
     return uniqueHeaders;
@@ -170,7 +168,6 @@ const EditSheetsModal = ({
 
   // Define back button callback
   const handleBackClick = useCallback(() => {
-    console.log('handleBackClick: Going back from step', currentStep);
     setNavigationDirection('backward');
     goBack();
   }, [goBack, currentStep]);
@@ -184,11 +181,10 @@ const EditSheetsModal = ({
         { title: 'Select Templates', rightButton: null },
         { title: 'Select Headers', rightButton: null },
         { title: 'Cards', rightButton: null },
-        { title: 'Filters', rightButton: null },
         { title: 'Select Card Templates', rightButton: null },
-        { title: 'Cards Filters', rightButton: null },
+        { title: 'Template Options', rightButton: null },
+        { title: 'Filters', rightButton: null },
       ];
-      console.log('Registering modal steps:', steps);
       registerModalSteps({ steps });
       const initialConfig = {
         showTitle: true,
@@ -206,10 +202,9 @@ const EditSheetsModal = ({
     }
   }, [isEditMode, registerModalSteps, setModalConfig, onDoneClick]);
 
-  // Update navigation direction
+  // Update navigation direction and debug step changes
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
-      console.log('Navigation changed: From step', prevStepRef.current, 'to step', currentStep);
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
       prevStepRef.current = currentStep;
     }
@@ -262,7 +257,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 4) {
-      const templateName = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders;
+      const templateName = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -293,22 +288,6 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 6) {
-      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter;
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: `Filters for ${cardTypeName}`,
-        backButtonTitle: 'Cards',
-        backButton: {
-          label: `< Cards`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: null,
-      };
-    } else if (currentStep === 7) {
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -323,16 +302,33 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
-    } else if (currentStep === 8) {
+    } else if (currentStep === 7) {
+      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: 'Cards Filters',
+        title: `Options for ${cardTypeName}`,
         backButtonTitle: 'Cards',
         backButton: {
           label: `< Cards`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 8) {
+      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: `Filters for ${cardTypeName}`,
+        backButtonTitle: 'Template Options',
+        backButton: {
+          label: `< Template Options`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -342,7 +338,6 @@ const EditSheetsModal = ({
 
     // Only update modalConfig if it has changed
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
-      console.log('Updating modal config for step', currentStep, config);
       setModalConfig(config);
       prevModalConfig.current = config;
     }
@@ -527,7 +522,9 @@ const EditSheetsModal = ({
 
   const handleFilterClick = useCallback(
     (typeOfCards) => {
-      console.log('handleFilterClick: Navigating to Filters for', typeOfCards);
+      if (!typeOfCards) {
+        return;
+      }
       if (!tempData.cardTypeFilters?.[typeOfCards]) {
         setTempData({
           ...tempData,
@@ -539,14 +536,15 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      goToStep(6);
+      setTimeout(() => {
+        goToStep(8);
+      }, 50);
     },
     [goToStep, tempData, setTempData]
   );
 
   const handleTemplateClick = useCallback(
     (typeOfCards) => {
-      console.log('handleTemplateClick: Navigating to Select Headers for', typeOfCards);
       setSelectedTemplateForHeaders(typeOfCards);
       setNavigationDirection('forward');
       goToStep(4);
@@ -556,17 +554,23 @@ const EditSheetsModal = ({
 
   const handleAddCardTemplateClick = useCallback((e) => {
     e.stopPropagation();
-    console.log('handleAddCardTemplateClick: Navigating to step 7 (Select Card Templates)');
     setNavigationDirection('forward');
-    goToStep(7);
+    goToStep(6);
   }, [goToStep]);
 
-  const handleCardsFiltersClick = useCallback((e) => {
-    e.stopPropagation();
-    console.log('handleCardsFiltersClick: Navigating to step 8 (Cards Filters)');
-    setNavigationDirection('forward');
-    goToStep(8);
-  }, [goToStep]);
+  const handleTemplateOptionsClick = useCallback(
+    (typeOfCards) => {
+      setSelectedCardTypeForFilter(typeOfCards);
+      setNavigationDirection('forward');
+      goToStep(7);
+    },
+    [goToStep]
+  );
+
+  const handleSortClick = useCallback((typeOfCards) => {
+    // Placeholder for sort functionality
+    alert(`Sort functionality for ${typeOfCards} is not yet implemented.`);
+  }, []);
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -596,7 +600,6 @@ const EditSheetsModal = ({
                 <div className={styles.buttonContainer}>
                   <div
                     onClick={() => {
-                      console.log('Navigating to Headers (step 2)');
                       setNavigationDirection('forward');
                       goToStep(2);
                     }}
@@ -606,7 +609,6 @@ const EditSheetsModal = ({
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('Keydown: Navigating to Headers (step 2)');
                         setNavigationDirection('forward');
                         goToStep(2);
                       }
@@ -616,7 +618,6 @@ const EditSheetsModal = ({
                   </div>
                   <div
                     onClick={() => {
-                      console.log('Navigating to Cards (step 5)');
                       setNavigationDirection('forward');
                       goToStep(5);
                     }}
@@ -626,7 +627,6 @@ const EditSheetsModal = ({
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('Keydown: Navigating to Cards (step 5)');
                         setNavigationDirection('forward');
                         goToStep(5);
                       }
@@ -661,7 +661,6 @@ const EditSheetsModal = ({
               <>
                 <div
                   onClick={() => {
-                    console.log('Navigating to Select Templates (step 3)');
                     setNavigationDirection('forward');
                     goToStep(3);
                   }}
@@ -671,7 +670,6 @@ const EditSheetsModal = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Navigating to Select Templates (step 3)');
                       setNavigationDirection('forward');
                       goToStep(3);
                     }
@@ -810,41 +808,36 @@ const EditSheetsModal = ({
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('Keydown: Navigating to Select Card Templates (step 7)');
                         handleAddCardTemplateClick(e);
                       }
                     }}
                   >
                     <span className={styles.navName}>Add Card Template</span>
                   </div>
-                  <div
-                    onClick={handleCardsFiltersClick}
-                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    role="button"
-                    aria-label="Cards Filters"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('Keydown: Navigating to Cards Filters (step 8)');
-                        handleCardsFiltersClick(e);
-                      }
-                    }}
-                  >
-                    <span className={styles.navName}>Cards Filters</span>
-                  </div>
+                  {selectedCardTypes.map((typeOfCards) => {
+                    const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+                    return (
+                      <div
+                        key={typeOfCards}
+                        onClick={() => handleTemplateOptionsClick(typeOfCards)}
+                        className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        role="button"
+                        aria-label={`Options for ${template?.name || typeOfCards}`}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleTemplateOptionsClick(typeOfCards);
+                          }
+                        }}
+                      >
+                        <span className={styles.navName}>{template?.name || typeOfCards}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
             {step === 6 && (
-              <CardTypeFilter
-                cardType={selectedCardTypeForFilter}
-                headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
-                tempData={tempData}
-                setTempData={setTempData}
-                showFilterSummary={true}
-              />
-            )}
-            {step === 7 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {cardTemplates.length === 0 ? (
                   <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -872,36 +865,57 @@ const EditSheetsModal = ({
                 )}
               </div>
             )}
-            {step === 8 && (
-              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {selectedCardTypes.length === 0 ? (
-                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    No card templates selected
-                  </div>
-                ) : (
-                  selectedCardTypes.map((typeOfCards) => {
-                    const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
-                    return (
-                      <div
-                        key={typeOfCards}
-                        className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <div className={styles.cardTypeRow} onClick={() => handleFilterClick(typeOfCards)}>
-                          <span className={styles.cardTypeName}>{template?.name || typeOfCards}</span>
-                          <div className={styles.cardTypeActions}>
-                            <button
-                              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              aria-label={`Filter ${template?.name || typeOfCards}`}
-                            >
-                              <FaFilter />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+            {step === 7 && (
+              <div className={styles.buttonContainer}>
+                <div
+                  onClick={() => handleFilterClick(selectedCardTypeForFilter)}
+                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  role="button"
+                  aria-label="Filters"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleFilterClick(selectedCardTypeForFilter);
+                    }
+                  }}
+                >
+                  <span className={styles.navName}>Filters</span>
+                </div>
+                <div
+                  onClick={() => handleSortClick(selectedCardTypeForFilter)}
+                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  role="button"
+                  aria-label="Sort"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleSortClick(selectedCardTypeForFilter);
+                    }
+                  }}
+                >
+                  <span className={styles.navName}>Sort</span>
+                </div>
               </div>
+            )}
+            {step === 8 && (
+              <>
+                <div className={`${styles.debugMessage} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  Filters Step (Step 8) - Card Type: {selectedCardTypeForFilter || 'None'}
+                </div>
+                {selectedCardTypeForFilter ? (
+                  <CardTypeFilter
+                    cardType={selectedCardTypeForFilter}
+                    headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                    tempData={tempData}
+                    setTempData={setTempData}
+                    showFilterSummary={true}
+                  />
+                ) : (
+                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    No card type selected for filtering
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}
