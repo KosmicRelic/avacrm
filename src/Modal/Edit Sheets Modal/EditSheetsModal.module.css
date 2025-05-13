@@ -700,17 +700,17 @@
 
 .cardTypeRow {
   display: flex;
-  justify-content: space-between; /* Changed to space-between to push items to edges */
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  width: 100%; /* Ensure the row takes full width */
+  width: 100%;
 }
 
 .cardTypeActions {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto; /* Push actions to the right */
+  margin-left: auto;
 }
 
 .cardTypeName {
@@ -729,7 +729,6 @@
   color: #007aff;
 }
 
-/* Ensure filter summary aligns properly */
 .filterSummary {
   flex: 0 0 auto;
   letter-spacing: 0.02em;
@@ -737,5 +736,333 @@
   font-size: 14px;
   font-weight: 400;
   transition: color 0.3s ease;
-  text-align: right; /* Align text to the right */
+  text-align: right;
+}
+
+/* New styles for Cards Fetch Limit input */
+.fetchLimitInput {
+  width: 100%;
+  max-width: 200px;
+  padding: 15px 16px;
+  border: none;
+  border-radius: 12px;
+  color: #1d1d1f;
+  background: rgba(229, 229, 234, 0.5);
+  box-sizing: border-box;
+  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.fetchLimitInput.darkTheme {
+  color: #ffffff;
+  background: rgba(56, 56, 60, 0.6);
+}
+
+.fetchLimitInput:focus {
+  outline: none;
+  background: rgba(229, 229, 234, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.fetchLimitInput.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.fetchLimitInput::-webkit-inner-spin-button,
+.fetchLimitInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.fetchLimitInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.inputContainer {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+/* New styles for Sort by Filters and Select Header to Prioritize steps */
+.sortByFiltersContainer {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent; /* match modal backgrounds */
+  transition: background 0.3s ease;
+  padding: 0;
+}
+
+.sortByFiltersContainer.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+}
+
+/* Add gap between addHeaderButton and prioritizedHeadersList in Sort by Filters step */
+.sortByFiltersActions {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 0 0 0;
+}
+
+/* Add a little margin to the prioritizedHeadersList to visually separate from the button */
+.prioritizedHeadersList {
+  padding: 0;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.addHeaderButton {
+  width: 100%;
+  padding: 13.5px 16px;
+  border: none;
+  background: rgba(229, 229, 234, 0.5);
+  color: #007aff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  margin-top: 0;
+  transition: background 0.2s, color 0.2s;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.addHeaderButton.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #0a84ff;
+}
+
+.addHeaderButton:hover {
+  background: rgba(245, 245, 247, 0.9);
+}
+
+.addHeaderButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.8);
+}
+
+.prioritizedHeadersList {
+  padding: 0;
+}
+
+.prioritizedHeaderItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12.5px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: background 0.2s, color 0.2s;
+}
+
+.prioritizedHeaderItem.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prioritizedHeaderItem:last-child {
+  border-bottom: none;
+}
+
+.removePrioritizedHeaderButton {
+  background: none;
+  border: none;
+  color: #ff3b30;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.removePrioritizedHeaderButton.darkTheme {
+  color: #ff453a;
+}
+
+.removePrioritizedHeaderButton:hover {
+  background: rgba(255, 69, 58, 0.1);
+}
+
+.removePrioritizedHeaderButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+.noPrioritizedHeaders {
+  padding: 20px;
+  text-align: center;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.noPrioritizedHeaders.darkTheme {
+  color: #fff;
+}
+
+.headerSelectList {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.03);
+  transition: background 0.3s ease;
+}
+
+.headerSelectList.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+}
+
+/* Use cardTypeItem/cardTypeRow/cardTypeName for header items for consistency */
+
+/* New styles for improved dropdown prioritize UI */
+.dropdownPrioritizeList {
+  margin: 0;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.03);
+  transition: background 0.3s ease;
+}
+
+.dropdownPrioritizeList.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+}
+
+.dropdownPrioritizeItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(229, 229, 234, 0.5);
+  transition: background 0.2s, border-bottom 0.3s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdownPrioritizeItem.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdownPrioritizeItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownPrioritizeItemChecked {
+  font-weight: 600;
+}
+
+.dropdownPrioritizeCheckButton {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  flex: 1;
+  gap: 8px;
+  font-size: 13px;
+  text-align: left;
+  color: inherit;
+}
+
+.dropdownPrioritizeCheckButton.darkTheme {
+  color: #fff;
+}
+
+.dropdownPrioritizeItem:hover,
+.dropdownPrioritizeCheckButton:hover {
+  background: rgba(245, 245, 247, 0.9);
+}
+
+.dropdownPrioritizeItem.darkTheme:hover,
+.dropdownPrioritizeCheckButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.8);
+}
+
+.dropdownPrioritizeItem.dragging {
+  background: rgba(0, 122, 255, 0.1);
+  opacity: 0.7;
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.dropdownPrioritizeItem.darkTheme.dragging {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.dropdownPrioritizeItem.dragOver {
+  outline: 2px dashed #007aff;
+  outline-offset: -2px;
+}
+
+.dropdownPrioritizeItem.darkTheme.dragOver {
+  outline: 2px dashed #0a84ff;
+}
+
+/* New styles for consistent radio button styling */
+.radioRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+.radioRow input[type="radio"] {
+  accent-color: #007aff;
+}
+
+.radioRow.darkTheme {
+  color: #fff;
+}
+
+.radioRow.darkTheme input[type="radio"] {
+  accent-color: #0a84ff;
+}
+
+/* New styles for header sort title and subtitle */
+.headerSortTitleRow {
+  display: flex;
+  align-items: center;
+  padding: 20px 16px 8px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.headerSortTitleRow.darkTheme {
+  color: #fff;
+}
+
+.headerSortSubTitle {
+  padding: 0 16px 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6e6e73;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.headerSortSubTitle.darkTheme {
+  color: #aaa;
 }

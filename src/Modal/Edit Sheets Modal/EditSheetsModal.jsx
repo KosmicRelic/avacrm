@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaFilter, FaChevronRight } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaThumbtack, FaFilter, FaChevronRight, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
-import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
+import CardsFetchSorting from './CardsFetchSorting/CardsFetchSorting';
 
 const EditSheetsModal = ({
   isEditMode = false,
@@ -42,20 +42,32 @@ const EditSheetsModal = ({
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
+  const [cardsPerSearch, setCardsPerSearch] = useState(tempData.cardsPerSearch || '');
+  const [prioritizedHeaders, setPrioritizedHeaders] = useState(tempData.prioritizedHeaders || []);
+  const [selectedPrioritizedHeader, setSelectedPrioritizedHeader] = useState(null);
+  const [showHeaderSelectForSort, setShowHeaderSelectForSort] = useState(false);
   const headerRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
 
-  // Initialize tempData.cardTypeFilters if undefined
+  // Initialize tempData.cardTypeFilters, cardsPerSearch, and prioritizedHeaders if undefined
   useEffect(() => {
-    if (!tempData.cardTypeFilters) {
+    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData) || !('prioritizedHeaders' in tempData)) {
       setTempData({
         ...tempData,
-        cardTypeFilters: {},
+        cardTypeFilters: tempData.cardTypeFilters || {},
+        cardsPerSearch: tempData.cardsPerSearch || null,
+        prioritizedHeaders: tempData.prioritizedHeaders || [],
       });
     }
   }, [tempData, setTempData]);
+
+  // Placeholder for modalUtils (update with actual implementation if provided)
+  const setModalUtils = useCallback((updates) => {
+    console.log('setModalUtils called with:', updates); // Replace with actual modalUtils update logic
+    // Example: modalUtils.setCardsPerSearch(updates.cardsPerSearch);
+  }, []);
 
   // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
@@ -147,6 +159,8 @@ const EditSheetsModal = ({
       rows,
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
+      cardsPerSearch,
+      prioritizedHeaders,
     });
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
@@ -158,6 +172,8 @@ const EditSheetsModal = ({
     currentHeaders,
     selectedCardTypes,
     rows,
+    cardsPerSearch,
+    prioritizedHeaders,
     setTempData,
     tempData.sheetName,
     tempData.cardTypeFilters,
@@ -184,7 +200,11 @@ const EditSheetsModal = ({
         { title: 'Select Card Templates', rightButton: null },
         { title: 'Template Options', rightButton: null },
         { title: 'Filters', rightButton: null },
-        { title: 'Sort Options', rightButton: null }, // Step 9
+        { title: 'Sort Options', rightButton: null },
+        { title: 'Cards Fetch Limit', rightButton: null },
+        { title: 'Sort by Filters', rightButton: null },
+        { title: 'Select Header to Prioritize', rightButton: null },
+        { title: 'Header Sort Options', rightButton: null },
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -352,6 +372,73 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
+    } else if (currentStep === 10) {
+      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: `Cards Fetch Limit for ${cardTypeName}`,
+        backButtonTitle: 'Sort Options',
+        backButton: {
+          label: `< Sort Options`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 11) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Sort by Filters',
+        backButtonTitle: 'Sort Options',
+        backButton: {
+          label: `< Sort Options`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 12) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Select Header to Prioritize',
+        backButtonTitle: 'Sort by Filters',
+        backButton: {
+          label: `< Sort by Filters`,
+          onClick: () => {
+            setNavigationDirection('backward');
+            goToStep(11);
+          },
+        },
+        leftButton: null,
+        rightButton: null,
+      };
+    } else if (currentStep === 13) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Header Sort Options',
+        backButtonTitle: 'Sort by Filters',
+        backButton: {
+          label: `< Sort by Filters`,
+          onClick: () => {
+            setNavigationDirection('backward');
+            goToStep(11);
+          },
+        },
+        leftButton: null,
+        rightButton: null,
+      };
     }
 
     // Only update modalConfig if it has changed
@@ -369,17 +456,31 @@ const EditSheetsModal = ({
       rows,
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
+      cardsPerSearch,
+      prioritizedHeaders,
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
       JSON.stringify(newTempData.rows) !== JSON.stringify(tempData.rows) ||
       JSON.stringify(newTempData.typeOfCardsToDisplay) !== JSON.stringify(tempData.typeOfCardsToDisplay) ||
-      JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters)
+      JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters) ||
+      newTempData.cardsPerSearch !== tempData.cardsPerSearch ||
+      JSON.stringify(newTempData.prioritizedHeaders) !== JSON.stringify(tempData.prioritizedHeaders)
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, rows, selectedCardTypes, tempData, setTempData]);
+  }, [sheetName, currentHeaders, rows, selectedCardTypes, cardsPerSearch, prioritizedHeaders, tempData, setTempData]);
+
+  // Sync prioritizedHeaders to tempData
+  useEffect(() => {
+    if (JSON.stringify(prioritizedHeaders) !== JSON.stringify(tempData.prioritizedHeaders)) {
+      setTempData({
+        ...tempData,
+        prioritizedHeaders,
+      });
+    }
+  }, [prioritizedHeaders, tempData, setTempData]);
 
   // Toggle card type selection
   const toggleCardTypeSelection = useCallback((type) => {
@@ -555,7 +656,7 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleFilterClick: Navigating to step 8 for', typeOfCards); // Debug log
+      console.log('handleFilterClick: Navigating to step 8 for', typeOfCards);
       goToStep(8);
     },
     [goToStep, tempData, setTempData]
@@ -565,7 +666,7 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedTemplateForHeaders(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleTemplateClick: Navigating to step 4 for', typeOfCards); // Debug log
+      console.log('handleTemplateClick: Navigating to step 4 for', typeOfCards);
       goToStep(4);
     },
     [goToStep]
@@ -574,7 +675,7 @@ const EditSheetsModal = ({
   const handleAddCardTemplateClick = useCallback((e) => {
     e.stopPropagation();
     setNavigationDirection('forward');
-    console.log('handleAddCardTemplateClick: Navigating to step 6'); // Debug log
+    console.log('handleAddCardTemplateClick: Navigating to step 6');
     goToStep(6);
   }, [goToStep]);
 
@@ -582,23 +683,95 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleTemplateOptionsClick: Navigating to step 7 for', typeOfCards); // Debug log
+      console.log('handleTemplateOptionsClick: Navigating to step 7 for', typeOfCards);
       goToStep(7);
     },
     [goToStep]
   );
 
-  const handleSortClick = useCallback((typeOfCards) => {
-    console.log('handleSortClick: Called with typeOfCards:', typeOfCards, 'Navigating to step 9'); // Debug log
-    setSelectedCardTypeForFilter(typeOfCards);
+  const handleSortClick = useCallback(
+    (typeOfCards) => {
+      console.log('handleSortClick: Called with typeOfCards:', typeOfCards, 'Navigating to step 9');
+      setSelectedCardTypeForFilter(typeOfCards);
+      setNavigationDirection('forward');
+      goToStep(9);
+    },
+    [goToStep]
+  );
+
+  const handleFetchLimitClick = useCallback(() => {
+    console.log('handleFetchLimitClick: Navigating to step 10');
     setNavigationDirection('forward');
-    goToStep(9);
+    goToStep(10);
   }, [goToStep]);
+
+  const handleSortByFiltersClick = useCallback(() => {
+    setNavigationDirection('forward');
+    goToStep(11);
+  }, [goToStep]);
+
+  const handleAddHeaderToPrioritize = useCallback(() => {
+    setNavigationDirection('forward');
+    goToStep(12);
+  }, [goToStep]);
+
+  const handleSelectHeaderToPrioritize = useCallback((header) => {
+    setPrioritizedHeaders((prev) => {
+      if (!prev.some((h) => h.key === header.key)) {
+        return [...prev, header];
+      }
+      return prev;
+    });
+    setNavigationDirection('backward');
+    goToStep(11);
+  }, [goToStep]);
+
+  const handleRemovePrioritizedHeader = useCallback((headerKey) => {
+    setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
+  }, []);
+
+  const handlePrioritizedHeaderClick = useCallback((header) => {
+    setSelectedPrioritizedHeader(header);
+    setNavigationDirection('forward');
+    goToStep(13);
+  }, [goToStep]);
+
+  const handleUpdateHeaderSortOptions = useCallback((headerKey, sortOptions) => {
+    setPrioritizedHeaders((prev) =>
+      prev.map((h) =>
+        h.key === headerKey ? { ...h, sortOptions } : h
+      )
+    );
+  }, []);
+
+  const handleRemovePrioritizedHeaderFromOptions = useCallback((headerKey) => {
+    setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
+    setNavigationDirection('backward');
+    goToStep(11);
+  }, [goToStep]);
+
+  const handleCardsPerSearchChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      const numValue = value === '' ? null : parseInt(value, 10);
+
+      if (value === '' || (numValue >= 1 && !isNaN(numValue))) {
+        setCardsPerSearch(value);
+        setTempData((prev) => ({
+          ...prev,
+          cardsPerSearch: numValue,
+        }));
+        setModalUtils({ cardsPerSearch: numValue });
+        console.log('handleCardsPerSearchChange: Updated cardsPerSearch to', numValue);
+      }
+    },
+    [setTempData, setModalUtils]
+  );
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -624,7 +797,7 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
-                      console.log('Navigating to step 2: Headers'); // Debug log
+                      console.log('Navigating to step 2: Headers');
                       goToStep(2);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -634,7 +807,7 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
-                        console.log('Keydown: Navigating to step 2: Headers'); // Debug log
+                        console.log('Keydown: Navigating to step 2: Headers');
                         goToStep(2);
                       }
                     }}
@@ -644,7 +817,7 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
-                      console.log('Navigating to step 5: Cards'); // Debug log
+                      console.log('Navigating to step 5: Cards');
                       goToStep(5);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -654,8 +827,8 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
-                        console.log('Keydown: Navigating to step 5: Cards'); // Debug log
-                        goToStep(5);
+                        console.log('Keydown: Navigating to step 5: Cards');
+                        goToStep(2);
                       }
                     }}
                   >
@@ -689,7 +862,7 @@ const EditSheetsModal = ({
                 <div
                   onClick={() => {
                     setNavigationDirection('forward');
-                    console.log('Navigating to step 3: Select Templates'); // Debug log
+                    console.log('Navigating to step 3: Select Templates');
                     goToStep(3);
                   }}
                   className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -699,7 +872,7 @@ const EditSheetsModal = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       setNavigationDirection('forward');
-                      console.log('Keydown: Navigating to step 3: Select Templates'); // Debug log
+                      console.log('Keydown: Navigating to step 3: Select Templates');
                       goToStep(3);
                     }
                   }}
@@ -918,7 +1091,7 @@ const EditSheetsModal = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Triggering handleSortClick for step 9'); // Debug log
+                      console.log('Keydown: Triggering handleSortClick for step 9');
                       handleSortClick(selectedCardTypeForFilter);
                     }
                   }}
@@ -950,42 +1123,153 @@ const EditSheetsModal = ({
             {step === 9 && (
               <div className={styles.buttonContainer}>
                 <div
-                  onClick={() => {
-                    console.log('Clicked Cards Fetch Limit'); // Debug log
-                    alert('Cards Fetch Limit functionality is not yet implemented.');
-                  }}
+                  onClick={handleFetchLimitClick}
                   className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   role="button"
                   aria-label="Cards Fetch Limit"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Cards Fetch Limit'); // Debug log
-                      alert('Cards Fetch Limit functionality is not yet implemented.');
+                      console.log('Keydown: Triggering handleFetchLimitClick for step 10');
+                      handleFetchLimitClick();
                     }
                   }}
                 >
                   <span className={styles.navName}>Cards Fetch Limit</span>
                 </div>
                 <div
-                  onClick={() => {
-                    console.log('Clicked Sort by Filters'); // Debug log
-                    alert('Sort by Filters functionality is not yet implemented.');
-                  }}
+                  onClick={handleSortByFiltersClick}
                   className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                   role="button"
                   aria-label="Sort by Filters"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Sort by Filters'); // Debug log
-                      alert('Sort by Filters functionality is not yet implemented.');
+                      handleSortByFiltersClick();
                     }
                   }}
                 >
                   <span className={styles.navName}>Sort by Filters</span>
                 </div>
               </div>
+            )}
+            {step === 10 && (
+              <div className={styles.inputContainer}>
+                <input
+                  type="number"
+                  value={cardsPerSearch}
+                  onChange={handleCardsPerSearchChange}
+                  placeholder="Enter cards fetch limit"
+                  className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  min="1"
+                  step="1"
+                  aria-label="Cards Fetch Limit"
+                />
+              </div>
+            )}
+            {step === 11 && (
+              <div className={styles.sortByFiltersContainer}>
+                <button
+                  className={styles.addHeaderButton}
+                  onClick={handleAddHeaderToPrioritize}
+                  type="button"
+                  style={{ marginBottom: 18, borderRadius: '10px', borderBottom: 'none' }}
+                >
+                  Add Header to Prioritize
+                </button>
+                <div className={styles.prioritizedHeadersList}>
+                  {prioritizedHeaders.length === 0 && (
+                    <div className={styles.noPrioritizedHeaders}>No prioritized headers yet.</div>
+                  )}
+                  {prioritizedHeaders.map((header) => (
+                    <div
+                      key={header.key}
+                      className={styles.prioritizedHeaderItem}
+                      onClick={() => handlePrioritizedHeaderClick(header)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span>{header.name || header.key}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {step === 12 && (
+              <div className={styles.headerSelectList}>
+                <div className={styles.buttonContainer}>
+                  <button
+                    className={styles.addHeaderButton + (isDarkTheme ? ' ' + styles.darkTheme : '')}
+                    type="button"
+                    style={{ marginBottom: 0, borderRadius: '10px', borderBottom: 'none' }}
+                    disabled
+                    tabIndex={-1}
+                  >
+                    Select Headers to Prioritize
+                  </button>
+                </div>
+                {/* List of header buttons */}
+                {(() => {
+                  const template = cardTemplates.find((t) => t.typeOfCards === selectedCardTypes[0]);
+                  const headers = template?.headers
+                    .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
+                    .map((header) => ({
+                      key: header.key,
+                      name: header.name,
+                      type: header.type,
+                      options: header.options || [],
+                    })) || [];
+                  if (headers.length === 0) {
+                    return (
+                      <div className={styles.noCards}>
+                        No headers available to prioritize.
+                      </div>
+                    );
+                  }
+                  return headers.map((header) => {
+                    const isChecked = prioritizedHeaders.some((h) => h.key === header.key);
+                    return (
+                      <div
+                        key={header.key}
+                        className={styles.cardTypeItem}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          setPrioritizedHeaders((prev) => {
+                            if (isChecked) {
+                              return prev.filter((h) => h.key !== header.key);
+                            } else {
+                              return [...prev, header];
+                            }
+                          });
+                        }}
+                      >
+                        <div className={styles.cardTypeRow} style={{ gap: 4 }}>
+                          <span
+                            className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                          >
+                            {isChecked ? (
+                              <FaRegCheckCircle size={18} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
+                            <span className={styles.cardTypeName}>{header.name || header.key}</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+            {step === 13 && selectedPrioritizedHeader && (
+              <CardsFetchSorting
+                header={selectedPrioritizedHeader}
+                onSave={(sortOptions) => {
+                  handleUpdateHeaderSortOptions(selectedPrioritizedHeader.key, sortOptions);
+                }}
+                onRemove={() => handleRemovePrioritizedHeaderFromOptions(selectedPrioritizedHeader.key)}
+                isDarkTheme={isDarkTheme}
+              />
             )}
           </div>
         ))}
@@ -1011,6 +1295,8 @@ EditSheetsModal.propTypes = {
     rows: PropTypes.array,
     typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
     cardTypeFilters: PropTypes.object,
+    cardsPerSearch: PropTypes.number,
+    prioritizedHeaders: PropTypes.array,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({

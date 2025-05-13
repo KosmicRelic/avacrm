@@ -97,6 +97,7 @@ export const handleModalSave = async ({
                     })),
                     typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
                     cardTypeFilters: cleanedCardTypeFilters, // Use cleaned filters
+                    cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch, // <-- update cardsPerSearch
                     isModified: true,
                     action: 'update',
                   }
@@ -498,7 +499,7 @@ export const renderModalContent = ({
 
   switch (activeModal.type) {
     case 'sheet':
-      // Renders EditSheetsModal with tempData including cardTypeFilters
+      // Renders EditSheetsModal with tempData including cardTypeFilters and cardsPerSearch
       return (
         <EditSheetsModal
           isEditMode={isSheetModalEditMode}
@@ -508,7 +509,8 @@ export const renderModalContent = ({
               currentHeaders: resolvedHeaders,
               rows: activeSheet?.rows || [],
               typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
-              cardTypeFilters: activeSheet?.cardTypeFilters || {}, // Initialize with existing cardTypeFilters
+              cardTypeFilters: activeSheet?.cardTypeFilters || {},
+              cardsPerSearch: activeSheet?.cardsPerSearch ?? null, // <-- pass cardsPerSearch
             }
           }
           setTempData={setActiveModalData}
@@ -672,7 +674,8 @@ export const onEditSheet = ({
       currentHeaders: resolvedHeaders,
       rows: activeSheet?.rows || [],
       typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
-      cardTypeFilters: activeSheet?.cardTypeFilters || {}, // Initialize with existing cardTypeFilters
+      cardTypeFilters: activeSheet?.cardTypeFilters || {},
+      cardsPerSearch: activeSheet?.cardsPerSearch ?? null, // <-- ensure cardsPerSearch is included
     },
   });
   sheetModal.open();
