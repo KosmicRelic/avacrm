@@ -90,10 +90,10 @@ export const handleModalSave = async ({
           };
 
           if (header.type === 'dropdown') {
-            cleanedHeader.sortOptions = {
-              sortType: header.sortOptions?.sortType || 'custom',
-              prioritizedValues: header.sortOptions?.dropdownOrder || [],
-            };
+            // Save sortOptions as the array directly
+            cleanedHeader.sortOptions = Array.isArray(header.sortOptions)
+              ? header.sortOptions
+              : header.sortOptions?.prioritizedValues || [];
           } else if (['number', 'timestamp', 'date'].includes(header.type)) {
             cleanedHeader.sortType = header.sortOptions?.sortType || 'ascending';
             if (header.sortOptions?.sortType === 'equal') {

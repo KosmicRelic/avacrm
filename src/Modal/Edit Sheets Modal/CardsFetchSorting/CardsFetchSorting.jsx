@@ -4,7 +4,9 @@ import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 
 export default function CardsFetchSorting({ header, onSave, onRemove, isDarkTheme }) {
   const [sortType, setSortType] = useState(header.sortType || 'ascending');
-  const [prioritizedValues, setPrioritizedValues] = useState(header.sortOptions?.prioritizedValues || []);
+  const [prioritizedValues, setPrioritizedValues] = useState(
+    Array.isArray(header.sortOptions) ? header.sortOptions : header.sortOptions?.prioritizedValues || []
+  );
   const [dropdownChecked, setDropdownChecked] = useState(() => {
     if (header.type === 'dropdown') {
       const checked = {};
@@ -26,24 +28,28 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
 
   // Update parent immediately on change
   useEffect(() => {
-    const sortOptions = {};
-
     if (header.type === 'dropdown') {
-      // Only include selected options in prioritizedValues
-      sortOptions.sortType = 'custom';
-      sortOptions.prioritizedValues = prioritizedValues.filter(opt => dropdownChecked[opt]);
-    } else if (header.type === 'string') {
-      // Include equalValue for string type
+      // Pass the array directly as sortOptions
+      onSave(
+        prioritizedValues && prioritizedValues.length > 0
+          ? prioritizedValues
+          : []
+      );
+      return;
+    }
+
+    // For non-dropdown, keep previous logic
+    const sortOptions = {};
+    if (header.type === 'string') {
       sortOptions.sortType = 'equal';
       sortOptions.equalValue = stringEqualValue;
     } else if (['number', 'timestamp', 'date'].includes(header.type)) {
-      // sortType is handled at the header level
       if (sortType === 'equal') {
         sortOptions.equalValue = header.sortOptions?.equalValue || '';
       }
     }
 
-    onSave(header.type === 'dropdown' || sortType === 'equal' ? sortOptions : {});
+    onSave(sortType === 'equal' ? sortOptions : {});
     // eslint-disable-next-line
   }, [sortType, prioritizedValues, stringEqualValue, dropdownChecked]);
 
