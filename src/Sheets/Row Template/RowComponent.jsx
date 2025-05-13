@@ -1,10 +1,12 @@
+// RowComponent.js
 import { useContext } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { formatFirestoreTimestamp } from '../../utils/firestoreUtils';
 
-const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isSelectMode, onSelect }) => {
+const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme } = useContext(MainContext);
 
@@ -17,11 +19,11 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isS
   };
 
   const handleSelectClick = (e) => {
-    e.stopPropagation(); // Prevent row click
+    e.stopPropagation();
     if (!isAddNew) {
       onSelect(rowData);
     } else {
-      onSelect(); // Trigger select mode toggle
+      onSelect();
     }
   };
 
@@ -65,8 +67,7 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isS
           >
             + Add
           </div>
-          {/* Render empty cells for remaining headers, if any */}
-          {headerNames.slice(2).map((header, i) => (
+          {headers.slice(2).map((header, i) => (
             <div
               key={i}
               className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -74,14 +75,23 @@ const RowComponent = ({ rowData, headerNames, onClick, isSelected, onAddRow, isS
           ))}
         </>
       ) : (
-        headerNames.map((header, i) => (
-          <div
-            key={i}
-            className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
-          >
-            {rowData[header] !== undefined ? String(rowData[header]) : ''}
-          </div>
-        ))
+        headers.map((header, i) => {
+          const value = rowData[header.key];
+          const displayValue =
+            header.type === 'date'
+              ? formatFirestoreTimestamp(value) || ''
+              : value !== undefined
+              ? String(value)
+              : '';
+          return (
+            <div
+              key={i}
+              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              {displayValue}
+            </div>
+          );
+        })
       )}
     </div>
   );
@@ -92,7 +102,14 @@ RowComponent.propTypes = {
     isAddNew: PropTypes.bool,
     docId: PropTypes.string,
   }).isRequired,
-  headerNames: PropTypes.arrayOf(PropTypes.string).isRequired,
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      type: PropTypes.string,
+      visible: PropTypes.bool,
+    })
+  ).isRequired,
   onClick: PropTypes.func,
   isSelected: PropTypes.bool,
   onAddRow: PropTypes.func,

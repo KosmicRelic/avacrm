@@ -787,10 +787,6 @@
   padding: 0;
 }
 
-.sortByFiltersContainer.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
-}
-
 .addHeaderButton {
   width: 100%;
   padding: 13.5px 16px;

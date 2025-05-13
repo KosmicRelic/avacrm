@@ -1,3 +1,4 @@
+// Sheets.js
 import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Sheets.module.css';
@@ -45,12 +46,11 @@ const Sheets = ({
       const timeout = setTimeout(() => {
         setSpinnerVisible(false);
         setSpinnerFading(false);
-      }, 400); // match CSS fade duration
+      }, 400);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
-  // Filter cards based on typeOfCardsToDisplay and cardTypeFilters
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
@@ -65,12 +65,11 @@ const Sheets = ({
         const filters = cardTypeFilters[card.typeOfCards] || {};
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
-            // Handle userFilter (restrictByUser)
             if (filter.headerKey && filter.condition === 'equals') {
               const cardValue = card[filter.headerKey];
               return cardValue === user.uid;
             }
-            return true; // Skip if no headerKey or unsupported condition
+            return true;
           }
 
           const header = headers.find((h) => h.key === field);
@@ -148,7 +147,6 @@ const Sheets = ({
       });
   }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName, user.uid]);
 
-  // Apply global filters (activeSheet.filters) if present
   const filteredWithGlobalFilters = useMemo(() => {
     return sheetCards.filter((row) =>
       Object.entries(globalFilters).every(([headerKey, filter]) => {
@@ -257,7 +255,6 @@ const Sheets = ({
     }
   }, [sheets.structure, activeSheetName]);
 
-  // Apply search query
   const filteredRows = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return filteredWithGlobalFilters.filter((row) =>
@@ -265,7 +262,6 @@ const Sheets = ({
     );
   }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
-  // Apply sorting based on cardTypeFilters' sortOrder
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];
     const sortCriteria = Object.entries(cardTypeFilters)
@@ -513,7 +509,6 @@ const Sheets = ({
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
       >
-        {/* Always render the header */}
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {isSelectMode && (
             <div className={`${styles.headerCell} ${styles.emptyHeaderCell}`}></div>
@@ -524,7 +519,6 @@ const Sheets = ({
             </div>
           ))}
         </div>
-        {/* Spinner overlays the body, but header is always visible */}
         {spinnerVisible ? (
           <div className={`${styles.spinnerContainer} ${spinnerFading ? styles.spinnerFadeOut : ''}`}>
             <ImSpinner2
@@ -536,7 +530,7 @@ const Sheets = ({
           <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <RowComponent
               rowData={{ docId: 'Add New Card', isAddNew: true }}
-              headerNames={visibleHeaders.map((h) => h.key)}
+              headers={visibleHeaders}
               onClick={() => handleRowClick({ isAddNew: true })}
               isSelected={false}
               isSelectMode={isSelectMode}
@@ -548,7 +542,7 @@ const Sheets = ({
                 <RowComponent
                   key={rowIndex}
                   rowData={rowData}
-                  headerNames={visibleHeaders.map((h) => h.key)}
+                  headers={visibleHeaders}
                   onClick={() => handleRowSelect(rowData)}
                   isSelected={selectedRowIds.includes(rowData.docId)}
                   isSelectMode={isSelectMode}

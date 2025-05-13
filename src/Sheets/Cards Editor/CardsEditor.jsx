@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { v4 as uuidv4 } from 'uuid';
+import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
+import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
 // Utility function to format field names
 const formatFieldName = (key) => {
@@ -19,6 +21,15 @@ const formatFieldName = (key) => {
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+};
+
+// Utility function to format Firestore timestamp for <input type="date">
+const formatDateForInput = (value) => {
+  if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
+    const date = value.toDate ? value.toDate() : new Date(value.seconds * 1000);
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+  }
+  return value || '';
 };
 
 const CardsEditor = ({
@@ -104,7 +115,7 @@ const CardsEditor = ({
       .map((seconds) => ({
         _seconds: seconds,
         _nanoseconds: 0,
-        date: new Date(seconds * 1000).toLocaleDateString(),
+        date: formatFirestoreTimestamp({ _seconds: seconds, _nanoseconds: 0 }), // Use formatFirestoreTimestamp
       }))
       .sort((a, b) => b._seconds - a._seconds);
   }, [formData.history]);
@@ -116,7 +127,6 @@ const CardsEditor = ({
   }, [view, selectedSections]);
 
   useEffect(() => {
-    // Automatically set card type if the sheet has only one typeOfCardsToDisplay
     if (selectedSheet && !isEditing) {
       const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
       if (sheet?.typeOfCardsToDisplay?.length === 1) {
@@ -158,12 +168,22 @@ const CardsEditor = ({
   }, [onClose]);
 
   const handleInputChange = useCallback(
-    (key, value) => {
+    (key, value, fieldType) => {
       if (key === 'docId' || key === 'typeOfCards') {
         return;
       }
       if (!isViewingHistory) {
-        setFormData((prev) => ({ ...prev, [key]: value }));
+        let formattedValue = value;
+        if (fieldType === 'date' && value) {
+          // Convert date string (YYYY-MM-DD) to Firestore Timestamp
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            formattedValue = Timestamp.fromDate(date);
+          } else {
+            formattedValue = ''; // Handle invalid date
+          }
+        }
+        setFormData((prev) => ({ ...prev, [key]: formattedValue }));
       }
     },
     [isViewingHistory]
@@ -198,11 +218,11 @@ const CardsEditor = ({
     };
 
     const newHistory = [];
-    const timestamp = { _seconds: Math.floor(Date.now() / 1000), _nanoseconds: 0 };
+    const timestamp = Timestamp.now(); // Use Firestore Timestamp for history
 
     if (isViewingHistory && selectedHistoryDate) {
       const existingCard = cards.find((card) => card.docId === initialRowData.docId);
-      Object.keys(historicalForm植物).forEach((key) => {
+      Object.keys(historicalFormData).forEach((key) => {
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
@@ -483,7 +503,7 @@ const CardsEditor = ({
                               {field.type === 'dropdown' ? (
                                 <select
                                   value={historicalFormData[field.key] || ''}
-                                  onChange={(e) => handleInputChange(field.key, e.target.value)}
+                                  onChange={(e) => handleInputChange(field.key, e.target.value, field.type)}
                                   className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                                   aria-label={`Select ${field.name}`}
                                   disabled={isViewingHistory}
@@ -498,8 +518,12 @@ const CardsEditor = ({
                               ) : (
                                 <input
                                   type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                                  value={historicalFormData[field.key] || ''}
-                                  onChange={(e) => handleInputChange(field.key, e.target.value)}
+                                  value={
+                                    field.type === 'date'
+                                      ? formatDateForInput(historicalFormData[field.key])
+                                      : historicalFormData[field.key] || ''
+                                  }
+                                  onChange={(e) => handleInputChange(field.key, e.target.value, field.type)}
                                   className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${
                                     isViewingHistory ? styles.readOnly : ''
                                   }`}
@@ -559,7 +583,19 @@ CardsEditor.propTypes = {
     docId: PropTypes.string,
     sheetName: PropTypes.string,
     typeOfCards: PropTypes.string,
-    history: PropTypes.array,
+    history: PropTypes.arrayOf(
+      PropTypes.shape({
+        field: PropTypes.string,
+        value: PropTypes.any,
+        timestamp: PropTypes.oneOfType([
+          PropTypes.shape({
+            _seconds: PropTypes.number,
+            _nanoseconds: PropTypes.number,
+          }),
+          PropTypes.instanceOf(Timestamp),
+        ]),
+      })
+    ),
   }),
   startInEditMode: PropTypes.bool,
   preSelectedSheet: PropTypes.string,

@@ -1210,17 +1210,6 @@ const EditSheetsModal = ({
             )}
             {step === 12 && (
               <div className={styles.headerSelectList}>
-                <div className={styles.buttonContainer}>
-                  <button
-                    className={styles.addHeaderButton + (isDarkTheme ? ' ' + styles.darkTheme : '')}
-                    type="button"
-                    style={{ marginBottom: 0, borderRadius: '10px', borderBottom: 'none' }}
-                    disabled
-                    tabIndex={-1}
-                  >
-                    Select headers to prioritize
-                  </button>
-                </div>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {/* List of header buttons */}
                   {(() => {
