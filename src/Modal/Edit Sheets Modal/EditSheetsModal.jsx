@@ -63,10 +63,9 @@ const EditSheetsModal = ({
     }
   }, [tempData, setTempData]);
 
-  // Placeholder for modalUtils (update with actual implementation if provided)
+  // Placeholder for modalUtils
   const setModalUtils = useCallback((updates) => {
-    console.log('setModalUtils called with:', updates); // Replace with actual modalUtils update logic
-    // Example: modalUtils.setCardsPerSearch(updates.cardsPerSearch);
+    console.log('setModalUtils called with:', updates);
   }, []);
 
   // Find sheet ID
@@ -188,7 +187,7 @@ const EditSheetsModal = ({
     goBack();
   }, [goBack]);
 
-  // Initialize modal steps (run once)
+  // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
       const steps = [
@@ -226,7 +225,7 @@ const EditSheetsModal = ({
   // Update navigation direction and debug step changes
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
-      console.log('Current step changed to:', currentStep); // Debug log
+      console.log('Current step changed to:', currentStep);
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
       prevStepRef.current = currentStep;
     }
@@ -718,7 +717,7 @@ const EditSheetsModal = ({
   const handleSelectHeaderToPrioritize = useCallback((header) => {
     setPrioritizedHeaders((prev) => {
       if (!prev.some((h) => h.key === header.key)) {
-        return [...prev, header];
+        return [...prev, { ...header, sortOptions: {} }];
       }
       return prev;
     });
@@ -828,7 +827,7 @@ const EditSheetsModal = ({
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
                         console.log('Keydown: Navigating to step 5: Cards');
-                        goToStep(2);
+                        goToStep(5);
                       }
                     }}
                   >
@@ -1211,7 +1210,6 @@ const EditSheetsModal = ({
             {step === 12 && (
               <div className={styles.headerSelectList}>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {/* List of header buttons */}
                   {(() => {
                     const template = cardTemplates.find((t) => t.typeOfCards === selectedCardTypes[0]);
                     const headers = template?.headers
@@ -1236,15 +1234,7 @@ const EditSheetsModal = ({
                           key={header.key}
                           className={styles.cardTypeItem}
                           style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            setPrioritizedHeaders((prev) => {
-                              if (isChecked) {
-                                return prev.filter((h) => h.key !== header.key);
-                              } else {
-                                return [...prev, header];
-                              }
-                            });
-                          }}
+                          onClick={() => handleSelectHeaderToPrioritize(header)}
                         >
                           <div className={styles.cardTypeRow} style={{ gap: 4 }}>
                             <span
@@ -1271,9 +1261,7 @@ const EditSheetsModal = ({
             {step === 13 && selectedPrioritizedHeader && (
               <CardsFetchSorting
                 header={selectedPrioritizedHeader}
-                onSave={(sortOptions) => {
-                  handleUpdateHeaderSortOptions(selectedPrioritizedHeader.key, sortOptions);
-                }}
+                onSave={(sortOptions) => handleUpdateHeaderSortOptions(selectedPrioritizedHeader.key, sortOptions)}
                 onRemove={() => handleRemovePrioritizedHeaderFromOptions(selectedPrioritizedHeader.key)}
                 isDarkTheme={isDarkTheme}
               />
@@ -1294,7 +1282,7 @@ EditSheetsModal.propTypes = {
         key: PropTypes.string.isRequired,
         name: PropTypes.string,
         type: PropTypes.string,
-        options: PropTypes.array,
+        options: PropTypes.arrayOf(PropTypes.string),
         visible: PropTypes.bool,
         hidden: PropTypes.bool,
       })
@@ -1303,7 +1291,19 @@ EditSheetsModal.propTypes = {
     typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
     cardTypeFilters: PropTypes.object,
     cardsPerSearch: PropTypes.number,
-    prioritizedHeaders: PropTypes.array,
+    prioritizedHeaders: PropTypes.arrayOf(
+      PropTypes.shape({
+        key: PropTypes.string.isRequired,
+        name: PropTypes.string,
+        type: PropTypes.string,
+        sortType: PropTypes.string,
+        sortOptions: PropTypes.shape({
+          sortType: PropTypes.string,
+          prioritizedValues: PropTypes.arrayOf(PropTypes.string),
+          equalValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        }),
+      })
+    ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({

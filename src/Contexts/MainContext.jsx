@@ -483,14 +483,14 @@ export const MainContextProvider = ({ children }) => {
 
             collectionChanges.added.forEach((item) => {
               const docRef = doc(config.collectionPath(), item.docId);
-              const { docId, ...data } = item;
+              const { docId, isModified, action, ...data } = item;
               batch.set(docRef, data);
               hasChanges = true;
             });
 
             collectionChanges.updated.forEach((item) => {
               const docRef = doc(config.collectionPath(), item.docId);
-              const { docId, ...data } = item;
+              const { docId, isModified, action, ...data } = item;
               batch.set(docRef, data, { merge: true });
               hasChanges = true;
             });
@@ -534,6 +534,8 @@ export const MainContextProvider = ({ children }) => {
 
         if (hasChanges) {
           await batch.commit();
+
+          // Clean action and isModified from states
           setCards((prev) =>
             prev
               .filter((card) => !(card.isModified && card.action === 'remove'))
@@ -545,6 +547,7 @@ export const MainContextProvider = ({ children }) => {
                 return card;
               })
           );
+
           if (isBusinessUser) {
             setDashboards((prev) =>
               prev
@@ -557,6 +560,7 @@ export const MainContextProvider = ({ children }) => {
                   return dashboard;
                 })
             );
+
             setCardTemplates((prev) =>
               prev
                 .filter((template) => !(template.isModified && template.action === 'remove'))
@@ -568,6 +572,36 @@ export const MainContextProvider = ({ children }) => {
                   return template;
                 })
             );
+
+            setSheets((prev) => ({
+              ...prev,
+              allSheets: prev.allSheets.map((sheet) => {
+                if (sheet.isModified) {
+                  const { isModified, action, ...cleanSheet } = sheet;
+                  return cleanSheet;
+                }
+                return sheet;
+              }),
+              structure: prev.structure.map((item) => {
+                if (item.isModified) {
+                  const { isModified, action, ...cleanItem } = item;
+                  return cleanItem;
+                }
+                return item;
+              }),
+              deletedSheetId: null,
+            }));
+
+            setMetrics((prev) =>
+              prev.map((metric) => {
+                if (metric.isModified) {
+                  const { isModified, action, ...cleanMetric } = metric;
+                  return cleanMetric;
+                }
+                return metric;
+              })
+            );
+
             // Clear deletedSheetId after successful commit
             if (sheets.deletedSheetId) {
               setSheets((prev) => ({ ...prev, deletedSheetId: null }));
@@ -596,7 +630,7 @@ export const MainContextProvider = ({ children }) => {
           const keys = new Set([...Object.keys(item), ...Object.keys(prevItem)]);
           let diff = false;
           for (const key of keys) {
-            if (key === 'isActive') continue;
+            if (key === 'isActive' || key === 'isModified' || key === 'action') continue;
             if (!isEqual(item[key], prevItem[key])) {
               diff = true;
               break;

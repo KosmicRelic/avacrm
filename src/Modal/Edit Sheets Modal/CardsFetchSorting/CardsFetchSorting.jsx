@@ -3,13 +3,13 @@ import styles from '../EditSheetsModal.module.css';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 
 export default function CardsFetchSorting({ header, onSave, onRemove, isDarkTheme }) {
-  const [sortType, setSortType] = useState(header.sortOptions?.sortType || 'ascending');
-  const [dropdownOrder, setDropdownOrder] = useState(header.sortOptions?.dropdownOrder || []);
+  const [sortType, setSortType] = useState(header.sortType || 'ascending');
+  const [prioritizedValues, setPrioritizedValues] = useState(header.sortOptions?.prioritizedValues || []);
   const [dropdownChecked, setDropdownChecked] = useState(() => {
     if (header.type === 'dropdown') {
       const checked = {};
       (header.options || []).forEach(opt => {
-        checked[opt] = dropdownOrder.includes(opt);
+        checked[opt] = prioritizedValues.includes(opt);
       });
       return checked;
     }
@@ -24,27 +24,30 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
   // For number/timestamp: show/hide selector
   const [showSortSelector, setShowSortSelector] = useState(false);
 
-  // Update parent immediately on change (but not on dropdownChecked, only on dropdownOrder/sortType/stringEqualValue)
+  // Update parent immediately on change
   useEffect(() => {
-    if (header.type === 'dropdown') {
-      onSave({
-        dropdownOrder,
-        sortType: 'custom',
-      });
-    } else if (header.type === 'string') {
-      onSave({
-        sortType: 'equal',
-        equalValue: stringEqualValue,
-      });
-    } else if (header.type === 'number' || header.type === 'timestamp' || header.type === 'date') {
-      onSave({
-        sortType,
-      });
-    }
-    // eslint-disable-next-line
-  }, [sortType, dropdownOrder, stringEqualValue]);
+    const sortOptions = {};
 
-  // Drag-and-drop for dropdown order (fix: use idx from map, not orderIdx)
+    if (header.type === 'dropdown') {
+      // Only include selected options in prioritizedValues
+      sortOptions.sortType = 'custom';
+      sortOptions.prioritizedValues = prioritizedValues.filter(opt => dropdownChecked[opt]);
+    } else if (header.type === 'string') {
+      // Include equalValue for string type
+      sortOptions.sortType = 'equal';
+      sortOptions.equalValue = stringEqualValue;
+    } else if (['number', 'timestamp', 'date'].includes(header.type)) {
+      // sortType is handled at the header level
+      if (sortType === 'equal') {
+        sortOptions.equalValue = header.sortOptions?.equalValue || '';
+      }
+    }
+
+    onSave(header.type === 'dropdown' || sortType === 'equal' ? sortOptions : {});
+    // eslint-disable-next-line
+  }, [sortType, prioritizedValues, stringEqualValue, dropdownChecked]);
+
+  // Drag-and-drop for dropdown order
   const handleDropdownDragStart = (idx) => {
     setDraggingIdx(idx);
     setDragOverIdx(idx);
@@ -59,8 +62,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
       setDragOverIdx(null);
       return;
     }
-    setDropdownOrder((prev) => {
-      // Only reorder checked options
+    setPrioritizedValues((prev) => {
       const checkedOptions = prev;
       const draggedOption = checkedOptions[draggingIdx];
       const newOrder = [...checkedOptions];
@@ -81,7 +83,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
     setDropdownChecked((prev) => {
       const checked = { ...prev, [opt]: !prev[opt] };
       const checkedOptions = Object.keys(checked).filter((k) => checked[k]);
-      setDropdownOrder((prevOrder) => {
+      setPrioritizedValues((prevOrder) => {
         const newOrder = prevOrder.filter((o) => checked[o]);
         checkedOptions.forEach((o) => {
           if (!newOrder.includes(o)) newOrder.push(o);
@@ -114,7 +116,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
             style={{ width: '100%', marginTop: 8, marginBottom: 8 }}
           />
         </div>
-      ) : (header.type === 'number' || header.type === 'timestamp' || header.type === 'date') ? (
+      ) : (['number', 'timestamp', 'date'].includes(header.type)) ? (
         <div>
           <button
             type="button"
@@ -168,9 +170,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
               type="number"
               value={header.sortOptions?.equalValue || ''}
               onChange={e => {
-                // propagate value to parent
                 onSave({
-                  sortType: 'equal',
                   equalValue: e.target.value,
                 });
               }}
@@ -186,8 +186,8 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
             Select and prioritize options:
           </div>
           <div className={styles.dropdownPrioritizeList + (isDarkTheme ? ' ' + styles.darkTheme : '')}>
-            {/* Only render checked options in dropdownOrder, then unchecked options */}
-            {dropdownOrder.map((opt, idx) => (
+            {/* Only render checked options in prioritizedValues, then unchecked options */}
+            {prioritizedValues.map((opt, idx) => (
               <div
                 key={opt}
                 className={
@@ -253,7 +253,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
               </div>
             ))}
           </div>
-          {dropdownOrder.length > 1 && (
+          {prioritizedValues.length > 1 && (
             <div style={{ fontSize: 12, color: isDarkTheme ? '#aaa' : '#888', marginTop: 8 }}>
               Drag the icon to reorder selected options.
             </div>

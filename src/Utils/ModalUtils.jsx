@@ -59,6 +59,8 @@ export const handleModalSave = async ({
       break;
     case 'sheet':
       if (data?.sheetName && data.currentHeaders && sheets) {
+        console.log('Saving sheet modal data:', data); // Debugging log
+
         // Clean cardTypeFilters to remove undefined values and empty filters
         const cleanedCardTypeFilters = {};
         Object.entries(data.cardTypeFilters || {}).forEach(([cardType, filters]) => {
@@ -79,6 +81,36 @@ export const handleModalSave = async ({
           }
         });
 
+        // Clean prioritizedHeaders
+        const cleanedPrioritizedHeaders = (data.prioritizedHeaders || []).map((header) => {
+          const cleanedHeader = {
+            key: header.key,
+            name: header.name,
+            type: header.type,
+          };
+
+          if (header.type === 'dropdown') {
+            cleanedHeader.sortOptions = {
+              sortType: header.sortOptions?.sortType || 'custom',
+              prioritizedValues: header.sortOptions?.dropdownOrder || [],
+            };
+          } else if (['number', 'timestamp', 'date'].includes(header.type)) {
+            cleanedHeader.sortType = header.sortOptions?.sortType || 'ascending';
+            if (header.sortOptions?.sortType === 'equal') {
+              cleanedHeader.sortOptions = {
+                equalValue: header.sortOptions?.equalValue || '',
+              };
+            }
+          } else if (header.type === 'string') {
+            cleanedHeader.sortType = header.sortOptions?.sortType || 'equal';
+            cleanedHeader.sortOptions = {
+              equalValue: header.sortOptions?.equalValue || '',
+            };
+          }
+
+          return cleanedHeader;
+        });
+
         setSheets((prev) => {
           const updatedSheets = {
             ...prev,
@@ -96,8 +128,9 @@ export const handleModalSave = async ({
                       hidden: h.hidden,
                     })),
                     typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
-                    cardTypeFilters: cleanedCardTypeFilters, // Use cleaned filters
-                    cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch, // <-- update cardsPerSearch
+                    cardTypeFilters: cleanedCardTypeFilters,
+                    cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch,
+                    prioritizedHeaders: cleanedPrioritizedHeaders,
                     isModified: true,
                     action: 'update',
                   }
@@ -116,12 +149,22 @@ export const handleModalSave = async ({
               return item;
             }),
           };
+          // Apply isModified and action to the structure array
           if (activeSheetName !== data.sheetName) {
-            updatedSheets.structure = { ...updatedSheets.structure, isModified: true, action: 'update' };
+            updatedSheets.structure = [
+              ...updatedSheets.structure,
+              { isModified: true, action: 'update' },
+            ];
           }
           return updatedSheets;
         });
         handleSheetChange(data.sheetName);
+      } else {
+        console.warn('Missing required data for sheet modal save:', {
+          sheetName: data?.sheetName,
+          currentHeaders: data?.currentHeaders,
+          sheets,
+        });
       }
       break;
     case 'sheets':
@@ -140,7 +183,7 @@ export const handleModalSave = async ({
           }
           const updatedSheets = {
             ...prev,
-            structure: Object.assign([...newStructure], { isModified: true, action: 'update' }),
+            structure: [...newStructure, { isModified: true, action: 'update' }],
             allSheets: prev.allSheets.map((sheet) => ({
               ...sheet,
               isActive: sheet.sheetName === newActiveSheetName,
@@ -150,7 +193,10 @@ export const handleModalSave = async ({
         });
         if (data.newOrder[0]?.sheetName) {
           handleSheetChange(data.newOrder[0].sheetName);
-        } else if (data.newOrder[0]?.folderName && data.newOrder[0]?.sheets?.length > 0) {
+        } else if (
+          data.newOrder[0]?.folderName &&
+          data.newOrder[0]?.sheets?.length > 0
+        ) {
           handleSheetChange(data.newOrder[0].sheets[0]);
         }
       } else {
@@ -166,20 +212,24 @@ export const handleModalSave = async ({
       if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
         if (!businessId) {
           console.warn('Cannot update templates and cards: businessId is missing');
-          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
+          alert(
+            'Error: Business ID is missing. Please ensure your account is properly configured.'
+          );
           return;
         }
-    
+
         const updates = data.currentCardTemplates
           .map((newTemplate) => {
-            const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
+            const oldTemplate = cardTemplates.find(
+              (t) => t.docId === newTemplate.docId
+            );
             if (!oldTemplate || !newTemplate.isModified) return null;
-    
+
             const update = {
               docId: newTemplate.docId,
               typeOfCards: oldTemplate.typeOfCards,
             };
-    
+
             if (
               newTemplate.action === 'update' &&
               oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
@@ -187,61 +237,80 @@ export const handleModalSave = async ({
             ) {
               update.newTypeOfCards = newTemplate.typeOfCards;
             }
-    
+
             const oldKeys = oldTemplate.headers.map((h) => h.key);
             const newKeys = newTemplate.headers.map((h) => h.key);
             const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
             if (deletedKeys.length > 0) {
               update.deletedKeys = deletedKeys;
             }
-    
+
             if (newTemplate.action === 'add' || newTemplate.action === 'update') {
+              const { isModified, action, ...cleanTemplate } = newTemplate;
               update.newTemplate = {
-                ...newTemplate,
-                headers: newTemplate.headers,
-                sections: newTemplate.sections,
-                name: newTemplate.name || newTemplate.typeOfCards,
-                typeOfCards: newTemplate.typeOfCards,
+                ...cleanTemplate,
+                headers: cleanTemplate.headers,
+                sections: cleanTemplate.sections,
+                name: cleanTemplate.name || cleanTemplate.typeOfCards,
+                typeOfCards: cleanTemplate.typeOfCards,
               };
             } else if (newTemplate.action === 'remove') {
               update.action = 'remove';
             }
-    
+
             return Object.keys(update).length > 1 ? update : null;
           })
           .filter((update) => update !== null);
-    
+
         try {
           if (updates.length > 0) {
-            const result = await updateCardTemplatesAndCardsFunction({ businessId, updates });
-    
+            const result = await updateCardTemplatesAndCardsFunction({
+              businessId,
+              updates,
+            });
+
             if (!result.success) {
-              throw new Error(result.error || 'Failed to update templates and cards');
+              throw new Error(
+                result.error || 'Failed to update templates and cards'
+              );
             }
-    
-            setCardTemplates([...data.currentCardTemplates]);
-    
+
+            // Clean action and isModified from cardTemplates
+            setCardTemplates(
+              data.currentCardTemplates.map((template) => {
+                const { isModified, action, ...cleanTemplate } = template;
+                return cleanTemplate;
+              })
+            );
+
             const updatedCards = cards.map((card) => {
-              const matchingUpdate = updates.find((update) => update.typeOfCards === card.typeOfCards);
+              const matchingUpdate = updates.find(
+                (update) => update.typeOfCards === card.typeOfCards
+              );
               if (!matchingUpdate) return card;
-    
+
               let updatedCard = { ...card };
-    
+
               if (matchingUpdate.newTypeOfCards) {
                 updatedCard.typeOfCards = matchingUpdate.newTypeOfCards;
               }
-    
-              if (matchingUpdate.deletedKeys && matchingUpdate.deletedKeys.length > 0) {
+
+              if (
+                matchingUpdate.deletedKeys &&
+                matchingUpdate.deletedKeys.length > 0
+              ) {
                 matchingUpdate.deletedKeys.forEach((key) => {
                   if (key in updatedCard) {
                     delete updatedCard[key];
                   }
                 });
               }
-    
-              return updatedCard;
+
+              // Clean action and isModified from card
+              const { isModified, action, ...cleanCard } = updatedCard;
+              return cleanCard;
             });
-    
+
             setCards(updatedCards);
           }
         } catch (error) {
@@ -250,7 +319,10 @@ export const handleModalSave = async ({
           return;
         }
       } else {
-        console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
+        console.warn(
+          'Invalid or missing currentCardTemplates:',
+          data?.currentCardTemplates
+        );
       }
       break;
     }
@@ -260,8 +332,14 @@ export const handleModalSave = async ({
           let currentStructure = [...prev.structure];
           const modifiedSheets = new Set();
           data.tempData.actions.forEach((actionData) => {
-            if (actionData.action === 'removeSheets' && actionData.selectedSheets && actionData.folderName) {
-              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+            if (
+              actionData.action === 'removeSheets' &&
+              actionData.selectedSheets &&
+              actionData.folderName
+            ) {
+              const folder = currentStructure.find(
+                (item) => item.folderName === actionData.folderName
+              );
               const folderSheets = folder?.sheets || [];
               const remainingSheets = folderSheets.filter(
                 (sheet) => !actionData.selectedSheets.includes(sheet)
@@ -276,12 +354,20 @@ export const handleModalSave = async ({
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
               currentStructure = [
-                ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                ...currentStructure.filter(
+                  (item) => item.folderName !== actionData.folderName
+                ),
                 { folderName: actionData.folderName, sheets: remainingSheets },
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ];
-            } else if (actionData.action === 'addSheets' && actionData.selectedSheets && actionData.folderName) {
-              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+            } else if (
+              actionData.action === 'addSheets' &&
+              actionData.selectedSheets &&
+              actionData.folderName
+            ) {
+              const folder = currentStructure.find(
+                (item) => item.folderName === actionData.folderName
+              );
               const existingSheets = folder?.sheets || [];
               const newSheets = actionData.selectedSheets.filter(
                 (sheet) => !existingSheets.includes(sheet)
@@ -293,8 +379,13 @@ export const handleModalSave = async ({
                     : item
                 );
               }
-            } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
-              const folder = currentStructure.find((item) => item.folderName === actionData.folderName);
+            } else if (
+              actionData.action === 'deleteFolder' &&
+              actionData.folderName
+            ) {
+              const folder = currentStructure.find(
+                (item) => item.folderName === actionData.folderName
+              );
               const folderSheets = folder?.sheets || [];
               const existingSheetNames = currentStructure
                 .filter((item) => item.sheetName)
@@ -303,7 +394,9 @@ export const handleModalSave = async ({
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
               currentStructure = [
-                ...currentStructure.filter((item) => item.folderName !== actionData.folderName),
+                ...currentStructure.filter(
+                  (item) => item.folderName !== actionData.folderName
+                ),
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ];
               folderSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
@@ -319,9 +412,14 @@ export const handleModalSave = async ({
             ),
           };
         });
-      } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
+      } else if (
+        data?.tempData?.action === 'deleteFolder' &&
+        data.tempData.folderName
+      ) {
         setSheets((prev) => {
-          const folderSheets = prev.structure.find((item) => item.folderName === data.tempData.folderName)?.sheets || [];
+          const folderSheets = prev.structure.find(
+            (item) => item.folderName === data.tempData.folderName
+          )?.sheets || [];
           const existingSheetNames = prev.structure
             .filter((item) => item.sheetName)
             .map((item) => item.sheetName);
@@ -331,7 +429,9 @@ export const handleModalSave = async ({
           return {
             ...prev,
             structure: [
-              ...prev.structure.filter((item) => item.folderName !== data.tempData.folderName),
+              ...prev.structure.filter(
+                (item) => item.folderName !== data.tempData.folderName
+              ),
               ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
             ],
             allSheets: prev.allSheets.map((sheet) =>
@@ -349,7 +449,12 @@ export const handleModalSave = async ({
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
         setMetrics((prev) =>
-          prev.filter((category) => !data.deletedCategories.includes(category.category))
+          prev
+            .filter((category) => !data.deletedCategories.includes(category.category))
+            .map((category) => {
+              const { isModified, action, ...cleanCategory } = category;
+              return cleanCategory;
+            })
         );
       }
       break;
@@ -375,9 +480,13 @@ export const handleModalSave = async ({
                   ? { ...data.updatedWidget, dashboardId: data.dashboardId }
                   : w
               )
-            : [...dashboard.dashboardWidgets, { ...data.updatedWidget, dashboardId: data.dashboardId }];
+            : [
+                ...dashboard.dashboardWidgets,
+                { ...data.updatedWidget, dashboardId: data.dashboardId },
+              ];
+          const { isModified, action, ...cleanDashboard } = dashboard;
           return {
-            ...dashboard,
+            ...cleanDashboard,
             dashboardWidgets: updatedWidgets,
             isModified: true,
             action: dashboard.action || 'update',
@@ -388,7 +497,12 @@ export const handleModalSave = async ({
       break;
     case 'metrics':
       if (data?.currentCategories && metrics) {
-        setMetrics([...data.currentCategories]);
+        setMetrics(
+          data.currentCategories.map((category) => {
+            const { isModified, action, ...cleanCategory } = category;
+            return cleanCategory;
+          })
+        );
       }
       break;
     default:
@@ -442,33 +556,32 @@ export const handleModalClose = ({
         },
         category: options.openWidgetSetup.widget.title || null,
         metric: options.openWidgetSetup.metric?.id || null,
-        dashboardId: options.openWidgetSetup.widget.dashboardId || activeDashboard?.id,
+        dashboardId:
+          options.openWidgetSetup.widget.dashboardId || activeDashboard?.id,
         initialStep: 1,
       },
     });
-    widgetSetupModal.open();
+    widgetSetupModal?.open();
   } else if (activeModal?.type !== 'widgetView' && activeModal?.data) {
-    // When EditSheetsModal closes with fromSave: true, this triggers handleModalSave for 'sheet'
     if (options.fromSave) {
       handleModalSave({ modalType: activeModal.type, data: activeModal.data });
     }
   }
-  // console.log('Closing modals, activeModal:', activeModal?.type);
   setActiveModal(null);
   setEditMode(false);
   setSelectedTemplateIndex(null);
   setCurrentSectionIndex(null);
-  sheetModal.close();
-  filterModal.close();
-  sheetsModal.close();
-  transportModal.close();
-  cardsTemplateModal.close();
-  sheetFolderModal.close();
-  folderOperationsModal.close();
-  widgetSizeModal.close();
-  widgetViewModal.close();
-  widgetSetupModal.close();
-  metricsModal.close();
+  sheetModal?.close();
+  filterModal?.close();
+  sheetsModal?.close();
+  transportModal?.close();
+  cardsTemplateModal?.close();
+  sheetFolderModal?.close();
+  folderOperationsModal?.close();
+  widgetSizeModal?.close();
+  widgetViewModal?.close();
+  widgetSetupModal?.close();
+  metricsModal?.close();
   folderModal?.close();
 };
 
@@ -499,18 +612,17 @@ export const renderModalContent = ({
 
   switch (activeModal.type) {
     case 'sheet':
-      // Renders EditSheetsModal with tempData including cardTypeFilters and cardsPerSearch
       return (
         <EditSheetsModal
           isEditMode={isSheetModalEditMode}
           tempData={
             activeModal.data || {
               sheetName: isSheetModalEditMode ? activeSheetName : '',
-              currentHeaders: resolvedHeaders,
+              currentHeaders: resolvedHeaders || [],
               rows: activeSheet?.rows || [],
               typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
               cardTypeFilters: activeSheet?.cardTypeFilters || {},
-              cardsPerSearch: activeSheet?.cardsPerSearch ?? null, // <-- pass cardsPerSearch
+              cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
             }
           }
           setTempData={setActiveModalData}
@@ -525,8 +637,8 @@ export const renderModalContent = ({
     case 'filter':
       return (
         <FilterModal
-          headers={resolvedHeaders}
-          rows={resolvedRows}
+          headers={resolvedHeaders || []}
+          rows={resolvedRows || []}
           tempData={
             activeModal.data || { filterValues: activeSheet?.filters || {} }
           }
@@ -538,7 +650,9 @@ export const renderModalContent = ({
       return (
         <ReOrderModal
           sheets={sheets || { structure: [] }}
-          tempData={activeModal.data || { newOrder: [...(sheets?.structure || [])] }}
+          tempData={
+            activeModal.data || { newOrder: [...(sheets?.structure || [])] }
+          }
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
         />
@@ -560,7 +674,9 @@ export const renderModalContent = ({
       return (
         <CardsTemplate
           tempData={
-            activeModal.data || { currentCardTemplates: [...(cardTemplates || [])] }
+            activeModal.data || {
+              currentCardTemplates: [...(cardTemplates || [])],
+            }
           }
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
@@ -584,13 +700,15 @@ export const renderModalContent = ({
     case 'folderOperations':
       return (
         <FolderOperations
-          folderName={activeModal.data.folderName}
+          folderName={activeModal.data?.folderName}
           onSheetSelect={handleSheetChange}
           handleClose={handleModalClose}
-          tempData={activeModal.data.tempData || {}}
+          tempData={activeModal.data?.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
-              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
+              prev
+                ? { ...prev, data: { ...prev.data, tempData: newData } }
+                : prev
             )
           }
         />
@@ -598,13 +716,15 @@ export const renderModalContent = ({
     case 'folderModal':
       return (
         <FolderOperations
-          folderName={activeModal.data.folderName}
-          onSheetSelect={activeModal.data.onSheetSelect}
-          handleClose={activeModal.data.handleClose}
-          tempData={activeModal.data.tempData || {}}
+          folderName={activeModal.data?.folderName}
+          onSheetSelect={activeModal.data?.onSheetSelect}
+          handleClose={activeModal.data?.handleClose}
+          tempData={activeModal.data?.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
-              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
+              prev
+                ? { ...prev, data: { ...prev.data, tempData: newData } }
+                : prev
             )
           }
         />
@@ -671,41 +791,54 @@ export const onEditSheet = ({
     type: 'sheet',
     data: {
       sheetName: activeSheetName,
-      currentHeaders: resolvedHeaders,
+      currentHeaders: resolvedHeaders || [],
       rows: activeSheet?.rows || [],
       typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
       cardTypeFilters: activeSheet?.cardTypeFilters || {},
-      cardsPerSearch: activeSheet?.cardsPerSearch ?? null, // <-- ensure cardsPerSearch is included
+      cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
     },
   });
-  sheetModal.open();
+  sheetModal?.open();
 };
 
-export const onFilter = ({ sheets, setActiveModal, filterModal, activeSheet }) => {
+export const onFilter = ({
+  sheets,
+  setActiveModal,
+  filterModal,
+  activeSheet,
+}) => {
   if (!sheets) return;
   setActiveModal({
     type: 'filter',
     data: { filterValues: activeSheet?.filters || {} },
   });
-  filterModal.open();
+  filterModal?.open();
 };
 
-export const onManageMetrics = ({ metrics, setActiveModal, metricsModal }) => {
+export const onManageMetrics = ({
+  metrics,
+  setActiveModal,
+  metricsModal,
+}) => {
   if (!metrics) return;
   setActiveModal({
     type: 'metrics',
     data: { currentCategories: [...metrics] },
   });
-  metricsModal.open();
+  metricsModal?.open();
 };
 
-export const onOpenSheetsModal = ({ sheets, setActiveModal, sheetsModal }) => {
+export const onOpenSheetsModal = ({
+  sheets,
+  setActiveModal,
+  sheetsModal,
+}) => {
   if (!sheets) return;
   setActiveModal({
     type: 'sheets',
-    data: { newOrder: [...sheets.structure] },
+    data: { newOrder: [...(sheets?.structure || [])] },
   });
-  sheetsModal.open();
+  sheetsModal?.open();
 };
 
 export const onOpenTransportModal = ({
@@ -719,7 +852,7 @@ export const onOpenTransportModal = ({
     type: 'transport',
     data: { action, selectedRowIds, onComplete },
   });
-  transportModal.open();
+  transportModal?.open();
 };
 
 export const onOpenCardsTemplateModal = ({
@@ -732,9 +865,9 @@ export const onOpenCardsTemplateModal = ({
   setEditMode(false);
   setActiveModal({
     type: 'cardsTemplate',
-    data: { currentCardTemplates: [...cardTemplates] },
+    data: { currentCardTemplates: [...(cardTemplates || [])] },
   });
-  cardsTemplateModal.open();
+  cardsTemplateModal?.open();
 };
 
 export const onOpenSheetFolderModal = ({
@@ -753,7 +886,7 @@ export const onOpenSheetFolderModal = ({
       handleFolderSave,
     },
   });
-  sheetFolderModal.open();
+  sheetFolderModal?.open();
 };
 
 export const onOpenFolderOperationsModal = ({
@@ -767,7 +900,7 @@ export const onOpenFolderOperationsModal = ({
     type: 'folderOperations',
     data: { folderName, tempData: {} },
   });
-  folderOperationsModal.open();
+  folderOperationsModal?.open();
 };
 
 export const onOpenFolderModal = ({
@@ -778,7 +911,6 @@ export const onOpenFolderModal = ({
   onSheetSelect,
 }) => {
   if (!sheets) return;
-  // console.log('Opening folderModal for:', folderName);
   setActiveModal({
     type: 'folderModal',
     data: {
@@ -786,11 +918,10 @@ export const onOpenFolderModal = ({
       onSheetSelect,
       tempData: {},
       handleClose: () => {
-        // console.log('Closing folderModal');
-        folderModal.close();
+        folderModal?.close();
         setActiveModal(null);
       },
     },
   });
-  folderModal.open();
+  folderModal?.open();
 };
