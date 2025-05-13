@@ -858,28 +858,24 @@ const EditSheetsModal = ({
               </>
             )}
             {step === 2 && (
-              <>
-                <div
+              <div className={styles.buttonContainer}>
+                <button
+                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  type="button"
+                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
                   onClick={() => {
                     setNavigationDirection('forward');
-                    console.log('Navigating to step 3: Select Templates');
                     goToStep(3);
                   }}
-                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  role="button"
-                  aria-label="Add Column"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      setNavigationDirection('forward');
-                      console.log('Keydown: Navigating to step 3: Select Templates');
-                      goToStep(3);
-                    }
-                  }}
                 >
-                  <span className={styles.navName}>Add Column</span>
-                </div>
-                <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  Add column
+                </button>
+                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {currentHeaders.length === 0 && (
+                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No columns added yet.
+                    </div>
+                  )}
                   {currentHeaders.map((header, index) => (
                     <div
                       ref={(el) => headerRefs.current.set(index, el)}
@@ -937,7 +933,7 @@ const EditSheetsModal = ({
                     </div>
                   ))}
                 </div>
-              </>
+              </div>
             )}
             {step === 3 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -953,7 +949,9 @@ const EditSheetsModal = ({
                       onClick={() => handleTemplateClick(template.typeOfCards)}
                     >
                       <div className={styles.cardTypeRow}>
-                        <span className={styles.cardTypeName}>{template.name || template.typeOfCards}</span>
+                        <span className={styles.cardTypeName}>
+                          {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -991,7 +989,9 @@ const EditSheetsModal = ({
                               <FaRegCircle size={18} />
                             )}
                           </span>
-                          <span className={styles.cardTypeName}>{header.name || header.key}</span>
+                          <span className={styles.cardTypeName}>
+                            {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                          </span>
                         </div>
                       </div>
                     ))
@@ -1000,29 +1000,29 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 5 && (
-              <>
-                <div className={styles.buttonContainer}>
-                  <div
-                    onClick={handleAddCardTemplateClick}
-                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    role="button"
-                    aria-label="Add Card Template"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        handleAddCardTemplateClick(e);
-                      }
-                    }}
-                  >
-                    <span className={styles.navName}>Add Card Template</span>
-                  </div>
+              <div className={styles.buttonContainer}>
+                <button
+                  onClick={handleAddCardTemplateClick}
+                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  type="button"
+                  aria-label="Add Card Template"
+                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
+                >
+                  Add card template
+                </button>
+                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {selectedCardTypes.length === 0 && (
+                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No card templates selected.
+                    </div>
+                  )}
                   {selectedCardTypes.map((typeOfCards) => {
                     const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
                     return (
                       <div
                         key={typeOfCards}
                         onClick={() => handleTemplateOptionsClick(typeOfCards)}
-                        className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                         role="button"
                         aria-label={`Options for ${template?.name || typeOfCards}`}
                         tabIndex={0}
@@ -1032,12 +1032,16 @@ const EditSheetsModal = ({
                           }
                         }}
                       >
-                        <span className={styles.navName}>{template?.name || typeOfCards}</span>
+                        <span className={styles.headerName}>
+                          {template?.name
+                            ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
+                            : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
-              </>
+              </div>
             )}
             {step === 6 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1060,7 +1064,9 @@ const EditSheetsModal = ({
                             <FaRegCircle size={18} />
                           )}
                         </span>
-                        <span className={styles.cardTypeName}>{template.name || template.typeOfCards}</span>
+                        <span className={styles.cardTypeName}>
+                          {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -1102,9 +1108,6 @@ const EditSheetsModal = ({
             )}
             {step === 8 && (
               <>
-                <div className={`${styles.debugMessage} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  Filters Step (Step 8) - Card Type: {selectedCardTypeForFilter || 'None'}
-                </div>
                 {selectedCardTypeForFilter ? (
                   <CardTypeFilter
                     cardType={selectedCardTypeForFilter}
@@ -1168,27 +1171,38 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 11 && (
-              <div className={styles.sortByFiltersContainer}>
+              <div className={`${styles.sortByFiltersContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <button
-                  className={styles.addHeaderButton}
+                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                   onClick={handleAddHeaderToPrioritize}
                   type="button"
-                  style={{ marginBottom: 18, borderRadius: '10px', borderBottom: 'none' }}
+                  aria-label="Add Header to Prioritize"
                 >
-                  Add Header to Prioritize
+                  Add header to prioritize
                 </button>
-                <div className={styles.prioritizedHeadersList}>
+                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {prioritizedHeaders.length === 0 && (
-                    <div className={styles.noPrioritizedHeaders}>No prioritized headers yet.</div>
+                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No prioritized headers yet.
+                    </div>
                   )}
                   {prioritizedHeaders.map((header) => (
                     <div
                       key={header.key}
-                      className={styles.prioritizedHeaderItem}
+                      className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={() => handlePrioritizedHeaderClick(header)}
-                      style={{ cursor: 'pointer' }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Edit sort options for ${header.name || header.key}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handlePrioritizedHeaderClick(header);
+                        }
+                      }}
                     >
-                      <span>{header.name || header.key}</span>
+                      <span className={styles.headerName}>
+                        {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1204,61 +1218,65 @@ const EditSheetsModal = ({
                     disabled
                     tabIndex={-1}
                   >
-                    Select Headers to Prioritize
+                    Select headers to prioritize
                   </button>
                 </div>
-                {/* List of header buttons */}
-                {(() => {
-                  const template = cardTemplates.find((t) => t.typeOfCards === selectedCardTypes[0]);
-                  const headers = template?.headers
-                    .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
-                    .map((header) => ({
-                      key: header.key,
-                      name: header.name,
-                      type: header.type,
-                      options: header.options || [],
-                    })) || [];
-                  if (headers.length === 0) {
-                    return (
-                      <div className={styles.noCards}>
-                        No headers available to prioritize.
-                      </div>
-                    );
-                  }
-                  return headers.map((header) => {
-                    const isChecked = prioritizedHeaders.some((h) => h.key === header.key);
-                    return (
-                      <div
-                        key={header.key}
-                        className={styles.cardTypeItem}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          setPrioritizedHeaders((prev) => {
-                            if (isChecked) {
-                              return prev.filter((h) => h.key !== header.key);
-                            } else {
-                              return [...prev, header];
-                            }
-                          });
-                        }}
-                      >
-                        <div className={styles.cardTypeRow} style={{ gap: 4 }}>
-                          <span
-                            className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                          >
-                            {isChecked ? (
-                              <FaRegCheckCircle size={18} />
-                            ) : (
-                              <FaRegCircle size={18} />
-                            )}
-                            <span className={styles.cardTypeName}>{header.name || header.key}</span>
-                          </span>
+                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {/* List of header buttons */}
+                  {(() => {
+                    const template = cardTemplates.find((t) => t.typeOfCards === selectedCardTypes[0]);
+                    const headers = template?.headers
+                      .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
+                      .map((header) => ({
+                        key: header.key,
+                        name: header.name,
+                        type: header.type,
+                        options: header.options || [],
+                      })) || [];
+                    if (headers.length === 0) {
+                      return (
+                        <div className={styles.noCards}>
+                          No headers available to prioritize.
                         </div>
-                      </div>
-                    );
-                  });
-                })()}
+                      );
+                    }
+                    return headers.map((header) => {
+                      const isChecked = prioritizedHeaders.some((h) => h.key === header.key);
+                      return (
+                        <div
+                          key={header.key}
+                          className={styles.cardTypeItem}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            setPrioritizedHeaders((prev) => {
+                              if (isChecked) {
+                                return prev.filter((h) => h.key !== header.key);
+                              } else {
+                                return [...prev, header];
+                              }
+                            });
+                          }}
+                        >
+                          <div className={styles.cardTypeRow} style={{ gap: 4 }}>
+                            <span
+                              className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                            >
+                              {isChecked ? (
+                                <FaRegCheckCircle size={18} />
+                              ) : (
+                                <FaRegCircle size={18} />
+                              )}
+                              <span className={styles.cardTypeName}>
+                                {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             )}
             {step === 13 && selectedPrioritizedHeader && (
