@@ -61,6 +61,10 @@ const EditSheetsModal = ({
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
+  const [isSortEditMode, setIsSortEditMode] = useState(false);
+  const [draggedSortIdx, setDraggedSortIdx] = useState(null);
+  const [dragOverSortIdx, setDragOverSortIdx] = useState(null);
+  const prioritizedHeaderRefs = useRef(new Map());
 
   const memoizedPrioritizedHeaders = useMemo(() => prioritizedHeaders, [prioritizedHeaders]);
 
@@ -398,7 +402,12 @@ const EditSheetsModal = ({
           onClick: handleBackClick,
         },
         leftButton: null,
-        rightButton: null,
+        rightButton: {
+          label: isSortEditMode ? "Done" : "Edit",
+          onClick: () => setIsSortEditMode((v) => !v),
+          isActive: true,
+          isRemove: false,
+        },
       };
     } else if (currentStep === 12) {
       config = {
@@ -442,7 +451,7 @@ const EditSheetsModal = ({
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates, isSortEditMode]);
 
   useEffect(() => {
     const newTempData = {
@@ -717,12 +726,13 @@ const EditSheetsModal = ({
           sortOptions,
         };
         return [...prev, newHeader];
+      } else {
+        // If already present, remove it (toggle behavior)
+        return prev.filter((h) => h.key !== header.key);
       }
-      return prev;
     });
-    setNavigationDirection('backward');
-    goToStep(11);
-  }, [goToStep, cardTemplates, selectedCardTypes]);
+    // Do NOT go back a step here
+  }, [cardTemplates, selectedCardTypes]);
 
   const handleRemovePrioritizedHeader = useCallback((headerKey) => {
     setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
@@ -752,8 +762,8 @@ const EditSheetsModal = ({
       return newPrioritizedHeaders;
     });
     setNavigationDirection('backward');
-    goToStep(11);
-  }, [goToStep, setTempData]);
+    goBack();
+  }, [goBack, setTempData]);
 
   const handleCardsPerSearchChange = useCallback(
     (e) => {
@@ -771,6 +781,38 @@ const EditSheetsModal = ({
     },
     [setTempData, setModalUtils]
   );
+
+  const handleSortDragStart = (idx) => {
+    setDraggedSortIdx(idx);
+    setDragOverSortIdx(idx);
+  };
+
+  const handleSortDragOver = (e, idx) => {
+    if (draggedSortIdx === null || draggedSortIdx === idx) return;
+    e.preventDefault();
+    setDragOverSortIdx(idx);
+  };
+
+  const handleSortDrop = (idx) => {
+    if (draggedSortIdx === null || draggedSortIdx === idx) {
+      setDraggedSortIdx(null);
+      setDragOverSortIdx(null);
+      return;
+    }
+    setPrioritizedHeaders((prev) => {
+      const newOrder = [...prev];
+      const [dragged] = newOrder.splice(draggedSortIdx, 1);
+      newOrder.splice(idx, 0, dragged);
+      return newOrder;
+    });
+    setDraggedSortIdx(null);
+    setDragOverSortIdx(null);
+  };
+
+  const handleSortDragEnd = () => {
+    setDraggedSortIdx(null);
+    setDragOverSortIdx(null);
+  };
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1175,6 +1217,7 @@ const EditSheetsModal = ({
                   onClick={handleAddHeaderToPrioritize}
                   type="button"
                   aria-label="Add Header to Prioritize"
+                  disabled={isSortEditMode}
                 >
                   Add header to prioritize
                 </button>
@@ -1184,22 +1227,44 @@ const EditSheetsModal = ({
                       No prioritized headers yet.
                     </div>
                   )}
-                  {memoizedPrioritizedHeaders.map((header) => (
+                  {memoizedPrioritizedHeaders.map((header, idx) => (
                     <div
+                      ref={el => prioritizedHeaderRefs.current.set(idx, el)}
                       key={header.key}
-                      className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => handlePrioritizedHeaderClick(header)}
-                      role="button"
+                      className={`
+                        ${styles.prioritizedHeaderItem}
+                        ${isDarkTheme ? styles.darkTheme : ''}
+                        ${isSortEditMode && draggedSortIdx === idx ? styles.dragging : ''}
+                        ${isSortEditMode && dragOverSortIdx === idx && draggedSortIdx !== null && draggedSortIdx !== idx ? styles.dragOver : ''}
+                      `}
+                      style={{ cursor: isSortEditMode ? 'grab' : 'pointer', userSelect: 'none' }}
+                      draggable={isSortEditMode}
+                      onDragStart={isSortEditMode ? () => handleSortDragStart(idx) : undefined}
+                      onDragOver={isSortEditMode ? (e) => handleSortDragOver(e, idx) : undefined}
+                      onDrop={isSortEditMode ? () => handleSortDrop(idx) : undefined}
+                      onDragEnd={isSortEditMode ? handleSortDragEnd : undefined}
+                      onClick={!isSortEditMode ? () => handlePrioritizedHeaderClick(header) : undefined}
                       tabIndex={0}
                       aria-label={`Edit sort options for ${header.name || header.key}`}
-                      onKeyDown={(e) => {
+                      onKeyDown={!isSortEditMode ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           handlePrioritizedHeaderClick(header);
                         }
-                      }}
+                      } : undefined}
                     >
                       <span className={styles.headerName}>
                         {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                      </span>
+                      <span className="prioritizedHeaderRightIcon">
+                        {isSortEditMode ? (
+                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`} title="Drag to reorder" style={{ marginLeft: 8 }}>
+                            ☰
+                          </span>
+                        ) : (
+                          <span className="prioritizedHeaderChevron">
+                            <FaChevronRight size={18} />
+                          </span>
+                        )}
                       </span>
                     </div>
                   ))}
@@ -1254,6 +1319,18 @@ const EditSheetsModal = ({
                       );
                     });
                   })()}
+                </div>
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                  <button
+                    className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    type="button"
+                    onClick={() => {
+                      setNavigationDirection('backward');
+                      goToStep(11);
+                    }}
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
             )}

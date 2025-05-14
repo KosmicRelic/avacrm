@@ -22,18 +22,24 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
   useEffect(() => {
     let sortOptions;
     if (header?.type === 'dropdown') {
-      sortOptions = prioritizedValues.length > 0 ? prioritizedValues : [];
+      sortOptions = {
+        prioritizedValues: prioritizedValues.length > 0 ? prioritizedValues : [],
+      };
+    } else if (header?.type === 'string' || header?.type === 'text') {
+      // Flatten for text/string: { sortType, equalValue }
+      sortOptions = {
+        sortType: 'equal',
+        equalValue: stringEqualValue,
+      };
+    } else if (['number', 'timestamp', 'date'].includes(header?.type)) {
+      sortOptions = {
+        sortType,
+      };
+      if (sortType === 'equal') {
+        sortOptions.equalValue = stringEqualValue;
+      }
     } else {
       sortOptions = {};
-      if (header?.type === 'string') {
-        sortOptions.sortType = 'equal';
-        sortOptions.equalValue = stringEqualValue;
-      } else if (['number', 'timestamp', 'date'].includes(header?.type)) {
-        sortOptions.sortType = sortType;
-        if (sortType === 'equal') {
-          sortOptions.equalValue = header?.sortOptions?.equalValue || '';
-        }
-      }
     }
 
     const prevSortOptions = prevSortOptionsRef.current;
@@ -92,14 +98,6 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
     });
   };
 
-  const handleEqualValueChange = (e) => {
-    const value = e.target.value;
-    onSave({
-      sortType: 'equal',
-      equalValue: value,
-    });
-  };
-
   return (
     <div className={`${styles.sortByFiltersContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.headerSortTitleRow}>
@@ -107,7 +105,7 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
           {header?.name || header?.key || 'Unnamed Header'}
         </span>
       </div>
-      {header?.type === 'string' ? (
+      {(header?.type === 'string' || header?.type === 'text') ? (
         <div>
           <div className={`${styles.headerSortSubTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
             Enter value to match:
@@ -184,8 +182,8 @@ export default function CardsFetchSorting({ header, onSave, onRemove, isDarkThem
           {sortType === 'equal' && (
             <input
               type="number"
-              value={header?.sortOptions?.equalValue || ''}
-              onChange={handleEqualValueChange}
+              value={stringEqualValue}
+              onChange={(e) => setStringEqualValue(e.target.value)}
               className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
               placeholder="Enter value"
               style={{ width: '100%', marginTop: 8 }}

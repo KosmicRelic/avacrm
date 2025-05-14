@@ -90,22 +90,19 @@ export const handleModalSave = async ({
           };
 
           if (header.type === 'dropdown') {
-            // Save sortOptions as the array directly
             cleanedHeader.sortOptions = Array.isArray(header.sortOptions)
               ? header.sortOptions
               : header.sortOptions?.prioritizedValues || [];
+            cleanedHeader.options = header.options || [];
           } else if (['number', 'timestamp', 'date'].includes(header.type)) {
             cleanedHeader.sortType = header.sortOptions?.sortType || 'ascending';
             if (header.sortOptions?.sortType === 'equal') {
-              cleanedHeader.sortOptions = {
-                equalValue: header.sortOptions?.equalValue || '',
-              };
+              cleanedHeader.equalValue = header.sortOptions?.equalValue || '';
             }
-          } else if (header.type === 'string') {
-            cleanedHeader.sortType = header.sortOptions?.sortType || 'equal';
-            cleanedHeader.sortOptions = {
-              equalValue: header.sortOptions?.equalValue || '',
-            };
+          } else if (header.type === 'string' || header.type === 'text') {
+            // Only include equalValue for text types, not sortType
+            cleanedHeader.equalValue = header.sortOptions?.equalValue || '';
+            // Do NOT include options or sortType for text/string
           }
 
           return cleanedHeader;
