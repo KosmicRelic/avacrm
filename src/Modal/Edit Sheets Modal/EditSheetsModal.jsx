@@ -28,7 +28,7 @@ const EditSheetsModal = ({
     (tempData.currentHeaders || []).forEach((header) => {
       if (!seenKeys.has(header.key)) {
         seenKeys.add(header.key);
-        uniqueHeaders.push({ ...header });
+        uniqueHeaders.push({ ...header, options: header.options || [] });
       }
     });
     return uniqueHeaders;
@@ -42,7 +42,19 @@ const EditSheetsModal = ({
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
   const [cardsPerSearch, setCardsPerSearch] = useState(tempData.cardsPerSearch || '');
-  const [prioritizedHeaders, setPrioritizedHeaders] = useState(tempData.prioritizedHeaders || []);
+  const [prioritizedHeaders, setPrioritizedHeaders] = useState(() => {
+    return (tempData.prioritizedHeaders || []).map((header) => {
+      let options = header.options || [];
+      if (header.type === 'dropdown' && options.length === 0) {
+        const template = cardTemplates.find((t) => t.typeOfCards === (tempData.typeOfCardsToDisplay?.[0] || 'Leads'));
+        if (template) {
+          const templateHeader = template.headers.find((h) => h.key === header.key);
+          options = templateHeader?.options || [];
+        }
+      }
+      return { ...header, options };
+    });
+  });
   const [selectedPrioritizedHeader, setSelectedPrioritizedHeader] = useState(null);
   const [showHeaderSelectForSort, setShowHeaderSelectForSort] = useState(false);
   const headerRefs = useRef(new Map());
@@ -50,7 +62,8 @@ const EditSheetsModal = ({
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
 
-  // Initialize tempData.cardTypeFilters, cardsPerSearch, and prioritizedHeaders if undefined
+  const memoizedPrioritizedHeaders = useMemo(() => prioritizedHeaders, [prioritizedHeaders]);
+
   useEffect(() => {
     if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData) || !('prioritizedHeaders' in tempData)) {
       setTempData({
@@ -62,15 +75,10 @@ const EditSheetsModal = ({
     }
   }, [tempData, setTempData]);
 
-  // Placeholder for modalUtils
-  const setModalUtils = useCallback((updates) => {
-    console.log('setModalUtils called with:', updates);
-  }, []);
+  const setModalUtils = useCallback((updates) => {}, []);
 
-  // Find sheet ID
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
-  // Get all available headers from templates
   const allHeaders = useMemo(() => {
     const commonHeaders = [];
     if (cardTemplates.length > 0) {
@@ -105,7 +113,6 @@ const EditSheetsModal = ({
     ];
   }, [cardTemplates]);
 
-  // Function to generate filter summary for a card type
   const getFilterSummary = useCallback(
     (cardType) => {
       const filters = tempData.cardTypeFilters?.[cardType] || {};
@@ -149,7 +156,6 @@ const EditSheetsModal = ({
     [tempData.cardTypeFilters, cardTemplates]
   );
 
-  // Define onDoneClick callback
   const onDoneClick = useCallback(() => {
     setTempData({
       sheetName,
@@ -178,13 +184,11 @@ const EditSheetsModal = ({
     handleClose,
   ]);
 
-  // Define back button callback
   const handleBackClick = useCallback(() => {
     setNavigationDirection('backward');
     goBack();
   }, [goBack]);
 
-  // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
       const steps = [
@@ -219,16 +223,13 @@ const EditSheetsModal = ({
     }
   }, [isEditMode, registerModalSteps, setModalConfig, onDoneClick]);
 
-  // Update navigation direction and debug step changes
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
-      console.log('Current step changed to:', currentStep);
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
       prevStepRef.current = currentStep;
     }
   }, [currentStep]);
 
-  // Update modal config based on step
   useEffect(() => {
     const step1Title = isEditMode ? 'Edit Sheet' : 'Create Sheet';
     let config;
@@ -437,14 +438,12 @@ const EditSheetsModal = ({
       };
     }
 
-    // Only update modalConfig if it has changed
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
       setModalConfig(config);
       prevModalConfig.current = config;
     }
   }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
 
-  // Sync tempData
   useEffect(() => {
     const newTempData = {
       sheetName,
@@ -466,7 +465,6 @@ const EditSheetsModal = ({
     }
   }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, prioritizedHeaders, tempData, setTempData]);
 
-  // Sync prioritizedHeaders to tempData
   useEffect(() => {
     if (JSON.stringify(prioritizedHeaders) !== JSON.stringify(tempData.prioritizedHeaders)) {
       setTempData({
@@ -476,7 +474,6 @@ const EditSheetsModal = ({
     }
   }, [prioritizedHeaders, tempData, setTempData]);
 
-  // Toggle card type selection
   const toggleCardTypeSelection = useCallback((type) => {
     setSelectedCardTypes((prev) => {
       if (prev.includes(type)) {
@@ -490,7 +487,6 @@ const EditSheetsModal = ({
     });
   }, [tempData, setTempData]);
 
-  // Toggle header selection
   const toggleHeaderSelection = useCallback((header) => {
     setCurrentHeaders((prev) => {
       const exists = prev.some((h) => h.key === header.key);
@@ -512,7 +508,6 @@ const EditSheetsModal = ({
     });
   }, []);
 
-  // Drag-and-drop and touch handlers
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -636,7 +631,6 @@ const EditSheetsModal = ({
   const handleFilterClick = useCallback(
     (typeOfCards) => {
       if (!typeOfCards) {
-        console.log('handleFilterClick: No typeOfCards provided');
         return;
       }
       if (!tempData.cardTypeFilters?.[typeOfCards]) {
@@ -650,7 +644,6 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleFilterClick: Navigating to step 8 for', typeOfCards);
       goToStep(8);
     },
     [goToStep, tempData, setTempData]
@@ -660,7 +653,6 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedTemplateForHeaders(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleTemplateClick: Navigating to step 4 for', typeOfCards);
       goToStep(4);
     },
     [goToStep]
@@ -669,7 +661,6 @@ const EditSheetsModal = ({
   const handleAddCardTemplateClick = useCallback((e) => {
     e.stopPropagation();
     setNavigationDirection('forward');
-    console.log('handleAddCardTemplateClick: Navigating to step 6');
     goToStep(6);
   }, [goToStep]);
 
@@ -677,7 +668,6 @@ const EditSheetsModal = ({
     (typeOfCards) => {
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      console.log('handleTemplateOptionsClick: Navigating to step 7 for', typeOfCards);
       goToStep(7);
     },
     [goToStep]
@@ -685,7 +675,6 @@ const EditSheetsModal = ({
 
   const handleSortClick = useCallback(
     (typeOfCards) => {
-      console.log('handleSortClick: Called with typeOfCards:', typeOfCards, 'Navigating to step 9');
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
       goToStep(9);
@@ -694,7 +683,6 @@ const EditSheetsModal = ({
   );
 
   const handleFetchLimitClick = useCallback(() => {
-    console.log('handleFetchLimitClick: Navigating to step 10');
     setNavigationDirection('forward');
     goToStep(10);
   }, [goToStep]);
@@ -712,13 +700,29 @@ const EditSheetsModal = ({
   const handleSelectHeaderToPrioritize = useCallback((header) => {
     setPrioritizedHeaders((prev) => {
       if (!prev.some((h) => h.key === header.key)) {
-        return [...prev, { ...header, sortOptions: {} }];
+        let options = header.options || [];
+        if (header.type === 'dropdown' && options.length === 0) {
+          const template = cardTemplates.find((t) => t.typeOfCards === (selectedCardTypes[0] || 'Leads'));
+          if (template) {
+            const templateHeader = template.headers.find((h) => h.key === header.key);
+            options = templateHeader?.options || [];
+          }
+        }
+        const sortOptions = header.type === 'dropdown' ? (prev.find((h) => h.key === header.key)?.sortOptions || []) : {};
+        const newHeader = {
+          key: header.key,
+          name: header.name,
+          type: header.type,
+          options,
+          sortOptions,
+        };
+        return [...prev, newHeader];
       }
       return prev;
     });
     setNavigationDirection('backward');
     goToStep(11);
-  }, [goToStep]);
+  }, [goToStep, cardTemplates, selectedCardTypes]);
 
   const handleRemovePrioritizedHeader = useCallback((headerKey) => {
     setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
@@ -741,7 +745,6 @@ const EditSheetsModal = ({
   const handleRemovePrioritizedHeaderFromOptions = useCallback((headerKey) => {
     setPrioritizedHeaders((prev) => {
       const newPrioritizedHeaders = prev.filter((h) => h.key !== headerKey);
-      // Update tempData to reflect the removal
       setTempData((prevTempData) => ({
         ...prevTempData,
         prioritizedHeaders: newPrioritizedHeaders,
@@ -764,7 +767,6 @@ const EditSheetsModal = ({
           cardsPerSearch: numValue,
         }));
         setModalUtils({ cardsPerSearch: numValue });
-        console.log('handleCardsPerSearchChange: Updated cardsPerSearch to', numValue);
       }
     },
     [setTempData, setModalUtils]
@@ -799,7 +801,6 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
-                      console.log('Navigating to step 2: Headers');
                       goToStep(2);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -809,7 +810,6 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
-                        console.log('Keydown: Navigating to step 2: Headers');
                         goToStep(2);
                       }
                     }}
@@ -819,7 +819,6 @@ const EditSheetsModal = ({
                   <div
                     onClick={() => {
                       setNavigationDirection('forward');
-                      console.log('Navigating to step 5: Cards');
                       goToStep(5);
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -829,7 +828,6 @@ const EditSheetsModal = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setNavigationDirection('forward');
-                        console.log('Keydown: Navigating to step 5: Cards');
                         goToStep(5);
                       }
                     }}
@@ -1099,7 +1097,6 @@ const EditSheetsModal = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Triggering handleSortClick for step 9');
                       handleSortClick(selectedCardTypeForFilter);
                     }
                   }}
@@ -1135,7 +1132,6 @@ const EditSheetsModal = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Keydown: Triggering handleFetchLimitClick for step 10');
                       handleFetchLimitClick();
                     }
                   }}
@@ -1183,12 +1179,12 @@ const EditSheetsModal = ({
                   Add header to prioritize
                 </button>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {prioritizedHeaders.length === 0 && (
+                  {memoizedPrioritizedHeaders.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No prioritized headers yet.
                     </div>
                   )}
-                  {prioritizedHeaders.map((header) => (
+                  {memoizedPrioritizedHeaders.map((header) => (
                     <div
                       key={header.key}
                       className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -1231,7 +1227,7 @@ const EditSheetsModal = ({
                       );
                     }
                     return headers.map((header) => {
-                      const isChecked = prioritizedHeaders.some((h) => h.key === header.key);
+                      const isChecked = memoizedPrioritizedHeaders.some((h) => h.key === header.key);
                       return (
                         <div
                           key={header.key}
@@ -1298,12 +1294,15 @@ EditSheetsModal.propTypes = {
         key: PropTypes.string.isRequired,
         name: PropTypes.string,
         type: PropTypes.string,
-        sortType: PropTypes.string,
-        sortOptions: PropTypes.shape({
-          sortType: PropTypes.string,
-          prioritizedValues: PropTypes.arrayOf(PropTypes.string),
-          equalValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-        }),
+        options: PropTypes.arrayOf(PropTypes.string),
+        sortOptions: PropTypes.oneOfType([
+          PropTypes.arrayOf(PropTypes.string),
+          PropTypes.shape({
+            sortType: PropTypes.string,
+            prioritizedValues: PropTypes.arrayOf(PropTypes.string),
+            equalValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+          }),
+        ]),
       })
     ),
   }).isRequired,
