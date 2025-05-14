@@ -1,12 +1,11 @@
-import { useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaFilter, FaChevronRight, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
-import CardsFetchSorting from './CardsFetchSorting/CardsFetchSorting';
 
 const EditSheetsModal = ({
   isEditMode = false,
@@ -42,80 +41,22 @@ const EditSheetsModal = ({
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
   const [cardsPerSearch, setCardsPerSearch] = useState(tempData.cardsPerSearch || '');
-  const [prioritizedHeaders, setPrioritizedHeaders] = useState(() => {
-    return (tempData.prioritizedHeaders || []).map((header) => {
-      let options = header.options || [];
-      if (header.type === 'dropdown' && options.length === 0) {
-        const template = cardTemplates.find((t) => t.typeOfCards === (tempData.typeOfCardsToDisplay?.[0] || 'Leads'));
-        if (template) {
-          const templateHeader = template.headers.find((h) => h.key === header.key);
-          options = templateHeader?.options || [];
-        }
-      }
-      return { ...header, options };
-    });
-  });
-  const [selectedPrioritizedHeader, setSelectedPrioritizedHeader] = useState(null);
-  const [showHeaderSelectForSort, setShowHeaderSelectForSort] = useState(false);
   const headerRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
-  const [isSortEditMode, setIsSortEditMode] = useState(false);
-  const [draggedSortIdx, setDraggedSortIdx] = useState(null);
-  const [dragOverSortIdx, setDragOverSortIdx] = useState(null);
-  const prioritizedHeaderRefs = useRef(new Map());
-
-  const memoizedPrioritizedHeaders = useMemo(() => prioritizedHeaders, [prioritizedHeaders]);
 
   useEffect(() => {
-    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData) || !('prioritizedHeaders' in tempData)) {
+    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData)) {
       setTempData({
         ...tempData,
         cardTypeFilters: tempData.cardTypeFilters || {},
         cardsPerSearch: tempData.cardsPerSearch || null,
-        prioritizedHeaders: tempData.prioritizedHeaders || [],
       });
     }
   }, [tempData, setTempData]);
 
-  const setModalUtils = useCallback((updates) => {}, []);
-
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
-
-  const allHeaders = useMemo(() => {
-    const commonHeaders = [];
-    if (cardTemplates.length > 0) {
-      const firstTemplateHeaders = cardTemplates[0].headers.filter(
-        (header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key)
-      );
-      commonHeaders.push(
-        ...firstTemplateHeaders.map((header) => ({
-          key: header.key,
-          name: header.name,
-          type: header.type,
-          options: header.options || [],
-        }))
-      );
-    }
-
-    const templateHeaders = cardTemplates.map((template) => ({
-      sheetName: `${template.name} (Template)`,
-      headers: template.headers
-        .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
-        .map((header) => ({
-          key: header.key,
-          name: header.name,
-          type: header.type,
-          options: header.options || [],
-        })),
-    }));
-
-    return [
-      { sheetName: 'Common', headers: commonHeaders },
-      ...templateHeaders,
-    ];
-  }, [cardTemplates]);
 
   const getFilterSummary = useCallback(
     (cardType) => {
@@ -167,7 +108,6 @@ const EditSheetsModal = ({
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
       cardsPerSearch,
-      prioritizedHeaders,
     });
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
@@ -179,7 +119,6 @@ const EditSheetsModal = ({
     currentHeaders,
     selectedCardTypes,
     cardsPerSearch,
-    prioritizedHeaders,
     setTempData,
     tempData.sheetName,
     tempData.cardTypeFilters,
@@ -204,11 +143,6 @@ const EditSheetsModal = ({
         { title: 'Select Card Templates', rightButton: null },
         { title: 'Template Options', rightButton: null },
         { title: 'Filters', rightButton: null },
-        { title: 'Sort Options', rightButton: null },
-        { title: 'Cards Fetch Limit', rightButton: null },
-        { title: 'Sort by Filters', rightButton: null },
-        { title: 'Select Header to Prioritize', rightButton: null },
-        { title: 'Header Sort Options', rightButton: null },
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -357,101 +291,13 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
-    } else if (currentStep === 9) {
-      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: `Sort Options for ${cardTypeName}`,
-        backButtonTitle: 'Template Options',
-        backButton: {
-          label: `< Template Options`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: null,
-      };
-    } else if (currentStep === 10) {
-      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: `Cards Fetch Limit for ${cardTypeName}`,
-        backButtonTitle: 'Sort Options',
-        backButton: {
-          label: `< Sort Options`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: null,
-      };
-    } else if (currentStep === 11) {
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: 'Sort by Filters',
-        backButtonTitle: 'Sort Options',
-        backButton: {
-          label: `< Sort Options`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: {
-          label: isSortEditMode ? "Done" : "Edit",
-          onClick: () => setIsSortEditMode((v) => !v),
-          isActive: true,
-          isRemove: false,
-        },
-      };
-    } else if (currentStep === 12) {
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: 'Select Header to Prioritize',
-        backButtonTitle: 'Sort by Filters',
-        backButton: {
-          label: `< Sort by Filters`,
-          onClick: () => {
-            setNavigationDirection('backward');
-            goToStep(11);
-          },
-        },
-        leftButton: null,
-        rightButton: null,
-      };
-    } else if (currentStep === 13) {
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: 'Header Sort Options',
-        backButtonTitle: 'Sort by Filters',
-        backButton: {
-          label: `< Sort by Filters`,
-          onClick: () => {
-            setNavigationDirection('backward');
-            goToStep(11);
-          },
-        },
-        leftButton: null,
-        rightButton: null,
-      };
     }
 
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates, isSortEditMode]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
 
   useEffect(() => {
     const newTempData = {
@@ -460,28 +306,17 @@ const EditSheetsModal = ({
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
       cardsPerSearch,
-      prioritizedHeaders,
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
       JSON.stringify(newTempData.typeOfCardsToDisplay) !== JSON.stringify(tempData.typeOfCardsToDisplay) ||
       JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters) ||
-      newTempData.cardsPerSearch !== tempData.cardsPerSearch ||
-      JSON.stringify(newTempData.prioritizedHeaders) !== JSON.stringify(tempData.prioritizedHeaders)
+      newTempData.cardsPerSearch !== tempData.cardsPerSearch
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, prioritizedHeaders, tempData, setTempData]);
-
-  useEffect(() => {
-    if (JSON.stringify(prioritizedHeaders) !== JSON.stringify(tempData.prioritizedHeaders)) {
-      setTempData({
-        ...tempData,
-        prioritizedHeaders,
-      });
-    }
-  }, [prioritizedHeaders, tempData, setTempData]);
+  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, tempData, setTempData]);
 
   const toggleCardTypeSelection = useCallback((type) => {
     setSelectedCardTypes((prev) => {
@@ -682,89 +517,6 @@ const EditSheetsModal = ({
     [goToStep]
   );
 
-  const handleSortClick = useCallback(
-    (typeOfCards) => {
-      setSelectedCardTypeForFilter(typeOfCards);
-      setNavigationDirection('forward');
-      goToStep(9);
-    },
-    [goToStep]
-  );
-
-  const handleFetchLimitClick = useCallback(() => {
-    setNavigationDirection('forward');
-    goToStep(10);
-  }, [goToStep]);
-
-  const handleSortByFiltersClick = useCallback(() => {
-    setNavigationDirection('forward');
-    goToStep(11);
-  }, [goToStep]);
-
-  const handleAddHeaderToPrioritize = useCallback(() => {
-    setNavigationDirection('forward');
-    goToStep(12);
-  }, [goToStep]);
-
-  const handleSelectHeaderToPrioritize = useCallback((header) => {
-    setPrioritizedHeaders((prev) => {
-      if (!prev.some((h) => h.key === header.key)) {
-        let options = header.options || [];
-        if (header.type === 'dropdown' && options.length === 0) {
-          const template = cardTemplates.find((t) => t.typeOfCards === (selectedCardTypes[0] || 'Leads'));
-          if (template) {
-            const templateHeader = template.headers.find((h) => h.key === header.key);
-            options = templateHeader?.options || [];
-          }
-        }
-        const sortOptions = header.type === 'dropdown' ? (prev.find((h) => h.key === header.key)?.sortOptions || []) : {};
-        const newHeader = {
-          key: header.key,
-          name: header.name,
-          type: header.type,
-          options,
-          sortOptions,
-        };
-        return [...prev, newHeader];
-      } else {
-        // If already present, remove it (toggle behavior)
-        return prev.filter((h) => h.key !== header.key);
-      }
-    });
-    // Do NOT go back a step here
-  }, [cardTemplates, selectedCardTypes]);
-
-  const handleRemovePrioritizedHeader = useCallback((headerKey) => {
-    setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
-  }, []);
-
-  const handlePrioritizedHeaderClick = useCallback((header) => {
-    setSelectedPrioritizedHeader(header);
-    setNavigationDirection('forward');
-    goToStep(13);
-  }, [goToStep]);
-
-  const handleUpdateHeaderSortOptions = useCallback((headerKey, sortOptions) => {
-    setPrioritizedHeaders((prev) =>
-      prev.map((h) =>
-        h.key === headerKey ? { ...h, sortOptions } : h
-      )
-    );
-  }, []);
-
-  const handleRemovePrioritizedHeaderFromOptions = useCallback((headerKey) => {
-    setPrioritizedHeaders((prev) => {
-      const newPrioritizedHeaders = prev.filter((h) => h.key !== headerKey);
-      setTempData((prevTempData) => ({
-        ...prevTempData,
-        prioritizedHeaders: newPrioritizedHeaders,
-      }));
-      return newPrioritizedHeaders;
-    });
-    setNavigationDirection('backward');
-    goBack();
-  }, [goBack, setTempData]);
-
   const handleCardsPerSearchChange = useCallback(
     (e) => {
       const value = e.target.value;
@@ -776,48 +528,15 @@ const EditSheetsModal = ({
           ...prev,
           cardsPerSearch: numValue,
         }));
-        setModalUtils({ cardsPerSearch: numValue });
       }
     },
-    [setTempData, setModalUtils]
+    [setTempData]
   );
-
-  const handleSortDragStart = (idx) => {
-    setDraggedSortIdx(idx);
-    setDragOverSortIdx(idx);
-  };
-
-  const handleSortDragOver = (e, idx) => {
-    if (draggedSortIdx === null || draggedSortIdx === idx) return;
-    e.preventDefault();
-    setDragOverSortIdx(idx);
-  };
-
-  const handleSortDrop = (idx) => {
-    if (draggedSortIdx === null || draggedSortIdx === idx) {
-      setDraggedSortIdx(null);
-      setDragOverSortIdx(null);
-      return;
-    }
-    setPrioritizedHeaders((prev) => {
-      const newOrder = [...prev];
-      const [dragged] = newOrder.splice(draggedSortIdx, 1);
-      newOrder.splice(idx, 0, dragged);
-      return newOrder;
-    });
-    setDraggedSortIdx(null);
-    setDragOverSortIdx(null);
-  };
-
-  const handleSortDragEnd = () => {
-    setDraggedSortIdx(null);
-    setDragOverSortIdx(null);
-  };
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -1131,216 +850,38 @@ const EditSheetsModal = ({
                 >
                   <span className={styles.navName}>Filters</span>
                 </div>
-                <div
-                  onClick={() => handleSortClick(selectedCardTypeForFilter)}
-                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  role="button"
-                  aria-label="Sort"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleSortClick(selectedCardTypeForFilter);
-                    }
-                  }}
-                >
-                  <span className={styles.navName}>Sort</span>
-                </div>
               </div>
             )}
             {step === 8 && (
               <>
                 {selectedCardTypeForFilter ? (
-                  <CardTypeFilter
-                    cardType={selectedCardTypeForFilter}
-                    headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
-                    tempData={tempData}
-                    setTempData={setTempData}
-                    showFilterSummary={true}
-                  />
+                  <>
+                    <div className={styles.inputContainer} style={{ marginTop: 24 }}>
+                      <input
+                        type="number"
+                        value={cardsPerSearch}
+                        onChange={handleCardsPerSearchChange}
+                        placeholder="Enter cards fetch limit"
+                        className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        min="1"
+                        step="1"
+                        aria-label="Cards Fetch Limit"
+                      />
+                    </div>
+                    <CardTypeFilter
+                      cardType={selectedCardTypeForFilter}
+                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                      tempData={tempData}
+                      setTempData={setTempData}
+                      showFilterSummary={true}
+                    />
+                  </>
                 ) : (
                   <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     No card type selected for filtering
                   </div>
                 )}
               </>
-            )}
-            {step === 9 && (
-              <div className={styles.buttonContainer}>
-                <div
-                  onClick={handleFetchLimitClick}
-                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  role="button"
-                  aria-label="Cards Fetch Limit"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleFetchLimitClick();
-                    }
-                  }}
-                >
-                  <span className={styles.navName}>Cards Fetch Limit</span>
-                </div>
-                <div
-                  onClick={handleSortByFiltersClick}
-                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  role="button"
-                  aria-label="Sort by Filters"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleSortByFiltersClick();
-                    }
-                  }}
-                >
-                  <span className={styles.navName}>Sort by Filters</span>
-                </div>
-              </div>
-            )}
-            {step === 10 && (
-              <div className={styles.inputContainer}>
-                <input
-                  type="number"
-                  value={cardsPerSearch}
-                  onChange={handleCardsPerSearchChange}
-                  placeholder="Enter cards fetch limit"
-                  className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  min="1"
-                  step="1"
-                  aria-label="Cards Fetch Limit"
-                />
-              </div>
-            )}
-            {step === 11 && (
-              <div className={`${styles.sortByFiltersContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <button
-                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={handleAddHeaderToPrioritize}
-                  type="button"
-                  aria-label="Add Header to Prioritize"
-                  disabled={isSortEditMode}
-                >
-                  Add header to prioritize
-                </button>
-                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {memoizedPrioritizedHeaders.length === 0 && (
-                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No prioritized headers yet.
-                    </div>
-                  )}
-                  {memoizedPrioritizedHeaders.map((header, idx) => (
-                    <div
-                      ref={el => prioritizedHeaderRefs.current.set(idx, el)}
-                      key={header.key}
-                      className={`
-                        ${styles.prioritizedHeaderItem}
-                        ${isDarkTheme ? styles.darkTheme : ''}
-                        ${isSortEditMode && draggedSortIdx === idx ? styles.dragging : ''}
-                        ${isSortEditMode && dragOverSortIdx === idx && draggedSortIdx !== null && draggedSortIdx !== idx ? styles.dragOver : ''}
-                      `}
-                      style={{ cursor: isSortEditMode ? 'grab' : 'pointer', userSelect: 'none' }}
-                      draggable={isSortEditMode}
-                      onDragStart={isSortEditMode ? () => handleSortDragStart(idx) : undefined}
-                      onDragOver={isSortEditMode ? (e) => handleSortDragOver(e, idx) : undefined}
-                      onDrop={isSortEditMode ? () => handleSortDrop(idx) : undefined}
-                      onDragEnd={isSortEditMode ? handleSortDragEnd : undefined}
-                      onClick={!isSortEditMode ? () => handlePrioritizedHeaderClick(header) : undefined}
-                      tabIndex={0}
-                      aria-label={`Edit sort options for ${header.name || header.key}`}
-                      onKeyDown={!isSortEditMode ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          handlePrioritizedHeaderClick(header);
-                        }
-                      } : undefined}
-                    >
-                      <span className={styles.headerName}>
-                        {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
-                      </span>
-                      <span className="prioritizedHeaderRightIcon">
-                        {isSortEditMode ? (
-                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`} title="Drag to reorder" style={{ marginLeft: 8 }}>
-                            ☰
-                          </span>
-                        ) : (
-                          <span className="prioritizedHeaderChevron">
-                            <FaChevronRight size={18} />
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {step === 12 && (
-              <div className={styles.headerSelectList}>
-                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {(() => {
-                    const template = cardTemplates.find((t) => t.typeOfCards === selectedCardTypes[0]);
-                    const headers = template?.headers
-                      .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
-                      .map((header) => ({
-                        key: header.key,
-                        name: header.name,
-                        type: header.type,
-                        options: header.options || [],
-                      })) || [];
-                    if (headers.length === 0) {
-                      return (
-                        <div className={styles.noCards}>
-                          No headers available to prioritize.
-                        </div>
-                      );
-                    }
-                    return headers.map((header) => {
-                      const isChecked = memoizedPrioritizedHeaders.some((h) => h.key === header.key);
-                      return (
-                        <div
-                          key={header.key}
-                          className={styles.cardTypeItem}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleSelectHeaderToPrioritize(header)}
-                        >
-                          <div className={styles.cardTypeRow} style={{ gap: 4 }}>
-                            <span
-                              className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                            >
-                              {isChecked ? (
-                                <FaRegCheckCircle size={18} />
-                              ) : (
-                                <FaRegCircle size={18} />
-                              )}
-                              <span className={styles.cardTypeName}>
-                                {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
-                              </span>
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-                <div style={{ marginTop: 16, textAlign: 'right' }}>
-                  <button
-                    className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    type="button"
-                    onClick={() => {
-                      setNavigationDirection('backward');
-                      goToStep(11);
-                    }}
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            )}
-            {step === 13 && selectedPrioritizedHeader && (
-              <CardsFetchSorting
-                header={selectedPrioritizedHeader}
-                onSave={(sortOptions) => handleUpdateHeaderSortOptions(selectedPrioritizedHeader.key, sortOptions)}
-                onRemove={() => handleRemovePrioritizedHeaderFromOptions(selectedPrioritizedHeader.key)}
-                isDarkTheme={isDarkTheme}
-              />
             )}
           </div>
         ))}
@@ -1366,22 +907,6 @@ EditSheetsModal.propTypes = {
     typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
     cardTypeFilters: PropTypes.object,
     cardsPerSearch: PropTypes.number,
-    prioritizedHeaders: PropTypes.arrayOf(
-      PropTypes.shape({
-        key: PropTypes.string.isRequired,
-        name: PropTypes.string,
-        type: PropTypes.string,
-        options: PropTypes.arrayOf(PropTypes.string),
-        sortOptions: PropTypes.oneOfType([
-          PropTypes.arrayOf(PropTypes.string),
-          PropTypes.shape({
-            sortType: PropTypes.string,
-            prioritizedValues: PropTypes.arrayOf(PropTypes.string),
-            equalValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-          }),
-        ]),
-      })
-    ),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({
