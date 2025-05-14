@@ -234,17 +234,8 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
             return `${orderText}${value ? ` ${value}` : ''}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
           }
         case 'date':
-          if (dateRangeMode[header.key]) {
-            const start = filter.start || '';
-            const end = filter.end || '';
-            const sortOrder = filter.sortOrder || '';
-            return `${start}${start && end ? ' – ' : ''}${end}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
-          } else {
-            const order = filter.order || 'on';
-            const value = filter.value || '';
-            const sortOrder = filter.sortOrder || '';
-            return value ? `${order} ${value}${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
-          }
+          const sortOrder = filter.sortOrder || '';
+          return sortOrder ? `Sorted ${sortOrder}` : 'None';
         case 'dropdown': {
           const values = filter.values || [];
           const sortOrder = filter.sortOrder || '';
@@ -262,7 +253,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
         }
       }
     },
-    [filterValues, numberRangeMode, dateRangeMode]
+    [filterValues, numberRangeMode]
   );
 
   const userFilterSummary = useMemo(() => {
@@ -438,71 +429,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
                   </>
                 )
               ) : header.type === 'date' ? (
-                dateRangeMode[header.key] ? (
-                  <>
-                    <input
-                      type="date"
-                      value={filterValues[header.key]?.start || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <span className={styles.separator}>–</span>
-                    <input
-                      type="date"
-                      value={filterValues[header.key]?.end || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <button
-                      onClick={() => toggleDateRangeMode(header.key)}
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      Exact
-                    </button>
-                    <select
-                      value={filterValues[header.key]?.sortOrder || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="">Sort...</option>
-                      <option value="ascending">Ascending</option>
-                      <option value="descending">Descending</option>
-                    </select>
-                  </>
-                ) : (
-                  <>
-                    <select
-                      value={filterValues[header.key]?.order || 'on'}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
-                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="on">On</option>
-                      <option value="before">Before</option>
-                      <option value="after">After</option>
-                    </select>
-                    <input
-                      type="date"
-                      value={filterValues[header.key]?.value || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <button
-                      onClick={() => toggleDateRangeMode(header.key)}
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      Range
-                    </button>
-                    <select
-                      value={filterValues[header.key]?.sortOrder || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="">Sort...</option>
-                      <option value="ascending">Ascending</option>
-                      <option value="descending">Descending</option>
-                    </select>
-                  </>
-                )
+                <select
+                  value={filterValues[header.key]?.sortOrder || ''}
+                  onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                  className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                >
+                  <option value="">None</option>
+                  <option value="ascending">Ascending</option>
+                  <option value="descending">Descending</option>
+                </select>
               ) : header.type === 'dropdown' ? (
                 <>
                   <select

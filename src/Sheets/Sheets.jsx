@@ -1,4 +1,3 @@
-// Sheets.js
 import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Sheets.module.css';
@@ -11,6 +10,34 @@ import { MainContext } from '../Contexts/MainContext';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
+
+// Utility function to robustly convert any date value to milliseconds
+function toMillis(dateValue) {
+  // Firestore Timestamp object
+  if (
+    dateValue &&
+    typeof dateValue === 'object' &&
+    typeof dateValue.seconds === 'number' &&
+    typeof dateValue.nanoseconds === 'number'
+  ) {
+    return dateValue.seconds * 1000 + Math.floor(dateValue.nanoseconds / 1e6);
+  }
+  // Firestore Timestamp with toDate()
+  if (dateValue && typeof dateValue.toDate === 'function') {
+    return dateValue.toDate().getTime();
+  }
+  // JS Date object
+  if (dateValue instanceof Date) {
+    return dateValue.getTime();
+  }
+  // ISO string or date string
+  if (typeof dateValue === 'string') {
+    const parsed = Date.parse(dateValue);
+    if (!isNaN(parsed)) return parsed;
+  }
+  // null/undefined/invalid
+  return NaN;
+}
 
 const Sheets = ({
   headers,
@@ -58,7 +85,16 @@ const Sheets = ({
 
   const sheetCards = useMemo(() => {
     if (!activeSheet) return [];
-
+    // Log followUpDate values to inspect format
+    console.log(
+      'Raw cards followUpDate:',
+      cards.map((card) => ({
+        docId: card.docId,
+        followUpDate: card.followUpDate,
+        followUpDateType: typeof card.followUpDate,
+        followUpDateString: JSON.stringify(card.followUpDate),
+      }))
+    );
     return cards
       .filter((card) => sheetCardTypes.includes(card.typeOfCards))
       .filter((card) => {
@@ -83,7 +119,7 @@ const Sheets = ({
 
           switch (header.type) {
             case 'number':
-              if (!filter.start && !filter.end && !filter.value) return true;
+              if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
               const numValue = Number(value) || 0;
               if (filter.start || filter.end) {
                 const startNum = filter.start ? Number(filter.start) : -Infinity;
@@ -105,24 +141,8 @@ const Sheets = ({
                   return numValue === filterNum;
               }
             case 'date':
-              if (!filter.start && !filter.end && !filter.value) return true;
-              const dateValue = value ? new Date(value) : null;
-              if (!dateValue) return false;
-              if (filter.start || filter.end) {
-                const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
-                const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
-                return dateValue >= startDate && dateValue <= endDate;
-              }
-              if (!filter.value || !filter.order) return true;
-              const filterDate = new Date(filter.value);
-              switch (filter.order) {
-                case 'before':
-                  return dateValue < filterDate;
-                case 'after':
-                  return dateValue > filterDate;
-                default:
-                  return dateValue.toDateString() === filterDate.toDateString();
-              }
+              if (!filter.sortOrder) return true;
+              return true; // Sorting is handled in sortedRows, not filtering
             case 'dropdown':
               if (!filter.values || filter.values.length === 0) return true;
               return filter.values.includes(value);
@@ -183,23 +203,8 @@ const Sheets = ({
                 return numValue === filterNum;
             }
           case 'date':
-            if (!filter.start && !filter.end && !filter.value) return true;
-            const dateValue = new Date(rowValue);
-            if (filter.start || filter.end) {
-              const startDate = filter.start ? new Date(filter.start) : new Date(-8640000000000000);
-              const endDate = filter.end ? new Date(filter.end) : new Date(8640000000000000);
-              return dateValue >= startDate && dateValue <= endDate;
-            }
-            if (!filter.value) return true;
-            const filterDate = new Date(filter.value);
-            switch (filter.order) {
-              case 'before':
-                return dateValue < filterDate;
-              case 'after':
-                return dateValue > filterDate;
-              default:
-                return dateValue.toDateString() === filterDate.toDateString();
-            }
+            if (!filter.sortOrder) return true;
+            return true; // Sorting is handled in sortedRows, not filtering
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(rowValue);
@@ -263,9 +268,11 @@ const Sheets = ({
   }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
   const sortedRows = useMemo(() => {
+    console.log('Global Filters:', globalFilters);
+    console.log('Card Type Filters:', cardTypeFilters);
     const sorted = [...filteredRows];
-    const sortCriteria = Object.entries(cardTypeFilters)
-      .flatMap(([type, filters]) =>
+    const sortCriteria = [
+      ...Object.entries(cardTypeFilters).flatMap(([type, filters]) =>
         Object.entries(filters)
           .filter(([_, filter]) => filter.sortOrder)
           .map(([field, filter]) => ({
@@ -274,7 +281,18 @@ const Sheets = ({
             type: headers.find((h) => h.key === field)?.type || 'text',
             appliesToCardType: type,
           }))
-      );
+      ),
+      ...Object.entries(globalFilters)
+        .filter(([_, filter]) => filter.sortOrder)
+        .map(([field, filter]) => ({
+          key: field,
+          sortOrder: filter.sortOrder,
+          type: headers.find((h) => h.key === field)?.type || 'text',
+          appliesToCardType: null,
+        })),
+    ];
+
+    console.log('Sort Criteria:', sortCriteria);
 
     if (sortCriteria.length > 0) {
       sorted.sort((a, b) => {
@@ -286,8 +304,17 @@ const Sheets = ({
             aValue = Number(aValue) || 0;
             bValue = Number(bValue) || 0;
           } else if (type === 'date') {
-            aValue = aValue ? new Date(aValue).getTime() : 0;
-            bValue = bValue ? new Date(bValue).getTime() : 0;
+            // Use robust conversion for all date types
+            aValue = toMillis(aValue);
+            bValue = toMillis(bValue);
+            // Handle invalid or NaN values
+            if (isNaN(aValue)) {
+              // Place invalid dates at the end for ascending, start for descending
+              aValue = sortOrder === 'ascending' ? Infinity : -Infinity;
+            }
+            if (isNaN(bValue)) {
+              bValue = sortOrder === 'ascending' ? Infinity : -Infinity;
+            }
           } else {
             aValue = String(aValue || '').toLowerCase();
             bValue = String(bValue || '').toLowerCase();
@@ -299,7 +326,7 @@ const Sheets = ({
       });
     }
     return sorted;
-  }, [filteredRows, cardTypeFilters, headers, activeSheetName]);
+  }, [filteredRows, cardTypeFilters, globalFilters, headers, activeSheetName]);
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
 
@@ -540,7 +567,7 @@ const Sheets = ({
             {finalRows.length > 0 ? (
               finalRows.map((rowData, rowIndex) => (
                 <RowComponent
-                  key={rowIndex}
+                  key={rowData.docId || rowIndex}
                   rowData={rowData}
                   headers={visibleHeaders}
                   onClick={() => handleRowSelect(rowData)}

@@ -81,33 +81,6 @@ export const handleModalSave = async ({
           }
         });
 
-        // Clean prioritizedHeaders
-        const cleanedPrioritizedHeaders = (data.prioritizedHeaders || []).map((header) => {
-          const cleanedHeader = {
-            key: header.key,
-            name: header.name,
-            type: header.type,
-          };
-
-          if (header.type === 'dropdown') {
-            cleanedHeader.sortOptions = Array.isArray(header.sortOptions)
-              ? header.sortOptions
-              : header.sortOptions?.prioritizedValues || [];
-            cleanedHeader.options = header.options || [];
-          } else if (['number', 'timestamp', 'date'].includes(header.type)) {
-            cleanedHeader.sortType = header.sortOptions?.sortType || 'ascending';
-            if (header.sortOptions?.sortType === 'equal') {
-              cleanedHeader.equalValue = header.sortOptions?.equalValue || '';
-            }
-          } else if (header.type === 'string' || header.type === 'text') {
-            // Only include equalValue for text types, not sortType
-            cleanedHeader.equalValue = header.sortOptions?.equalValue || '';
-            // Do NOT include options or sortType for text/string
-          }
-
-          return cleanedHeader;
-        });
-
         setSheets((prev) => {
           const updatedSheets = {
             ...prev,
@@ -127,7 +100,6 @@ export const handleModalSave = async ({
                     typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
                     cardTypeFilters: cleanedCardTypeFilters,
                     cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch,
-                    prioritizedHeaders: cleanedPrioritizedHeaders,
                     isModified: true,
                     action: 'update',
                   }
@@ -619,7 +591,6 @@ export const renderModalContent = ({
               typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
               cardTypeFilters: activeSheet?.cardTypeFilters || {},
               cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
-              prioritizedHeaders: activeSheet?.prioritizedHeaders || [],
             }
           }
           setTempData={setActiveModalData}
@@ -792,7 +763,6 @@ export const onEditSheet = ({
       typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
       cardTypeFilters: activeSheet?.cardTypeFilters || {},
       cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
-      prioritizedHeaders: activeSheet?.prioritizedHeaders || [],
     },
   });
   sheetModal?.open();

@@ -7,6 +7,29 @@ import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'r
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
 
+// Add this utility function near the top (after imports)
+function toMillis(dateValue) {
+  if (
+    dateValue &&
+    typeof dateValue === 'object' &&
+    typeof dateValue.seconds === 'number' &&
+    typeof dateValue.nanoseconds === 'number'
+  ) {
+    return dateValue.seconds * 1000 + Math.floor(dateValue.nanoseconds / 1e6);
+  }
+  if (dateValue && typeof dateValue.toDate === 'function') {
+    return dateValue.toDate().getTime();
+  }
+  if (dateValue instanceof Date) {
+    return dateValue.getTime();
+  }
+  if (typeof dateValue === 'string') {
+    const parsed = Date.parse(dateValue);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return NaN;
+}
+
 const EditSheetsModal = ({
   isEditMode = false,
   tempData,
@@ -82,17 +105,33 @@ const EditSheetsModal = ({
         if (header.type === 'number' && (filter.start || filter.end)) {
           const start = filter.start || '';
           const end = filter.end || '';
-          summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}`);
-        } else if (header.type === 'date' && (filter.start || filter.end)) {
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
+        } else if (header.type === 'date') {
+          // Show range or value, and sort order if present
           const start = filter.start || '';
           const end = filter.end || '';
-          summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}`);
+          const value = filter.value || '';
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          if (start || end) {
+            summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
+          } else if (value) {
+            summaries.push(`${headerName}: ${value}${sortOrder}`);
+          } else if (sortOrder) {
+            summaries.push(`${headerName}:${sortOrder}`);
+          }
         } else if (header.type === 'dropdown' && filter.values?.length) {
-          summaries.push(`${headerName}: ${filter.values.join(', ')}`);
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${headerName}: ${filter.values.join(', ')}${sortOrder}`);
         } else if (filter.value) {
           const condition = filter.condition || filter.order || 'equals';
-          const prefix = header.type === 'number' ? { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[condition] || '' : condition;
-          summaries.push(`${headerName}: ${prefix} ${filter.value}`);
+          const prefix = header.type === 'number'
+            ? { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[condition] || ''
+            : condition;
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${headerName}: ${prefix} ${filter.value}${sortOrder}`);
+        } else if (filter.sortOrder) {
+          summaries.push(`${headerName}: (${filter.sortOrder})`);
         }
       });
 
