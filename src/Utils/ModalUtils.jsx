@@ -619,10 +619,10 @@ export const renderModalContent = ({
             activeModal.data || {
               sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders || [],
-              rows: activeSheet?.rows || [],
               typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
               cardTypeFilters: activeSheet?.cardTypeFilters || {},
               cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
+              prioritizedHeaders: activeSheet?.prioritizedHeaders || [],
             }
           }
           setTempData={setActiveModalData}
@@ -792,10 +792,10 @@ export const onEditSheet = ({
     data: {
       sheetName: activeSheetName,
       currentHeaders: resolvedHeaders || [],
-      rows: activeSheet?.rows || [],
       typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
       cardTypeFilters: activeSheet?.cardTypeFilters || {},
       cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
+      prioritizedHeaders: activeSheet?.prioritizedHeaders || [],
     },
   });
   sheetModal?.open();

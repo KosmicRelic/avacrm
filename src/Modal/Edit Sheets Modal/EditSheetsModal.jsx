@@ -33,7 +33,6 @@ const EditSheetsModal = ({
     });
     return uniqueHeaders;
   });
-  const [rows] = useState(tempData.rows || []);
   const [pinnedStates, setPinnedStates] = useState({});
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
@@ -155,7 +154,6 @@ const EditSheetsModal = ({
     setTempData({
       sheetName,
       currentHeaders,
-      rows,
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
       cardsPerSearch,
@@ -170,7 +168,6 @@ const EditSheetsModal = ({
     sheetName,
     currentHeaders,
     selectedCardTypes,
-    rows,
     cardsPerSearch,
     prioritizedHeaders,
     setTempData,
@@ -452,7 +449,6 @@ const EditSheetsModal = ({
     const newTempData = {
       sheetName,
       currentHeaders,
-      rows,
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
       cardsPerSearch,
@@ -461,7 +457,6 @@ const EditSheetsModal = ({
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
-      JSON.stringify(newTempData.rows) !== JSON.stringify(tempData.rows) ||
       JSON.stringify(newTempData.typeOfCardsToDisplay) !== JSON.stringify(tempData.typeOfCardsToDisplay) ||
       JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters) ||
       newTempData.cardsPerSearch !== tempData.cardsPerSearch ||
@@ -469,7 +464,7 @@ const EditSheetsModal = ({
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, rows, selectedCardTypes, cardsPerSearch, prioritizedHeaders, tempData, setTempData]);
+  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, prioritizedHeaders, tempData, setTempData]);
 
   // Sync prioritizedHeaders to tempData
   useEffect(() => {
@@ -744,10 +739,18 @@ const EditSheetsModal = ({
   }, []);
 
   const handleRemovePrioritizedHeaderFromOptions = useCallback((headerKey) => {
-    setPrioritizedHeaders((prev) => prev.filter((h) => h.key !== headerKey));
+    setPrioritizedHeaders((prev) => {
+      const newPrioritizedHeaders = prev.filter((h) => h.key !== headerKey);
+      // Update tempData to reflect the removal
+      setTempData((prevTempData) => ({
+        ...prevTempData,
+        prioritizedHeaders: newPrioritizedHeaders,
+      }));
+      return newPrioritizedHeaders;
+    });
     setNavigationDirection('backward');
     goToStep(11);
-  }, [goToStep]);
+  }, [goToStep, setTempData]);
 
   const handleCardsPerSearchChange = useCallback(
     (e) => {
@@ -1287,7 +1290,6 @@ EditSheetsModal.propTypes = {
         hidden: PropTypes.bool,
       })
     ),
-    rows: PropTypes.array,
     typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
     cardTypeFilters: PropTypes.object,
     cardsPerSearch: PropTypes.number,
