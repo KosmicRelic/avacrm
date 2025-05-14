@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
-import { formatFirestoreTimestamp } from '../../utils/firestoreUtils';
+import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
 const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect }) => {
   const isAddNew = rowData.isAddNew;
