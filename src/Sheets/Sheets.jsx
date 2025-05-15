@@ -80,6 +80,7 @@ const Sheets = ({
 
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
+  console.log('Active sheet cardTypeFilters:', cardTypeFilters); // Add this line
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 

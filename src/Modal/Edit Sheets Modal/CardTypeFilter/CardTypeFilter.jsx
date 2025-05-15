@@ -86,17 +86,20 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
               start: filter.start ? Number(filter.start) : undefined,
               end: filter.end ? Number(filter.end) : undefined,
             };
-          } else if (filter.order && filter.value) {
+          } else if (filter.order && (filter.value !== undefined && filter.value !== null && filter.value !== '')) {
             cleanedFilter = {
               order: filter.order,
               value: filter.type === 'number' ? Number(filter.value) : filter.value,
             };
           } else if (filter.values?.length) {
             cleanedFilter = { values: filter.values };
-          } else if (filter.condition && filter.value) {
+          } else if (
+            (filter.condition || filter.condition === '' || filter.condition === undefined) &&
+            (filter.value !== undefined && filter.value !== null && filter.value !== '')
+          ) {
             cleanedFilter = {
-              condition: filter.condition,
-              value: filter.value,
+              condition: filter.condition || 'equals',
+              value: String(filter.value),
             };
           }
 
@@ -115,14 +118,20 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
 
   const handleFilterChange = useCallback(
     (headerKey, value, type = 'default') => {
-      const newFilter = { ...filterValues[headerKey], [type]: value };
+      // Always treat value as string for text fields
+      const header = visibleHeaders.find((h) => h.key === headerKey);
+      let newValue = value;
+      if (header && header.type === 'text' && type === 'value') {
+        newValue = String(value);
+      }
+      const newFilter = { ...filterValues[headerKey], [type]: newValue };
       if (type === 'start' || type === 'end' || type === 'value' || type === 'sortOrder') {
         if (value === '') delete newFilter[type];
       }
       const updatedFilters = { ...filterValues, [headerKey]: newFilter };
       applyFilters(updatedFilters);
     },
-    [filterValues, applyFilters]
+    [filterValues, applyFilters, visibleHeaders]
   );
 
   const handleUserFilterChange = useCallback(
@@ -220,10 +229,12 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
           return values.length > 0 ? `${values.join(', ')}${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
         case 'text':
           const condition = filter.condition || 'equals';
-          const value = filter.value || '';
+          const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
           return value ? `${condition} "${value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
         default:
-          return filter.value ? `"${filter.value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
+          return filter.value !== undefined && filter.value !== null
+            ? `"${String(filter.value)}"${sortOrder ? ` (${sortOrder})` : ''}`
+            : 'None';
       }
     },
     [filterValues, numberRangeMode]

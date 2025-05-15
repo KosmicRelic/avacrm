@@ -82,6 +82,48 @@ const EditSheetsModal = ({
 
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
+  // --- NEW: Ensure cardTypeFilters always has all headers for each selected card type ---
+  useEffect(() => {
+    // Only run if cardTemplates and selectedCardTypes are available
+    if (!cardTemplates || selectedCardTypes.length === 0) return;
+
+    let changed = false;
+    const updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
+
+    selectedCardTypes.forEach((typeOfCards) => {
+      const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+      if (!template) return;
+      if (!updatedCardTypeFilters[typeOfCards]) {
+        updatedCardTypeFilters[typeOfCards] = {};
+        changed = true;
+      }
+      template.headers
+        .filter((h) => h.key && h.key !== 'id' && h.key !== 'typeOfCards')
+        .forEach((header) => {
+          if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
+            updatedCardTypeFilters[typeOfCards][header.key] = {};
+            changed = true;
+          }
+        });
+    });
+
+    // Remove filters for card types that are no longer selected
+    Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
+      if (!selectedCardTypes.includes(typeOfCards)) {
+        delete updatedCardTypeFilters[typeOfCards];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setTempData({
+        ...tempData,
+        cardTypeFilters: updatedCardTypeFilters,
+      });
+    }
+  }, [selectedCardTypes, cardTemplates, tempData, setTempData]);
+  // --- END NEW ---
+
   // Compute filter summary for display
   const getFilterSummary = useCallback(
     (cardType) => {
@@ -110,16 +152,12 @@ const EditSheetsModal = ({
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
           summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
         } else if (header.type === 'date') {
-          const start = filter.start || '';
-          const end = filter.end || '';
-          const value = filter.value || '';
-          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
-          if (start || end) {
-            summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
-          } else if (value) {
-            summaries.push(`${headerName}: ${value}${sortOrder}`);
-          } else if (sortOrder) {
-            summaries.push(`${headerName}:${sortOrder}`);
+          // --- FIX: Show sortOrder for date fields ---
+          const sortOrder = filter.sortOrder;
+          if (sortOrder === 'ascending' || sortOrder === 'descending') {
+            summaries.push(`${headerName}: Sorted ${sortOrder}`);
+          } else {
+            summaries.push(`${headerName}: None`);
           }
         } else if (header.type === 'dropdown' && filter.values?.length) {
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
@@ -143,13 +181,55 @@ const EditSheetsModal = ({
 
   // Handle save action
   const onDoneClick = useCallback(() => {
+    // --- Ensure cardTypeFilters is up-to-date with all headers for each card type ---
+    let updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
+    selectedCardTypes.forEach((typeOfCards) => {
+      const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+      if (!template) return;
+      if (!updatedCardTypeFilters[typeOfCards]) updatedCardTypeFilters[typeOfCards] = {};
+      template.headers
+        .filter((h) => h.key && h.key !== 'id' && h.key !== 'typeOfCards')
+        .forEach((header) => {
+          if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
+            updatedCardTypeFilters[typeOfCards][header.key] = {};
+          }
+        });
+    });
+    // Remove filters for card types that are no longer selected
+    Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
+      if (!selectedCardTypes.includes(typeOfCards)) {
+        delete updatedCardTypeFilters[typeOfCards];
+      }
+    });
+
+    // --- Clean filters: only skip undefined/null, keep 0 and "0" ---
+    const cleanedCardTypeFilters = {};
+    Object.entries(updatedCardTypeFilters).forEach(([cardType, filters]) => {
+      const cleanedFilters = {};
+      Object.entries(filters).forEach(([key, filter]) => {
+        const cleanedFilter = {};
+        Object.entries(filter).forEach(([field, value]) => {
+          if (value !== undefined && value !== null) {
+            cleanedFilter[field] = value;
+          }
+        });
+        if (Object.keys(cleanedFilter).length > 0) {
+          cleanedFilters[key] = cleanedFilter;
+        }
+      });
+      if (Object.keys(cleanedFilters).length > 0) {
+        cleanedCardTypeFilters[cardType] = cleanedFilters;
+      }
+    });
+
     setTempData({
       sheetName,
       currentHeaders,
       typeOfCardsToDisplay: selectedCardTypes,
-      cardTypeFilters: tempData.cardTypeFilters || {},
+      cardTypeFilters: cleanedCardTypeFilters,
       cardsPerSearch,
     });
+    console.log('Saved cardTypeFilters:', cleanedCardTypeFilters); // Add this line
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
       clearFetchedSheets();
@@ -166,6 +246,7 @@ const EditSheetsModal = ({
     setActiveSheetName,
     clearFetchedSheets,
     handleClose,
+    cardTemplates,
   ]);
 
   const handleBackClick = useCallback(() => {
@@ -817,7 +898,6 @@ const EditSheetsModal = ({
                             ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
                             : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
                         </span>
-                        <span className={styles.filterSummary}>{getFilterSummary(typeOfCards)}</span>
                       </div>
                     );
                   })}

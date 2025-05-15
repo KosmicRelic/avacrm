@@ -89,6 +89,15 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 sortOrder: filter.sortOrder || undefined,
               },
             ];
+          } else if (filter.condition && filter.value !== undefined && filter.value !== null) {
+            return [
+              key,
+              {
+                condition: filter.condition,
+                value: String(filter.value), // Always store as string
+                sortOrder: filter.sortOrder || undefined,
+              },
+            ];
           } else if (filter.order && filter.value) {
             return [
               key,
@@ -194,10 +203,13 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
           return values.length > 0 ? values.join(', ') : 'None';
         case 'text':
           const condition = filter.condition || 'equals';
-          const value = filter.value || '';
+          // Always treat value as string for summary
+          const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
           return value ? `${condition} "${value}"` : 'None';
         default:
-          return filter.value ? `"${filter.value}"` : 'None';
+          return filter.value !== undefined && filter.value !== null
+            ? `"${String(filter.value)}"`
+            : 'None';
       }
     },
     [filterValues, numberRangeMode]
