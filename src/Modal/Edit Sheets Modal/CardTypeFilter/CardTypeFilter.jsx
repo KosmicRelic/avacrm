@@ -7,15 +7,6 @@ import { MdFilterAlt } from 'react-icons/md';
 
 const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSummary = true }) => {
   const { isDarkTheme, user } = useContext(MainContext);
-  const [dateRangeMode, setDateRangeMode] = useState(
-    useMemo(() => {
-      const initial = {};
-      Object.entries(tempData.cardTypeFilters?.[cardType] || {}).forEach(([key, filter]) => {
-        if (key !== 'userFilter' && (filter.start || filter.end)) initial[key] = true;
-      });
-      return initial;
-    }, [tempData.cardTypeFilters, cardType])
-  );
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
       const initial = {};
@@ -76,61 +67,56 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
   const applyFilters = useCallback(
     (filters) => {
       const cleanedFilters = Object.fromEntries(
-        Object.entries(filters)
-          .map(([key, filter]) => {
-            // Initialize the cleaned filter object
-            let cleanedFilter = {};
+        Object.entries(filters).map(([key, filter]) => {
+          let cleanedFilter = {};
 
-            if (key === 'userFilter') {
-              if (filter.headerKey) {
-                cleanedFilter = {
-                  headerKey: filter.headerKey,
-                  condition: 'equals',
-                  value: user.uid, // Set to current user's UID
-                };
-              }
-              return [key, cleanedFilter];
-            }
-
-            if (numberRangeMode[key]) {
+          if (key === 'userFilter') {
+            if (filter.headerKey) {
               cleanedFilter = {
-                start: filter.start ? Number(filter.start) : undefined,
-                end: filter.end ? Number(filter.end) : undefined,
+                headerKey: filter.headerKey,
+                condition: 'equals',
+                value: user.uid,
               };
-            } else if (dateRangeMode[key]) {
-              cleanedFilter = {
-                start: filter.start || undefined,
-                end: filter.end || undefined,
-              };
-            } else if (filter.order && filter.value) {
-              cleanedFilter = {
-                order: filter.order,
-                value: filter.type === 'number' ? Number(filter.value) : filter.value,
-              };
-            } else if (filter.values?.length) {
-              cleanedFilter = { values: filter.values };
             }
+            return [key, cleanedFilter];
+          }
 
-            // Only include sortOrder if it has a valid value
-            if (filter.sortOrder === 'ascending' || filter.sortOrder === 'descending') {
-              cleanedFilter.sortOrder = filter.sortOrder;
-            }
+          if (numberRangeMode[key]) {
+            cleanedFilter = {
+              start: filter.start ? Number(filter.start) : undefined,
+              end: filter.end ? Number(filter.end) : undefined,
+            };
+          } else if (filter.order && filter.value) {
+            cleanedFilter = {
+              order: filter.order,
+              value: filter.type === 'number' ? Number(filter.value) : filter.value,
+            };
+          } else if (filter.values?.length) {
+            cleanedFilter = { values: filter.values };
+          } else if (filter.condition && filter.value) {
+            cleanedFilter = {
+              condition: filter.condition,
+              value: filter.value,
+            };
+          }
 
-            // Return the filter entry only if it has meaningful data
-            return [key, Object.keys(cleanedFilter).length > 0 ? cleanedFilter : {}];
-          })
-          .filter(([_, filter]) => Object.keys(filter).length > 0) // Remove empty filter objects
+          if (filter.sortOrder === 'ascending' || filter.sortOrder === 'descending') {
+            cleanedFilter.sortOrder = filter.sortOrder;
+          }
+
+          return [key, Object.keys(cleanedFilter).length > 0 ? cleanedFilter : {}];
+        }).filter(([_, filter]) => Object.keys(filter).length > 0)
       );
 
       updateTempFilters(cleanedFilters);
     },
-    [numberRangeMode, dateRangeMode, updateTempFilters, user.uid]
+    [numberRangeMode, updateTempFilters, user.uid]
   );
 
   const handleFilterChange = useCallback(
     (headerKey, value, type = 'default') => {
       const newFilter = { ...filterValues[headerKey], [type]: value };
-      if (type === 'start' || type === 'end' || type === 'value') {
+      if (type === 'start' || type === 'end' || type === 'value' || type === 'sortOrder') {
         if (value === '') delete newFilter[type];
       }
       const updatedFilters = { ...filterValues, [headerKey]: newFilter };
@@ -144,7 +130,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
       const newFilter = {
         headerKey: headerKey || undefined,
         condition: 'equals',
-        value: headerKey ? user.uid : undefined, // Set to current user's UID
+        value: headerKey ? user.uid : undefined,
       };
       const updatedFilters = { ...filterValues, userFilter: headerKey ? newFilter : {} };
       applyFilters(updatedFilters);
@@ -160,16 +146,15 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     [handleFilterChange]
   );
 
-  const toggleRangeMode = useCallback(
-    (headerKey, isDate = false) => {
-      const setRangeMode = isDate ? setDateRangeMode : setNumberRangeMode;
-      setRangeMode((prev) => {
+  const toggleNumberRangeMode = useCallback(
+    (headerKey) => {
+      setNumberRangeMode((prev) => {
         const newMode = !prev[headerKey];
         const updatedFilters = {
           ...filterValues,
           [headerKey]: newMode
             ? { start: filterValues[headerKey]?.start || '', end: filterValues[headerKey]?.end || '' }
-            : { value: filterValues[headerKey]?.value || '', order: isDate ? 'on' : 'equals' },
+            : { value: filterValues[headerKey]?.value || '', order: 'equals' },
         };
         applyFilters(updatedFilters);
         return { ...prev, [headerKey]: newMode };
@@ -177,9 +162,6 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     },
     [filterValues, applyFilters]
   );
-
-  const toggleDateRangeMode = (headerKey) => toggleRangeMode(headerKey, true);
-  const toggleNumberRangeMode = (headerKey) => toggleRangeMode(headerKey, false);
 
   const toggleFilter = useCallback((index) => {
     setActiveFilterIndex((prev) => (prev === index ? null : index));
@@ -189,7 +171,6 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     (headerKey) => {
       const updatedFilters = { ...filterValues, [headerKey]: {} };
       applyFilters(updatedFilters);
-      setDateRangeMode((prev) => ({ ...prev, [headerKey]: false }));
       setNumberRangeMode((prev) => ({ ...prev, [headerKey]: false }));
     },
     [filterValues, applyFilters]
@@ -204,7 +185,6 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
   const handleReset = useCallback(() => {
     const clearedFilters = {};
     applyFilters(clearedFilters);
-    setDateRangeMode({});
     setNumberRangeMode({});
     setActiveFilterIndex(null);
     setShowUserFilterForm(false);
@@ -219,38 +199,31 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
       const filter = filterValues[header.key] || {};
       if (isFilterEmpty(filter)) return 'None';
 
+      const sortOrder = filter.sortOrder || '';
+
       switch (header.type) {
         case 'number':
           if (numberRangeMode[header.key]) {
             const start = filter.start || '';
             const end = filter.end || '';
-            const sortOrder = filter.sortOrder || '';
             return `${start}${start && end ? ' – ' : ''}${end}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
           } else {
             const order = filter.order || 'equals';
             const value = filter.value || '';
-            const sortOrder = filter.sortOrder || '';
             const orderText = { equals: '=', greaterOrEqual: '≥', lessOrEqual: '≤', greater: '>', less: '<' }[order];
             return `${orderText}${value ? ` ${value}` : ''}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
           }
         case 'date':
-          const sortOrder = filter.sortOrder || '';
           return sortOrder ? `Sorted ${sortOrder}` : 'None';
-        case 'dropdown': {
+        case 'dropdown':
           const values = filter.values || [];
-          const sortOrder = filter.sortOrder || '';
           return values.length > 0 ? `${values.join(', ')}${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
-        }
-        case 'text': {
+        case 'text':
           const condition = filter.condition || 'equals';
           const value = filter.value || '';
-          const sortOrder = filter.sortOrder || '';
           return value ? `${condition} "${value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
-        }
-        default: {
-          const sortOrder = filter.sortOrder || '';
+        default:
           return filter.value ? `"${filter.value}"${sortOrder ? ` (${sortOrder})` : ''}` : 'None';
-        }
       }
     },
     [filterValues, numberRangeMode]
@@ -274,113 +247,185 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
   useClickOutside(userFilterRef, showUserFilterForm, () => setShowUserFilterForm(false));
 
   return (
-    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      {/* Restrict by User Section */}
-      <div
-        className={`${styles.filterItem} ${showUserFilterForm ? styles.activeItem : ''} ${
-          isDarkTheme ? styles.darkTheme : ''
-        }`}
-        onClick={() => setShowUserFilterForm((prev) => !prev)}
-      >
-        <div className={styles.filterRow}>
-          <div className={styles.filterNameType}>
-            <span>Restrict by User</span>
-          </div>
-          <div className={styles.primaryButtons}>
-            {showFilterSummary ? (
-              <span className={styles.filterSummary}>{userFilterSummary}</span>
-            ) : (
-              <MdFilterAlt
-                className={`${styles.filterIcon} ${
-                  filterValues.userFilter?.headerKey ? styles.active : ''
-                }`}
-              />
-            )}
-          </div>
-        </div>
-        {showUserFilterForm && (
-          <div
-            className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-            ref={userFilterRef}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <select
-              value={filterValues.userFilter?.headerKey || ''}
-              onChange={(e) => handleUserFilterChange(e.target.value || '')}
-              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-            >
-              <option value="">No User Filter</option>
-              {visibleHeaders.map((header) => (
-                <option key={header.key} value={header.key}>
-                  {header.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={clearUserFilter}
-              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            >
-              Clear
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Regular Filters */}
-      {visibleHeaders.map((header, index) => (
+    <>
+      <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        {/* Restrict by User Section */}
         <div
-          key={header.key}
-          className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
+          className={`${styles.filterItem} ${showUserFilterForm ? styles.activeItem : ''} ${
             isDarkTheme ? styles.darkTheme : ''
           }`}
-          onClick={() => toggleFilter(index)}
+          onClick={() => setShowUserFilterForm((prev) => !prev)}
         >
           <div className={styles.filterRow}>
             <div className={styles.filterNameType}>
-              <span>{header.name}</span>
+              <span>Restrict by User</span>
             </div>
             <div className={styles.primaryButtons}>
               {showFilterSummary ? (
-                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+                <span className={styles.filterSummary}>{userFilterSummary}</span>
               ) : (
                 <MdFilterAlt
                   className={`${styles.filterIcon} ${
-                    !isFilterEmpty(filterValues[header.key]) ? styles.active : ''
+                    filterValues.userFilter?.headerKey ? styles.active : ''
                   }`}
                 />
               )}
             </div>
           </div>
-          {activeFilterIndex === index && (
+          {showUserFilterForm && (
             <div
               className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-              ref={filterActionsRef}
+              ref={userFilterRef}
               onClick={(e) => e.stopPropagation()}
             >
-              {header.type === 'number' ? (
-                numberRangeMode[header.key] ? (
+              <select
+                value={filterValues.userFilter?.headerKey || ''}
+                onChange={(e) => handleUserFilterChange(e.target.value || '')}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                <option value="">No User Filter</option>
+                {visibleHeaders.map((header) => (
+                  <option key={header.key} value={header.key}>
+                    {header.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={clearUserFilter}
+                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Regular Filters */}
+        {visibleHeaders.map((header, index) => (
+          <div
+            key={header.key}
+            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
+              isDarkTheme ? styles.darkTheme : ''
+            }`}
+            onClick={() => toggleFilter(index)}
+          >
+            <div className={styles.filterRow}>
+              <div className={styles.filterNameType}>
+                <span>{header.name}</span>
+              </div>
+              <div className={styles.primaryButtons}>
+                {showFilterSummary ? (
+                  <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+                ) : (
+                  <MdFilterAlt
+                    className={`${styles.filterIcon} ${
+                      !isFilterEmpty(filterValues[header.key]) ? styles.active : ''
+                    }`}
+                  />
+                )}
+              </div>
+            </div>
+            {activeFilterIndex === index && (
+              <div
+                className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                ref={filterActionsRef}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {header.type === 'number' ? (
+                  numberRangeMode[header.key] ? (
+                    <>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.start || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                        placeholder="From"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <span className={styles.separator}>–</span>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.end || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                        placeholder="To"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <button
+                        onClick={() => toggleNumberRangeMode(header.key)}
+                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        Value
+                      </button>
+                      <select
+                        value={filterValues[header.key]?.sortOrder || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        <option value="">Sort...</option>
+                        <option value="ascending">Ascending</option>
+                        <option value="descending">Descending</option>
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value={filterValues[header.key]?.order || 'equals'}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                        className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        <option value="equals">=</option>
+                        <option value="greater">{'>'}</option>
+                        <option value="less">{'<'}</option>
+                        <option value="greaterOrEqual">≥</option>
+                        <option value="lessOrEqual">≤</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.value || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                        placeholder="Value"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <button
+                        onClick={() => toggleNumberRangeMode(header.key)}
+                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        Range
+                      </button>
+                      <select
+                        value={filterValues[header.key]?.sortOrder || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        <option value="">Sort...</option>
+                        <option value="ascending">Ascending</option>
+                        <option value="descending">Descending</option>
+                      </select>
+                    </>
+                  )
+                ) : header.type === 'date' ? (
+                  <select
+                    value={filterValues[header.key]?.sortOrder || ''}
+                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    <option value="">None</option>
+                    <option value="ascending">Ascending</option>
+                    <option value="descending">Descending</option>
+                  </select>
+                ) : header.type === 'dropdown' ? (
                   <>
-                    <input
-                      type="number"
-                      value={filterValues[header.key]?.start || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                      placeholder="From"
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <span className={styles.separator}>–</span>
-                    <input
-                      type="number"
-                      value={filterValues[header.key]?.end || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                      placeholder="To"
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <button
-                      onClick={() => toggleNumberRangeMode(header.key)}
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    <select
+                      multiple
+                      value={filterValues[header.key]?.values || []}
+                      onChange={(e) => handleDropdownChange(header.key, e)}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                     >
-                      Value
-                    </button>
+                      {header.options.map((option, idx) => (
+                        <option key={`${header.key}-option-${idx}`} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                     <select
                       value={filterValues[header.key]?.sortOrder || ''}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
@@ -394,29 +439,22 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
                 ) : (
                   <>
                     <select
-                      value={filterValues[header.key]?.order || 'equals'}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                      value={filterValues[header.key]?.condition || 'equals'}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
                       className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
                     >
-                      <option value="equals">=</option>
-                      <option value="greater">{'>'}</option>
-                      <option value="less">{'<'}</option>
-                      <option value="greaterOrEqual">≥</option>
-                      <option value="lessOrEqual">≤</option>
+                      <option value="equals">Equals</option>
+                      <option value="contains">Contains</option>
+                      <option value="startsWith">Starts with</option>
+                      <option value="endsWith">Ends with</option>
                     </select>
                     <input
-                      type="number"
+                      type="text"
                       value={filterValues[header.key]?.value || ''}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
                       placeholder="Value"
                       className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                     />
-                    <button
-                      onClick={() => toggleNumberRangeMode(header.key)}
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      Range
-                    </button>
                     <select
                       value={filterValues[header.key]?.sortOrder || ''}
                       onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
@@ -427,81 +465,18 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
                       <option value="descending">Descending</option>
                     </select>
                   </>
-                )
-              ) : header.type === 'date' ? (
-                <select
-                  value={filterValues[header.key]?.sortOrder || ''}
-                  onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                  className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                )}
+                <button
+                  onClick={() => clearFilter(header.key)}
+                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 >
-                  <option value="">None</option>
-                  <option value="ascending">Ascending</option>
-                  <option value="descending">Descending</option>
-                </select>
-              ) : header.type === 'dropdown' ? (
-                <>
-                  <select
-                    multiple
-                    value={filterValues[header.key]?.values || []}
-                    onChange={(e) => handleDropdownChange(header.key, e)}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    {header.options.map((option, idx) => (
-                      <option key={`${header.key}-option-${idx}`} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={filterValues[header.key]?.sortOrder || ''}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    <option value="">Sort...</option>
-                    <option value="ascending">Ascending</option>
-                    <option value="descending">Descending</option>
-                  </select>
-                </>
-              ) : (
-                <>
-                  <select
-                    value={filterValues[header.key]?.condition || 'equals'}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
-                    className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    <option value="equals">Equals</option>
-                    <option value="contains">Contains</option>
-                    <option value="startsWith">Starts with</option>
-                    <option value="endsWith">Ends with</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={filterValues[header.key]?.value || ''}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                    placeholder="Value"
-                    className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  />
-                  <select
-                    value={filterValues[header.key]?.sortOrder || ''}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    <option value="">Sort...</option>
-                    <option value="ascending">Ascending</option>
-                    <option value="descending">Descending</option>
-                  </select>
-                </>
-              )}
-              <button
-                onClick={() => clearFilter(header.key)}
-                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
       <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <button
           onClick={handleReset}
@@ -511,7 +486,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
           Reset All
         </button>
       </div>
-    </div>
+    </>
   );
 };
 

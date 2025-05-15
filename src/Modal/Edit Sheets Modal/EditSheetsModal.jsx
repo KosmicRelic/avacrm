@@ -7,7 +7,7 @@ import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'r
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
 
-// Add this utility function near the top (after imports)
+// Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
   if (
     dateValue &&
@@ -69,6 +69,7 @@ const EditSheetsModal = ({
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
 
+  // Ensure cardTypeFilters and cardsPerSearch are initialized in tempData
   useEffect(() => {
     if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData)) {
       setTempData({
@@ -81,6 +82,7 @@ const EditSheetsModal = ({
 
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
+  // Compute filter summary for display
   const getFilterSummary = useCallback(
     (cardType) => {
       const filters = tempData.cardTypeFilters?.[cardType] || {};
@@ -108,7 +110,6 @@ const EditSheetsModal = ({
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
           summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
         } else if (header.type === 'date') {
-          // Show range or value, and sort order if present
           const start = filter.start || '';
           const end = filter.end || '';
           const value = filter.value || '';
@@ -140,6 +141,7 @@ const EditSheetsModal = ({
     [tempData.cardTypeFilters, cardTemplates]
   );
 
+  // Handle save action
   const onDoneClick = useCallback(() => {
     setTempData({
       sheetName,
@@ -171,6 +173,7 @@ const EditSheetsModal = ({
     goBack();
   }, [goBack]);
 
+  // Initialize modal steps and configuration
   useEffect(() => {
     if (!hasInitialized.current) {
       const steps = [
@@ -178,10 +181,9 @@ const EditSheetsModal = ({
         { title: 'Headers', rightButton: null },
         { title: 'Select Templates', rightButton: null },
         { title: 'Select Headers', rightButton: null },
-        { title: 'Cards', rightButton: null },
-        { title: 'Select Card Templates', rightButton: null },
-        { title: 'Template Options', rightButton: null },
         { title: 'Filters', rightButton: null },
+        { title: 'Select Card Templates', rightButton: null },
+        { title: 'Filters for Card Type', rightButton: null },
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -200,6 +202,7 @@ const EditSheetsModal = ({
     }
   }, [isEditMode, registerModalSteps, setModalConfig, onDoneClick]);
 
+  // Track navigation direction
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
@@ -207,6 +210,7 @@ const EditSheetsModal = ({
     }
   }, [currentStep]);
 
+  // Configure modal for each step
   useEffect(() => {
     const step1Title = isEditMode ? 'Edit Sheet' : 'Create Sheet';
     let config;
@@ -274,7 +278,7 @@ const EditSheetsModal = ({
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: 'Cards',
+        title: 'Filters',
         backButtonTitle: step1Title,
         backButton: {
           label: `< ${step1Title}`,
@@ -290,9 +294,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: 'Select Card Templates',
-        backButtonTitle: 'Cards',
+        backButtonTitle: 'Filters',
         backButton: {
-          label: `< Cards`,
+          label: `< Filters`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -305,26 +309,10 @@ const EditSheetsModal = ({
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: `Options for ${cardTypeName}`,
-        backButtonTitle: 'Cards',
-        backButton: {
-          label: `< Cards`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: null,
-      };
-    } else if (currentStep === 8) {
-      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
         title: `Filters for ${cardTypeName}`,
-        backButtonTitle: 'Template Options',
+        backButtonTitle: 'Filters',
         backButton: {
-          label: `< Template Options`,
+          label: `< Filters`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -338,6 +326,7 @@ const EditSheetsModal = ({
     }
   }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
 
+  // Sync tempData with state changes
   useEffect(() => {
     const newTempData = {
       sheetName,
@@ -527,7 +516,7 @@ const EditSheetsModal = ({
       }
       setSelectedCardTypeForFilter(typeOfCards);
       setNavigationDirection('forward');
-      goToStep(8);
+      goToStep(7);
     },
     [goToStep, tempData, setTempData]
   );
@@ -546,15 +535,6 @@ const EditSheetsModal = ({
     setNavigationDirection('forward');
     goToStep(6);
   }, [goToStep]);
-
-  const handleTemplateOptionsClick = useCallback(
-    (typeOfCards) => {
-      setSelectedCardTypeForFilter(typeOfCards);
-      setNavigationDirection('forward');
-      goToStep(7);
-    },
-    [goToStep]
-  );
 
   const handleCardsPerSearchChange = useCallback(
     (e) => {
@@ -575,7 +555,7 @@ const EditSheetsModal = ({
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -623,7 +603,7 @@ const EditSheetsModal = ({
                     }}
                     className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                     role="button"
-                    aria-label="Manage Cards"
+                    aria-label="Manage Filters"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -632,7 +612,7 @@ const EditSheetsModal = ({
                       }
                     }}
                   >
-                    <span className={styles.navName}>Cards</span>
+                    <span className={styles.navName}>Filters</span>
                   </div>
                 </div>
                 {isEditMode && sheetId !== 'primarySheet' && (
@@ -821,14 +801,14 @@ const EditSheetsModal = ({
                     return (
                       <div
                         key={typeOfCards}
-                        onClick={() => handleTemplateOptionsClick(typeOfCards)}
+                        onClick={() => handleFilterClick(typeOfCards)}
                         className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                         role="button"
-                        aria-label={`Options for ${template?.name || typeOfCards}`}
+                        aria-label={`Filters for ${template?.name || typeOfCards}`}
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
-                            handleTemplateOptionsClick(typeOfCards);
+                            handleFilterClick(typeOfCards);
                           }
                         }}
                       >
@@ -837,6 +817,7 @@ const EditSheetsModal = ({
                             ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
                             : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
                         </span>
+                        <span className={styles.filterSummary}>{getFilterSummary(typeOfCards)}</span>
                       </div>
                     );
                   })}
@@ -874,24 +855,6 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 7 && (
-              <div className={styles.buttonContainer}>
-                <div
-                  onClick={() => handleFilterClick(selectedCardTypeForFilter)}
-                  className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  role="button"
-                  aria-label="Filters"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleFilterClick(selectedCardTypeForFilter);
-                    }
-                  }}
-                >
-                  <span className={styles.navName}>Filters</span>
-                </div>
-              </div>
-            )}
-            {step === 8 && (
               <>
                 {selectedCardTypeForFilter ? (
                   <>
@@ -907,13 +870,17 @@ const EditSheetsModal = ({
                         aria-label="Cards Fetch Limit"
                       />
                     </div>
-                    <CardTypeFilter
-                      cardType={selectedCardTypeForFilter}
-                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
-                      tempData={tempData}
-                      setTempData={setTempData}
-                      showFilterSummary={true}
-                    />
+                    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <CardTypeFilter
+                        cardType={selectedCardTypeForFilter}
+                        headers={
+                          cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []
+                        }
+                        tempData={tempData}
+                        setTempData={setTempData}
+                        showFilterSummary={true}
+                      />
+                    </div>
                   </>
                 ) : (
                   <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>

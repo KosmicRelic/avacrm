@@ -414,12 +414,11 @@
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.6);
   transition: background 0.3s ease;
 }
 
 .filterList.darkTheme {
-  background: rgba(58, 58, 60, 0.6);
+  
 }
 
 .filterItem {
