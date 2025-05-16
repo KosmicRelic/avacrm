@@ -64,27 +64,30 @@ const EditSheetsModal = ({
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
   const [cardsPerSearch, setCardsPerSearch] = useState(tempData.cardsPerSearch || '');
+  const [filterType, setFilterType] = useState(null);
+  const [filterOrder, setFilterOrder] = useState(tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown']);
   const headerRefs = useRef(new Map());
+  const filterRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
 
-  // Ensure cardTypeFilters and cardsPerSearch are initialized in tempData
+  // Ensure cardTypeFilters, cardsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
-    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData)) {
+    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData) || !tempData.filterOrder) {
       setTempData({
         ...tempData,
         cardTypeFilters: tempData.cardTypeFilters || {},
         cardsPerSearch: tempData.cardsPerSearch || null,
+        filterOrder: tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown'],
       });
     }
   }, [tempData, setTempData]);
 
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
-  // --- NEW: Ensure cardTypeFilters always has all headers for each selected card type ---
+  // Ensure cardTypeFilters always has all headers for each selected card type
   useEffect(() => {
-    // Only run if cardTemplates and selectedCardTypes are available
     if (!cardTemplates || selectedCardTypes.length === 0) return;
 
     let changed = false;
@@ -107,7 +110,6 @@ const EditSheetsModal = ({
         });
     });
 
-    // Remove filters for card types that are no longer selected
     Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
       if (!selectedCardTypes.includes(typeOfCards)) {
         delete updatedCardTypeFilters[typeOfCards];
@@ -122,7 +124,6 @@ const EditSheetsModal = ({
       });
     }
   }, [selectedCardTypes, cardTemplates, tempData, setTempData]);
-  // --- END NEW ---
 
   // Compute filter summary for display
   const getFilterSummary = useCallback(
@@ -152,7 +153,6 @@ const EditSheetsModal = ({
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
           summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
         } else if (header.type === 'date') {
-          // --- FIX: Show sortOrder for date fields ---
           const sortOrder = filter.sortOrder;
           if (sortOrder === 'ascending' || sortOrder === 'descending') {
             summaries.push(`${headerName}: Sorted ${sortOrder}`);
@@ -181,7 +181,6 @@ const EditSheetsModal = ({
 
   // Handle save action
   const onDoneClick = useCallback(() => {
-    // --- Ensure cardTypeFilters is up-to-date with all headers for each card type ---
     let updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
     selectedCardTypes.forEach((typeOfCards) => {
       const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
@@ -195,14 +194,12 @@ const EditSheetsModal = ({
           }
         });
     });
-    // Remove filters for card types that are no longer selected
     Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
       if (!selectedCardTypes.includes(typeOfCards)) {
         delete updatedCardTypeFilters[typeOfCards];
       }
     });
 
-    // --- Clean filters: only skip undefined/null, keep 0 and "0" ---
     const cleanedCardTypeFilters = {};
     Object.entries(updatedCardTypeFilters).forEach(([cardType, filters]) => {
       const cleanedFilters = {};
@@ -228,8 +225,8 @@ const EditSheetsModal = ({
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: cleanedCardTypeFilters,
       cardsPerSearch,
+      filterOrder,
     });
-    console.log('Saved cardTypeFilters:', cleanedCardTypeFilters); // Add this line
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
       clearFetchedSheets();
@@ -240,6 +237,7 @@ const EditSheetsModal = ({
     currentHeaders,
     selectedCardTypes,
     cardsPerSearch,
+    filterOrder,
     setTempData,
     tempData.sheetName,
     tempData.cardTypeFilters,
@@ -265,6 +263,7 @@ const EditSheetsModal = ({
         { title: 'Filters', rightButton: null },
         { title: 'Select Card Templates', rightButton: null },
         { title: 'Filters for Card Type', rightButton: null },
+        { title: 'Add Filter', rightButton: null },
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -399,13 +398,35 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
+    } else if (currentStep === 8) {
+      const filterTypeTitle = {
+        text: 'Add Text Filter',
+        number: 'Add Number Filter',
+        date: 'Add Date Sort',
+        user: 'Restrict by User',
+        dropdown: 'Add Dropdown Filter',
+      }[filterType] || 'Add Filter';
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: filterTypeTitle,
+        backButtonTitle: `Filters for ${cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+        backButton: {
+          label: `< Filters for ${cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
     }
 
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates, filterType]);
 
   // Sync tempData with state changes
   useEffect(() => {
@@ -415,17 +436,19 @@ const EditSheetsModal = ({
       typeOfCardsToDisplay: selectedCardTypes,
       cardTypeFilters: tempData.cardTypeFilters || {},
       cardsPerSearch,
+      filterOrder,
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
       JSON.stringify(newTempData.typeOfCardsToDisplay) !== JSON.stringify(tempData.typeOfCardsToDisplay) ||
       JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters) ||
-      newTempData.cardsPerSearch !== tempData.cardsPerSearch
+      newTempData.cardsPerSearch !== tempData.cardsPerSearch ||
+      JSON.stringify(newTempData.filterOrder) !== JSON.stringify(tempData.filterOrder)
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, tempData, setTempData]);
+  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, filterOrder, tempData, setTempData]);
 
   const toggleCardTypeSelection = useCallback((type) => {
     setSelectedCardTypes((prev) => {
@@ -532,6 +555,77 @@ const EditSheetsModal = ({
     setTouchTargetIndex(null);
   }, [draggedIndex]);
 
+  const handleFilterDragStart = useCallback((e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    const element = filterRefs.current.get(index);
+    if (element) element.classList.add(styles.dragging);
+  }, []);
+
+  const handleFilterTouchStart = useCallback((e, index) => {
+    if (e.target.classList.contains(styles.dragIcon)) {
+      e.preventDefault();
+      setDraggedIndex(index);
+      setTouchStartY(e.touches[0].clientY);
+      setTouchTargetIndex(index);
+      const element = filterRefs.current.get(index);
+      if (element) element.classList.add(styles.dragging);
+    }
+  }, []);
+
+  const handleFilterDragOver = useCallback(
+    (e, index) => {
+      e.preventDefault();
+      if (draggedIndex === null || draggedIndex === index) return;
+
+      setFilterOrder((prev) => {
+        const newOrder = [...prev];
+        const [draggedItem] = newOrder.splice(draggedIndex, 1);
+        newOrder.splice(index, 0, draggedItem);
+        setDraggedIndex(index);
+        return newOrder;
+      });
+    },
+    [draggedIndex]
+  );
+
+  const handleFilterTouchMove = useCallback(
+    (e, index) => {
+      if (draggedIndex === null || touchStartY === null) return;
+      e.preventDefault();
+
+      const touchY = e.touches[0].clientY;
+      const itemHeight = 48;
+      const delta = Math.round((touchY - touchStartY) / itemHeight);
+
+      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, filterOrder.length - 1));
+      if (newIndex !== draggedIndex) {
+        setFilterOrder((prev) => {
+          const newOrder = [...prev];
+          const [draggedItem] = newOrder.splice(draggedIndex, 1);
+          newOrder.splice(newIndex, 0, draggedItem);
+          setDraggedIndex(newIndex);
+          return newOrder;
+        });
+      }
+    },
+    [draggedIndex, touchStartY, touchTargetIndex, filterOrder.length]
+  );
+
+  const handleFilterDragEnd = useCallback(() => {
+    const element = filterRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+  }, [draggedIndex]);
+
+  const handleFilterTouchEnd = useCallback(() => {
+    const element = filterRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchTargetIndex(null);
+  }, [draggedIndex]);
+
   const togglePin = useCallback(
     (headerKey) => {
       setPinnedStates((prev) => ({
@@ -602,6 +696,16 @@ const EditSheetsModal = ({
     [goToStep, tempData, setTempData]
   );
 
+  const handleAddFilterClick = useCallback(
+    (typeOfCards, filterType) => {
+      setSelectedCardTypeForFilter(typeOfCards);
+      setFilterType(filterType);
+      setNavigationDirection('forward');
+      goToStep(8);
+    },
+    [goToStep]
+  );
+
   const handleTemplateClick = useCallback(
     (typeOfCards) => {
       setSelectedTemplateForHeaders(typeOfCards);
@@ -633,10 +737,17 @@ const EditSheetsModal = ({
     [setTempData]
   );
 
+  const isFilterEmpty = useCallback(
+    (filter) =>
+      Object.keys(filter).length === 0 ||
+      (!filter.start && !filter.end && !filter.value && !filter.values?.length && !filter.headerKey),
+    []
+  );
+
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -898,6 +1009,9 @@ const EditSheetsModal = ({
                             ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
                             : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
                         </span>
+                        <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {getFilterSummary(typeOfCards)}
+                        </span>
                       </div>
                     );
                   })}
@@ -937,8 +1051,8 @@ const EditSheetsModal = ({
             {step === 7 && (
               <>
                 {selectedCardTypeForFilter ? (
-                  <>
-                    <div className={styles.inputContainer} style={{ marginTop: 24 }}>
+                  <div className={styles.sortByFiltersContainer}>
+                    <div className={styles.inputContainer}>
                       <input
                         type="number"
                         value={cardsPerSearch}
@@ -950,24 +1064,186 @@ const EditSheetsModal = ({
                         aria-label="Cards Fetch Limit"
                       />
                     </div>
-                    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      <CardTypeFilter
-                        cardType={selectedCardTypeForFilter}
-                        headers={
-                          cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []
-                        }
-                        tempData={tempData}
-                        setTempData={setTempData}
-                        showFilterSummary={true}
-                      />
+                    <div className={`${styles.buttonContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      {filterOrder.map((fType, index) => {
+                        const filterSummaries = {
+                          user: () =>
+                            tempData.cardTypeFilters?.[selectedCardTypeForFilter]?.userFilter?.headerKey
+                              ? `${
+                                  cardTemplates
+                                    .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                    ?.headers.find(
+                                      (h) => h.key === tempData.cardTypeFilters[selectedCardTypeForFilter].userFilter.headerKey
+                                    )?.name || tempData.cardTypeFilters[selectedCardTypeForFilter].userFilter.headerKey
+                                } = Current User`
+                              : 'None',
+                          text: () =>
+                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
+                              .filter(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return header?.type === 'text' && key !== 'userFilter' && filter.value;
+                              })
+                              .map(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return `${header?.name || key}: ${filter.condition || 'equals'} ${filter.value}`;
+                              })
+                              .join('; ') || 'None',
+                          number: () =>
+                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
+                              .filter(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return header?.type === 'number' && (filter.start || filter.end || filter.value);
+                              })
+                              .map(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                if (filter.start || filter.end) {
+                                  return `${header?.name || key}: ${filter.start || ''}${
+                                    filter.start && filter.end ? ' – ' : ''
+                                  }${filter.end || ''}`;
+                                } else {
+                                  const order = filter.order || 'equals';
+                                  const orderText = { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[order];
+                                  return `${header?.name || key}: ${orderText} ${filter.value || ''}`;
+                                }
+                              })
+                              .join('; ') || 'None',
+                          date: () =>
+                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
+                              .filter(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return header?.type === 'date' && filter.sortOrder;
+                              })
+                              .map(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return `${header?.name || key}: Sorted ${filter.sortOrder}`;
+                              })
+                              .join('; ') || 'None',
+                          dropdown: () =>
+                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
+                              .filter(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return header?.type === 'dropdown' && filter.values?.length;
+                              })
+                              .map(([key, filter]) => {
+                                const header = cardTemplates
+                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
+                                  ?.headers.find((h) => h.key === key);
+                                return `${header?.name || key}: ${filter.values.join(', ')}`;
+                              })
+                              .join('; ') || 'None',
+                        };
+
+                        const filterNames = {
+                          user: 'Restrict by User',
+                          text: 'Filter for Text',
+                          number: 'Filter for Numbers',
+                          date: 'Sort for Date',
+                          dropdown: 'Filter for Dropdown',
+                        };
+
+                        return (
+                          <div
+                            key={fType}
+                            ref={(el) => filterRefs.current.set(index, el)}
+                            className={`${styles.filterItemDraggable} ${draggedIndex === index ? styles.dragging : ''} ${
+                              isDarkTheme ? styles.darkTheme : ''
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleFilterDragStart(e, index)}
+                            onDragOver={(e) => handleFilterDragOver(e, index)}
+                            onDragEnd={handleFilterDragEnd}
+                            onTouchStart={(e) => handleFilterTouchStart(e, index)}
+                            onTouchMove={(e) => handleFilterTouchMove(e, index)}
+                            onTouchEnd={handleFilterTouchEnd}
+                            onClick={() => handleAddFilterClick(selectedCardTypeForFilter, fType)}
+                            role="button"
+                            aria-label={filterNames[fType]}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                handleAddFilterClick(selectedCardTypeForFilter, fType);
+                              }
+                            }}
+                          >
+                            <div className={styles.filterRow}>
+                              <div className={styles.filterNameType}>
+                                <span className={styles.navName}>{filterNames[fType]}</span>
+                              </div>
+                              <div className={styles.primaryButtons}>
+                                <span className={styles.filterSummary}>{filterSummaries[fType]()}</span>
+                                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  ☰
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </>
+                    <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <button
+                        onClick={() => {
+                          setTempData({
+                            ...tempData,
+                            cardTypeFilters: {
+                              ...tempData.cardTypeFilters,
+                              [selectedCardTypeForFilter]: {},
+                            },
+                            cardsPerSearch: null,
+                          });
+                          setCardsPerSearch('');
+                        }}
+                        className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        disabled={
+                          !Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {}).some(
+                            ([key, filter]) =>
+                              Object.keys(filter).length > 0 &&
+                              (key !== 'userFilter' ||
+                                (key === 'userFilter' && filter.headerKey)) &&
+                              !isFilterEmpty(filter)
+                          ) && !tempData.cardsPerSearch
+                        }
+                      >
+                        Reset All
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     No card type selected for filtering
                   </div>
                 )}
               </>
+            )}
+            {step === 8 && (
+              <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {selectedCardTypeForFilter && (
+                  <CardTypeFilter
+                    cardType={selectedCardTypeForFilter}
+                    headers={
+                      cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []
+                    }
+                    tempData={tempData}
+                    setTempData={setTempData}
+                    showFilterSummary={false}
+                    filterType={filterType}
+                  />
+                )}
+              </div>
             )}
           </div>
         ))}
@@ -993,6 +1269,7 @@ EditSheetsModal.propTypes = {
     typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
     cardTypeFilters: PropTypes.object,
     cardsPerSearch: PropTypes.number,
+    filterOrder: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({

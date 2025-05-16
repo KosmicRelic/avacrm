@@ -1,11 +1,10 @@
-import { useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../EditSheetsModal.module.css';
 import { MainContext } from '../../../Contexts/MainContext';
-import useClickOutside from '../../Hooks/UseClickOutside';
 import { MdFilterAlt } from 'react-icons/md';
 
-const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSummary = true }) => {
+const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSummary = true, filterType }) => {
   const { isDarkTheme, user } = useContext(MainContext);
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
@@ -17,9 +16,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     }, [tempData.cardTypeFilters, cardType])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
-  const [showUserFilterForm, setShowUserFilterForm] = useState(false);
-  const filterActionsRef = useRef(null);
-  const userFilterRef = useRef(null);
+  const [selectedHeaderKey, setSelectedHeaderKey] = useState(null);
 
   // Initialize filter values for this card type
   useEffect(() => {
@@ -33,18 +30,26 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
 
   const filterValues = tempData.cardTypeFilters?.[cardType] || {};
 
-  const visibleHeaders = useMemo(
-    () =>
-      headers
-        .filter((header) => !header.hidden)
-        .map((header) => ({
-          ...header,
-          name: header.name || formatHeaderName(header.key),
-          type: header.type || 'text',
-          options: header.options || [],
-        })),
-    [headers]
-  );
+  const visibleHeaders = useMemo(() => {
+    let filteredHeaders = headers
+      .filter((header) => !header.hidden && !['id', 'typeOfCards'].includes(header.key))
+      .map((header) => ({
+        ...header,
+        name: header.name || formatHeaderName(header.key),
+        type: header.type || 'text',
+        options: header.options || [],
+      }));
+
+    if (filterType) {
+      if (filterType === 'user') {
+        filteredHeaders = filteredHeaders; // No type restriction for user filter
+      } else {
+        filteredHeaders = filteredHeaders.filter((header) => header.type === filterType);
+      }
+    }
+
+    return filteredHeaders;
+  }, [headers, filterType]);
 
   const formatHeaderName = (key) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
@@ -86,7 +91,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
               start: filter.start ? Number(filter.start) : undefined,
               end: filter.end ? Number(filter.end) : undefined,
             };
-          } else if (filter.order && (filter.value !== undefined && filter.value !== null && filter.value !== '')) {
+          } else if (filter.order && (filter.value !== undefined && filter.value !== '')) {
             cleanedFilter = {
               order: filter.order,
               value: filter.type === 'number' ? Number(filter.value) : filter.value,
@@ -95,7 +100,7 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
             cleanedFilter = { values: filter.values };
           } else if (
             (filter.condition || filter.condition === '' || filter.condition === undefined) &&
-            (filter.value !== undefined && filter.value !== null && filter.value !== '')
+            (filter.value !== undefined && filter.value !== '')
           ) {
             cleanedFilter = {
               condition: filter.condition || 'equals',
@@ -118,7 +123,6 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
 
   const handleFilterChange = useCallback(
     (headerKey, value, type = 'default') => {
-      // Always treat value as string for text fields
       const header = visibleHeaders.find((h) => h.key === headerKey);
       let newValue = value;
       if (header && header.type === 'text' && type === 'value') {
@@ -172,15 +176,12 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     [filterValues, applyFilters]
   );
 
-  const toggleFilter = useCallback((index) => {
-    setActiveFilterIndex((prev) => (prev === index ? null : index));
-  }, []);
-
   const clearFilter = useCallback(
     (headerKey) => {
       const updatedFilters = { ...filterValues, [headerKey]: {} };
       applyFilters(updatedFilters);
       setNumberRangeMode((prev) => ({ ...prev, [headerKey]: false }));
+      setSelectedHeaderKey(null);
     },
     [filterValues, applyFilters]
   );
@@ -188,16 +189,39 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
   const clearUserFilter = useCallback(() => {
     const updatedFilters = { ...filterValues, userFilter: {} };
     applyFilters(updatedFilters);
-    setShowUserFilterForm(false);
+    setSelectedHeaderKey(null);
   }, [filterValues, applyFilters]);
 
   const handleReset = useCallback(() => {
-    const clearedFilters = {};
+    let clearedFilters = { ...filterValues };
+    if (filterType === 'user') {
+      clearedFilters = { ...filterValues, userFilter: {} };
+    } else {
+      Object.keys(clearedFilters).forEach((key) => {
+        if (key !== 'userFilter') {
+          const header = visibleHeaders.find((h) => h.key === key);
+          if (header && header.type === filterType) {
+            clearedFilters[key] = {};
+          }
+        }
+      });
+    }
     applyFilters(clearedFilters);
-    setNumberRangeMode({});
-    setActiveFilterIndex(null);
-    setShowUserFilterForm(false);
-  }, [applyFilters]);
+    setNumberRangeMode((prev) => {
+      const newMode = { ...prev };
+      if (filterType === 'user') {
+        // No number range mode for user filter
+      } else {
+        visibleHeaders
+          .filter((h) => h.type === filterType)
+          .forEach((h) => {
+            newMode[h.key] = false;
+          });
+      }
+      return newMode;
+    });
+    setSelectedHeaderKey(null);
+  }, [filterValues, applyFilters, filterType, visibleHeaders]);
 
   const isFilterEmpty = (filter) =>
     Object.keys(filter).length === 0 ||
@@ -240,32 +264,12 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
     [filterValues, numberRangeMode]
   );
 
-  const userFilterSummary = useMemo(() => {
-    const filter = filterValues.userFilter || {};
-    if (!filter.headerKey) return 'None';
-    const header = visibleHeaders.find((h) => h.key === filter.headerKey);
-    return `${header?.name || filter.headerKey} = Current User`;
-  }, [filterValues, visibleHeaders]);
-
-  const hasActiveFilters = useMemo(() => {
-    return (
-      Object.entries(filterValues).some(([key, filter]) => !isFilterEmpty(filter)) ||
-      !!filterValues.userFilter?.headerKey
-    );
-  }, [filterValues]);
-
-  useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
-  useClickOutside(userFilterRef, showUserFilterForm, () => setShowUserFilterForm(false));
-
   return (
-    <>
-      <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        {/* Restrict by User Section */}
+    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {filterType === 'user' ? (
         <div
-          className={`${styles.filterItem} ${showUserFilterForm ? styles.activeItem : ''} ${
-            isDarkTheme ? styles.darkTheme : ''
-          }`}
-          onClick={() => setShowUserFilterForm((prev) => !prev)}
+          className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''} ${styles.singleHeader}`}
+          onClick={() => setActiveFilterIndex(0)}
         >
           <div className={styles.filterRow}>
             <div className={styles.filterNameType}>
@@ -273,7 +277,14 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
             </div>
             <div className={styles.primaryButtons}>
               {showFilterSummary ? (
-                <span className={styles.filterSummary}>{userFilterSummary}</span>
+                <span className={styles.filterSummary}>
+                  {filterValues.userFilter?.headerKey
+                    ? `${
+                        visibleHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
+                        filterValues.userFilter.headerKey
+                      } = Current User`
+                    : 'None'}
+                </span>
               ) : (
                 <MdFilterAlt
                   className={`${styles.filterIcon} ${
@@ -283,221 +294,255 @@ const CardTypeFilter = ({ cardType, headers, tempData, setTempData, showFilterSu
               )}
             </div>
           </div>
-          {showUserFilterForm && (
-            <div
-              className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-              ref={userFilterRef}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <select
-                value={filterValues.userFilter?.headerKey || ''}
-                onChange={(e) => handleUserFilterChange(e.target.value || '')}
-                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-              >
-                <option value="">No User Filter</option>
-                {visibleHeaders.map((header) => (
-                  <option key={header.key} value={header.key}>
-                    {header.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={clearUserFilter}
-                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Regular Filters */}
-        {visibleHeaders.map((header, index) => (
           <div
-            key={header.key}
-            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
-              isDarkTheme ? styles.darkTheme : ''
-            }`}
-            onClick={() => toggleFilter(index)}
+            className={`${styles.filterActions} ${styles.singleHeader} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className={styles.filterRow}>
-              <div className={styles.filterNameType}>
-                <span>{header.name}</span>
-              </div>
-              <div className={styles.primaryButtons}>
-                {showFilterSummary ? (
-                  <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
-                ) : (
-                  <MdFilterAlt
-                    className={`${styles.filterIcon} ${
-                      !isFilterEmpty(filterValues[header.key]) ? styles.active : ''
-                    }`}
-                  />
-                )}
-              </div>
-            </div>
-            {activeFilterIndex === index && (
-              <div
-                className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-                ref={filterActionsRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {header.type === 'number' ? (
-                  numberRangeMode[header.key] ? (
-                    <>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.start || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                        placeholder="From"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      />
-                      <span className={styles.separator}>–</span>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.end || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                        placeholder="To"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Value
-                      </button>
-                      <select
-                        value={filterValues[header.key]?.sortOrder || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <option value="">Sort...</option>
-                        <option value="ascending">Ascending</option>
-                        <option value="descending">Descending</option>
-                      </select>
-                    </>
-                  ) : (
-                    <>
-                      <select
-                        value={filterValues[header.key]?.order || 'equals'}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
-                        className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <option value="equals">=</option>
-                        <option value="greater">{'>'}</option>
-                        <option value="less">{'<'}</option>
-                        <option value="greaterOrEqual">≥</option>
-                        <option value="lessOrEqual">≤</option>
-                      </select>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.value || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                        placeholder="Value"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Range
-                      </button>
-                      <select
-                        value={filterValues[header.key]?.sortOrder || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <option value="">Sort...</option>
-                        <option value="ascending">Ascending</option>
-                        <option value="descending">Descending</option>
-                      </select>
-                    </>
-                  )
-                ) : header.type === 'date' ? (
-                  <select
-                    value={filterValues[header.key]?.sortOrder || ''}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    <option value="">None</option>
-                    <option value="ascending">Ascending</option>
-                    <option value="descending">Descending</option>
-                  </select>
-                ) : header.type === 'dropdown' ? (
-                  <>
-                    <select
-                      multiple
-                      value={filterValues[header.key]?.values || []}
-                      onChange={(e) => handleDropdownChange(header.key, e)}
-                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      {header.options.map((option, idx) => (
-                        <option key={`${header.key}-option-${idx}`} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={filterValues[header.key]?.sortOrder || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="">Sort...</option>
-                      <option value="ascending">Ascending</option>
-                      <option value="descending">Descending</option>
-                    </select>
-                  </>
-                ) : (
-                  <>
-                    <select
-                      value={filterValues[header.key]?.condition || 'equals'}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
-                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="equals">Equals</option>
-                      <option value="contains">Contains</option>
-                      <option value="startsWith">Starts with</option>
-                      <option value="endsWith">Ends with</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={filterValues[header.key]?.value || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                      placeholder="Value"
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <select
-                      value={filterValues[header.key]?.sortOrder || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="">Sort...</option>
-                      <option value="ascending">Ascending</option>
-                      <option value="descending">Descending</option>
-                    </select>
-                  </>
-                )}
-                <button
-                  onClick={() => clearFilter(header.key)}
-                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                >
-                  Clear
-                </button>
-              </div>
-            )}
+            <select
+              value={filterValues.userFilter?.headerKey || ''}
+              onChange={(e) => handleUserFilterChange(e.target.value || '')}
+              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              <option value="">No User Filter</option>
+              {visibleHeaders.map((header) => (
+                <option key={header.key} value={header.key}>
+                  {header.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={clearUserFilter}
+              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleReset}
+              className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              disabled={!filterValues.userFilter?.headerKey}
+            >
+              Reset
+            </button>
           </div>
-        ))}
-      </div>
-      <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <button
-          onClick={handleReset}
-          className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          disabled={!hasActiveFilters}
-        >
-          Reset All
-        </button>
-      </div>
-    </>
+        </div>
+      ) : (
+        <>
+          {visibleHeaders.length === 0 ? (
+            <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              No {filterType} headers available
+            </div>
+          ) : (
+            <>
+              <div className={styles.headerSelectContainer}>
+                <select
+                  value={selectedHeaderKey || ''}
+                  onChange={(e) => setSelectedHeaderKey(e.target.value || null)}
+                  className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                >
+                  <option value="">Select a header</option>
+                  {visibleHeaders.map((header) => (
+                    <option key={header.key} value={header.key}>
+                      {header.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedHeaderKey && (
+                <div
+                  className={`${styles.filterItem} ${styles.singleHeader} ${
+                    activeFilterIndex === 0 ? styles.activeItem : ''
+                  } ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => setActiveFilterIndex(0)}
+                >
+                  <div className={styles.filterRow}>
+                    <div className={styles.filterNameType}>
+                      <span>{visibleHeaders.find((h) => h.key === selectedHeaderKey)?.name}</span>
+                    </div>
+                    <div className={styles.primaryButtons}>
+                      {showFilterSummary ? (
+                        <span className={styles.filterSummary}>
+                          {getFilterSummary(visibleHeaders.find((h) => h.key === selectedHeaderKey))}
+                        </span>
+                      ) : (
+                        <MdFilterAlt
+                          className={`${styles.filterIcon} ${
+                            !isFilterEmpty(filterValues[selectedHeaderKey]) ? styles.active : ''
+                          }`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={`${styles.filterActions} ${styles.singleHeader} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {(() => {
+                      const header = visibleHeaders.find((h) => h.key === selectedHeaderKey);
+                      if (!header) return null;
+
+                      if (header.type === 'number') {
+                        return numberRangeMode[header.key] ? (
+                          <>
+                            <input
+                              type="number"
+                              value={filterValues[header.key]?.start || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                              placeholder="From"
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                            <span className={styles.separator}>–</span>
+                            <input
+                              type="number"
+                              value={filterValues[header.key]?.end || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                              placeholder="To"
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                            <button
+                              onClick={() => toggleNumberRangeMode(header.key)}
+                              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              Value
+                            </button>
+                            <select
+                              value={filterValues[header.key]?.sortOrder || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="">Sort...</option>
+                              <option value="ascending">Ascending</option>
+                              <option value="descending">Descending</option>
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <select
+                              value={filterValues[header.key]?.order || 'equals'}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                              className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="equals">=</option>
+                              <option value="greater">{'>'}</option>
+                              <option value="less">{'<'}</option>
+                              <option value="greaterOrEqual">≥</option>
+                              <option value="lessOrEqual">≤</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={filterValues[header.key]?.value || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                              placeholder="Value"
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                            <button
+                              onClick={() => toggleNumberRangeMode(header.key)}
+                              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              Range
+                            </button>
+                            <select
+                              value={filterValues[header.key]?.sortOrder || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="">Sort...</option>
+                              <option value="ascending">Ascending</option>
+                              <option value="descending">Descending</option>
+                            </select>
+                          </>
+                        );
+                      } else if (header.type === 'date') {
+                        return (
+                          <select
+                            value={filterValues[header.key]?.sortOrder || ''}
+                            onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                            className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          >
+                            <option value="">None</option>
+                            <option value="ascending">Ascending</option>
+                            <option value="descending">Descending</option>
+                          </select>
+                        );
+                      } else if (header.type === 'dropdown') {
+                        return (
+                          <>
+                            <select
+                              multiple
+                              value={filterValues[header.key]?.values || []}
+                              onChange={(e) => handleDropdownChange(header.key, e)}
+                              className={`${styles.filterMultiSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              {header.options.map((option, idx) => (
+                                <option key={`${header.key}-option-${idx}`} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={filterValues[header.key]?.sortOrder || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="">Sort...</option>
+                              <option value="ascending">Ascending</option>
+                              <option value="descending">Descending</option>
+                            </select>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <select
+                              value={filterValues[header.key]?.condition || 'equals'}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
+                              className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="equals">Equals</option>
+                              <option value="contains">Contains</option>
+                              <option value="startsWith">Starts with</option>
+                              <option value="endsWith">Ends with</option>
+                            </select>
+                            <input
+                              type="text"
+                              value={filterValues[header.key]?.value || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                              placeholder="Value"
+                              className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            />
+                            <select
+                              value={filterValues[header.key]?.sortOrder || ''}
+                              onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              <option value="">Sort...</option>
+                              <option value="ascending">Ascending</option>
+                              <option value="descending">Descending</option>
+                            </select>
+                          </>
+                        );
+                      }
+                    })()}
+                    <button
+                      onClick={() => clearFilter(header.key)}
+                      className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      disabled={isFilterEmpty(filterValues[selectedHeaderKey])}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 
@@ -517,6 +562,7 @@ CardTypeFilter.propTypes = {
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   showFilterSummary: PropTypes.bool,
+  filterType: PropTypes.string,
 };
 
 export default CardTypeFilter;
