@@ -445,15 +445,6 @@ const Sheets = ({
               <MdFilterAlt size={20} />
             </button>
           )}
-          {/* Only business user can see the select button */}
-          {!isSelectMode && isBusinessUser && (
-            <button
-              className={styles.selectButton}
-              onClick={handleSelectToggle}
-            >
-              Select
-            </button>
-          )}
           {isSelectMode && isBusinessUser ? (
             <>
               <button
