@@ -25,7 +25,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     else if (path === '/sheets') setActiveOption('sheets');
     else if (path === '/metrics') setActiveOption('metrics');
     else if (path === '/financials') setActiveOption('financials');
-    else if (path === '/marketing') setActiveOption('marketing');
+    else if (path === '/actions') setActiveOption('actions');
     else setActiveOption('dashboard');
   }, [location.pathname, setActiveOption]);
 
@@ -59,7 +59,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
       sheets: '/sheets',
       metrics: '/metrics',
       financials: '/financials',
-      marketing: '/marketing',
+      actions: '/actions',
     };
     navigate(routes[option]);
   };
@@ -90,7 +90,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     dashboard: { icon: <RiDashboard2Fill size={20} />, label: 'Dashboard' },
     sheets: { icon: <SiGoogleadsense size={20} />, label: 'Sheets' },
     financials: { icon: <FaMoneyBillWave size={20} />, label: 'Financials' },
-    marketing: { icon: <FaBullhorn size={20} />, label: 'Marketing' },
+    actions: { icon: <FaBullhorn size={20} />, label: 'Actions' },
     metrics: { icon: <FaChartBar size={20} />, label: 'Metrics' },
   };
 
@@ -98,7 +98,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   const canAccess = (section) => {
     if (!user) return false;
     if (user.uid === user.businessId) return true;
-    if (section === 'dashboard' || section === 'financials' || section === 'marketing' || section === 'metrics') {
+    if (section === 'dashboard' || section === 'financials' || section === 'actions' || section === 'metrics') {
       return (
         user.permissions?.[section] === 'editor' || user.permissions?.[section] === 'viewer'
       );
@@ -145,8 +145,8 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                     ? styles.activeSheets
                     : activeOption === 'financials'
                     ? styles.activeFinancials
-                    : activeOption === 'marketing'
-                    ? styles.activeMarketing
+                    : activeOption === 'actions'
+                    ? styles.activeActions
                     : styles.activeMetrics
                 } ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={toggleMenu}

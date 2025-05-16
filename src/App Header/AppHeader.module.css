@@ -240,12 +240,12 @@
   background: rgba(52, 199, 89, 0.2);
 }
 
-.activeMarketing {
+.activeActions {
   color: #FF2D55;
   background: rgba(255, 45, 85, 0.12);
 }
 
-.activeMarketing.darkTheme {
+.activeActions.darkTheme {
   color: #FF2D55;
   background: rgba(255, 45, 85, 0.2);
 }

@@ -827,7 +827,7 @@ const initialState = {
       ],
     },
     {
-      category: 'Marketing',
+      category: 'Actions',
       metrics: [
         { id: 'metric-campaign-roi', name: 'Campaign ROI', type: 'multiplier', value: '6.79x' },
         { id: 'metric-fb-leads', name: 'FB Ad Leads', type: 'text', value: '10 leads, $600/lead' },
@@ -917,7 +917,7 @@ const initialState = {
         {
           id: 'widget-ad-spend',
           size: 'large',
-          title: 'Marketing',
+          title: 'Actions',
           metricId: 'metric-ad-spend',
           position: { row: 0, col: 0 },
           dashboardId: 'dashboard-2',
@@ -925,7 +925,7 @@ const initialState = {
         {
           id: 'widget-campaign-performance',
           size: 'medium',
-          title: 'Marketing',
+          title: 'Actions',
           metricId: 'metric-campaign-performance',
           position: { row: 1, col: 0 },
           dashboardId: 'dashboard-2',
@@ -933,7 +933,7 @@ const initialState = {
         {
           id: 'widget-roi',
           size: 'small',
-          title: 'Marketing',
+          title: 'Actions',
           metricId: 'metric-campaign-roi',
           position: { row: 1, col: 1 },
           dashboardId: 'dashboard-2',
