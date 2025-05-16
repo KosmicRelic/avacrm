@@ -89,31 +89,43 @@ const ProfileModal = ({
             ✕
           </button>
         </div>
-        {(
+        {user?.userType === 'business' && (
+          <button
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            onClick={handleSettingsClick}
+          >
+            <FaCog size={16} style={{ marginRight: "8px" }} />
+            Settings
+          </button>
+        )}
+        <div className={styles.section}>
+          {user?.userType === 'business' ? (
+            <>
+              <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
+              <button
+                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleCardsClick}
+              >
+                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+                Cards
+              </button>
+              <button
+                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={handleSignOut}
+              >
+                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+                Sign Out
+              </button>
+            </>
+          ) : (
             <button
               className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              onClick={handleSettingsClick}
+              onClick={handleSignOut}
             >
-              <FaCog size={16} style={{ marginRight: "8px" }} />
-              Settings
+              <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+              Sign Out
             </button>
           )}
-        <div className={styles.section}>
-          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleCardsClick}
-          >
-            <FaAddressCard size={16} style={{ marginRight: "8px" }} />
-            Cards
-          </button>
-          <button
-            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            onClick={handleSignOut}
-          >
-            <FaAddressCard size={16} style={{ marginRight: "8px" }} />
-            Sign Out
-          </button>
         </div>
       </div>
     </div>

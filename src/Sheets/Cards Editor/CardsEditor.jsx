@@ -53,6 +53,12 @@ const CardsEditor = ({
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
+  const isBusinessUser = (() => {
+    if (!formData || !formData.sheetName || !sheets || !sheets.allSheets) return false;
+    const sheet = sheets.allSheets.find((s) => s.sheetName === formData.sheetName);
+    return sheet && sheet.businessId && (sheet.businessId === (window?.user?.uid || (window?.firebase?.auth?.currentUser?.uid) || (window?.auth?.currentUser?.uid) || (user && user.uid)));
+  })();
+
   const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
   const cardTypeOptions = useMemo(() => {
     if (!selectedSheet) return [];
@@ -550,20 +556,24 @@ const CardsEditor = ({
                 )}
                 {isEditing && (
                   <div className={styles.deleteButtonWrapper}>
-                    <button
-                      className={`${styles.historyButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={handleViewHistory}
-                      aria-label="View history"
-                    >
-                      View History
-                    </button>
-                    <button
-                      className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={handleDelete}
-                      aria-label="Delete card"
-                    >
-                      Delete Card
-                    </button>
+                    {isBusinessUser && (
+                      <button
+                        className={`${styles.historyButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={handleViewHistory}
+                        aria-label="View history"
+                      >
+                        View History
+                      </button>
+                    )}
+                    {isBusinessUser && (
+                      <button
+                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={handleDelete}
+                        aria-label="Delete card"
+                      >
+                        Delete Card
+                      </button>
+                    )}
                   </div>
                 )}
               </>

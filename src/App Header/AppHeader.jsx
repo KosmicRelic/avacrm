@@ -9,7 +9,7 @@ import { RiDashboard2Fill } from 'react-icons/ri';
 import { MainContext } from '../Contexts/MainContext';
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption }) {
-  const { isDarkTheme, setIsDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, setIsDarkTheme, user } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -94,6 +94,24 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     metrics: { icon: <FaChartBar size={20} />, label: 'Metrics' },
   };
 
+  // Permission helpers
+  const canAccess = (section) => {
+    if (!user) return false;
+    if (user.uid === user.businessId) return true;
+    if (section === 'dashboard' || section === 'financials' || section === 'marketing' || section === 'metrics') {
+      return (
+        user.permissions?.[section] === 'editor' || user.permissions?.[section] === 'viewer'
+      );
+    }
+    if (section === 'sheets') {
+      return user.permissions?.sheets?.role === 'editor' || user.permissions?.sheets?.role === 'viewer';
+    }
+    return false;
+  };
+
+  // Filter navOptions based on permissions
+  const visibleNavOptions = Object.keys(navOptions).filter((option) => canAccess(option));
+
   // Theme options
   const themeOptions = [
     { value: 'light', label: 'Light' },
@@ -149,7 +167,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                   ref={menuRef}
                   className={`${styles.menuDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
                 >
-                  {Object.keys(navOptions).map((option) => (
+                  {visibleNavOptions.map((option) => (
                     <button
                       key={option}
                       className={`${styles.navButton} ${
@@ -201,7 +219,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
         </div>
         {!isMobile && (
           <nav className={styles.desktopNav}>
-            {Object.keys(navOptions).map((option) => (
+            {visibleNavOptions.map((option) => (
               <button
                 key={option}
                 className={`${styles.navButton} ${

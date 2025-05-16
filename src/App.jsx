@@ -59,6 +59,12 @@ ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+function hasDashboardAccess(user) {
+  if (!user) return false;
+  if (user.uid === user.businessId) return true;
+  return user.permissions?.dashboard === 'editor' || user.permissions?.dashboard === 'viewer';
+}
+
 function App() {
   const {
     sheets,
@@ -119,6 +125,14 @@ function App() {
       setActiveDashboardId(dashboards[0].id);
     }
   }, [dashboards, activeDashboardId]);
+
+  // Only redirect if user tries to access /dashboard and does not have access
+  useEffect(() => {
+    if (!userAuthChecked || !user) return;
+    if (location.pathname === '/dashboard' && !hasDashboardAccess(user)) {
+      navigate('/sheets', { replace: true });
+    }
+  }, [user, userAuthChecked, location.pathname]);
 
   // Handle banner display and animation
   useEffect(() => {

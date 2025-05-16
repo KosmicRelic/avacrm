@@ -323,6 +323,8 @@ const Sheets = ({
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
 
+  const isBusinessUser = user && user.uid === activeSheet?.businessId;
+
   const handleSheetClick = useCallback(
     (sheetName) => {
       if (sheetName !== activeSheetName) {
@@ -417,20 +419,6 @@ const Sheets = ({
     }
   }, [finalRows, selectedRowIds]);
 
-  const handleMoveOrCopy = useCallback(
-    (action) => {
-      if (action === 'move' && isPrimarySheet) {
-        alert("Cards cannot be moved from the primary sheet 'All Cards'.");
-        return;
-      }
-      onOpenTransportModal(action, selectedRowIds, () => {
-        setIsSelectMode(false);
-        setSelectedRowIds([]);
-      });
-    },
-    [selectedRowIds, onOpenTransportModal, isPrimarySheet]
-  );
-
   const handleDeleteSelected = useCallback(() => {
     setCards((prev) =>
       prev.map((card) =>
@@ -447,7 +435,7 @@ const Sheets = ({
     <div className={styles.tableContent}>
       <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={styles.buttonGroup}>
-          {!isSelectMode ? (
+          {!isSelectMode && (
             <button
               className={`${styles.filterButton} ${
                 isDarkTheme ? styles.darkTheme : ''
@@ -456,7 +444,17 @@ const Sheets = ({
             >
               <MdFilterAlt size={20} />
             </button>
-          ) : (
+          )}
+          {/* Only business user can see the select button */}
+          {!isSelectMode && isBusinessUser && (
+            <button
+              className={styles.selectButton}
+              onClick={handleSelectToggle}
+            >
+              Select
+            </button>
+          )}
+          {isSelectMode && isBusinessUser ? (
             <>
               <button
                 className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -473,20 +471,6 @@ const Sheets = ({
                     {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
                       ? 'Deselect All'
                       : 'Select All'}
-                  </button>
-                  {!isPrimarySheet && (
-                    <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => handleMoveOrCopy('move')}
-                    >
-                      Move
-                    </button>
-                  )}
-                  <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => handleMoveOrCopy('copy')}
-                  >
-                    Copy
                   </button>
                   <button
                     className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -505,7 +489,7 @@ const Sheets = ({
                 </>
               )}
             </>
-          )}
+          ) : null}
         </div>
         <div className={styles.searchContainer}>
           <input
@@ -521,9 +505,11 @@ const Sheets = ({
             </button>
           )}
         </div>
-        <button className={styles.editHeaderButton} onClick={onEditSheet}>
-          Edit
-        </button>
+        {isBusinessUser && (
+          <button className={styles.editHeaderButton} onClick={onEditSheet}>
+            Edit
+          </button>
+        )}
       </div>
       <div
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -576,18 +562,22 @@ const Sheets = ({
         )}
       </div>
       <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
-        <button
-          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={onOpenSheetsModal}
-        >
-          <CgArrowsExchangeAlt />
-        </button>
-        <button
-          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={onOpenSheetFolderModal}
-        >
-          +
-        </button>
+        {isBusinessUser && (
+          <button
+            className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={onOpenSheetsModal}
+          >
+            <CgArrowsExchangeAlt />
+          </button>
+        )}
+        {isBusinessUser && (
+          <button
+            className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={onOpenSheetFolderModal}
+          >
+            +
+          </button>
+        )}
         {sheets.structure.map((item, index) =>
           item.folderName ? (
             <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>

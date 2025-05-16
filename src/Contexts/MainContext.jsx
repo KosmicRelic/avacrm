@@ -86,25 +86,66 @@ export const MainContextProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser({ uid: firebaseUser.uid, email: firebaseUser.email });
-
-        if (isSignup) {
-          setIsSignup(false);
-          navigate('/dashboard');
-          setUserAuthChecked(true);
-          return;
-        }
-
-        const currentRoute = location.pathname;
+        let userPermissions = {
+          dashboard: 'editor',
+          metrics: 'editor',
+          sheets: { role: 'editor', allowedSheetIds: [] },
+          actions: 'editor',
+          financials: 'editor',
+        };
+        let userType = 'business';
         let fetchedBusinessId = firebaseUser.uid;
+        let userData = null;
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists() && userDoc.data().businessId) {
             fetchedBusinessId = userDoc.data().businessId;
+            userType = userDoc.data().userType || 'business';
+            userData = userDoc.data();
           }
           setBusinessId(fetchedBusinessId);
 
+          // If not business user, fetch permissions from teamMembers
+          if (firebaseUser.uid !== fetchedBusinessId) {
+            const teamMemberDoc = await getDoc(doc(db, 'businesses', fetchedBusinessId, 'teamMembers', firebaseUser.uid));
+            if (teamMemberDoc.exists()) {
+              const perms = teamMemberDoc.data().permissions;
+              userPermissions = {
+                dashboard: perms?.dashboard?.role || 'none',
+                metrics: perms?.metrics?.role || 'none',
+                sheets: perms?.sheets || { role: 'none', allowedSheetIds: [] },
+                actions: perms?.actions?.role || 'none',
+                financials: perms?.financials?.role || 'none',
+              };
+              userType = 'team_member';
+            }
+          }
+        } catch (e) {
+          // fallback: treat as business user
+        }
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          businessId: fetchedBusinessId,
+          userType,
+          permissions: userPermissions,
+          ...userData,
+        });
+
+        if (isSignup) {
+          setIsSignup(false);
+          if (userType === 'business') {
+            navigate('/dashboard');
+          } else {
+            navigate('/sheets');
+          }
+          setUserAuthChecked(true);
+          return;
+        }
+
+        const currentRoute = location.pathname;
+        try {
           const fetches = [];
           if (currentRoute === '/sheets' && !hasFetched.current.sheets) {
             if (!activeSheetName) setActiveSheetName('Leads');

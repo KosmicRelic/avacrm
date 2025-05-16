@@ -8,7 +8,8 @@ import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
 const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect }) => {
   const isAddNew = rowData.isAddNew;
-  const { isDarkTheme } = useContext(MainContext);
+  const { isDarkTheme, user, businessId } = useContext(MainContext);
+  const isBusinessUser = user && user.uid === businessId;
 
   const handleClick = () => {
     if (isAddNew && onAddRow) {
@@ -34,7 +35,8 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
       } ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
     >
-      {!isAddNew && isSelectMode && (
+      {/* Only show select button for business user */}
+      {!isAddNew && isSelectMode && isBusinessUser && (
         <div
           className={`${styles.bodyCell} ${styles.selectCell} ${styles.selectMode} ${
             isDarkTheme ? styles.darkTheme : ''
@@ -55,12 +57,15 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           <div
             className={`${styles.bodyCell} ${styles.addCell} ${isDarkTheme ? styles.darkTheme : ''}`}
           >
-            <button
-              className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={handleSelectClick}
-            >
-              Select
-            </button>
+            {/* Only show select button for business user in add new row */}
+            {isBusinessUser && (
+              <button
+                className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={handleSelectClick}
+              >
+                Select
+              </button>
+            )}
           </div>
           <div
             className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
