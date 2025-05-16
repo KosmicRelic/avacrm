@@ -70,7 +70,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
 
   const updateTempFilters = useCallback(
     (newFilters) => {
-      console.log('Updating temp filters:', newFilters);
+      // console.log('Updating temp filters:', newFilters);
       setTempData({ filterValues: { ...newFilters } });
     },
     [setTempData]

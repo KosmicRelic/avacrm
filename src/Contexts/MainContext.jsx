@@ -47,7 +47,6 @@ export const MainContextProvider = ({ children }) => {
   });
   const isUpdatingCardsFromTemplate = useRef(false);
   const isBatchProcessing = useRef(false);
-  const isFetching = useRef(false);
   const processedTeamMembers = useRef(new Set());
   const displayedMessages = useRef(new Set());
   const navigate = useNavigate();
@@ -61,14 +60,9 @@ export const MainContextProvider = ({ children }) => {
 
   const addBannerMessage = (message, type = 'success') => {
     const messageId = `${message}-${type}-${Date.now()}`;
-    if (displayedMessages.current.has(messageId)) {
-      return;
-    }
+    if (displayedMessages.current.has(messageId)) return;
     displayedMessages.current.add(messageId);
-    setBannerQueue((prev) => [
-      ...prev,
-      { message, type, id: messageId },
-    ]);
+    setBannerQueue((prev) => [...prev, { message, type, id: messageId }]);
   };
 
   useEffect(() => {
@@ -111,7 +105,6 @@ export const MainContextProvider = ({ children }) => {
           }
           setBusinessId(fetchedBusinessId);
 
-          // Only fetch what is needed for the current route, in parallel
           const fetches = [];
           if (currentRoute === '/sheets' && !hasFetched.current.sheets) {
             if (!activeSheetName) setActiveSheetName('Leads');
@@ -234,29 +227,22 @@ export const MainContextProvider = ({ children }) => {
     const setupListener = () => {
       const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
       const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
-        const members = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+        const members = snapshot.docs.map((doc) => ({ uid: doc.id, ...doc.data() }));
         setTeamMembers(members);
 
         for (const change of snapshot.docChanges()) {
           if (change.type === 'added') {
             const newMember = { uid: change.doc.id, ...change.doc.data() };
 
-            if (!newMember.displayJoinedMessage) {
-              continue;
-            }
-
-            if (processedTeamMembers.current.has(newMember.uid)) {
-              continue;
-            }
+            if (!newMember.displayJoinedMessage) continue;
+            if (processedTeamMembers.current.has(newMember.uid)) continue;
             processedTeamMembers.current.add(newMember.uid);
 
             addBannerMessage(`${newMember.name} ${newMember.surname} has joined the team!`, 'success');
 
             try {
               const teamMemberDocRef = doc(db, 'businesses', businessId, 'teamMembers', newMember.uid);
-              await updateDoc(teamMemberDocRef, {
-                displayJoinedMessage: null,
-              });
+              await updateDoc(teamMemberDocRef, { displayJoinedMessage: null });
             } catch (error) {
               console.error('Error removing displayJoinedMessage:', error);
             }
@@ -277,19 +263,10 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId]);
 
   useEffect(() => {
-    if (
-      user &&
-      businessId &&
-      location.pathname === '/sheets' &&
-      activeSheetName
-    ) {
+    if (user && businessId && location.pathname === '/sheets' && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
-      if (
-        !sheetId ||
-        fetchingSheetIdsRef.current.has(sheetId) ||
-        sheetCardsFetched[sheetId]
-      ) {
+      if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
@@ -321,11 +298,9 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [location.pathname, activeSheetName]);
 
-  // New effect to reset sheetCardsFetched when cardTypeFilters change
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded) return;
 
-    // Monitor changes to cardTypeFilters in sheets
     const currentSheet = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const currentCardTypeFilters = currentSheet?.cardTypeFilters || {};
     const prevCardTypeFilters = prevStates.current.sheets.allSheets.find(
@@ -341,7 +316,7 @@ export const MainContextProvider = ({ children }) => {
         });
       }
     }
-  }, [sheets, activeSheetName, user, businessId, isDataLoaded, setSheetCardsFetched]);
+  }, [sheets, activeSheetName, user, businessId, isDataLoaded]);
 
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded || isBatchProcessing.current) return;
@@ -352,19 +327,18 @@ export const MainContextProvider = ({ children }) => {
       return;
     }
 
-    // Skip updates if data is uninitialized (initial load)
     if (sheets.allSheets.length === 0 && sheets.structure.length === 0 && !sheets.deletedSheetId) {
       prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       return;
     }
 
-    const isEqual = (a, b) => {
+    const isEqual = (a, b, ignoreKeys = []) => {
       if (a === b) return true;
       if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null) return false;
-      const keysA = Object.keys(a);
-      const keysB = Object.keys(b);
+      const keysA = Object.keys(a).filter((key) => !ignoreKeys.includes(key));
+      const keysB = Object.keys(b).filter((key) => !ignoreKeys.includes(key));
       if (keysA.length !== keysB.length) return false;
-      return keysA.every((key) => keysB.includes(key) && isEqual(a[key], b[key]));
+      return keysA.every((key) => isEqual(a[key], b[key], ignoreKeys));
     };
 
     const stateConfig = {
@@ -407,10 +381,8 @@ export const MainContextProvider = ({ children }) => {
       let hasChanges = false;
 
       try {
-        // Check if user is a business user
         const isBusinessUser = user.uid === businessId;
 
-        // Handle card updates (allowed for all users if card is in accessible sheet's typeOfCardsToDisplay)
         const modifiedCards = cards.filter((card) => card.isModified);
         const accessibleSheets = sheets.allSheets;
         const accessibleCardTypes = new Set(
@@ -443,7 +415,6 @@ export const MainContextProvider = ({ children }) => {
           }
         }
 
-        // Handle sheets, dashboards, cardTemplates, metrics (business users only)
         if (isBusinessUser) {
           const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
           for (const dashboard of modifiedDashboards) {
@@ -479,20 +450,26 @@ export const MainContextProvider = ({ children }) => {
 
             const currentCollectionData = config.getCollectionData(currentState);
             const prevCollectionData = config.getCollectionData(prevState);
-            const collectionChanges = detectCollectionChanges(currentCollectionData, prevCollectionData);
+            const collectionChanges = detectCollectionChanges(
+              currentCollectionData,
+              prevCollectionData,
+              stateKey === 'sheets' ? ['filters'] : []
+            );
 
             collectionChanges.added.forEach((item) => {
               const docRef = doc(config.collectionPath(), item.docId);
-              const { docId, isModified, action, ...data } = item;
+              const { docId, isModified, action, filters, ...data } = item;
               batch.set(docRef, data);
               hasChanges = true;
             });
 
             collectionChanges.updated.forEach((item) => {
-              const docRef = doc(config.collectionPath(), item.docId);
-              const { docId, isModified, action, ...data } = item;
-              batch.set(docRef, data, { merge: true });
-              hasChanges = true;
+              if (item.isModified && item.action !== 'filter') {
+                const docRef = doc(config.collectionPath(), item.docId);
+                const { docId, isModified, action, filters, ...data } = item;
+                batch.set(docRef, data, { merge: true });
+                hasChanges = true;
+              }
             });
 
             collectionChanges.removed.forEach((docId) => {
@@ -512,9 +489,10 @@ export const MainContextProvider = ({ children }) => {
             }
           }
 
-          // Handle team members' permissions for deleted sheets
           if (sheets.deletedSheetId) {
-            const teamMembersSnapshot = await getDocs(collection(db, 'businesses', businessId, 'teamMembers'));
+            const teamMembersSnapshot = await getDocs(
+              collection(db, 'businesses', businessId, 'teamMembers')
+            );
             teamMembersSnapshot.forEach((teamMemberDoc) => {
               const teamMemberData = teamMemberDoc.data();
               const allowedSheetIds = teamMemberData.permissions?.sheets?.allowedSheetIds || [];
@@ -535,7 +513,6 @@ export const MainContextProvider = ({ children }) => {
         if (hasChanges) {
           await batch.commit();
 
-          // Clean action and isModified from states
           setCards((prev) =>
             prev
               .filter((card) => !(card.isModified && card.action === 'remove'))
@@ -576,7 +553,7 @@ export const MainContextProvider = ({ children }) => {
             setSheets((prev) => ({
               ...prev,
               allSheets: prev.allSheets.map((sheet) => {
-                if (sheet.isModified) {
+                if (sheet.isModified && sheet.action !== 'filter') {
                   const { isModified, action, ...cleanSheet } = sheet;
                   return cleanSheet;
                 }
@@ -602,7 +579,6 @@ export const MainContextProvider = ({ children }) => {
               })
             );
 
-            // Clear deletedSheetId after successful commit
             if (sheets.deletedSheetId) {
               setSheets((prev) => ({ ...prev, deletedSheetId: null }));
             }
@@ -617,7 +593,7 @@ export const MainContextProvider = ({ children }) => {
       }
     };
 
-    const detectCollectionChanges = (currentItems, prevItems) => {
+    const detectCollectionChanges = (currentItems, prevItems, ignoreKeys = []) => {
       const changes = { added: [], updated: [], removed: [] };
       const currentMap = new Map(currentItems.map((item) => [item.docId, item]));
       const prevMap = new Map(prevItems.map((item) => [item.docId, item]));
@@ -630,13 +606,15 @@ export const MainContextProvider = ({ children }) => {
           const keys = new Set([...Object.keys(item), ...Object.keys(prevItem)]);
           let diff = false;
           for (const key of keys) {
-            if (key === 'isActive' || key === 'isModified' || key === 'action') continue;
-            if (!isEqual(item[key], prevItem[key])) {
+            if (key === 'isActive' || key === 'isModified' || key === 'action' || ignoreKeys.includes(key)) {
+              continue;
+            }
+            if (!isEqual(item[key], prevItem[key], ignoreKeys)) {
               diff = true;
               break;
             }
           }
-          if (diff) {
+          if (diff && item.isModified) {
             changes.updated.push(item);
           }
         }
@@ -653,10 +631,6 @@ export const MainContextProvider = ({ children }) => {
 
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
-
-  useEffect(() => {
-    // console.log('Sheets:', sheets);
-  }, [sheets]);
 
   return (
     <MainContext.Provider

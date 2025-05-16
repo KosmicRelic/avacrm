@@ -46,12 +46,7 @@ export const handleModalSave = async ({
           ...prev,
           allSheets: prev.allSheets.map((sheet) =>
             sheet.sheetName === activeSheetName
-              ? {
-                  ...sheet,
-                  filters: { ...data.filterValues },
-                  isModified: true,
-                  action: 'update',
-                }
+              ? { ...sheet, filters: { ...data.filterValues } }
               : sheet
           ),
         }));
@@ -59,9 +54,8 @@ export const handleModalSave = async ({
       break;
     case 'sheet':
       if (data?.sheetName && data.currentHeaders && sheets) {
-        console.log('Saving sheet modal data:', data); // Debugging log
+        console.log('Saving sheet modal data:', data);
 
-        // Clean cardTypeFilters to remove undefined values and empty filters
         const cleanedCardTypeFilters = {};
         Object.entries(data.cardTypeFilters || {}).forEach(([cardType, filters]) => {
           const cleanedFilters = {};
@@ -118,7 +112,6 @@ export const handleModalSave = async ({
               return item;
             }),
           };
-          // Apply isModified and action to the structure array
           if (activeSheetName !== data.sheetName) {
             updatedSheets.structure = [
               ...updatedSheets.structure,
@@ -162,10 +155,7 @@ export const handleModalSave = async ({
         });
         if (data.newOrder[0]?.sheetName) {
           handleSheetChange(data.newOrder[0].sheetName);
-        } else if (
-          data.newOrder[0]?.folderName &&
-          data.newOrder[0]?.sheets?.length > 0
-        ) {
+        } else if (data.newOrder[0]?.folderName && data.newOrder[0]?.sheets?.length > 0) {
           handleSheetChange(data.newOrder[0].sheets[0]);
         }
       } else {
@@ -177,21 +167,17 @@ export const handleModalSave = async ({
         data.onComplete();
       }
       break;
-    case 'cardsTemplate': {
+    case 'cardsTemplate':
       if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
         if (!businessId) {
           console.warn('Cannot update templates and cards: businessId is missing');
-          alert(
-            'Error: Business ID is missing. Please ensure your account is properly configured.'
-          );
+          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
           return;
         }
 
         const updates = data.currentCardTemplates
           .map((newTemplate) => {
-            const oldTemplate = cardTemplates.find(
-              (t) => t.docId === newTemplate.docId
-            );
+            const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
             if (!oldTemplate || !newTemplate.isModified) return null;
 
             const update = {
@@ -239,12 +225,9 @@ export const handleModalSave = async ({
             });
 
             if (!result.success) {
-              throw new Error(
-                result.error || 'Failed to update templates and cards'
-              );
+              throw new Error(result.error || 'Failed to update templates and cards');
             }
 
-            // Clean action and isModified from cardTemplates
             setCardTemplates(
               data.currentCardTemplates.map((template) => {
                 const { isModified, action, ...cleanTemplate } = template;
@@ -264,10 +247,7 @@ export const handleModalSave = async ({
                 updatedCard.typeOfCards = matchingUpdate.newTypeOfCards;
               }
 
-              if (
-                matchingUpdate.deletedKeys &&
-                matchingUpdate.deletedKeys.length > 0
-              ) {
+              if (matchingUpdate.deletedKeys && matchingUpdate.deletedKeys.length > 0) {
                 matchingUpdate.deletedKeys.forEach((key) => {
                   if (key in updatedCard) {
                     delete updatedCard[key];
@@ -275,7 +255,6 @@ export const handleModalSave = async ({
                 });
               }
 
-              // Clean action and isModified from card
               const { isModified, action, ...cleanCard } = updatedCard;
               return cleanCard;
             });
@@ -288,13 +267,9 @@ export const handleModalSave = async ({
           return;
         }
       } else {
-        console.warn(
-          'Invalid or missing currentCardTemplates:',
-          data?.currentCardTemplates
-        );
+        console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
       }
       break;
-    }
     case 'folderOperations':
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {
@@ -348,10 +323,7 @@ export const handleModalSave = async ({
                     : item
                 );
               }
-            } else if (
-              actionData.action === 'deleteFolder' &&
-              actionData.folderName
-            ) {
+            } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
               const folder = currentStructure.find(
                 (item) => item.folderName === actionData.folderName
               );
@@ -381,10 +353,7 @@ export const handleModalSave = async ({
             ),
           };
         });
-      } else if (
-        data?.tempData?.action === 'deleteFolder' &&
-        data.tempData.folderName
-      ) {
+      } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
         setSheets((prev) => {
           const folderSheets = prev.structure.find(
             (item) => item.folderName === data.tempData.folderName
@@ -413,7 +382,6 @@ export const handleModalSave = async ({
       }
       break;
     case 'folderModal':
-      // console.log('Saving folderModal, no action needed');
       break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
@@ -525,8 +493,7 @@ export const handleModalClose = ({
         },
         category: options.openWidgetSetup.widget.title || null,
         metric: options.openWidgetSetup.metric?.id || null,
-        dashboardId:
-          options.openWidgetSetup.widget.dashboardId || activeDashboard?.id,
+        dashboardId: options.openWidgetSetup.widget.dashboardId || activeDashboard?.id,
         initialStep: 1,
       },
     });
@@ -575,9 +542,7 @@ export const renderModalContent = ({
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
-    setActiveModal((prev) =>
-      prev ? { ...prev, data: { ...prev.data, ...newData } } : prev
-    );
+    setActiveModal((prev) => (prev ? { ...prev, data: { ...prev.data, ...newData } } : prev));
 
   switch (activeModal.type) {
     case 'sheet':
@@ -607,9 +572,7 @@ export const renderModalContent = ({
         <FilterModal
           headers={resolvedHeaders || []}
           rows={resolvedRows || []}
-          tempData={
-            activeModal.data || { filterValues: activeSheet?.filters || {} }
-          }
+          tempData={activeModal.data || { filterValues: activeSheet?.filters || {} }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
         />
@@ -618,9 +581,7 @@ export const renderModalContent = ({
       return (
         <ReOrderModal
           sheets={sheets || { structure: [] }}
-          tempData={
-            activeModal.data || { newOrder: [...(sheets?.structure || [])] }
-          }
+          tempData={activeModal.data || { newOrder: [...(sheets?.structure || [])] }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
         />
@@ -641,11 +602,7 @@ export const renderModalContent = ({
     case 'cardsTemplate':
       return (
         <CardsTemplate
-          tempData={
-            activeModal.data || {
-              currentCardTemplates: [...(cardTemplates || [])],
-            }
-          }
+          tempData={activeModal.data || { currentCardTemplates: [...(cardTemplates || [])] }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
           businessId={businessId}
@@ -674,9 +631,7 @@ export const renderModalContent = ({
           tempData={activeModal.data?.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
-              prev
-                ? { ...prev, data: { ...prev.data, tempData: newData } }
-                : prev
+              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
             )
           }
         />
@@ -690,9 +645,7 @@ export const renderModalContent = ({
           tempData={activeModal.data?.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
-              prev
-                ? { ...prev, data: { ...prev.data, tempData: newData } }
-                : prev
+              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
             )
           }
         />
@@ -732,9 +685,7 @@ export const renderModalContent = ({
     case 'metrics':
       return (
         <MetricsModal
-          tempData={
-            activeModal.data || { currentCategories: [...(metrics || [])] }
-          }
+          tempData={activeModal.data || { currentCategories: [...(metrics || [])] }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
         />
@@ -847,11 +798,7 @@ export const onOpenSheetFolderModal = ({
   if (!sheets) return;
   setActiveModal({
     type: 'sheetFolder',
-    data: {
-      sheets,
-      handleSheetSave,
-      handleFolderSave,
-    },
+    data: { sheets, handleSheetSave, handleFolderSave },
   });
   sheetFolderModal?.open();
 };

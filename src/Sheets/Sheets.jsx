@@ -80,22 +80,14 @@ const Sheets = ({
 
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
-  console.log('Active sheet cardTypeFilters:', cardTypeFilters); // Add this line
+  // console.log('Active sheet cardTypeFilters:', cardTypeFilters);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
   const sheetCards = useMemo(() => {
     if (!activeSheet) return [];
     // Log followUpDate values to inspect format
-    console.log(
-      'Raw cards followUpDate:',
-      cards.map((card) => ({
-        docId: card.docId,
-        followUpDate: card.followUpDate,
-        followUpDateType: typeof card.followUpDate,
-        followUpDateString: JSON.stringify(card.followUpDate),
-      }))
-    );
+    
     return cards
       .filter((card) => sheetCardTypes.includes(card.typeOfCards))
       .filter((card) => {
@@ -269,8 +261,8 @@ const Sheets = ({
   }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
   const sortedRows = useMemo(() => {
-    console.log('Global Filters:', globalFilters);
-    console.log('Card Type Filters:', cardTypeFilters);
+    // console.log('Global Filters:', globalFilters);
+    // console.log('Card Type Filters:', cardTypeFilters);
     const sorted = [...filteredRows];
     const sortCriteria = [
       ...Object.entries(cardTypeFilters).flatMap(([type, filters]) =>
@@ -293,7 +285,7 @@ const Sheets = ({
         })),
     ];
 
-    console.log('Sort Criteria:', sortCriteria);
+    // console.log('Sort Criteria:', sortCriteria);
 
     if (sortCriteria.length > 0) {
       sorted.sort((a, b) => {
