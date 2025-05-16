@@ -192,16 +192,28 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
       return metric;
     }
 
-    // Format labels as three-letter month abbreviations
-    const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' });
-    const formattedLabels = (data.labels || []).map((label) => {
-      try {
-        const date = new Date(label);
-        return monthFormatter.format(date);
-      } catch {
-        return label.slice(0, 3); // Fallback for invalid labels
+    // Format labels as readable dates if possible
+    const formatLabel = (label) => {
+      if (!label) return '';
+      if (typeof label === 'object') {
+        // Firestore Timestamp or similar
+        if (typeof label.seconds === 'number') {
+          return new Date(label.seconds * 1000).toISOString().slice(0, 10);
+        }
+        if (typeof label._seconds === 'number') {
+          return new Date(label._seconds * 1000).toISOString().slice(0, 10);
+        }
       }
-    });
+      // Try to parse as date string
+      const d = new Date(label);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().slice(0, 10);
+      }
+      return String(label);
+    };
+
+    // Format labels as three-letter month abbreviations or yyyy-MM-dd
+    const formattedLabels = (data.labels || []).map((label) => formatLabel(label));
 
     // Ensure unique labels and aggregate data
     const uniqueLabels = [];

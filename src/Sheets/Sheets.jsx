@@ -55,7 +55,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched, user } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched, user, businessId } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const sheetId = activeSheet?.docId;
@@ -323,7 +323,7 @@ const Sheets = ({
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
 
-  const isBusinessUser = user && user.uid === activeSheet?.businessId;
+  const isBusinessUser = user && user.uid === businessId;
 
   const handleSheetClick = useCallback(
     (sheetName) => {

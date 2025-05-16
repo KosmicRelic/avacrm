@@ -2,8 +2,13 @@ import { format, startOfDay, addDays, startOfMonth, addMonths } from 'date-fns';
 
 // Helper to convert timestamp to Date
 export const timestampToDate = (timestamp) => {
-  if (typeof timestamp === 'object' && timestamp._seconds) {
-    return new Date(timestamp._seconds * 1000);
+  if (timestamp && typeof timestamp === 'object') {
+    if (typeof timestamp._seconds === 'number') {
+      return new Date(timestamp._seconds * 1000);
+    }
+    if (typeof timestamp.seconds === 'number') {
+      return new Date(timestamp.seconds * 1000);
+    }
   }
   return new Date(timestamp);
 };
@@ -219,16 +224,16 @@ export const aggregateByDay = (
   }
 
   // Sort history by timestamp
-  const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const sortedHistory = [...history].sort((a, b) => timestampToDate(a.timestamp) - timestampToDate(b.timestamp));
 
   // Use dateRange if provided, otherwise derive from history
   let startDate, endDate;
   if (dateRange && dateRange.start && dateRange.end) {
-    startDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.start)) : startOfDay(new Date(dateRange.start));
-    endDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.end)) : startOfDay(new Date(dateRange.end));
+    startDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.start)) : startOfDay(timestampToDate(dateRange.start));
+    endDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.end)) : startOfDay(timestampToDate(dateRange.end));
   } else {
-    startDate = granularity === 'monthly' ? startOfMonth(new Date(sortedHistory[0].timestamp)) : startOfDay(new Date(sortedHistory[0].timestamp));
-    endDate = granularity === 'monthly' ? startOfMonth(new Date(sortedHistory[sortedHistory.length - 1].timestamp)) : startOfDay(new Date(sortedHistory[sortedHistory.length - 1].timestamp));
+    startDate = granularity === 'monthly' ? startOfMonth(timestampToDate(sortedHistory[0].timestamp)) : startOfDay(timestampToDate(sortedHistory[0].timestamp));
+    endDate = granularity === 'monthly' ? startOfMonth(timestampToDate(sortedHistory[sortedHistory.length - 1].timestamp)) : startOfDay(timestampToDate(sortedHistory[sortedHistory.length - 1].timestamp));
   }
 
   if (startDate > endDate) {
@@ -238,7 +243,7 @@ export const aggregateByDay = (
 
   // Group by date and groupBy
   const grouped = history.reduce((acc, entry) => {
-    const date = format(entry.timestamp, granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
+    const date = format(timestampToDate(entry.timestamp), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
     const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.cardType;
     if (!acc[date]) acc[date] = {};
     if (!acc[date][groupKey]) acc[date][groupKey] = [];
@@ -377,11 +382,11 @@ export const aggregateByDayForComparison = (
   }
 
   // Sort history by timestamp
-  const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const sortedHistory = [...history].sort((a, b) => timestampToDate(a.timestamp) - timestampToDate(b.timestamp));
 
   // Use dateRange if provided
-  let startDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.start)) : startOfDay(new Date(dateRange.start));
-  let endDate = granularity === 'monthly' ? startOfMonth(new Date(dateRange.end)) : startOfDay(new Date(dateRange.end));
+  let startDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.start)) : startOfDay(timestampToDate(dateRange.start));
+  let endDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.end)) : startOfDay(timestampToDate(dateRange.end));
 
   if (startDate > endDate) {
     console.warn('startDate after endDate, swapping:', { startDate, endDate });
@@ -390,7 +395,7 @@ export const aggregateByDayForComparison = (
 
   // Group by date and field
   const grouped = history.reduce((acc, entry) => {
-    const date = format(entry.timestamp, granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
+    const date = format(timestampToDate(entry.timestamp), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
     if (!acc[date]) acc[date] = {};
     if (!acc[date][entry.field]) acc[date][entry.field] = [];
     acc[date][entry.field].push(entry);

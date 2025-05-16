@@ -101,45 +101,35 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     (form) => {
       const { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation } = form;
       const trimmedName = name.trim();
-      if (!trimmedName) {
-        alert('Metric name cannot be empty.');
-        return false;
-      }
-      if (cardTemplates.length === 0) {
-        alert('Select at least one card template.');
-        return false;
-      }
+      if (!trimmedName) return false;
+      if (cardTemplates.length === 0) return false;
       const hasFields = comparisonFields.length > 0 || cardTemplates.some((template) => fields[template]?.length > 0);
-      if (!hasFields) {
-        alert('Select at least one field or two comparison fields.');
-        return false;
-      }
-      if (comparisonFields.length > 0 && comparisonFields.length !== 2) {
-        alert('Select exactly two fields for comparison.');
-        return false;
-      }
-      // Validate numeric fields for non-pie visualizations (except count)
+      if (!hasFields) return false;
+      if (comparisonFields.length > 0 && comparisonFields.length !== 2) return false;
+      // For numeric aggregations, just check that the selected field is numeric/currency and a date field exists if granularity is set
       if (visualizationType !== 'pie' && aggregation !== 'count') {
         const allFields = comparisonFields.length > 0 ? comparisonFields : cardTemplates.flatMap((t) => fields[t] || []);
         const invalidFields = allFields.filter((field) => {
           const header = headers.find((h) => h.key === field);
-          return !header || header.type !== 'number';
+          return !header || (header.type !== 'number' && header.type !== 'currency');
         });
-        if (invalidFields.length > 0) {
-          alert(`Non-numeric fields selected: ${invalidFields.join(', ')}. Please select numeric fields for ${aggregation} aggregation.`);
-          return false;
+        if (invalidFields.length > 0) return false;
+        // If granularity is set, ensure a date field exists in the template
+        if (form.granularity && form.granularity !== 'none') {
+          const templateKey = cardTemplates[0];
+          const template = cardTemplates && cardTemplates.length > 0 && (cardTemplates.find ? cardTemplates.find(t => (t.typeOfCards || t.name) === templateKey) : null);
+          const templateObj = template || (Array.isArray(cardTemplates) && cardTemplates.length > 0 && typeof cardTemplates[0] === 'string' && cardTemplates.length && (mainContext.cardTemplates || []).find(t => (t.typeOfCards || t.name) === templateKey));
+          const hasDateHeader = templateObj && templateObj.headers && templateObj.headers.some(h => h.type === 'date');
+          if (!hasDateHeader) return false;
         }
       }
       const nameConflict = currentCategories[activeCategoryIndex]?.metrics.some(
         (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && i !== activeMetricIndex
       );
-      if (nameConflict) {
-        alert(`A metric named "${trimmedName}" already exists in this category.`);
-        return false;
-      }
+      if (nameConflict) return false;
       return true;
     },
-    [activeCategoryIndex, currentCategories, activeMetricIndex, headers]
+    [activeCategoryIndex, currentCategories, activeMetricIndex, headers, mainContext.cardTemplates]
   );
 
   // Reset form
@@ -162,6 +152,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setNumberRangeMode({});
     setActiveFilterIndex(null); 
     setSelectedCardTemplate(null);
+  }, []);
+
+  // Section toggling helper for metric form (step 4/5)
+  const toggleSection = useCallback((sectionIndex) => {
+    setActiveSectionIndex((prev) => (prev === sectionIndex ? null : sectionIndex));
   }, []);
 
   // Add metric
@@ -227,7 +222,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setNavigationDirection('forward');
       goToStep(3);
     },
-    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories]
   );
 
   // Delete metric
@@ -570,6 +565,16 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     [currentCategories, resetForm, goToStep]
   );
 
+  // Ensure cardTemplates and cards are loaded on mount if not present
+  useEffect(() => {
+    if ((!cardTemplates || cardTemplates.length === 0) && mainContext.loadCardTemplates) {
+      mainContext.loadCardTemplates();
+    }
+    if ((!cards || cards.length === 0) && mainContext.loadCards) {
+      mainContext.loadCards();
+    }
+  }, [cardTemplates, cards, mainContext]);
+
   return (
     <div className={`${styles.metricsModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
@@ -651,31 +656,29 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             {step === 4 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {/* Metric Name */}
-                  <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 0 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(0)}
-                  >
+                  {/* Metric Name - always show input */}
+                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    style={{ cursor: 'default' }}>
                     <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Metric Name</span>
                       </div>
                       <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>{metricForm.name || 'None'}</span>
+                        {/* No summary, just input */}
                       </div>
                     </div>
-                    {activeSectionIndex === 0 && (
-                      <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <input
-                          type="text"
-                          value={metricForm.name}
-                          onChange={(e) => setMetricForm((prev) => ({ ...prev, name: e.target.value }))}
-                          onKeyPress={handleKeyPress}
-                          placeholder="e.g., Lead Trends"
-                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        />
-                      </div>
-                    )}
+                    <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      style={{ marginTop: 0 }}>
+                      <input
+                        type="text"
+                        value={metricForm.name}
+                        onChange={(e) => setMetricForm((prev) => ({ ...prev, name: e.target.value }))}
+                        onKeyPress={handleKeyPress}
+                        placeholder="e.g., Lead Trends"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        autoFocus
+                      />
+                    </div>
                   </div>
                   {/* Metric Output Button */}
                   <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -729,7 +732,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   {/* Output type selection */}
                   <div
                     className={`${styles.filterItem} ${activeSectionIndex === 2 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => setActiveSectionIndex(activeSectionIndex === 2 ? null : 2)}
+                    onClick={() => toggleSection(2)}
                     tabIndex={0}
                     style={{ cursor: 'pointer' }}
                   >
@@ -766,7 +769,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             onClick={(e) => {
                               e.stopPropagation();
                               setMetricForm((prev) => ({ ...prev, visualizationType: option.type }));
-                              setActiveSectionIndex(null);
+                              toggleSection(null);
                             }}
                           >
                             <div className={styles.filterRow}>
@@ -844,6 +847,21 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       </div>
                     </div>
                   )}
+                  {/* Time period granularity as a fourth button group, only for line chart */}
+                  {metricForm.visualizationType === 'line' && (
+                    <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
+                      {['daily', 'weekly', 'monthly'].map((g) => (
+                        <button
+                          key={g}
+                          className={metricForm.granularity === g ? styles.activeItem : ''}
+                          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #ccc', background: metricForm.granularity === g ? appleBlue : '#fff', color: metricForm.granularity === g ? '#fff' : '#222', fontWeight: 500, cursor: 'pointer', fontSize: 13, minWidth: 60 }}
+                          onClick={() => setMetricForm((prev) => ({ ...prev, granularity: g }))}
+                        >
+                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className={styles.outputTypePreview}>
                   {metricForm.visualizationType === 'number' ? (
@@ -876,27 +894,30 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     Select a Card Template
                   </div>
                   {(cardTemplates && cardTemplates.length > 0) ? (
-                    cardTemplates.map((template, idx) => (
-                      <div
-                        key={template.typeOfCards || template.name || idx}
-                        className={`${styles.filterItem} ${metricForm.cardTemplates[0] === (template.typeOfCards || template.name) ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => setMetricForm((prev) => ({ ...prev, cardTemplates: [(template.typeOfCards || template.name)] }))}
-                      >
-                        <div className={styles.filterRow}>
-                          <div className={styles.filterNameType}>
-                            <span>{template.name || template.typeOfCards}</span>
-                          </div>
-                          <div className={styles.primaryButtons}>
-                            {metricForm.cardTemplates[0] === (template.typeOfCards || template.name) ? (
-                              <FaRegCheckCircle style={{ color: appleBlue }} />
-                            ) : (
-                              <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
-                            )}
+                    cardTemplates.map((template, idx) => {
+                      const templateKey = template.typeOfCards || template.name || idx;
+                      return (
+                        <div
+                          key={templateKey}
+                          className={`${styles.filterItem} ${metricForm.cardTemplates[0] === templateKey ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setMetricForm((prev) => ({ ...prev, cardTemplates: [templateKey] }))}
+                        >
+                          <div className={styles.filterRow}>
+                            <div className={styles.filterNameType}>
+                              <span>{template.name || template.typeOfCards}</span>
+                            </div>
+                            <div className={styles.primaryButtons}>
+                              {metricForm.cardTemplates[0] === templateKey ? (
+                                <FaRegCheckCircle style={{ color: appleBlue }} />
+                              ) : (
+                                <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className={styles.filterItem} style={{ color: '#888' }}>No card templates available.</div>
                   )}
@@ -933,8 +954,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                                 [templateKey]: [header.key],
                               },
                             }));
-                            setNavigationDirection('backward');
-                            goToStep(5);
                           }}
                         >
                           <div className={styles.filterRow}>
@@ -979,18 +998,51 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   let chartData = null;
                   let chartOptions = null;
                   let chartType = 'line';
+                  const formatDate = (d) => {
+                    if (!d) return '';
+                    const dateObj = new Date(d.seconds ? d.seconds * 1000 : d._seconds ? d._seconds * 1000 : d);
+                    return dateObj.toISOString().slice(0, 10);
+                  };
                   if (header?.type === 'number' || header?.type === 'currency') {
-                    // Numeric: plot value over time (if date), else by index
+                    // Numeric: plot average value per time bucket (granularity) if date, else by index
                     let labels = [];
                     let values = [];
                     if (dateHeader) {
-                      // Sort by date
-                      const sorted = [...cardsForTemplate].filter(card => card[dateHeader.key]).sort((a, b) => new Date(a[dateHeader.key]) - new Date(b[dateHeader.key]));
-                      labels = sorted.map(card => card[dateHeader.key]);
-                      values = sorted.map(card => card[selectedHeaderKey]);
+                      // Group cards by granularity (daily, weekly, monthly)
+                      const groupByGranularity = (date, granularity) => {
+                        const d = new Date(date.seconds ? date.seconds * 1000 : date._seconds ? date._seconds * 1000 : date);
+                        if (granularity === 'daily') return d.toISOString().slice(0, 10);
+                        if (granularity === 'weekly') {
+                          // Get ISO week string: YYYY-Www
+                          const year = d.getUTCFullYear();
+                          const firstDayOfYear = new Date(Date.UTC(year, 0, 1));
+                          const pastDaysOfYear = (d - firstDayOfYear) / 86400000;
+                          const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getUTCDay() + 1) / 7);
+                          return `${year}-W${week.toString().padStart(2, '0')}`;
+                        }
+                        if (granularity === 'monthly') return d.toISOString().slice(0, 7); // YYYY-MM
+                        return d.toISOString().slice(0, 10);
+                      };
+                      const granularity = metricForm.granularity || 'monthly';
+                      const buckets = {};
+                      cardsForTemplate.forEach(c => {
+                        const dateVal = c[dateHeader.key];
+                        if (!dateVal) return;
+                        const bucket = groupByGranularity(dateVal, granularity);
+                        if (!buckets[bucket]) buckets[bucket] = [];
+                        const val = c[selectedHeaderKey];
+                        if (typeof val === 'number') buckets[bucket].push(val);
+                        else if (val && typeof val === 'object' && val._value !== undefined) buckets[bucket].push(val._value); // for currency objects
+                      });
+                      labels = Object.keys(buckets).sort();
+                      values = labels.map(bucket => {
+                        const arr = buckets[bucket];
+                        if (!arr || arr.length === 0) return 0;
+                        return arr.reduce((a, b) => a + b, 0) / arr.length;
+                      });
                     } else {
-                      labels = cardsForTemplate.map((card, i) => card.name || card.id || `Card ${i + 1}`);
-                      values = cardsForTemplate.map(card => card[selectedHeaderKey]);
+                      labels = cardsForTemplate.map((c, i) => c.name || c.id || `Card ${i + 1}`);
+                      values = cardsForTemplate.map(c => c[selectedHeaderKey]);
                     }
                     chartData = {
                       labels,
@@ -1022,8 +1074,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   } else if (header?.type === 'date') {
                     // Date: count of cards per date
                     const dateCounts = {};
-                    cardsForTemplate.forEach(card => {
-                      const date = card[selectedHeaderKey];
+                    cardsForTemplate.forEach(c => {
+                      const date = formatDate(c[selectedHeaderKey]);
                       if (date) dateCounts[date] = (dateCounts[date] || 0) + 1;
                     });
                     const labels = Object.keys(dateCounts).sort();
@@ -1061,9 +1113,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     let uniqueValues = new Set();
                     if (dateHeader) {
                       // Group by date, then by value
-                      cardsForTemplate.forEach(card => {
-                        const date = card[dateHeader.key];
-                        const value = card[selectedHeaderKey] || 'None';
+                      cardsForTemplate.forEach(c => {
+                        const date = formatDate(c[dateHeader.key]);
+                        const value = c[selectedHeaderKey] || 'None';
                         uniqueValues.add(value);
                         if (!valueCountsByDate[date]) valueCountsByDate[date] = {};
                         valueCountsByDate[date][value] = (valueCountsByDate[date][value] || 0) + 1;
@@ -1098,8 +1150,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     } else {
                       // No date: just count of each value
                       const valueCounts = {};
-                      cardsForTemplate.forEach(card => {
-                        const value = card[selectedHeaderKey] || 'None';
+                      cardsForTemplate.forEach(c => {
+                        const value = c[selectedHeaderKey] || 'None';
                         valueCounts[value] = (valueCounts[value] || 0) + 1;
                       });
                       const labels = Object.keys(valueCounts);
