@@ -64,7 +64,7 @@
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: transparent; /* Light mode: no additional background */
+  background: rgba(243, 242, 248, 0.6);
   transition: background 0.3s ease; /* Smooth theme transition */
 }
 
@@ -149,7 +149,7 @@
 .metricsList {
   border-radius: 10px;
   overflow: hidden;
-  background: transparent; /* Light mode: no additional background */
+  background: rgba(243, 242, 248, 0.6);
   transition: background 0.3s ease;
 }
 

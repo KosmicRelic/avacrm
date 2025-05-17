@@ -128,15 +128,37 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         console.log('[validateMetric] failed: comparisonFields wrong length', comparisonFields);
         return false;
       }
-      if (visualizationType !== 'pie' && aggregation !== 'count') {
-        // Validate all fields against their template's headers
+      if (visualizationType === 'pie' || visualizationType === 'bar') {
+        // Validate that the selected field is text or dropdown
+        const tKey = cardTemplates[0];
+        const headers = templateHeaderMap[tKey] || [];
+        const field = fields[tKey]?.[0];
+        const header = headers.find((h) => h.key === field);
+        if (!header || (header.type !== 'text' && header.type !== 'dropdown')) {
+          console.log('[validateMetric] failed: invalid field type for pie/bar chart', { field, header });
+          return false;
+        }
+      } else if (visualizationType === 'number') {
+        // Validate that the selected field is number
+        const tKey = cardTemplates[0];
+        const headers = templateHeaderMap[tKey] || [];
+        const field = fields[tKey]?.[0];
+        const header = headers.find((h) => h.key === field);
+        if (!header || header.type !== 'number') {
+          console.log('[validateMetric] failed: invalid field type for number output', { field, header });
+          return false;
+        }
+        if (aggregation !== 'average' && aggregation !== 'count') {
+          console.log('[validateMetric] failed: invalid aggregation for number output', { aggregation });
+          return false;
+        }
+      } else if (visualizationType !== 'pie' && visualizationType !== 'bar' && visualizationType !== 'number' && aggregation !== 'count') {
+        // Validate all fields against their template's headers for line chart
         const allFields = comparisonFields.length > 0 ? comparisonFields : cardTemplates.flatMap((t) => fields[t] || []);
         const invalidFields = allFields.filter((field) => {
-          // Find the template this field belongs to
           const tKey = cardTemplates.find(t => (fields[t] || []).includes(field)) || cardTemplates[0];
           const headers = templateHeaderMap[tKey] || [];
           const header = headers.find((h) => h.key === field);
-          // Allow text and dropdown types for line chart if aggregation is not 'count'
           const valid = header && (header.type === 'number' || header.type === 'currency' || header.type === 'date' || header.type === 'text' || header.type === 'dropdown');
           if (!valid) {
             console.log('[validateMetric] invalid field', { field, header, tKey, headers });
@@ -147,7 +169,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           console.log('[validateMetric] failed: invalidFields', invalidFields);
           return false;
         }
-        // If granularity is set, ensure at least one date field exists in the selected template
+        // If granularity is set, ensure at least one date field exists
         if (granularity && granularity !== 'none') {
           const tKey = cardTemplates[0];
           const headers = templateHeaderMap[tKey] || [];
@@ -193,7 +215,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setSelectedCardTemplate(null);
   }, []);
 
-  // Section toggling helper for metric form (step 4/5)
+  // Section toggling helper
   const toggleSection = useCallback((sectionIndex) => {
     setActiveSectionIndex((prev) => (prev === sectionIndex ? null : sectionIndex));
   }, []);
@@ -202,7 +224,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const getLatestFieldValueAndTimestamp = useCallback((card, fieldKey, dateHeaderKey) => {
     let value = card[fieldKey];
     let timestamp = null;
-    // If value is not present directly, check history
     if (value === undefined && Array.isArray(card.history)) {
       const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
       if (entries.length > 0) {
@@ -222,7 +243,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         timestamp = card[dateHeaderKey];
       }
     }
-    // Fallback to card id if no timestamp
     if (!timestamp) timestamp = card.id || card.docId;
     return { value, timestamp };
   }, []);
@@ -242,13 +262,39 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     return ts.toString();
   }, []);
 
+  // Generate categorical chart data (for pie and bar charts)
+  const generateCategoricalChartData = useCallback((cardsForTemplate, selectedHeaderKey, header) => {
+    const valueCounts = {};
+    cardsForTemplate.forEach(card => {
+      const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
+      if (value !== undefined && value !== null) {
+        const stringValue = String(value).trim();
+        valueCounts[stringValue] = (valueCounts[stringValue] || 0) + 1;
+      }
+    });
+    const labels = Object.keys(valueCounts);
+    const dataValues = Object.values(valueCounts);
+    const backgroundColors = labels.map((_, idx) => `hsl(${(idx * 60) % 360}, 70%, 50%)`);
+    return {
+      labels,
+      datasets: [
+        {
+          label: header?.name || selectedHeaderKey,
+          data: dataValues,
+          backgroundColor: backgroundColors,
+          borderColor: isDarkTheme ? '#333' : '#fff',
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [getLatestFieldValueAndTimestamp, isDarkTheme]);
+
   // Add metric
   const addMetric = useCallback(() => {
     let formToSave = { ...metricForm };
     const cardTemplatesArr = Array.isArray(formToSave.cardTemplates) ? formToSave.cardTemplates : [];
     const templateKey = cardTemplatesArr[0];
 
-    // Ensure templateKey and required data are available
     if (!templateKey || !mainContext.cardTemplates || !cards) {
       console.log('[MetricsModal] addMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
       alert('Cannot add metric: Missing card templates or cards data.');
@@ -279,7 +325,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
     const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
 
-    // Compute metric data to match line chart preview
     const templateObj = mainContext.cardTemplates.find(
       (t) => (t.name || t.typeOfCards) === cardTemplates[0]
     );
@@ -303,7 +348,29 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     );
 
     let data;
-    if (header?.type === 'text' || header?.type === 'dropdown') {
+    if (visualizationType === 'pie' || visualizationType === 'bar') {
+      data = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
+    } else if (visualizationType === 'number') {
+      const values = cardsForTemplate
+        .map(card => {
+          const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+          return value;
+        })
+        .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
+        .map(Number);
+      const rawResult = aggregation === 'average'
+        ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
+        : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
+      const result = Number.isInteger(rawResult) ? rawResult : Number(rawResult.toFixed(1));
+      data = {
+        labels: ['Value'],
+        datasets: [{
+          label: header?.name || selectedHeaderKey,
+          data: [result],
+          backgroundColor: appleBlue,
+        }],
+      };
+    } else if (header?.type === 'text' || header?.type === 'dropdown') {
       const countsByValueAndDate = {};
       cardsForTemplate.forEach(card => {
         const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
@@ -364,7 +431,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       type: visualizationType,
       config,
       data,
-      value: visualizationType === 'number' ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
+      value: visualizationType === 'number' ? data.datasets[0]?.data[0] || 0 : undefined,
     };
     setCurrentCategories((prev) => {
       const updated = prev.map((c, i) =>
@@ -379,7 +446,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     resetForm();
     setNavigationDirection('forward');
     goToStep(3);
-  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp]);
+  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp, generateCategoricalChartData]);
 
   // Update metric
   const updateMetric = useCallback(
@@ -388,7 +455,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const cardTemplatesArr = Array.isArray(formToSave.cardTemplates) ? formToSave.cardTemplates : [];
       const templateKey = cardTemplatesArr[0];
 
-      // Ensure templateKey and required data are available
       if (!templateKey || !mainContext.cardTemplates || !cards) {
         console.log('[MetricsModal] updateMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
         alert('Cannot update metric: Missing card templates or cards data.');
@@ -419,7 +485,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
       const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
 
-      // Compute metric data to match line chart preview
       const templateObj = mainContext.cardTemplates.find(
         (t) => (t.name || t.typeOfCards) === cardTemplates[0]
       );
@@ -443,7 +508,29 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       );
 
       let data;
-      if (header?.type === 'text' || header?.type === 'dropdown') {
+      if (visualizationType === 'pie' || visualizationType === 'bar') {
+        data = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
+      } else if (visualizationType === 'number') {
+        const values = cardsForTemplate
+          .map(card => {
+            const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+            return value;
+          })
+          .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
+          .map(Number);
+        const rawResult = aggregation === 'average'
+          ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
+          : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
+        const result = Number.isInteger(rawResult) ? rawResult : Number(rawResult.toFixed(1));
+        data = {
+          labels: ['Value'],
+          datasets: [{
+            label: header?.name || selectedHeaderKey,
+            data: [result],
+            backgroundColor: appleBlue,
+          }],
+        };
+      } else if (header?.type === 'text' || header?.type === 'dropdown') {
         const countsByValueAndDate = {};
         cardsForTemplate.forEach(card => {
           const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
@@ -504,7 +591,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         type: visualizationType,
         config,
         data,
-        value: visualizationType === 'number' ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
+        value: visualizationType === 'number' ? data.datasets[0]?.data[0] || 0 : undefined,
       };
       setCurrentCategories((prev) => {
         const updated = prev.map((c, i) =>
@@ -523,7 +610,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setNavigationDirection('forward');
       goToStep(3);
     },
-    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp, generateCategoricalChartData]
   );
 
   // Delete metric
@@ -670,7 +757,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               label: 'Back',
               onClick: () => {
                 setNavigationDirection('backward');
-                goToStep(6);
+                goToStep(5);
               },
             },
           },
@@ -786,7 +873,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: `Fields for ${selectedCardTemplate || metricForm.cardTemplates[0] || ''}`,
-        backButtonTitle: 'Data Visualization',
+        backButtonTitle: 'Metric Output',
       };
     } else if (currentStep === 8) {
       newConfig = {
@@ -794,7 +881,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: 'Configure Filters',
-        backButtonTitle: 'Data Visualization',
+        backButtonTitle: 'Metric Output',
       };
     }
 
@@ -874,7 +961,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     [currentCategories, resetForm, goToStep]
   );
 
-  // Ensure cardTemplates and cards are loaded on mount if not present
+  // Ensure cardTemplates and cards are loaded
   useEffect(() => {
     if ((!cardTemplates || cardTemplates.length === 0) && mainContext.loadCardTemplates) {
       mainContext.loadCardTemplates();
@@ -1071,7 +1158,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             style={{ marginBottom: 4, cursor: 'pointer' }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMetricForm((prev) => ({ ...prev, visualizationType: option.type }));
+                              setMetricForm((prev) => ({ ...prev, visualizationType: option.type, aggregation: option.type === 'number' ? 'average' : prev.aggregation }));
                               toggleSection(null);
                             }}
                           >
@@ -1117,7 +1204,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       </div>
                     </div>
                   </div>
-                  {metricForm.visualizationType === 'line' && (
+                  {(metricForm.visualizationType === 'line' || metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar' || metricForm.visualizationType === 'number') && (
                     <div
                       className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={() => {
@@ -1134,7 +1221,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     >
                       <div className={styles.filterRow}>
                         <div className={styles.filterNameType}>
-                          <span>Y Axis</span>
+                          <span>{metricForm.visualizationType === 'line' ? 'Y Axis' : 'Data Field'}</span>
                         </div>
                         <div className={styles.primaryButtons}>
                           <span className={styles.filterSummary}>
@@ -1149,6 +1236,54 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           </span>
                         </div>
                       </div>
+                    </div>
+                  )}
+                  {metricForm.visualizationType === 'number' && (
+                    <div
+                      className={`${styles.filterItem} ${activeSectionIndex === 5 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => toggleSection(5)}
+                      tabIndex={0}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className={styles.filterRow}>
+                        <div className={styles.filterNameType}>
+                          <span>Aggregation</span>
+                        </div>
+                        <div className={styles.primaryButtons}>
+                          <span className={styles.filterSummary}>
+                            {metricForm.aggregation === 'average' ? 'Average' : 'Count'}
+                          </span>
+                        </div>
+                      </div>
+                      {activeSectionIndex === 5 && (
+                        <div className={styles.filterActions} style={{ marginTop: 8 }}>
+                          {['average', 'count'].map((agg) => (
+                            <div
+                              key={agg}
+                              className={`${styles.filterItem} ${metricForm.aggregation === agg ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              style={{ marginBottom: 4, cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMetricForm((prev) => ({ ...prev, aggregation: agg }));
+                                toggleSection(null);
+                              }}
+                            >
+                              <div className={styles.filterRow}>
+                                <div className={styles.filterNameType}>
+                                  <span>{agg.charAt(0).toUpperCase() + agg.slice(1)}</span>
+                                </div>
+                                <div className={styles.primaryButtons}>
+                                  {metricForm.aggregation === agg ? (
+                                    <FaRegCheckCircle style={{ color: appleBlue }} />
+                                  ) : (
+                                    <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1168,26 +1303,38 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     ))}
                   </div>
                 )}
-                <div className={styles.outputTypePreview}>
-                  {metricForm.visualizationType === 'number' ? (
-                    <div className={styles.simpleNumberPreview} style={{
-                      fontSize: 48,
-                      fontWeight: 600,
-                      color: appleBlue,
-                      textAlign: 'center',
-                      padding: '32px 0',
-                      background: isDarkTheme ? '#222' : '#f7f7f7',
-                      borderRadius: 12,
-                    }}>
-                      12345
-                    </div>
-                  ) : (
-                    <CustomMetricChart
-                      metric={{ type: metricForm.visualizationType, ...metricForm }}
-                      isDarkTheme={isDarkTheme}
-                      chartType={metricForm.visualizationType}
-                    />
-                  )}
+                <div className={styles.simpleNumberPreview} style={{
+                  fontSize: 48,
+                  fontWeight: 600,
+                  color: appleBlue,
+                  textAlign: 'center',
+                  padding: '32px 0',
+                  background: isDarkTheme ? '#222' : '#f7f7f7',
+                  borderRadius: 12,
+                }}>
+                  {(() => {
+                    const templateKey = metricForm.cardTemplates[0];
+                    const selectedHeaderKey = metricForm.fields[templateKey]?.[0];
+                    if (!selectedHeaderKey || !templateKey) return '12345';
+                    const template = cardTemplates.find(
+                      (t) => (t.name || t.typeOfCards) === templateKey
+                    );
+                    if (!template) return '12345';
+                    const cardsForTemplate = cards.filter(
+                      (card) => card.typeOfCards === templateKey
+                    );
+                    const values = cardsForTemplate
+                      .map(card => {
+                        const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
+                        return value;
+                      })
+                      .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
+                      .map(Number);
+                    const rawResult = metricForm.aggregation === 'average'
+                      ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
+                      : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
+                    return Number.isInteger(rawResult) ? rawResult.toString() : rawResult.toFixed(1);
+                  })()}
                 </div>
               </div>
             )}
@@ -1240,7 +1387,16 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       (t) => (t.name || t.typeOfCards) === templateKey
                     );
                     const templateHeaders = template?.headers?.filter(
-                      (header) => header.key !== 'id' && header.key !== 'typeOfCards'
+                      (header) => {
+                        if (header.key === 'id' || header.key === 'typeOfCards') return false;
+                        if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
+                          return header.type === 'text' || header.type === 'dropdown';
+                        }
+                        if (metricForm.visualizationType === 'number') {
+                          return header.type === 'number';
+                        }
+                        return true;
+                      }
                     ) || [];
                     if (templateHeaders.length > 0) {
                       return templateHeaders.map((header) => (
@@ -1274,7 +1430,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       ));
                     } else {
                       return (
-                        <div className={styles.filterItem} style={{ color: '#888' }}>No headers available.</div>
+                        <div className={styles.filterItem} style={{ color: '#888' }}>
+                          {metricForm.visualizationType === 'number' ? 'No number headers available.' :
+                           (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') ? 'No text or dropdown headers available.' : 'No headers available.'}
+                        </div>
                       );
                     }
                   })()}
@@ -1294,6 +1453,53 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     <div className={styles.filterItem} style={{ color: '#888', marginTop: 16 }}>No cards found for this template.</div>
                   );
                   const dateHeader = template?.headers?.find(h => h.type === 'date');
+
+                  if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
+                    const dataPoints = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
+                    const chartOptions = {
+                      responsive: true,
+                      plugins: {
+                        legend: { display: true, position: metricForm.visualizationType === 'pie' ? 'right' : 'top' },
+                        title: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              const label = context.label || '';
+                              const value = context.parsed || 0;
+                              return `${label}: ${value}`;
+                            }
+                          }
+                        }
+                      },
+                      ...(metricForm.visualizationType === 'bar' && {
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: {
+                              stepSize: 1,
+                              precision: 0,
+                              callback: function(value) {
+                                return Number.isInteger(value) ? value : '';
+                              }
+                            }
+                          }
+                        }
+                      })
+                    };
+                    return (
+                      <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
+                        <div style={{ width: '100%', minHeight: 220 }}>
+                          {metricForm.visualizationType === 'pie' ? (
+                            <Pie data={dataPoints} options={chartOptions} />
+                          ) : (
+                            <Bar data={dataPoints} options={chartOptions} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const dataPoints = (() => {
                     if (header?.type === 'text' || header?.type === 'dropdown') {
                       const countsByValueAndDate = {};
@@ -1393,7 +1599,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       } : { display: true, title: { display: false } }),
                     },
                   };
-                  const chartType = 'line';
                   return (
                     <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
                       <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
