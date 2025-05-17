@@ -13,6 +13,30 @@ import MetricsModal from '../Modal/MetricsModal/MetricsModal';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateCardTemplatesAndCardsFunction } from '../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
 
+// Utility function to recursively clean objects and arrays, converting undefined to null and removing null if desired
+const cleanObject = (obj, convertUndefinedToNull = true) => {
+  if (Array.isArray(obj)) {
+    return obj
+      .map((item) => cleanObject(item, convertUndefinedToNull))
+      .filter((item) => item !== undefined); // Keep null if convertUndefinedToNull is true
+  }
+  if (obj && typeof obj === 'object') {
+    const cleaned = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      if (value === undefined && convertUndefinedToNull) {
+        cleaned[key] = null; // Convert undefined to null
+      } else if (value !== undefined) {
+        const cleanedValue = cleanObject(value, convertUndefinedToNull);
+        if (cleanedValue !== undefined) {
+          cleaned[key] = cleanedValue;
+        }
+      }
+    });
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  }
+  return obj;
+};
+
 export const handleModalSave = async ({
   modalType,
   data,
@@ -385,14 +409,17 @@ export const handleModalSave = async ({
       break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
-        setMetrics((prev) =>
-          prev
-            .filter((category) => !data.deletedCategories.includes(category.category))
+        setMetrics((prev) => {
+          const updatedMetrics = prev
             .map((category) => {
-              const { isModified, action, ...cleanCategory } = category;
-              return cleanCategory;
+              if (data.deletedCategories.includes(category.category)) {
+                return { ...category, isModified: true, action: 'remove' };
+              }
+              return category;
             })
-        );
+            .filter((category) => !data.deletedCategories.includes(category.category));
+          return updatedMetrics;
+        });
       }
       break;
     case 'widgetSetup':
@@ -434,12 +461,22 @@ export const handleModalSave = async ({
       break;
     case 'metrics':
       if (data?.currentCategories && metrics) {
-        setMetrics(
-          data.currentCategories.map((category) => {
-            const { isModified, action, ...cleanCategory } = category;
-            return cleanCategory;
-          })
-        );
+        setMetrics((prev) => {
+          const existingCategories = new Set(prev.map((c) => c.category));
+          return data.currentCategories.map((category) => {
+            const cleanedCategory = cleanObject(category, true);
+            const existingCategory = prev.find((c) => c.category === category.category);
+            const isNew = !existingCategories.has(category.category);
+            const hasChanged = existingCategory
+              ? JSON.stringify(cleanedCategory) !== JSON.stringify(cleanObject(existingCategory, true))
+              : true;
+            return {
+              ...cleanedCategory,
+              isModified: isNew || hasChanged,
+              action: isNew ? 'add' : hasChanged ? 'update' : undefined,
+            };
+          }).filter((category) => category !== undefined);
+        });
       }
       break;
     default:

@@ -483,7 +483,20 @@ export const MainContextProvider = ({ children }) => {
             }
           }
 
-          const collectionsToCheck = ['sheets', 'metrics'];
+          const modifiedMetrics = metrics.filter((metric) => metric.isModified);
+          for (const metric of modifiedMetrics) {
+            const docRef = doc(stateConfig.metrics.collectionPath(), metric.category);
+            if (metric.action === 'remove') {
+              batch.delete(docRef);
+              hasChanges = true;
+            } else if (metric.action === 'add' || metric.action === 'update') {
+              const { isModified, action, ...metricData } = metric;
+              batch.set(docRef, metricData);
+              hasChanges = true;
+            }
+          }
+
+          const collectionsToCheck = ['sheets'];
           for (const stateKey of collectionsToCheck) {
             const config = stateConfig[stateKey];
             const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
@@ -591,6 +604,18 @@ export const MainContextProvider = ({ children }) => {
                 })
             );
 
+            setMetrics((prev) =>
+              prev
+                .filter((metric) => !(metric.isModified && metric.action === 'remove'))
+                .map((metric) => {
+                  if (metric.isModified) {
+                    const { isModified, action, ...cleanMetric } = metric;
+                    return cleanMetric;
+                  }
+                  return metric;
+                })
+            );
+
             setSheets((prev) => ({
               ...prev,
               allSheets: prev.allSheets.map((sheet) => {
@@ -610,16 +635,6 @@ export const MainContextProvider = ({ children }) => {
               deletedSheetId: null,
             }));
 
-            setMetrics((prev) =>
-              prev.map((metric) => {
-                if (metric.isModified) {
-                  const { isModified, action, ...cleanMetric } = metric;
-                  return cleanMetric;
-                }
-                return metric;
-              })
-            );
-
             if (sheets.deletedSheetId) {
               setSheets((prev) => ({ ...prev, deletedSheetId: null }));
             }
@@ -636,21 +651,22 @@ export const MainContextProvider = ({ children }) => {
 
     const detectCollectionChanges = (currentItems, prevItems, ignoreKeys = []) => {
       const changes = { added: [], updated: [], removed: [] };
-      const currentMap = new Map(currentItems.map((item) => [item.docId, item]));
-      const prevMap = new Map(prevItems.map((item) => [item.docId, item]));
+      const currentMap = new Map(currentItems.map((item) => [item.docId || item.category || item.id, item]));
+      const prevMap = new Map(prevItems.map((item) => [item.docId || item.category || item.id, item]));
 
       currentItems.forEach((item) => {
-        if (!prevMap.has(item.docId)) {
+        const key = item.docId || item.category || item.id;
+        if (!prevMap.has(key)) {
           changes.added.push(item);
         } else {
-          const prevItem = prevMap.get(item.docId);
+          const prevItem = prevMap.get(key);
           const keys = new Set([...Object.keys(item), ...Object.keys(prevItem)]);
           let diff = false;
-          for (const key of keys) {
-            if (key === 'isActive' || key === 'isModified' || key === 'action' || ignoreKeys.includes(key)) {
+          for (const k of keys) {
+            if (k === 'isActive' || k === 'isModified' || k === 'action' || ignoreKeys.includes(k)) {
               continue;
             }
-            if (!isEqual(item[key], prevItem[key], ignoreKeys)) {
+            if (!isEqual(item[k], prevItem[k], ignoreKeys)) {
               diff = true;
               break;
             }
@@ -662,8 +678,9 @@ export const MainContextProvider = ({ children }) => {
       });
 
       prevItems.forEach((item) => {
-        if (!currentMap.has(item.docId) && item.action === 'remove' && item.isModified) {
-          changes.removed.push(item.docId);
+        const key = item.docId || item.category || item.id;
+        if (!currentMap.has(key) && item.action === 'remove' && item.isModified) {
+          changes.removed.push(key);
         }
       });
 

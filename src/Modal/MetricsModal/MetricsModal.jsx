@@ -4,7 +4,6 @@ import styles from './MetricsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
-import { computeMetricData, computeCorrelation } from '../../Metrics/metricsUtils';
 import { FaRegCircle, FaRegCheckCircle, FaPlus } from 'react-icons/fa';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
@@ -137,7 +136,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           const tKey = cardTemplates.find(t => (fields[t] || []).includes(field)) || cardTemplates[0];
           const headers = templateHeaderMap[tKey] || [];
           const header = headers.find((h) => h.key === field);
-          const valid = header && (header.type === 'number' || header.type === 'currency' || header.type === 'date');
+          // Allow text and dropdown types for line chart if aggregation is not 'count'
+          const valid = header && (header.type === 'number' || header.type === 'currency' || header.type === 'date' || header.type === 'text' || header.type === 'dropdown');
           if (!valid) {
             console.log('[validateMetric] invalid field', { field, header, tKey, headers });
           }
@@ -198,23 +198,165 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setActiveSectionIndex((prev) => (prev === sectionIndex ? null : sectionIndex));
   }, []);
 
+  // Helper function to get latest field value and timestamp
+  const getLatestFieldValueAndTimestamp = useCallback((card, fieldKey, dateHeaderKey) => {
+    let value = card[fieldKey];
+    let timestamp = null;
+    // If value is not present directly, check history
+    if (value === undefined && Array.isArray(card.history)) {
+      const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+      if (entries.length > 0) {
+        const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+        value = latest.value;
+        timestamp = latest.timestamp;
+      }
+    } else if (value !== undefined) {
+      if (Array.isArray(card.history)) {
+        const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+        if (entries.length > 0) {
+          const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+          timestamp = latest.timestamp;
+        }
+      }
+      if (!timestamp && dateHeaderKey && card[dateHeaderKey]) {
+        timestamp = card[dateHeaderKey];
+      }
+    }
+    // Fallback to card id if no timestamp
+    if (!timestamp) timestamp = card.id || card.docId;
+    return { value, timestamp };
+  }, []);
+
+  // Helper function to format timestamp
+  const formatTimestamp = useCallback((ts) => {
+    if (!ts) return '';
+    if (typeof ts === 'string' || typeof ts === 'number') return ts;
+    if (ts.seconds) {
+      const d = new Date(ts.seconds * 1000);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
+    }
+    if (ts._seconds) {
+      const d = new Date(ts._seconds * 1000);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
+    }
+    return ts.toString();
+  }, []);
+
   // Add metric
   const addMetric = useCallback(() => {
-    console.log('[MetricsModal] addMetric called', metricForm);
-    if (!validateMetric(metricForm)) {
-      console.log('[MetricsModal] addMetric: validation failed', metricForm);
+    let formToSave = { ...metricForm };
+    const cardTemplatesArr = Array.isArray(formToSave.cardTemplates) ? formToSave.cardTemplates : [];
+    const templateKey = cardTemplatesArr[0];
+
+    // Ensure templateKey and required data are available
+    if (!templateKey || !mainContext.cardTemplates || !cards) {
+      console.log('[MetricsModal] addMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
+      alert('Cannot add metric: Missing card templates or cards data.');
+      return;
+    }
+
+    let yField, template, header;
+    if (templateKey) {
+      yField = formToSave.fields[templateKey]?.[0];
+      template = mainContext.cardTemplates.find(
+        (t) => (t.typeOfCards || t.name) === templateKey
+      );
+      if (template && yField) {
+        header = template.headers?.find((h) => h.key === yField);
+        if (header && (header.type === 'text' || header.type === 'dropdown')) {
+          formToSave.aggregation = 'count';
+        }
+      }
+    }
+
+    console.log('[MetricsModal] addMetric called', formToSave);
+    if (!validateMetric(formToSave)) {
+      console.log('[MetricsModal] addMetric: validation failed', formToSave);
       alert('Metric validation failed. Please check your inputs.');
       return;
     }
 
-    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
+    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
     const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
-    // Use mainContext.cardTemplates to look up headers
+
+    // Compute metric data to match line chart preview
     const templateObj = mainContext.cardTemplates.find(
       (t) => (t.name || t.typeOfCards) === cardTemplates[0]
     );
+    if (!templateObj) {
+      console.log('[MetricsModal] addMetric: Template not found', { templateKey });
+      alert('Cannot add metric: Selected template not found.');
+      return;
+    }
+
     const templateHeaders = templateObj?.headers || [];
-    const data = computeMetricData(cards, config, templateHeaders);
+    const selectedHeaderKey = fields[templateKey]?.[0];
+    if (!selectedHeaderKey) {
+      console.log('[MetricsModal] addMetric: No selected field', { fields });
+      alert('Cannot add metric: No field selected.');
+      return;
+    }
+
+    const dateHeader = templateHeaders.find(h => h.type === 'date');
+    const cardsForTemplate = cards.filter(
+      (card) => card.typeOfCards === templateKey
+    );
+
+    let data;
+    if (header?.type === 'text' || header?.type === 'dropdown') {
+      const countsByValueAndDate = {};
+      cardsForTemplate.forEach(card => {
+        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+        let xLabel = formatTimestamp(timestamp);
+        if (!xLabel || value === undefined || value === null) return;
+        if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
+        countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
+      });
+      const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
+      const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
+        label: val,
+        data: allDates.map(date => dateCounts[date] || 0),
+        fill: false,
+        borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+        backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+        tension: 0.2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      }));
+      data = { labels: allDates, datasets };
+    } else {
+      const points = cardsForTemplate.map(card => {
+        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+        let xLabel = formatTimestamp(timestamp);
+        if (header?.type === 'date' && value) {
+          let yValue = null;
+          if (typeof value === 'object' && (value.seconds || value._seconds)) {
+            yValue = (value.seconds || value._seconds) * 1000;
+          } else if (typeof value === 'string' || typeof value === 'number') {
+            const d = new Date(value);
+            if (!isNaN(d)) yValue = d.getTime();
+          }
+          return { x: xLabel, y: yValue };
+        }
+        return { x: xLabel, y: value };
+      }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
+      points.sort((a, b) => (a.x > b.x ? 1 : -1));
+      data = {
+        labels: points.map(dp => dp.x),
+        datasets: [
+          {
+            label: header?.name || selectedHeaderKey,
+            data: points.map(dp => dp.y),
+            fill: false,
+            borderColor: appleBlue,
+            backgroundColor: appleBlue,
+            tension: 0.2,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          },
+        ],
+      };
+    }
 
     const newMetric = {
       id: `metric-${uuidv4()}`,
@@ -224,7 +366,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       data,
       value: visualizationType === 'number' ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
     };
-
     setCurrentCategories((prev) => {
       const updated = prev.map((c, i) =>
         i === activeCategoryIndex
@@ -238,26 +379,124 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     resetForm();
     setNavigationDirection('forward');
     goToStep(3);
-  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates]);
+  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp]);
 
   // Update metric
   const updateMetric = useCallback(
     (metricIndex) => {
-      console.log('[MetricsModal] updateMetric called', metricForm, metricIndex);
-      if (!validateMetric(metricForm)) {
-        console.log('[MetricsModal] updateMetric: validation failed', metricForm);
+      let formToSave = { ...metricForm };
+      const cardTemplatesArr = Array.isArray(formToSave.cardTemplates) ? formToSave.cardTemplates : [];
+      const templateKey = cardTemplatesArr[0];
+
+      // Ensure templateKey and required data are available
+      if (!templateKey || !mainContext.cardTemplates || !cards) {
+        console.log('[MetricsModal] updateMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
+        alert('Cannot update metric: Missing card templates or cards data.');
+        return;
+      }
+
+      let yField, template, header;
+      if (templateKey) {
+        yField = formToSave.fields[templateKey]?.[0];
+        template = mainContext.cardTemplates.find(
+          (t) => (t.typeOfCards || t.name) === templateKey
+        );
+        if (template && yField) {
+          header = template.headers?.find((h) => h.key === yField);
+          if (header && (header.type === 'text' || header.type === 'dropdown')) {
+            formToSave.aggregation = 'count';
+          }
+        }
+      }
+
+      console.log('[MetricsModal] updateMetric called', formToSave, metricIndex);
+      if (!validateMetric(formToSave)) {
+        console.log('[MetricsModal] updateMetric: validation failed', formToSave);
         alert('Metric validation failed. Please check your inputs.');
         return;
       }
 
-      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = metricForm;
+      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
       const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
-      // Use mainContext.cardTemplates to look up headers
+
+      // Compute metric data to match line chart preview
       const templateObj = mainContext.cardTemplates.find(
         (t) => (t.name || t.typeOfCards) === cardTemplates[0]
       );
+      if (!templateObj) {
+        console.log('[MetricsModal] updateMetric: Template not found', { templateKey });
+        alert('Cannot update metric: Selected template not found.');
+        return;
+      }
+
       const templateHeaders = templateObj?.headers || [];
-      const data = computeMetricData(cards, config, templateHeaders);
+      const selectedHeaderKey = fields[templateKey]?.[0];
+      if (!selectedHeaderKey) {
+        console.log('[MetricsModal] updateMetric: No selected field', { fields });
+        alert('Cannot update metric: No field selected.');
+        return;
+      }
+
+      const dateHeader = templateHeaders.find(h => h.type === 'date');
+      const cardsForTemplate = cards.filter(
+        (card) => card.typeOfCards === templateKey
+      );
+
+      let data;
+      if (header?.type === 'text' || header?.type === 'dropdown') {
+        const countsByValueAndDate = {};
+        cardsForTemplate.forEach(card => {
+          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+          let xLabel = formatTimestamp(timestamp);
+          if (!xLabel || value === undefined || value === null) return;
+          if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
+          countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
+        });
+        const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
+        const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
+          label: val,
+          data: allDates.map(date => dateCounts[date] || 0),
+          fill: false,
+          borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+          backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+          tension: 0.2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        }));
+        data = { labels: allDates, datasets };
+      } else {
+        const points = cardsForTemplate.map(card => {
+          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+          let xLabel = formatTimestamp(timestamp);
+          if (header?.type === 'date' && value) {
+            let yValue = null;
+            if (typeof value === 'object' && (value.seconds || value._seconds)) {
+              yValue = (value.seconds || value._seconds) * 1000;
+            } else if (typeof value === 'string' || typeof value === 'number') {
+              const d = new Date(value);
+              if (!isNaN(d)) yValue = d.getTime();
+            }
+            return { x: xLabel, y: yValue };
+          }
+          return { x: xLabel, y: value };
+        }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
+        points.sort((a, b) => (a.x > b.x ? 1 : -1));
+        data = {
+          labels: points.map(dp => dp.x),
+          datasets: [
+            {
+              label: header?.name || selectedHeaderKey,
+              data: points.map(dp => dp.y),
+              fill: false,
+              borderColor: appleBlue,
+              backgroundColor: appleBlue,
+              tension: 0.2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            },
+          ],
+        };
+      }
 
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
@@ -267,7 +506,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         data,
         value: visualizationType === 'number' ? data.datasets[0]?.data[data.datasets[0].data.length - 1] || 0 : undefined,
       };
-
       setCurrentCategories((prev) => {
         const updated = prev.map((c, i) =>
           i === activeCategoryIndex
@@ -285,7 +523,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setNavigationDirection('forward');
       goToStep(3);
     },
-    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp]
   );
 
   // Delete metric
@@ -317,7 +555,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     }
   }, [activeMetricIndex, addMetric, updateMetric]);
 
-  // Add 폭
+  // Add category
   const addCategory = useCallback(() => {
     if (!validateCategory(newCategoryName, currentCategories)) return;
 
@@ -1056,58 +1294,51 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     <div className={styles.filterItem} style={{ color: '#888', marginTop: 16 }}>No cards found for this template.</div>
                   );
                   const dateHeader = template?.headers?.find(h => h.type === 'date');
-                  let chartData = null;
-                  let chartOptions = null;
-                  let chartType = 'line';
-                  const formatDate = (d) => {
-                    if (!d) return '';
-                    const dateObj = new Date(d.seconds ? d.seconds * 1000 : d._seconds ? d._seconds * 1000 : d);
-                    return dateObj.toISOString().slice(0, 10);
-                  };
-                  if (header?.type === 'number' || header?.type === 'currency') {
-                    let labels = [];
-                    let values = [];
-                    if (dateHeader) {
-                      const groupByGranularity = (date, granularity) => {
-                        const d = new Date(date.seconds ? date.seconds * 1000 : date._seconds ? date._seconds * 1000 : date);
-                        if (granularity === 'daily') return d.toISOString().slice(0, 10);
-                        if (granularity === 'weekly') {
-                          const year = d.getUTCFullYear();
-                          const firstDayOfYear = new Date(Date.UTC(year, 0, 1));
-                          const pastDaysOfYear = (d - firstDayOfYear) / 86400000;
-                          const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getUTCDay() + 1) / 7);
-                          return `${year}-W${week.toString().padStart(2, '0')}`;
+                  const dataPoints = (() => {
+                    if (header?.type === 'text' || header?.type === 'dropdown') {
+                      const countsByValueAndDate = {};
+                      cardsForTemplate.forEach(card => {
+                        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+                        let xLabel = formatTimestamp(timestamp);
+                        if (!xLabel || value === undefined || value === null) return;
+                        if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
+                        countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
+                      });
+                      const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
+                      const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
+                        label: val,
+                        data: allDates.map(date => dateCounts[date] || 0),
+                        fill: false,
+                        borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+                        backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+                        tension: 0.2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                      }));
+                      return { labels: allDates, datasets };
+                    }
+                    const points = cardsForTemplate.map(card => {
+                      const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+                      let xLabel = formatTimestamp(timestamp);
+                      if (header?.type === 'date' && value) {
+                        let yValue = null;
+                        if (typeof value === 'object' && (value.seconds || value._seconds)) {
+                          yValue = (value.seconds || value._seconds) * 1000;
+                        } else if (typeof value === 'string' || typeof value === 'number') {
+                          const d = new Date(value);
+                          if (!isNaN(d)) yValue = d.getTime();
                         }
-                        if (granularity === 'monthly') return d.toISOString().slice(0, 7);
-                        return d.toISOString().slice(0, 10);
-                      };
-                      const granularity = metricForm.granularity || 'monthly';
-                      const buckets = {};
-                      cardsForTemplate.forEach(c => {
-                        const dateVal = c[dateHeader.key];
-                        if (!dateVal) return;
-                        const bucket = groupByGranularity(dateVal, granularity);
-                        if (!buckets[bucket]) buckets[bucket] = [];
-                        const val = c[selectedHeaderKey];
-                        if (typeof val === 'number') buckets[bucket].push(val);
-                        else if (val && typeof val === 'object' && val._value !== undefined) buckets[bucket].push(val._value);
-                      });
-                      labels = Object.keys(buckets).sort();
-                      values = labels.map(bucket => {
-                        const arr = buckets[bucket];
-                        if (!arr || arr.length === 0) return 0;
-                        return arr.reduce((a, b) => a + b, 0) / arr.length;
-                      });
-                    } else {
-                      labels = cardsForTemplate.map((c, i) => c.name || c.id || `Card ${i + 1}`);
-                      values = cardsForTemplate.map(c => c[selectedHeaderKey]);
-                    }
-                    chartData = {
-                      labels,
+                        return { x: xLabel, y: yValue };
+                      }
+                      return { x: xLabel, y: value };
+                    }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
+                    points.sort((a, b) => (a.x > b.x ? 1 : -1));
+                    return {
+                      labels: points.map(dp => dp.x),
                       datasets: [
                         {
-                          label: header.name,
-                          data: values,
+                          label: header?.name || selectedHeaderKey,
+                          data: points.map(dp => dp.y),
                           fill: false,
                           borderColor: appleBlue,
                           backgroundColor: appleBlue,
@@ -1117,133 +1348,57 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         },
                       ],
                     };
-                    chartOptions = {
-                      responsive: true,
-                      plugins: {
-                        legend: { display: false },
+                  })();
+                  const chartOptions = {
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true },
+                      title: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            if (header?.type === 'date' && context.parsed.y) {
+                              const d = new Date(context.parsed.y);
+                              return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                            }
+                            return context.parsed.y;
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      x: { display: true, title: { display: false } },
+                      y: (header?.type === 'text' || header?.type === 'dropdown') ? {
+                        display: true,
                         title: { display: false },
-                      },
-                      scales: {
-                        x: { display: true, title: { display: false } },
-                        y: { display: true, title: { display: false } },
-                      },
-                    };
-                    chartType = 'line';
-                  } else if (header?.type === 'date') {
-                    const dateCounts = {};
-                    cardsForTemplate.forEach(c => {
-                      const date = formatDate(c[selectedHeaderKey]);
-                      if (date) dateCounts[date] = (dateCounts[date] || 0) + 1;
-                    });
-                    const labels = Object.keys(dateCounts).sort();
-                    const values = labels.map(date => dateCounts[date]);
-                    chartData = {
-                      labels,
-                      datasets: [
-                        {
-                          label: header.name,
-                          data: values,
-                          fill: false,
-                          borderColor: appleBlue,
-                          backgroundColor: appleBlue,
-                          tension: 0.2,
-                          pointRadius: 3,
-                          pointHoverRadius: 5,
+                        ticks: {
+                          stepSize: 1,
+                          precision: 0,
+                          callback: function(value) {
+                            return Number.isInteger(value) ? value : '';
+                          }
                         },
-                      ],
-                    };
-                    chartOptions = {
-                      responsive: true,
-                      plugins: {
-                        legend: { display: false },
+                        beginAtZero: true,
+                        suggestedMin: 0,
+                      } : (header?.type === 'date' ? {
+                        display: true,
                         title: { display: false },
-                      },
-                      scales: {
-                        x: { display: true, title: { display: false } },
-                        y: { display: true, title: { display: false } },
-                      },
-                    };
-                    chartType = 'line';
-                  } else {
-                    const valueCountsByDate = {};
-                    let uniqueValues = new Set();
-                    if (dateHeader) {
-                      cardsForTemplate.forEach(c => {
-                        const date = formatDate(c[dateHeader.key]);
-                        const value = c[selectedHeaderKey] || 'None';
-                        uniqueValues.add(value);
-                        if (!valueCountsByDate[date]) valueCountsByDate[date] = {};
-                        valueCountsByDate[date][value] = (valueCountsByDate[date][value] || 0) + 1;
-                      });
-                      const sortedDates = Object.keys(valueCountsByDate).sort();
-                      uniqueValues = Array.from(uniqueValues);
-                      chartData = {
-                        labels: sortedDates,
-                        datasets: uniqueValues.map((val, idx) => ({
-                          label: val,
-                          data: sortedDates.map(date => valueCountsByDate[date][val] || 0),
-                          fill: false,
-                          borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                          backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                          tension: 0.2,
-                          pointRadius: 3,
-                          pointHoverRadius: 5,
-                        })),
-                      };
-                      chartOptions = {
-                        responsive: true,
-                        plugins: {
-                          legend: { display: true },
-                          title: { display: false },
-                        },
-                        scales: {
-                          x: { display: true, title: { display: false } },
-                          y: { display: true, title: { display: false } },
-                        },
-                      };
-                      chartType = 'line';
-                    } else {
-                      const valueCounts = {};
-                      cardsForTemplate.forEach(c => {
-                        const value = c[selectedHeaderKey] || 'None';
-                        valueCounts[value] = (valueCounts[value] || 0) + 1;
-                      });
-                      const labels = Object.keys(valueCounts);
-                      const values = labels.map(val => valueCounts[val]);
-                      chartData = {
-                        labels,
-                        datasets: [
-                          {
-                            label: header.name,
-                            data: values,
-                            backgroundColor: labels.map((_, idx) => `hsl(${(idx * 60) % 360}, 70%, 50%)`),
-                          },
-                        ],
-                      };
-                      chartOptions = {
-                        responsive: true,
-                        plugins: {
-                          legend: { display: false },
-                          title: { display: false },
-                        },
-                        indexAxis: 'y',
-                        scales: {
-                          x: { display: true, title: { display: false } },
-                          y: { display: true, title: { display: false } },
-                        },
-                      };
-                      chartType = 'bar';
-                    }
-                  }
+                        ticks: {
+                          callback: function(value) {
+                            const d = new Date(value);
+                            if (!isNaN(d)) return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
+                            return value;
+                          }
+                        }
+                      } : { display: true, title: { display: false } }),
+                    },
+                  };
+                  const chartType = 'line';
                   return (
                     <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
                       <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
                       <div style={{ width: '100%', minHeight: 220 }}>
-                        {chartType === 'line' ? (
-                          <Line data={chartData} options={chartOptions} />
-                        ) : (
-                          <Bar data={chartData} options={chartOptions} />
-                        )}
+                        <Line data={dataPoints} options={chartOptions} />
                       </div>
                     </div>
                   );

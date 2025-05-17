@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^7.0.2",
     "chart.js": "^4.4.9",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "firebase": "^11.6.1",

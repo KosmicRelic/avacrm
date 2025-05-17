@@ -201,9 +201,11 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-01').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-02').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-10', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-10').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-08').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 5000, timestamp: { seconds: Math.floor(new Date('2025-04-09').getTime() / 1000), nanoseconds: 0 } },
+          // Added recent leadStatus change for May 2025
+          { field: 'leadStatus', value: 'Followed Up', timestamp: { seconds: Math.floor(new Date('2025-05-15').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -219,7 +221,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-01').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-15', timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-15').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -234,7 +236,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         conversionValue: 0,
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-02').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-12', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-12').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -250,7 +252,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-01').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-02').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-08', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-08').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-05').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 7500, timestamp: { seconds: Math.floor(new Date('2025-04-06').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -268,7 +270,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-20', timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-20').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -284,7 +286,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-02').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-11', timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-11').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-07').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 6000, timestamp: { seconds: Math.floor(new Date('2025-04-08').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -301,7 +303,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         conversionValue: 0,
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-18', timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-18').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -317,7 +319,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-16', timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-16').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -333,7 +335,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-01').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-02').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-09', timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-09').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-03').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-06').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 8000, timestamp: { seconds: Math.floor(new Date('2025-04-07').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -351,7 +353,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-04').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-05').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-17', timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-17').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-06').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -367,7 +369,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-08').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-09').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-14', timestamp: { seconds: Math.floor(new Date('2025-01-10').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-14').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-10').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-10').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 9000, timestamp: { seconds: Math.floor(new Date('2025-04-11').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -385,7 +387,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-12').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-13').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-22', timestamp: { seconds: Math.floor(new Date('2025-01-14').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-22').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-14').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -401,7 +403,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-15').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-16').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-13', timestamp: { seconds: Math.floor(new Date('2025-01-17').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-13').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-17').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-09').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 6500, timestamp: { seconds: Math.floor(new Date('2025-04-10').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -418,7 +420,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         conversionValue: 0,
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-18').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-19', timestamp: { seconds: Math.floor(new Date('2025-01-19').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-19').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-19').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -434,7 +436,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-20').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-21').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-15', timestamp: { seconds: Math.floor(new Date('2025-01-22').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-15').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-22').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-11').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 7000, timestamp: { seconds: Math.floor(new Date('2025-04-12').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -452,7 +454,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-23').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-24').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-21', timestamp: { seconds: Math.floor(new Date('2025-01-25').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-21').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-25').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
       {
@@ -468,7 +470,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-26').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-27').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-16', timestamp: { seconds: Math.floor(new Date('2025-01-28').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-16').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-28').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-12').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 8500, timestamp: { seconds: Math.floor(new Date('2025-04-13').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -486,7 +488,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-01-29').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-01-30').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-17', timestamp: { seconds: Math.floor(new Date('2025-01-31').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-17').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-01-31').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Lost', timestamp: { seconds: Math.floor(new Date('2025-04-13').getTime() / 1000), nanoseconds: 0 } },
         ],
       },
@@ -503,7 +505,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-02-01').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-02-02').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-18', timestamp: { seconds: Math.floor(new Date('2025-02-03').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-18').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-02-03').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-14').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 4000, timestamp: { seconds: Math.floor(new Date('2025-04-15').getTime() / 1000), nanoseconds: 0 } },
         ],
@@ -521,7 +523,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         history: [
           { field: 'leadStatus', value: 'New', timestamp: { seconds: Math.floor(new Date('2025-02-04').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Contacted', timestamp: { seconds: Math.floor(new Date('2025-02-05').getTime() / 1000), nanoseconds: 0 } },
-          { field: 'followUpDate', value: '2025-04-19', timestamp: { seconds: Math.floor(new Date('2025-02-06').getTime() / 1000), nanoseconds: 0 } },
+          { field: 'followUpDate', value: { seconds: Math.floor(new Date('2025-04-19').getTime() / 1000), nanoseconds: 0 }, timestamp: { seconds: Math.floor(new Date('2025-02-06').getTime() / 1000), nanoseconds: 0 } },
           { field: 'leadStatus', value: 'Converted', timestamp: { seconds: Math.floor(new Date('2025-04-15').getTime() / 1000), nanoseconds: 0 } },
           { field: 'conversionValue', value: 6000, timestamp: { seconds: Math.floor(new Date('2025-04-16').getTime() / 1000), nanoseconds: 0 } },
         ],

@@ -18,7 +18,7 @@ import {
 import styles from './CustomMetricChart.module.css';
 import dashboardStyles from '../../Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
 import { debounce } from 'lodash';
-import { computeCorrelation } from '../../Metrics/metricsUtils';
+import { computeCorrelation, computeMetricData } from '../../Metrics/metricsUtils';
 
 // Register Chart.js components
 ChartJS.register(
@@ -50,7 +50,7 @@ class ChartErrorBoundary extends Component {
   }
 }
 
-const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
+const CustomMetricChart = ({ metric, isDarkTheme, chartType, cards, headers }) => {
   const appleBlue = '#007AFF';
   const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
   const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
@@ -198,16 +198,19 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
       if (typeof label === 'object') {
         // Firestore Timestamp or similar
         if (typeof label.seconds === 'number') {
-          return new Date(label.seconds * 1000).toISOString().slice(0, 10);
+          const d = new Date(label.seconds * 1000);
+          // Format as DD/MM/YYYY
+          return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
         }
         if (typeof label._seconds === 'number') {
-          return new Date(label._seconds * 1000).toISOString().slice(0, 10);
+          const d = new Date(label._seconds * 1000);
+          return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
         }
       }
       // Try to parse as date string
       const d = new Date(label);
       if (!isNaN(d.getTime())) {
-        return d.toISOString().slice(0, 10);
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
       }
       return String(label);
     };
@@ -284,7 +287,17 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
     };
   };
 
-  const effectiveMetric = normalizeMetricData(metric);
+  // If metric.config and cards are provided, use metricsUtils to compute chart data
+  let effectiveMetric;
+  if (metric && metric.config && cards && headers) {
+    const computedData = computeMetricData(cards, metric.config, headers);
+    effectiveMetric = {
+      ...metric,
+      data: computedData,
+    };
+  } else {
+    effectiveMetric = normalizeMetricData(metric);
+  }
 
   // Compute correlation for two-line chart
   let correlation = null;
@@ -315,6 +328,13 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
             if (effectiveMetric.type === 'scatter') {
               return `(${context.raw.x.toFixed(2)}, ${context.raw.y.toFixed(2)})`;
             }
+            // If y value is a timestamp, format as date
+            if (typeof context.raw === 'number' && context.raw > 1000000000 && context.raw < 9999999999999) {
+              const d = new Date(context.raw);
+              if (!isNaN(d.getTime())) {
+                return `${context.dataset.label}: ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+              }
+            }
             return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
           },
         },
@@ -343,7 +363,20 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
           text: effectiveMetric.config?.comparisonFields[1] || 'Y',
           color: textColor,
         },
-        ticks: { color: textColor },
+        ticks: {
+          color: textColor,
+          font: { family: '-apple-system' },
+          // If the y values are timestamps, format as date
+          callback: function(value) {
+            if (typeof value === 'number' && value > 1000000000 && value < 9999999999999) {
+              const d = new Date(value);
+              if (!isNaN(d.getTime())) {
+                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+              }
+            }
+            return value;
+          },
+        },
         grid: { color: isDarkTheme ? '#444' : '#DDD' },
       },
     } : {
@@ -354,7 +387,20 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType }) => {
       },
       y: {
         stacked: effectiveMetric.type === 'bar',
-        ticks: { color: textColor, font: { family: '-apple-system' } },
+        ticks: {
+          color: textColor,
+          font: { family: '-apple-system' },
+          // If the y values are timestamps, format as date
+          callback: function(value) {
+            if (typeof value === 'number' && value > 1000000000 && value < 9999999999999) {
+              const d = new Date(value);
+              if (!isNaN(d.getTime())) {
+                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+              }
+            }
+            return value;
+          },
+        },
         grid: { color: isDarkTheme ? '#444' : '#DDD' },
       },
     },
@@ -469,11 +515,15 @@ CustomMetricChart.propTypes = {
   }),
   isDarkTheme: PropTypes.bool.isRequired,
   chartType: PropTypes.oneOf(['line', 'pie', 'speedometer', 'bar', 'scatter']),
+  cards: PropTypes.array, // New prop
+  headers: PropTypes.array, // New prop
 };
 
 CustomMetricChart.defaultProps = {
   metric: null,
   chartType: 'speedometer',
+  cards: undefined,
+  headers: undefined,
 };
 
 export default CustomMetricChart;
