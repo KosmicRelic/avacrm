@@ -73,6 +73,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
   const prevStepRef = useRef(currentStep);
+  const outputDropdownRef = useRef(null);
+  const templateDropdownRef = useRef(null);
+  const [outputDropdownOpen, setOutputDropdownOpen] = useState(false);
+  const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
 
   // Colors for Apple-inspired UI
   const appleBlue = '#007AFF';
@@ -732,7 +736,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             },
           },
           {
-            title: () => 'Metric Output',
+            title: () => 'Select Metric Output',
             leftButton: {
               label: 'Back',
               onClick: () => {
@@ -747,7 +751,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               label: 'Back',
               onClick: () => {
                 setNavigationDirection('backward');
-                goToStep(5);
+                goToStep(4);
               },
             },
           },
@@ -757,7 +761,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               label: 'Back',
               onClick: () => {
                 setNavigationDirection('backward');
-                goToStep(5);
+                goToStep(4);
               },
             },
           },
@@ -767,7 +771,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               label: 'Back',
               onClick: () => {
                 setNavigationDirection('backward');
-                goToStep(6);
+                goToStep(4);
               },
             },
           },
@@ -856,7 +860,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        title: 'Metric Output',
+        title: 'Select Metric Output',
         backButtonTitle: activeMetricIndex === -1 ? 'New Metric' : 'Edit Metric',
       };
     } else if (currentStep === 6) {
@@ -865,7 +869,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: 'Select Card Templates',
-        backButtonTitle: 'Metric Output',
+        backButtonTitle: 'New Metric',
       };
     } else if (currentStep === 7) {
       newConfig = {
@@ -873,7 +877,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: `Fields for ${selectedCardTemplate || metricForm.cardTemplates[0] || ''}`,
-        backButtonTitle: 'Metric Output',
+        backButtonTitle: 'New Metric',
       };
     } else if (currentStep === 8) {
       newConfig = {
@@ -881,7 +885,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         showDoneButton: false,
         showBackButton: true,
         title: 'Configure Filters',
-        backButtonTitle: 'Metric Output',
+        backButtonTitle: 'New Metric',
       };
     }
 
@@ -1120,13 +1124,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             {step === 5 && (
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 2 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => toggleSection(2)}
-                    tabIndex={0}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className={styles.filterRow}>
+                  {/* Metric Output selector dropdown */}
+                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`} style={{ cursor: 'pointer', position: 'relative' }} ref={outputDropdownRef}>
+                    <div className={styles.filterRow} onClick={() => setOutputDropdownOpen((open) => !open)}>
                       <div className={styles.filterNameType}>
                         <span>Metric Output</span>
                       </div>
@@ -1142,53 +1142,57 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             }
                           })()}
                         </span>
+                        <span style={{ marginLeft: 8, fontSize: 14, color: '#888' }}>▼</span>
                       </div>
                     </div>
-                    {activeSectionIndex === 2 && (
-                      <div className={styles.filterActions} style={{ marginTop: 8 }}>
+                    {outputDropdownOpen && (
+                      <div style={{
+                        position: 'absolute',
+                        zIndex: 10,
+                        top: '100%',
+                        left: 0,
+                        background: isDarkTheme ? '#222' : '#fff',
+                        border: '1px solid #ccc',
+                        borderRadius: 8,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        minWidth: 180,
+                        marginTop: 4,
+                        padding: 4,
+                      }}>
                         {[
                           { type: 'line', label: 'Line Chart' },
                           { type: 'pie', label: 'Pie Chart' },
                           { type: 'bar', label: 'Bar Chart' },
                           { type: 'number', label: 'Number Output' },
-                        ].map((option, idx) => (
+                        ].map((option) => (
                           <div
                             key={option.type}
-                            className={`${styles.filterItem} ${metricForm.visualizationType === option.type ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            style={{ marginBottom: 4, cursor: 'pointer' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            style={{
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              background: metricForm.visualizationType === option.type ? (isDarkTheme ? '#333' : '#f0f8ff') : 'transparent',
+                              borderRadius: 6,
+                              fontWeight: metricForm.visualizationType === option.type ? 600 : 400,
+                              color: isDarkTheme ? '#fff' : '#222',
+                            }}
+                            onClick={() => {
                               setMetricForm((prev) => ({ ...prev, visualizationType: option.type, aggregation: option.type === 'number' ? 'average' : prev.aggregation }));
-                              toggleSection(null);
+                              setOutputDropdownOpen(false);
                             }}
                           >
-                            <div className={styles.filterRow}>
-                              <div className={styles.filterNameType}>
-                                <span>{option.label}</span>
-                              </div>
-                              <div className={styles.primaryButtons}>
-                                {metricForm.visualizationType === option.type ? (
-                                  <FaRegCheckCircle style={{ color: appleBlue }} />
-                                ) : (
-                                  <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
-                                )}
-                              </div>
-                            </div>
+                            {option.label}
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+                  {/* Card Template selector dropdown */}
                   <div
-                    className={`${styles.filterItem} ${activeSectionIndex === 4 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => {
-                      setNavigationDirection('forward');
-                      goToStep(6);
-                    }}
-                    tabIndex={0}
-                    style={{ cursor: 'pointer' }}
+                    className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    style={{ cursor: 'pointer', position: 'relative' }}
+                    ref={templateDropdownRef}
                   >
-                    <div className={styles.filterRow}>
+                    <div className={styles.filterRow} onClick={() => setTemplateDropdownOpen((open) => !open)}>
                       <div className={styles.filterNameType}>
                         <span>Select Card Template</span>
                       </div>
@@ -1201,21 +1205,58 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             return template ? (template.name || template.typeOfCards) : 'Select Template';
                           })()}
                         </span>
+                        <span style={{ marginLeft: 8, fontSize: 14, color: '#888' }}>▼</span>
                       </div>
                     </div>
+                    {templateDropdownOpen && (
+                      <div style={{
+                        position: 'absolute',
+                        zIndex: 10,
+                        top: '100%',
+                        left: 0,
+                        background: isDarkTheme ? '#222' : '#fff',
+                        border: '1px solid #ccc',
+                        borderRadius: 8,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        minWidth: 180,
+                        marginTop: 4,
+                        padding: 4,
+                        maxHeight: 220,
+                        overflowY: 'auto',
+                      }}>
+                        {(cardTemplates && cardTemplates.length > 0) ? (
+                          cardTemplates.map((template, idx) => {
+                            const templateKey = template.name || template.typeOfCards || idx;
+                            return (
+                              <div
+                                key={templateKey}
+                                style={{
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  background: metricForm.cardTemplates[0] === templateKey ? (isDarkTheme ? '#333' : '#f0f8ff') : 'transparent',
+                                  borderRadius: 6,
+                                  fontWeight: metricForm.cardTemplates[0] === templateKey ? 600 : 400,
+                                  color: isDarkTheme ? '#fff' : '#222',
+                                }}
+                                onClick={() => {
+                                  setMetricForm((prev) => ({ ...prev, cardTemplates: [templateKey], fields: {} }));
+                                  setTemplateDropdownOpen(false);
+                                }}
+                              >
+                                {template.name || template.typeOfCards}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ color: '#888', padding: '8px 12px' }}>No card templates available.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  {/* Field selector (Y Axis/Data Field) */}
                   {(metricForm.visualizationType === 'line' || metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar' || metricForm.visualizationType === 'number') && (
                     <div
                       className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => {
-                        if (!metricForm.cardTemplates[0]) {
-                          alert('Please select a card template first.');
-                          return;
-                        }
-                        setNavigationDirection('forward');
-                        setSelectedCardTemplate(metricForm.cardTemplates[0]);
-                        goToStep(7);
-                      }}
                       tabIndex={0}
                       style={{ cursor: 'pointer' }}
                     >
@@ -1236,14 +1277,55 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           </span>
                         </div>
                       </div>
+                      {/* Show field options as selector buttons below */}
+                      <div className={styles.filterActions} style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {(() => {
+                          const templateKey = metricForm.cardTemplates[0];
+                          const template = cardTemplates.find(
+                            (t) => (t.name || t.typeOfCards) === templateKey
+                          );
+                          if (!template) return null;
+                          const templateHeaders = template?.headers?.filter(
+                            (header) => {
+                              if (header.key === 'id' || header.key === 'typeOfCards') return false;
+                              if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
+                                return header.type === 'text' || header.type === 'dropdown';
+                              }
+                              if (metricForm.visualizationType === 'number') {
+                                return header.type === 'number';
+                              }
+                              return true;
+                            }
+                          ) || [];
+                          return templateHeaders.map((header) => (
+                            <button
+                              key={header.key}
+                              className={
+                                styles.granularityButton +
+                                (metricForm.fields[templateKey]?.[0] === header.key ? ' ' + styles.activeItem : '')
+                              }
+                              style={{ minWidth: 100, fontWeight: 500, borderRadius: 8 }}
+                              onClick={() => setMetricForm((prev) => ({
+                                ...prev,
+                                fields: {
+                                  ...prev.fields,
+                                  [templateKey]: [header.key],
+                                },
+                              }))}
+                            >
+                              {header.name}
+                            </button>
+                          ));
+                        })()}
+                      </div>
                     </div>
                   )}
+                  {/* Aggregation selector for number output */}
                   {metricForm.visualizationType === 'number' && (
                     <div
                       className={`${styles.filterItem} ${activeSectionIndex === 5 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => toggleSection(5)}
                       tabIndex={0}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'default' }}
                     >
                       <div className={styles.filterRow}>
                         <div className={styles.filterNameType}>
@@ -1255,40 +1337,27 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           </span>
                         </div>
                       </div>
-                      {activeSectionIndex === 5 && (
-                        <div className={styles.filterActions} style={{ marginTop: 8 }}>
-                          {['average', 'count'].map((agg) => (
-                            <div
-                              key={agg}
-                              className={`${styles.filterItem} ${metricForm.aggregation === agg ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              style={{ marginBottom: 4, cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMetricForm((prev) => ({ ...prev, aggregation: agg }));
-                                toggleSection(null);
-                              }}
-                            >
-                              <div className={styles.filterRow}>
-                                <div className={styles.filterNameType}>
-                                  <span>{agg.charAt(0).toUpperCase() + agg.slice(1)}</span>
-                                </div>
-                                <div className={styles.primaryButtons}>
-                                  {metricForm.aggregation === agg ? (
-                                    <FaRegCheckCircle style={{ color: appleBlue }} />
-                                  ) : (
-                                    <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className={styles.filterActions} style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                        {['average', 'count'].map((agg) => (
+                          <button
+                            key={agg}
+                            className={
+                              styles.granularityButton +
+                              (metricForm.aggregation === agg ? ' ' + styles.activeItem : '')
+                            }
+                            style={{ minWidth: 80, fontWeight: 500, borderRadius: 8 }}
+                            onClick={() => setMetricForm((prev) => ({ ...prev, aggregation: agg }))}
+                          >
+                            {agg.charAt(0).toUpperCase() + agg.slice(1)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
+                {/* Granularity selector for line chart */}
                 {metricForm.visualizationType === 'line' && (
-                  <div className={styles.granularityButtonGroup}>
+                  <div className={styles.granularityButtonGroup} style={{ marginTop: 12 }}>
                     {['daily', 'weekly', 'monthly'].map((g) => (
                       <button
                         key={g}
@@ -1303,145 +1372,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     ))}
                   </div>
                 )}
-                <div className={styles.simpleNumberPreview} style={{
-                  fontSize: 48,
-                  fontWeight: 600,
-                  color: appleBlue,
-                  textAlign: 'center',
-                  padding: '32px 0',
-                  background: isDarkTheme ? '#222' : '#f7f7f7',
-                  borderRadius: 12,
-                }}>
-                  {(() => {
-                    const templateKey = metricForm.cardTemplates[0];
-                    const selectedHeaderKey = metricForm.fields[templateKey]?.[0];
-                    if (!selectedHeaderKey || !templateKey) return '12345';
-                    const template = cardTemplates.find(
-                      (t) => (t.name || t.typeOfCards) === templateKey
-                    );
-                    if (!template) return '12345';
-                    const cardsForTemplate = cards.filter(
-                      (card) => card.typeOfCards === templateKey
-                    );
-                    const values = cardsForTemplate
-                      .map(card => {
-                        const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
-                        return value;
-                      })
-                      .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
-                      .map(Number);
-                    const rawResult = metricForm.aggregation === 'average'
-                      ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
-                      : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
-                    return Number.isInteger(rawResult) ? rawResult.toString() : rawResult.toFixed(1);
-                  })()}
-                </div>
-              </div>
-            )}
-            {step === 6 && (
-              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={styles.filterList}>
-                  <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
-                    Select a Card Template
-                  </div>
-                  {(cardTemplates && cardTemplates.length > 0) ? (
-                    cardTemplates.map((template, idx) => {
-                      const templateKey = template.name || template.typeOfCards || idx;
-                      return (
-                        <div
-                          key={templateKey}
-                          className={`${styles.filterItem} ${metricForm.cardTemplates[0] === templateKey ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setMetricForm((prev) => ({ ...prev, cardTemplates: [templateKey], fields: {} }))}
-                        >
-                          <div className={styles.filterRow}>
-                            <div className={styles.filterNameType}>
-                              <span>{template.name || template.typeOfCards}</span>
-                            </div>
-                            <div className={styles.primaryButtons}>
-                              {metricForm.cardTemplates[0] === templateKey ? (
-                                <FaRegCheckCircle style={{ color: appleBlue }} />
-                              ) : (
-                                <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className={styles.filterItem} style={{ color: '#888' }}>No card templates available.</div>
-                  )}
-                </div>
-              </div>
-            )}
-            {step === 7 && (
-              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={styles.filterList}>
-                  <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
-                    {`Fields for ${selectedCardTemplate || metricForm.cardTemplates[0] || ''}`}
-                  </div>
-                  {(() => {
-                    const templateKey = selectedCardTemplate || metricForm.cardTemplates[0];
-                    const template = cardTemplates.find(
-                      (t) => (t.name || t.typeOfCards) === templateKey
-                    );
-                    const templateHeaders = template?.headers?.filter(
-                      (header) => {
-                        if (header.key === 'id' || header.key === 'typeOfCards') return false;
-                        if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
-                          return header.type === 'text' || header.type === 'dropdown';
-                        }
-                        if (metricForm.visualizationType === 'number') {
-                          return header.type === 'number';
-                        }
-                        return true;
-                      }
-                    ) || [];
-                    if (templateHeaders.length > 0) {
-                      return templateHeaders.map((header) => (
-                        <div
-                          key={header.key}
-                          className={`${styles.filterItem} ${metricForm.fields[templateKey]?.[0] === header.key ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            setMetricForm((prev) => ({
-                              ...prev,
-                              fields: {
-                                ...prev.fields,
-                                [templateKey]: [header.key],
-                              },
-                            }));
-                          }}
-                        >
-                          <div className={styles.filterRow}>
-                            <div className={styles.filterNameType}>
-                              <span>{header.name}</span>
-                            </div>
-                            <div className={styles.primaryButtons}>
-                              {metricForm.fields[templateKey]?.[0] === header.key ? (
-                                <FaRegCheckCircle style={{ color: appleBlue }} />
-                              ) : (
-                                <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ));
-                    } else {
-                      return (
-                        <div className={styles.filterItem} style={{ color: '#888' }}>
-                          {metricForm.visualizationType === 'number' ? 'No number headers available.' :
-                           (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') ? 'No text or dropdown headers available.' : 'No headers available.'}
-                        </div>
-                      );
-                    }
-                  })()}
-                </div>
+                {/* Live Chart Preview (moved from step 7) */}
                 {(() => {
-                  const templateKey = selectedCardTemplate || metricForm.cardTemplates[0];
+                  const templateKey = metricForm.cardTemplates[0];
                   const selectedHeaderKey = metricForm.fields[templateKey]?.[0];
-                  if (!selectedHeaderKey) return null;
+                  if (!selectedHeaderKey || !templateKey) return null;
                   const template = cardTemplates.find(
                     (t) => (t.name || t.typeOfCards) === templateKey
                   );
@@ -1500,114 +1435,235 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     );
                   }
 
-                  const dataPoints = (() => {
-                    if (header?.type === 'text' || header?.type === 'dropdown') {
-                      const countsByValueAndDate = {};
-                      cardsForTemplate.forEach(card => {
-                        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-                        let xLabel = formatTimestamp(timestamp);
-                        if (!xLabel || value === undefined || value === null) return;
-                        if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
-                        countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
-                      });
-                      const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
-                      const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
-                        label: val,
-                        data: allDates.map(date => dateCounts[date] || 0),
-                        fill: false,
-                        borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                        backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                        tension: 0.2,
-                        pointRadius: 3,
-                        pointHoverRadius: 5,
-                      }));
-                      return { labels: allDates, datasets };
-                    }
-                    const points = cardsForTemplate.map(card => {
-                      const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-                      let xLabel = formatTimestamp(timestamp);
-                      if (header?.type === 'date' && value) {
-                        let yValue = null;
-                        if (typeof value === 'object' && (value.seconds || value._seconds)) {
-                          yValue = (value.seconds || value._seconds) * 1000;
-                        } else if (typeof value === 'string' || typeof value === 'number') {
-                          const d = new Date(value);
-                          if (!isNaN(d)) yValue = d.getTime();
-                        }
-                        return { x: xLabel, y: yValue };
-                      }
-                      return { x: xLabel, y: value };
-                    }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
-                    points.sort((a, b) => (a.x > b.x ? 1 : -1));
-                    return {
-                      labels: points.map(dp => dp.x),
-                      datasets: [
-                        {
-                          label: header?.name || selectedHeaderKey,
-                          data: points.map(dp => dp.y),
+                  if (metricForm.visualizationType === 'line') {
+                    const dataPoints = (() => {
+                      if (header?.type === 'text' || header?.type === 'dropdown') {
+                        const countsByValueAndDate = {};
+                        cardsForTemplate.forEach(card => {
+                          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+                          let xLabel = formatTimestamp(timestamp);
+                          if (!xLabel || value === undefined || value === null) return;
+                          if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
+                          countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
+                        });
+                        const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
+                        const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
+                          label: val,
+                          data: allDates.map(date => dateCounts[date] || 0),
                           fill: false,
-                          borderColor: appleBlue,
-                          backgroundColor: appleBlue,
+                          borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
+                          backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
                           tension: 0.2,
                           pointRadius: 3,
                           pointHoverRadius: 5,
-                        },
-                      ],
-                    };
-                  })();
-                  const chartOptions = {
-                    responsive: true,
-                    plugins: {
-                      legend: { display: true },
-                      title: { display: false },
-                      tooltip: {
-                        callbacks: {
-                          label: function(context) {
-                            if (header?.type === 'date' && context.parsed.y) {
-                              const d = new Date(context.parsed.y);
-                              return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-                            }
-                            return context.parsed.y;
-                          }
-                        }
+                        }));
+                        return { labels: allDates, datasets };
                       }
-                    },
-                    scales: {
-                      x: { display: true, title: { display: false } },
-                      y: (header?.type === 'text' || header?.type === 'dropdown') ? {
-                        display: true,
-                        title: { display: false },
-                        ticks: {
-                          stepSize: 1,
-                          precision: 0,
-                          callback: function(value) {
-                            return Number.isInteger(value) ? value : '';
-                          }
-                        },
-                        beginAtZero: true,
-                        suggestedMin: 0,
-                      } : (header?.type === 'date' ? {
-                        display: true,
-                        title: { display: false },
-                        ticks: {
-                          callback: function(value) {
+                      const points = cardsForTemplate.map(card => {
+                        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+                        let xLabel = formatTimestamp(timestamp);
+                        if (header?.type === 'date' && value) {
+                          let yValue = null;
+                          if (typeof value === 'object' && (value.seconds || value._seconds)) {
+                            yValue = (value.seconds || value._seconds) * 1000;
+                          } else if (typeof value === 'string' || typeof value === 'number') {
                             const d = new Date(value);
-                            if (!isNaN(d)) return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
-                            return value;
+                            if (!isNaN(d)) yValue = d.getTime();
+                          }
+                          return { x: xLabel, y: yValue };
+                        }
+                        return { x: xLabel, y: value };
+                      }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
+                      points.sort((a, b) => (a.x > b.x ? 1 : -1));
+                      return {
+                        labels: points.map(dp => dp.x),
+                        datasets: [
+                          {
+                            label: header?.name || selectedHeaderKey,
+                            data: points.map(dp => dp.y),
+                            fill: false,
+                            borderColor: appleBlue,
+                            backgroundColor: appleBlue,
+                            tension: 0.2,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                          },
+                        ],
+                      };
+                    })();
+                    const chartOptions = {
+                      responsive: true,
+                      plugins: {
+                        legend: { display: true },
+                        title: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              if (header?.type === 'date' && context.parsed.y) {
+                                const d = new Date(context.parsed.y);
+                                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                              }
+                              return context.parsed.y;
+                            }
                           }
                         }
-                      } : { display: true, title: { display: false } }),
-                    },
-                  };
-                  return (
-                    <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
-                      <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
-                      <div style={{ width: '100%', minHeight: 220 }}>
-                        <Line data={dataPoints} options={chartOptions} />
+                      },
+                      scales: {
+                        x: { display: true, title: { display: false } },
+                        y: (header?.type === 'text' || header?.type === 'dropdown') ? {
+                          display: true,
+                          title: { display: false },
+                          ticks: {
+                            stepSize: 1,
+                            precision: 0,
+                            callback: function(value) {
+                              return Number.isInteger(value) ? value : '';
+                            }
+                          },
+                          beginAtZero: true,
+                          suggestedMin: 0,
+                        } : (header?.type === 'date' ? {
+                          display: true,
+                          title: { display: false },
+                          ticks: {
+                            callback: function(value) {
+                              const d = new Date(value);
+                              if (!isNaN(d)) return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
+                              return value;
+                            }
+                          }
+                        } : { display: true, title: { display: false } }),
+                      },
+                    };
+                    return (
+                      <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
+                        <div style={{ width: '100%', minHeight: 220 }}>
+                          <Line data={dataPoints} options={chartOptions} />
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  }
+
+                  if (metricForm.visualizationType === 'number') {
+                    const values = cardsForTemplate
+                      .map(card => {
+                        const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
+                        return value;
+                      })
+                      .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
+                      .map(Number);
+                    const rawResult = metricForm.aggregation === 'average'
+                      ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
+                      : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
+                    return (
+                      <div className={styles.simpleNumberPreview} style={{
+                        fontSize: 48,
+                        fontWeight: 600,
+                        color: appleBlue,
+                        textAlign: 'center',
+                        padding: '32px 0',
+                        background: isDarkTheme ? '#222' : '#f7f7f7',
+                        borderRadius: 12,
+                        marginTop: 24,
+                      }}>
+                        {Number.isInteger(rawResult) ? rawResult.toString() : rawResult.toFixed(1)}
+                      </div>
+                    );
+                  }
+                  return null;
                 })()}
+              </div>
+            )}
+            {step === 6 && (
+              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.filterList}>
+                  <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
+                    Select a Card Template
+                  </div>
+                  {/* This step is now just a placeholder, as selection is handled in step 5 dropdown */}
+                  <div className={styles.filterItem} style={{ color: '#888' }}>Use the selector above to choose a template.</div>
+                </div>
+              </div>
+            )}
+            {step === 7 && (
+              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.filterList}>
+                  <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
+                    {`Fields for ${selectedCardTemplate || metricForm.cardTemplates[0] || ''}`}
+                  </div>
+                  {(() => {
+                    const templateKey = selectedCardTemplate || metricForm.cardTemplates[0];
+                    const template = cardTemplates.find(
+                      (t) => (t.name || t.typeOfCards) === templateKey
+                    );
+                    const templateHeaders = template?.headers?.filter(
+                      (header) => {
+                        if (header.key === 'id' || header.key === 'typeOfCards') return false;
+                        if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
+                          return header.type === 'text' || header.type === 'dropdown';
+                        }
+                        if (metricForm.visualizationType === 'number') {
+                          return header.type === 'number';
+                        }
+                        return true;
+                      }
+                    ) || [];
+                    if (templateHeaders.length > 0) {
+                      return templateHeaders.map((header) => (
+                        <div
+                          key={header.key}
+                          className={`${styles.filterItem} ${metricForm.fields[templateKey]?.[0] === header.key ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            setMetricForm((prev) => ({
+                              ...prev,
+                              fields: {
+                                ...prev.fields,
+                                [templateKey]: [header.key],
+                              },
+                            }));
+                            setNavigationDirection('backward');
+                            goToStep(4);
+                          }}
+                        >
+                          <div className={styles.filterRow}>
+                            <div className={styles.filterNameType}>
+                              <span>{header.name}</span>
+                            </div>
+                            <div className={styles.primaryButtons}>
+                              {metricForm.fields[templateKey]?.[0] === header.key ? (
+                                <FaRegCheckCircle style={{ color: appleBlue }} />
+                              ) : (
+                                <FaRegCircle style={{ color: isDarkTheme ? '#888' : '#ccc' }} />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    } else {
+                      return (
+                        <div className={styles.filterItem} style={{ color: '#888' }}>
+                          {metricForm.visualizationType === 'number' ? 'No number headers available.' :
+                           (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') ? 'No text or dropdown headers available.' : 'No headers available.'}
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+              </div>
+            )}
+            {step === 8 && (
+              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.filterList}>
+                  <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
+                    Configure Filters
+                  </div>
+                  {/* Filter configuration options can be added here */}
+                  <div className={styles.filterItem} style={{ color: '#888' }}>
+                    Filter configuration not implemented.
+                  </div>
+                </div>
               </div>
             )}
           </div>
