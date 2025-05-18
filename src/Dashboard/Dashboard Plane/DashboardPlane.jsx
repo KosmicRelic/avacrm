@@ -7,7 +7,7 @@ import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart
 
 // Window component
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
-  const { isDarkTheme, metrics } = useContext(MainContext);
+  const { isDarkTheme, metrics, cards, cardTemplates } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
 
   const metric = widget?.metricId
@@ -15,6 +15,8 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
         .flatMap((category) => category.metrics)
         .find((m) => m.id === widget.metricId)
     : null;
+
+  // Debug metric lookup
 
   const sizeClasses = {
     verySmall: styles.verySmallWindow,
@@ -63,7 +65,30 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   };
 
   const isBlank = !widget?.metricId || !metric;
-  const isChartType = metric && ['line', 'pie', 'speedometer', 'bar'].includes(metric.type);
+  const isChartType = metric && ['line', 'pie', 'bar', 'number', 'speedometer'].includes(metric.type);
+
+  // Prepare props for CustomMetricChart
+  let chartProps = {};
+  if (metric && isChartType) {
+    const config = metric.config || {};
+    const templateKey = config.cardTemplates?.[0] || '';
+    const selectedHeaderKey = config.fields?.[templateKey]?.[0] || '';
+    const template = cardTemplates?.find((t) => (t.name || t.typeOfCards) === templateKey);
+    const header = template?.headers?.find((h) => h.key === selectedHeaderKey);
+
+    chartProps = {
+      visualizationType: metric.type === 'speedometer' ? 'number' : metric.type,
+      cards,
+      templateKey,
+      selectedHeaderKey,
+      header,
+      isDarkTheme,
+      aggregation: config.aggregation || 'average',
+      granularity: config.granularity || 'monthly',
+    };
+
+    // Debug chart props
+  }
 
   return (
     <div
@@ -105,11 +130,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                 {metric ? (
                   isChartType ? (
                     <div className={styles.chartWrapper}>
-                      <CustomMetricChart
-                        metric={metric}
-                        isDarkTheme={isDarkTheme}
-                        chartType={metric.type}
-                      />
+                      <CustomMetricChart {...chartProps} />
                     </div>
                   ) : (
                     <button
@@ -117,7 +138,9 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
                       disabled={editMode}
                     >
                       <span className={styles.metricName}>{metric.name}:</span>{' '}
-                      <span className={styles.metricValue}>{metric.value}</span>
+                      <span className={styles.metricValue}>
+                        {metric.value !== undefined ? metric.value : 'N/A'}
+                      </span>
                     </button>
                   )
                 ) : (
@@ -143,6 +166,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   );
 };
 
+// Rest of DashboardPlane remains unchanged
 const DashboardPlane = ({
   dashboardId,
   initialWidgets = [],
@@ -151,7 +175,7 @@ const DashboardPlane = ({
   onDragStart,
   onDrop,
   onWidgetClick,
-  swapWidgets, // <-- already present
+  swapWidgets,
 }) => {
   const { isDarkTheme, setDashboards } = useContext(MainContext);
   const [windows, setWindows] = useState([]);

@@ -1,45 +1,51 @@
-import React, { Component, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, Component } from 'react';
 import PropTypes from 'prop-types';
-import { Line, Pie, Bar } from 'react-chartjs-2';
-import GaugeComponent from 'react-gauge-component';
+import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
   CategoryScale,
-  ArcElement,
+  LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
+  PieController,
+  ArcElement,
+  Title,
   Tooltip,
   Legend,
   Filler,
-  Title,
 } from 'chart.js';
-import styles from './CustomMetricChart.module.css';
-import dashboardStyles from '../../Dashboard/Dashboard Plane/DashboardPlane'; // Adjust path if needed
 import { debounce } from 'lodash';
-import { computeCorrelation, computeMetricData } from '../../Metrics/metricsUtils';
+import styles from './CustomMetricChart.module.css';
 
 // Register Chart.js components
 ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
   CategoryScale,
-  ArcElement,
+  LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
+  PieController,
+  ArcElement,
+  Title,
   Tooltip,
   Legend,
-  Filler,
-  Title
+  Filler
 );
 
 // Error Boundary Component
 class ChartErrorBoundary extends Component {
-  state = { hasError: false };
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ChartErrorBoundary caught an error", error, errorInfo);
   }
 
   render() {
@@ -50,9 +56,18 @@ class ChartErrorBoundary extends Component {
   }
 }
 
-const CustomMetricChart = ({ metric, isDarkTheme, chartType, cards, headers }) => {
+const CustomMetricChart = ({
+  visualizationType,
+  cards,
+  templateKey,
+  selectedHeaderKey,
+  header,
+  isDarkTheme,
+  aggregation,
+  granularity,
+}) => {
   const appleBlue = '#007AFF';
-  const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
+  const backgroundColor = isDarkTheme ? '#222' : '#f7f7f7';
   const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
   const chartContainerRef = useRef(null);
   const resizeObserverRef = useRef(null);
@@ -65,6 +80,7 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType, cards, headers }) =
     }
   }, 100);
 
+  // Set up ResizeObserver
   useEffect(() => {
     if (chartContainerRef.current) {
       resizeObserverRef.current = new ResizeObserver(debouncedResize);
@@ -79,331 +95,275 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType, cards, headers }) =
     };
   }, []);
 
-  const getDefaultMetric = (type) => {
-    switch (type) {
-      case 'line':
-        return {
-          id: 'example-line',
-          name: 'Example Sales',
-          type: 'line',
-          data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            datasets: [
-              {
-                label: 'Example Sales',
-                data: [12000, 19000, 15000, 22000, 18000, 25000],
-                borderColor: appleBlue,
-                backgroundColor: `${appleBlue}33`,
-                fill: true,
-                tension: 0.4,
-              },
-            ],
-          },
-        };
-      case 'pie':
-        return {
-          id: 'example-pie',
-          name: 'Example Revenue',
-          type: 'pie',
-          data: {
-            labels: ['Product A', 'Product B', 'Product C', 'Product D'],
-            datasets: [
-              {
-                label: 'Example Revenue',
-                data: [30000, 20000, 15000, 10000],
-                backgroundColor: [appleBlue, `${appleBlue}CC`, `${appleBlue}99`, `${appleBlue}66`],
-                borderColor: backgroundColor,
-                borderWidth: 1,
-              },
-            ],
-          },
-        };
-      case 'speedometer':
-        return {
-          id: 'example-speedometer',
-          name: 'Example Close Rate',
-          type: 'speedometer',
-          data: { value: 75 },
-        };
-      case 'bar':
-        return {
-          id: 'example-bar',
-          name: 'Example Growth',
-          type: 'bar',
-          data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr'],
-            datasets: [
-              {
-                label: 'Example Growth',
-                data: [50, 75, 60, 90],
-                backgroundColor: appleBlue,
-                borderColor: appleBlue,
-                borderWidth: 1,
-              },
-            ],
-          },
-        };
-      case 'scatter':
-        return {
-          id: 'example-scatter',
-          name: 'Example Comparison',
-          type: 'scatter',
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: 'Field1 vs Field2',
-                data: [{ x: 10, y: 20 }, { x: 15, y: 25 }, { x: 20, y: 30 }],
-                borderColor: appleBlue,
-                backgroundColor: `${appleBlue}66`,
-                pointRadius: 5,
-                showLine: true,
-              },
-            ],
-          },
-          config: { comparisonFields: ['Field1', 'Field2'] },
-        };
-      default:
-        return {
-          id: 'example-fallback',
-          name: 'Example Fallback',
-          type: 'speedometer',
-          data: { value: 50 },
-        };
-    }
-  };
-
-  // Generate fading colors for pie charts
-  const getPieColors = (baseColor, numSegments) => {
-    const opacities = ['FF', 'CC', '99', '66'];
-    return Array.from({ length: numSegments }, (_, i) => `${baseColor}${opacities[i % opacities.length]}`);
-  };
-
-  // Normalize metric data to Chart.js format
-  const normalizeMetricData = (metric) => {
-    if (!metric || !metric.id || !metric.name || !metric.type || !metric.data) {
-      return getDefaultMetric(chartType || 'speedometer');
-    }
-
-    const { data, type, name, config = {} } = metric;
-    const { comparisonFields = [] } = config;
-
-    if (type === 'speedometer') {
-      return metric;
-    }
-
-    // Format labels as readable dates if possible
-    const formatLabel = (label) => {
-      if (!label) return '';
-      if (typeof label === 'object') {
-        // Firestore Timestamp or similar
-        if (typeof label.seconds === 'number') {
-          const d = new Date(label.seconds * 1000);
-          // Format as DD/MM/YYYY
-          return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-        }
-        if (typeof label._seconds === 'number') {
-          const d = new Date(label._seconds * 1000);
-          return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+  // Helper function to get latest field value and timestamp
+  const getLatestFieldValueAndTimestamp = (card, fieldKey, dateHeaderKey) => {
+    let value = card[fieldKey];
+    let timestamp = null;
+    if (value === undefined && Array.isArray(card.history)) {
+      const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+      if (entries.length > 0) {
+        const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+        value = latest.value;
+        timestamp = latest.timestamp;
+      }
+    } else if (value !== undefined) {
+      if (Array.isArray(card.history)) {
+        const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+        if (entries.length > 0) {
+          const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+          timestamp = latest.timestamp;
         }
       }
-      // Try to parse as date string
-      const d = new Date(label);
-      if (!isNaN(d.getTime())) {
-        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+      if (!timestamp && dateHeaderKey && card[dateHeaderKey]) {
+        timestamp = card[dateHeaderKey];
       }
-      return String(label);
-    };
+    }
+    if (!timestamp) timestamp = card.id || card.docId;
+    return { value, timestamp };
+  };
 
-    // Format labels as three-letter month abbreviations or yyyy-MM-dd
-    const formattedLabels = (data.labels || []).map((label) => formatLabel(label));
+  // Helper function to format timestamp
+  const formatTimestamp = (ts) => {
+    if (!ts) return '';
+    if (typeof ts === 'string' || typeof ts === 'number') return String(ts);
+    if (ts.seconds) {
+      const d = new Date(ts.seconds * 1000);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+    if (ts._seconds) {
+      const d = new Date(ts._seconds * 1000);
+      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+    return String(ts);
+  };
 
-    // Ensure unique labels and aggregate data
-    const uniqueLabels = [];
-    const labelSet = new Set();
-    formattedLabels.forEach((label) => {
-      if (!labelSet.has(label)) {
-        labelSet.add(label);
-        uniqueLabels.push(label);
+  // Generate categorical chart data (for pie and bar charts)
+  const generateCategoricalChartData = (cardsForTemplate, selectedHeaderKey, header) => {
+    const valueCounts = {};
+    cardsForTemplate.forEach(card => {
+      const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
+      if (value !== undefined && value !== null) {
+        const stringValue = String(value).trim();
+        valueCounts[stringValue] = (valueCounts[stringValue] || 0) + 1;
       }
     });
-
-    const datasets = (data.datasets || (data.values ? [{ data: data.values, label: name }] : [])).map(
-      (dataset, i) => {
-        // Aggregate data by label
-        const aggregatedData = [];
-        const dataMap = new Map();
-
-        dataset.data.forEach((value, index) => {
-          if (type === 'scatter') {
-            aggregatedData.push(value); // Scatter data is already in {x, y} format
-            return;
-          }
-          const label = formattedLabels[index];
-          if (dataMap.has(label)) {
-            const existing = dataMap.get(label);
-            dataMap.set(label, existing + (value || 0));
-          } else {
-            dataMap.set(label, value || 0);
-          }
-        });
-
-        if (type !== 'scatter') {
-          uniqueLabels.forEach((label) => {
-            aggregatedData.push(dataMap.get(label) || 0);
-          });
-        }
-
-        const baseColor = i === 0 ? appleBlue : '#FF2D55'; // Blue for first line, red for second
-        return {
-          ...dataset,
-          label: dataset.label || (comparisonFields[i] || name),
-          data: type === 'scatter' ? dataset.data : aggregatedData,
-          borderColor: baseColor,
-          backgroundColor:
-            type === 'bar'
-              ? baseColor
-              : type === 'pie'
-              ? getPieColors(baseColor, uniqueLabels.length)
-              : type === 'scatter'
-              ? `${baseColor}66`
-              : `${baseColor}33`,
-          fill: dataset.fill !== undefined ? dataset.fill : type === 'line' && !comparisonFields.length,
-          borderWidth: dataset.borderWidth || (type === 'pie' ? 1 : undefined),
-          stack: dataset.stack || (type === 'bar' ? 'stack' : undefined),
-          tension: type === 'line' || type === 'scatter' ? 0.4 : undefined,
-          pointRadius: type === 'scatter' ? 5 : undefined,
-          showLine: type === 'scatter' ? true : undefined,
-        };
-      }
-    );
-
+    const labels = Object.keys(valueCounts);
+    const dataValues = Object.values(valueCounts);
+    const backgroundColors = labels.map((_, idx) => [
+      '#007AFF',
+      '#339AFF',
+      '#66B7FF',
+      '#99D3FF',
+    ][idx % 4]); // Use blue shades
     return {
-      ...metric,
-      data: {
-        labels: type === 'scatter' ? [] : uniqueLabels,
-        datasets,
-      },
+      labels,
+      datasets: [
+        {
+          label: header?.name || selectedHeaderKey,
+          data: dataValues,
+          backgroundColor: backgroundColors,
+          borderColor: isDarkTheme ? '#333' : '#fff',
+          borderWidth: 1,
+        },
+      ],
     };
   };
 
-  // If metric.config and cards are provided, use metricsUtils to compute chart data
-  let effectiveMetric;
-  if (metric && metric.config && cards && headers) {
-    const computedData = computeMetricData(cards, metric.config, headers);
-    effectiveMetric = {
-      ...metric,
-      data: computedData,
+  // Generate chart data based on visualization type
+  const generateChartData = () => {
+    if (!cards || !templateKey || !selectedHeaderKey) return null;
+
+    const cardsForTemplate = cards.filter(card => card.typeOfCards === templateKey);
+    if (!cardsForTemplate.length) return null;
+
+    const dateHeader = header?.type === 'date' ? header : cardsForTemplate[0]?.headers?.find(h => h.type === 'date');
+
+    if (visualizationType === 'pie' || visualizationType === 'bar') {
+      return generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
+    }
+
+    if (visualizationType === 'number') {
+      const values = cardsForTemplate
+        .map(card => {
+          const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+          return value;
+        })
+        .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
+        .map(Number);
+      const rawResult = aggregation === 'average'
+        ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
+        : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
+      const result = Number.isInteger(rawResult) ? rawResult : Number(rawResult.toFixed(1));
+      return {
+        labels: ['Value'],
+        datasets: [{
+          label: header?.name || selectedHeaderKey,
+          data: [result],
+          backgroundColor: appleBlue,
+        }],
+      };
+    }
+
+    if (header?.type === 'text' || header?.type === 'dropdown') {
+      const countsByValueAndDate = {};
+      cardsForTemplate.forEach(card => {
+        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+        let xLabel = formatTimestamp(timestamp);
+        if (!xLabel || value === undefined || value === null) return;
+        if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
+        countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
+      });
+      const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
+      const datasets = Object.entries(countsByValueAndDate).map(([val], idx) => ({
+        label: val,
+        data: allDates.map(date => countsByValueAndDate[val][date] || 0),
+        fill: false,
+        borderColor: ['#007AFF', '#339AFF', '#66B7FF', '#99D3FF'][idx % 4], // Use blue shades
+        backgroundColor: ['#007AFF', '#339AFF', '#66B7FF', '#99D3FF'][idx % 4],
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }));
+      return { labels: allDates, datasets };
+    }
+
+    const points = cardsForTemplate.map(card => {
+      const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+      let xLabel = formatTimestamp(timestamp);
+      if (header?.type === 'date' && value) {
+        let yValue = null;
+        if (typeof value === 'object' && (value.seconds || value._seconds)) {
+          yValue = (value.seconds || value._seconds) * 1000;
+        } else if (typeof value === 'string' || typeof value === 'number') {
+          const d = new Date(value);
+          if (!isNaN(d)) yValue = d.getTime();
+        }
+        return { x: xLabel, y: yValue };
+      }
+      return { x: xLabel, y: value };
+    }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
+    points.sort((a, b) => (a.x > b.x ? 1 : -1));
+    return {
+      labels: points.map(dp => dp.x),
+      datasets: [
+        {
+          label: header?.name || selectedHeaderKey,
+          data: points.map(dp => dp.y),
+          fill: false,
+          borderColor: appleBlue,
+          backgroundColor: appleBlue,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        },
+      ],
     };
-  } else {
-    effectiveMetric = normalizeMetricData(metric);
-  }
+  };
 
-  // Compute correlation for two-line chart
-  let correlation = null;
-  if (
-    effectiveMetric.config?.comparisonFields?.length === 2 &&
-    effectiveMetric.data.datasets.length === 2 &&
-    effectiveMetric.type !== 'scatter'
-  ) {
-    const data1 = effectiveMetric.data.datasets[0].data;
-    const data2 = effectiveMetric.data.datasets[1].data;
-    correlation = computeCorrelation(data1, data2);
-  }
-
+  // Chart options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: effectiveMetric.type === 'pie' ? 'bottom' : 'top',
-        labels: { color: textColor, font: { family: '-apple-system', size: 14 } },
+        display: visualizationType !== 'number',
+        position: visualizationType === 'pie' ? 'bottom' : 'top',
+        labels: {
+          color: textColor,
+          font: { family: '-apple-system', size: 14 },
+        },
       },
       tooltip: {
         backgroundColor: isDarkTheme ? '#333' : '#FFF',
         titleColor: textColor,
         bodyColor: textColor,
         callbacks: {
-          label: (context) => {
-            if (effectiveMetric.type === 'scatter') {
-              return `(${context.raw.x.toFixed(2)}, ${context.raw.y.toFixed(2)})`;
+          label: function(context) {
+            if (header?.type === 'date' && context.parsed.y) {
+              const d = new Date(context.parsed.y);
+              return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
             }
-            // If y value is a timestamp, format as date
-            if (typeof context.raw === 'number' && context.raw > 1000000000 && context.raw < 9999999999999) {
-              const d = new Date(context.raw);
-              if (!isNaN(d.getTime())) {
-                return `${context.dataset.label}: ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-              }
+            if (visualizationType === 'pie' || visualizationType === 'bar') {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              return `${label}: ${value}`;
             }
-            return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+            return context.parsed.y;
           },
         },
       },
       title: {
         display: false,
-        text: effectiveMetric.name || 'Chart',
-        font: { family: '-apple-system', size: 16 },
-        color: textColor,
       },
     },
-    scales: effectiveMetric.type === 'scatter' ? {
+    scales: {
       x: {
-        type: 'linear',
-        title: {
-          display: true,
-          text: effectiveMetric.config?.comparisonFields[0] || 'X',
-          color: textColor,
-        },
-        ticks: { color: textColor },
-        grid: { color: isDarkTheme ? '#444' : '#DDD' },
-      },
-      y: {
-        title: {
-          display: true,
-          text: effectiveMetric.config?.comparisonFields[1] || 'Y',
-          color: textColor,
-        },
-        ticks: {
-          color: textColor,
-          font: { family: '-apple-system' },
-          // If the y values are timestamps, format as date
-          callback: function(value) {
-            if (typeof value === 'number' && value > 1000000000 && value < 9999999999999) {
-              const d = new Date(value);
-              if (!isNaN(d.getTime())) {
-                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-              }
-            }
-            return value;
-          },
-        },
-        grid: { color: isDarkTheme ? '#444' : '#DDD' },
-      },
-    } : {
-      x: {
-        stacked: effectiveMetric.type === 'bar',
         ticks: { color: textColor, font: { family: '-apple-system' } },
         grid: { color: isDarkTheme ? '#444' : '#DDD' },
       },
       y: {
-        stacked: effectiveMetric.type === 'bar',
         ticks: {
           color: textColor,
           font: { family: '-apple-system' },
-          // If the y values are timestamps, format as date
           callback: function(value) {
             if (typeof value === 'number' && value > 1000000000 && value < 9999999999999) {
               const d = new Date(value);
               if (!isNaN(d.getTime())) {
-                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
               }
             }
             return value;
           },
         },
         grid: { color: isDarkTheme ? '#444' : '#DDD' },
+        ...(visualizationType === 'bar' && {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            precision: 0,
+            callback: function(value) {
+              return Number.isInteger(value) ? value : '';
+            },
+          },
+        }),
+        ...(visualizationType === 'line' && (header?.type === 'text' || header?.type === 'dropdown') && {
+          beginAtZero: true,
+          suggestedMin: 0,
+          ticks: {
+            stepSize: 1,
+            precision: 0,
+            callback: function(value) {
+              return Number.isInteger(value) ? value : '';
+            },
+          },
+        }),
       },
     },
+  };
+
+  // Render chart or number output
+  const renderChart = () => {
+    const dataPoints = generateChartData();
+    if (!dataPoints) {
+      return <div className={styles.noData}>No data available for this metric.</div>;
+    }
+
+    if (visualizationType === 'number') {
+      const value = dataPoints.datasets[0]?.data[0] || 0;
+      return (
+        <div className={styles.simpleNumberPreview}>
+          {Number.isInteger(value) ? value.toString() : value.toFixed(1)}
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.chartWrapper}>
+        {visualizationType === 'pie' && <Pie data={dataPoints} options={chartOptions} />}
+        {visualizationType === 'bar' && <Bar data={dataPoints} options={chartOptions} />}
+        {visualizationType === 'line' && <Line data={dataPoints} options={chartOptions} />}
+      </div>
+    );
   };
 
   return (
@@ -411,119 +371,26 @@ const CustomMetricChart = ({ metric, isDarkTheme, chartType, cards, headers }) =
       <div
         ref={chartContainerRef}
         className={`${styles.chartContainer} ${isDarkTheme ? styles.darkTheme : ''}`}
-        style={{ contain: 'layout' }}
       >
-        {(() => {
-          switch (effectiveMetric.type) {
-            case 'line':
-            case 'scatter':
-              return <Line data={effectiveMetric.data} options={chartOptions} />;
-            case 'pie':
-              return <Pie data={effectiveMetric.data} options={chartOptions} />;
-            case 'speedometer':
-              return (
-                <div className={dashboardStyles.speedometerWrapper}>
-                  <GaugeComponent
-                    id={`gauge-${effectiveMetric.id}`}
-                    value={effectiveMetric.data.value}
-                    type="semicircle"
-                    arc={{
-                      colorArray: [`${appleBlue}33`, appleBlue],
-                      padding: 0.01,
-                      width: 0.2,
-                    }}
-                    pointer={{
-                      color: isDarkTheme ? '#666' : '#999',
-                      length: 0.7,
-                      width: 8,
-                      elastic: true,
-                    }}
-                    labels={{
-                      valueLabel: {
-                        style: { fontSize: '12px', fill: textColor },
-                        formatTextValue: (value) => `${value}%`,
-                      },
-                      tickLabels: {
-                        defaultTickValueConfig: {
-                          style: { fontSize: '6px', fill: textColor },
-                        },
-                      },
-                    }}
-                    style={{ width: '100%', height: '100%' }}
-                    minValue={0}
-                    maxValue={100}
-                  />
-                </div>
-              );
-            case 'bar':
-              return <Bar data={effectiveMetric.data} options={chartOptions} />;
-            default:
-              return <p className={styles.errorMessage}>Unsupported chart type: {effectiveMetric.type}</p>;
-          }
-        })()}
-        {correlation !== null && (
-          <div className={styles.correlation}>
-            <p>Correlation: {correlation.toFixed(2)}</p>
-          </div>
-        )}
+        {renderChart()}
       </div>
     </ChartErrorBoundary>
   );
 };
 
 CustomMetricChart.propTypes = {
-  metric: PropTypes.shape({
-    id: PropTypes.string,
+  visualizationType: PropTypes.oneOf(['line', 'pie', 'bar', 'number']).isRequired,
+  cards: PropTypes.arrayOf(PropTypes.object).isRequired,
+  templateKey: PropTypes.string.isRequired,
+  selectedHeaderKey: PropTypes.string.isRequired,
+  header: PropTypes.shape({
+    key: PropTypes.string,
     name: PropTypes.string,
-    type: PropTypes.oneOf(['line', 'pie', 'speedometer', 'bar', 'scatter']),
-    data: PropTypes.oneOfType([
-      PropTypes.shape({
-        labels: PropTypes.arrayOf(PropTypes.string),
-        values: PropTypes.arrayOf(PropTypes.number),
-      }),
-      PropTypes.shape({
-        labels: PropTypes.arrayOf(PropTypes.string),
-        datasets: PropTypes.arrayOf(
-          PropTypes.shape({
-            label: PropTypes.string,
-            data: PropTypes.oneOfType([
-              PropTypes.arrayOf(PropTypes.number),
-              PropTypes.arrayOf(
-                PropTypes.shape({
-                  x: PropTypes.number,
-                  y: PropTypes.number,
-                })
-              ),
-            ]),
-            borderColor: PropTypes.string,
-            backgroundColor: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
-            fill: PropTypes.bool,
-            borderWidth: PropTypes.number,
-            stack: PropTypes.string,
-            pointRadius: PropTypes.number,
-            showLine: PropTypes.bool,
-          })
-        ),
-      }),
-      PropTypes.shape({
-        value: PropTypes.number,
-      }),
-    ]),
-    config: PropTypes.shape({
-      comparisonFields: PropTypes.arrayOf(PropTypes.string),
-    }),
+    type: PropTypes.string,
   }),
   isDarkTheme: PropTypes.bool.isRequired,
-  chartType: PropTypes.oneOf(['line', 'pie', 'speedometer', 'bar', 'scatter']),
-  cards: PropTypes.array, // New prop
-  headers: PropTypes.array, // New prop
-};
-
-CustomMetricChart.defaultProps = {
-  metric: null,
-  chartType: 'speedometer',
-  cards: undefined,
-  headers: undefined,
+  aggregation: PropTypes.oneOf(['average', 'count']),
+  granularity: PropTypes.oneOf(['daily', 'weekly', 'monthly', 'none']),
 };
 
 export default CustomMetricChart;

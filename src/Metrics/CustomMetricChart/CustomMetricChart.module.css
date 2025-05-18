@@ -5,70 +5,60 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  background: transparent; /* First snippet light mode */
+  border-radius: 12px;
+  contain: layout;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Modern shadow */
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme {
+  background: transparent; /* First snippet dark mode */
 }
 
 .errorMessage {
   color: red;
   text-align: center;
   padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 14px;
 }
 
-/* ... Previous styles unchanged until .chartWrapper ... */
+.simpleNumberPreview {
+  font-size: 48px;
+  font-weight: 600;
+  color: #007AFF; /* First snippet blue */
+  text-align: center;
+  padding: 32px 0;
+  background: transparent; /* Cleaner look */
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
 
-/* Chart-specific styles */
+.noData {
+  color: #6e6e73; /* First snippet light mode */
+  text-align: center;
+  padding: 32px 0;
+  font-size: 18px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.darkTheme .noData {
+  color: #8e8e93; /* First snippet dark mode */
+}
+
 .chartWrapper {
   width: 100%;
   height: 100%;
   max-height: 100%;
-  max-width: 100%; /* Prevent stretching */
+  max-width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Clip any overflow */
+  overflow: hidden;
 }
 
-.speedometerWrapper {
-  width: 100%;
-  max-width: 120px; /* Fixed small width for compactness */
-  height: auto; /* Allow height to adjust */
-  max-height: 60px; /* Constrain height for small widgets */
-  aspect-ratio: 2 / 1; /* Rectangular shape for semicircle */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transform: scale(0.7); /* Default small scaling */
-}
-
-.verySmallWindow .speedometerWrapper {
-  max-width: 100px; /* Even smaller for verySmall */
-  max-height: 50px;
-  transform: scale(0.6); /* Tighter scaling */
-}
-
-.smallWindow .speedometerWrapper {
-  max-width: 110px; /* Slightly larger but constrained */
-  max-height: 55px;
-  transform: scale(0.65); /* Compact for small widgets */
-}
-
-/* Ensure widget sizes are strictly enforced */
-.verySmallWindow,
-.smallWindow,
-.mediumWindow,
-.largeWindow {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  cursor: default;
-  overflow: hidden; /* Prevent widget stretching */
-}
-
-.smallWindow {
-  grid-column: span 1;
-  grid-row: span 2;
-  max-width: 100%; /* Enforce grid column width */
+/* Chart.js legend and tooltip tweaks */
+:global(.chartjs-render-monitor) {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 }

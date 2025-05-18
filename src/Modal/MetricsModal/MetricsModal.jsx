@@ -1,41 +1,11 @@
-import { useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import styles from './MetricsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
-import { FaRegCircle, FaRegCheckCircle, FaPlus } from 'react-icons/fa';
-import { Line, Bar, Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  PieController,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+import { FaRegCircle, FaRegCheckCircle, FaPlus, FaChevronDown } from 'react-icons/fa';
 import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  PieController,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const mainContext = useContext(MainContext);
@@ -75,8 +45,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const prevStepRef = useRef(currentStep);
   const outputDropdownRef = useRef(null);
   const templateDropdownRef = useRef(null);
+  const fieldDropdownRef = useRef(null);
   const [outputDropdownOpen, setOutputDropdownOpen] = useState(false);
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
+  const [fieldDropdownOpen, setFieldDropdownOpen] = useState(false);
 
   // Colors for Apple-inspired UI
   const appleBlue = '#007AFF';
@@ -224,75 +196,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setActiveSectionIndex((prev) => (prev === sectionIndex ? null : sectionIndex));
   }, []);
 
-  // Helper function to get latest field value and timestamp
-  const getLatestFieldValueAndTimestamp = useCallback((card, fieldKey, dateHeaderKey) => {
-    let value = card[fieldKey];
-    let timestamp = null;
-    if (value === undefined && Array.isArray(card.history)) {
-      const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
-      if (entries.length > 0) {
-        const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
-        value = latest.value;
-        timestamp = latest.timestamp;
-      }
-    } else if (value !== undefined) {
-      if (Array.isArray(card.history)) {
-        const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
-        if (entries.length > 0) {
-          const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
-          timestamp = latest.timestamp;
-        }
-      }
-      if (!timestamp && dateHeaderKey && card[dateHeaderKey]) {
-        timestamp = card[dateHeaderKey];
-      }
-    }
-    if (!timestamp) timestamp = card.id || card.docId;
-    return { value, timestamp };
-  }, []);
-
-  // Helper function to format timestamp
-  const formatTimestamp = useCallback((ts) => {
-    if (!ts) return '';
-    if (typeof ts === 'string' || typeof ts === 'number') return ts;
-    if (ts.seconds) {
-      const d = new Date(ts.seconds * 1000);
-      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
-    }
-    if (ts._seconds) {
-      const d = new Date(ts._seconds * 1000);
-      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
-    }
-    return ts.toString();
-  }, []);
-
-  // Generate categorical chart data (for pie and bar charts)
-  const generateCategoricalChartData = useCallback((cardsForTemplate, selectedHeaderKey, header) => {
-    const valueCounts = {};
-    cardsForTemplate.forEach(card => {
-      const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
-      if (value !== undefined && value !== null) {
-        const stringValue = String(value).trim();
-        valueCounts[stringValue] = (valueCounts[stringValue] || 0) + 1;
-      }
-    });
-    const labels = Object.keys(valueCounts);
-    const dataValues = Object.values(valueCounts);
-    const backgroundColors = labels.map((_, idx) => `hsl(${(idx * 60) % 360}, 70%, 50%)`);
-    return {
-      labels,
-      datasets: [
-        {
-          label: header?.name || selectedHeaderKey,
-          data: dataValues,
-          backgroundColor: backgroundColors,
-          borderColor: isDarkTheme ? '#333' : '#fff',
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [getLatestFieldValueAndTimestamp, isDarkTheme]);
-
   // Add metric
   const addMetric = useCallback(() => {
     let formToSave = { ...metricForm };
@@ -338,7 +241,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       return;
     }
 
-    const templateHeaders = templateObj?.headers || [];
     const selectedHeaderKey = fields[templateKey]?.[0];
     if (!selectedHeaderKey) {
       console.log('[MetricsModal] addMetric: No selected field', { fields });
@@ -346,97 +248,16 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       return;
     }
 
-    const dateHeader = templateHeaders.find(h => h.type === 'date');
-    const cardsForTemplate = cards.filter(
-      (card) => card.typeOfCards === templateKey
-    );
-
-    let data;
-    if (visualizationType === 'pie' || visualizationType === 'bar') {
-      data = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
-    } else if (visualizationType === 'number') {
-      const values = cardsForTemplate
-        .map(card => {
-          const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-          return value;
-        })
-        .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
-        .map(Number);
-      const rawResult = aggregation === 'average'
-        ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
-        : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
-      const result = Number.isInteger(rawResult) ? rawResult : Number(rawResult.toFixed(1));
-      data = {
-        labels: ['Value'],
-        datasets: [{
-          label: header?.name || selectedHeaderKey,
-          data: [result],
-          backgroundColor: appleBlue,
-        }],
-      };
-    } else if (header?.type === 'text' || header?.type === 'dropdown') {
-      const countsByValueAndDate = {};
-      cardsForTemplate.forEach(card => {
-        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-        let xLabel = formatTimestamp(timestamp);
-        if (!xLabel || value === undefined || value === null) return;
-        if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
-        countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
-      });
-      const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
-      const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
-        label: val,
-        data: allDates.map(date => dateCounts[date] || 0),
-        fill: false,
-        borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-        backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-        tension: 0.2,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-      }));
-      data = { labels: allDates, datasets };
-    } else {
-      const points = cardsForTemplate.map(card => {
-        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-        let xLabel = formatTimestamp(timestamp);
-        if (header?.type === 'date' && value) {
-          let yValue = null;
-          if (typeof value === 'object' && (value.seconds || value._seconds)) {
-            yValue = (value.seconds || value._seconds) * 1000;
-          } else if (typeof value === 'string' || typeof value === 'number') {
-            const d = new Date(value);
-            if (!isNaN(d)) yValue = d.getTime();
-          }
-          return { x: xLabel, y: yValue };
-        }
-        return { x: xLabel, y: value };
-      }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
-      points.sort((a, b) => (a.x > b.x ? 1 : -1));
-      data = {
-        labels: points.map(dp => dp.x),
-        datasets: [
-          {
-            label: header?.name || selectedHeaderKey,
-            data: points.map(dp => dp.y),
-            fill: false,
-            borderColor: appleBlue,
-            backgroundColor: appleBlue,
-            tension: 0.2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-          },
-        ],
-      };
-    }
-
+    // Data will be generated by CustomMetricChart, so we don't need to compute it here
     const newMetric = {
       id: `metric-${uuidv4()}`,
       name: name.trim(),
       type: visualizationType,
       config,
-      data,
-      value: visualizationType === 'number' ? data.datasets[0]?.data[0] || 0 : undefined,
+      data: {}, // Placeholder, actual data handled by CustomMetricChart
+      value: visualizationType === 'number' ? 0 : undefined, // Placeholder
     };
+
     setCurrentCategories((prev) => {
       const updated = prev.map((c, i) =>
         i === activeCategoryIndex
@@ -450,7 +271,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     resetForm();
     setNavigationDirection('forward');
     goToStep(3);
-  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp, generateCategoricalChartData]);
+  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates]);
 
   // Update metric
   const updateMetric = useCallback(
@@ -498,7 +319,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         return;
       }
 
-      const templateHeaders = templateObj?.headers || [];
       const selectedHeaderKey = fields[templateKey]?.[0];
       if (!selectedHeaderKey) {
         console.log('[MetricsModal] updateMetric: No selected field', { fields });
@@ -506,97 +326,16 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         return;
       }
 
-      const dateHeader = templateHeaders.find(h => h.type === 'date');
-      const cardsForTemplate = cards.filter(
-        (card) => card.typeOfCards === templateKey
-      );
-
-      let data;
-      if (visualizationType === 'pie' || visualizationType === 'bar') {
-        data = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
-      } else if (visualizationType === 'number') {
-        const values = cardsForTemplate
-          .map(card => {
-            const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-            return value;
-          })
-          .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
-          .map(Number);
-        const rawResult = aggregation === 'average'
-          ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
-          : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
-        const result = Number.isInteger(rawResult) ? rawResult : Number(rawResult.toFixed(1));
-        data = {
-          labels: ['Value'],
-          datasets: [{
-            label: header?.name || selectedHeaderKey,
-            data: [result],
-            backgroundColor: appleBlue,
-          }],
-        };
-      } else if (header?.type === 'text' || header?.type === 'dropdown') {
-        const countsByValueAndDate = {};
-        cardsForTemplate.forEach(card => {
-          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-          let xLabel = formatTimestamp(timestamp);
-          if (!xLabel || value === undefined || value === null) return;
-          if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
-          countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
-        });
-        const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
-        const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
-          label: val,
-          data: allDates.map(date => dateCounts[date] || 0),
-          fill: false,
-          borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-          backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-          tension: 0.2,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        }));
-        data = { labels: allDates, datasets };
-      } else {
-        const points = cardsForTemplate.map(card => {
-          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-          let xLabel = formatTimestamp(timestamp);
-          if (header?.type === 'date' && value) {
-            let yValue = null;
-            if (typeof value === 'object' && (value.seconds || value._seconds)) {
-              yValue = (value.seconds || value._seconds) * 1000;
-            } else if (typeof value === 'string' || typeof value === 'number') {
-              const d = new Date(value);
-              if (!isNaN(d)) yValue = d.getTime();
-            }
-            return { x: xLabel, y: yValue };
-          }
-          return { x: xLabel, y: value };
-        }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
-        points.sort((a, b) => (a.x > b.x ? 1 : -1));
-        data = {
-          labels: points.map(dp => dp.x),
-          datasets: [
-            {
-              label: header?.name || selectedHeaderKey,
-              data: points.map(dp => dp.y),
-              fill: false,
-              borderColor: appleBlue,
-              backgroundColor: appleBlue,
-              tension: 0.2,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-            },
-          ],
-        };
-      }
-
+      // Data will be generated by CustomMetricChart
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
         name: name.trim(),
         type: visualizationType,
         config,
-        data,
-        value: visualizationType === 'number' ? data.datasets[0]?.data[0] || 0 : undefined,
+        data: {}, // Placeholder
+        value: visualizationType === 'number' ? 0 : undefined, // Placeholder
       };
+
       setCurrentCategories((prev) => {
         const updated = prev.map((c, i) =>
           i === activeCategoryIndex
@@ -614,7 +353,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       setNavigationDirection('forward');
       goToStep(3);
     },
-    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates, getLatestFieldValueAndTimestamp, formatTimestamp, generateCategoricalChartData]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates]
   );
 
   // Delete metric
@@ -975,6 +714,20 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     }
   }, [cardTemplates, cards, mainContext]);
 
+  // Add click-outside handler for field dropdown
+  useEffect(() => {
+    if (!fieldDropdownOpen) return;
+    function handleClickOutside(event) {
+      if (fieldDropdownRef.current && !fieldDropdownRef.current.contains(event.target)) {
+        setFieldDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [fieldDropdownOpen]);
+
   return (
     <div className={`${styles.metricsModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
@@ -1125,8 +878,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {/* Metric Output selector dropdown */}
-                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`} style={{ cursor: 'pointer', position: 'relative' }} ref={outputDropdownRef}>
-                    <div className={styles.filterRow} onClick={() => setOutputDropdownOpen((open) => !open)}>
+                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`} style={{ cursor: 'pointer', position: 'relative' }} ref={outputDropdownRef} onClick={() => setOutputDropdownOpen((open) => !open)}>
+                    <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Metric Output</span>
                       </div>
@@ -1142,7 +895,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             }
                           })()}
                         </span>
-                        <span style={{ marginLeft: 8, fontSize: 14, color: '#888' }}>▼</span>
+                        <span className={styles.chevronIcon + (outputDropdownOpen ? ' ' + styles.chevronOpen : '')}>
+                          <FaChevronDown />
+                        </span>
                       </div>
                     </div>
                     {outputDropdownOpen && (
@@ -1191,8 +946,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                     style={{ cursor: 'pointer', position: 'relative' }}
                     ref={templateDropdownRef}
+                    onClick={() => setTemplateDropdownOpen((open) => !open)}
                   >
-                    <div className={styles.filterRow} onClick={() => setTemplateDropdownOpen((open) => !open)}>
+                    <div className={styles.filterRow}>
                       <div className={styles.filterNameType}>
                         <span>Select Card Template</span>
                       </div>
@@ -1205,7 +961,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             return template ? (template.name || template.typeOfCards) : 'Select Template';
                           })()}
                         </span>
-                        <span style={{ marginLeft: 8, fontSize: 14, color: '#888' }}>▼</span>
+                        <span className={styles.chevronIcon + (templateDropdownOpen ? ' ' + styles.chevronOpen : '')}>
+                          <FaChevronDown />
+                        </span>
                       </div>
                     </div>
                     {templateDropdownOpen && (
@@ -1257,8 +1015,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   {(metricForm.visualizationType === 'line' || metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar' || metricForm.visualizationType === 'number') && (
                     <div
                       className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      tabIndex={0}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', position: 'relative' }}
+                      ref={fieldDropdownRef}
+                      onClick={() => setFieldDropdownOpen((open) => !open)}
                     >
                       <div className={styles.filterRow}>
                         <div className={styles.filterNameType}>
@@ -1275,49 +1034,68 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                               return header ? header.name : 'Select Header';
                             })()}
                           </span>
+                          <span className={styles.chevronIcon + (fieldDropdownOpen ? ' ' + styles.chevronOpen : '')}>
+                            <FaChevronDown />
+                          </span>
                         </div>
                       </div>
-                      {/* Show field options as selector buttons below */}
-                      <div className={styles.filterActions} style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {(() => {
-                          const templateKey = metricForm.cardTemplates[0];
-                          const template = cardTemplates.find(
-                            (t) => (t.name || t.typeOfCards) === templateKey
-                          );
-                          if (!template) return null;
-                          const templateHeaders = template?.headers?.filter(
-                            (header) => {
-                              if (header.key === 'id' || header.key === 'typeOfCards') return false;
-                              if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
-                                return header.type === 'text' || header.type === 'dropdown';
-                              }
-                              if (metricForm.visualizationType === 'number') {
-                                return header.type === 'number';
-                              }
-                              return true;
+                      {fieldDropdownOpen && (
+                        <div style={{
+                          position: 'absolute',
+                          zIndex: 10,
+                          top: '100%',
+                          left: 0,
+                          background: isDarkTheme ? '#222' : '#fff',
+                          border: '1px solid #ccc',
+                          borderRadius: 8,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                          minWidth: 180,
+                          marginTop: 4,
+                          padding: 4,
+                          maxHeight: 220,
+                          overflowY: 'auto',
+                        }}>
+                          {(() => {
+                            const templateKey = metricForm.cardTemplates[0];
+                            const template = cardTemplates.find(
+                              (t) => (t.name || t.typeOfCards) === templateKey
+                            );
+                            if (!template) {
+                              return <div style={{ color: '#888', padding: '8px 12px' }}>No template selected.</div>;
                             }
-                          ) || [];
-                          return templateHeaders.map((header) => (
-                            <button
-                              key={header.key}
-                              className={
-                                styles.granularityButton +
-                                (metricForm.fields[templateKey]?.[0] === header.key ? ' ' + styles.activeItem : '')
-                              }
-                              style={{ minWidth: 100, fontWeight: 500, borderRadius: 8 }}
-                              onClick={() => setMetricForm((prev) => ({
-                                ...prev,
-                                fields: {
-                                  ...prev.fields,
-                                  [templateKey]: [header.key],
-                                },
-                              }))}
-                            >
-                              {header.name}
-                            </button>
-                          ));
-                        })()}
-                      </div>
+                            const templateHeaders = template.headers || [];
+                            if (templateHeaders.length === 0) {
+                              return <div style={{ color: '#888', padding: '8px 12px' }}>No fields available for this template.</div>;
+                            }
+                            return templateHeaders.map((header) => (
+                              <div
+                                key={header.key}
+                                style={{
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  background:
+                                    metricForm.fields[templateKey]?.[0] === header.key
+                                      ? (isDarkTheme ? '#333' : '#f0f8ff')
+                                      : 'transparent',
+                                  borderRadius: 6,
+                                  fontWeight:
+                                    metricForm.fields[templateKey]?.[0] === header.key ? 600 : 400,
+                                  color: isDarkTheme ? '#fff' : '#222',
+                                }}
+                                onClick={() => {
+                                  setMetricForm((prev) => ({
+                                    ...prev,
+                                    fields: { ...prev.fields, [templateKey]: [header.key] },
+                                  }));
+                                  setFieldDropdownOpen(false);
+                                }}
+                              >
+                                {header.name} <span style={{ color: '#888', fontSize: 12 }}>({header.type})</span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
                     </div>
                   )}
                   {/* Aggregation selector for number output */}
@@ -1372,7 +1150,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     ))}
                   </div>
                 )}
-                {/* Live Chart Preview (moved from step 7) */}
+                {/* Live Chart Preview using CustomMetricChart */}
                 {(() => {
                   const templateKey = metricForm.cardTemplates[0];
                   const selectedHeaderKey = metricForm.fields[templateKey]?.[0];
@@ -1387,191 +1165,19 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   if (!cardsForTemplate.length) return (
                     <div className={styles.filterItem} style={{ color: '#888', marginTop: 16 }}>No cards found for this template.</div>
                   );
-                  const dateHeader = template?.headers?.find(h => h.type === 'date');
 
-                  if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
-                    const dataPoints = generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
-                    const chartOptions = {
-                      responsive: true,
-                      plugins: {
-                        legend: { display: true, position: metricForm.visualizationType === 'pie' ? 'right' : 'top' },
-                        title: { display: false },
-                        tooltip: {
-                          callbacks: {
-                            label: function(context) {
-                              const label = context.label || '';
-                              const value = context.parsed || 0;
-                              return `${label}: ${value}`;
-                            }
-                          }
-                        }
-                      },
-                      ...(metricForm.visualizationType === 'bar' && {
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            ticks: {
-                              stepSize: 1,
-                              precision: 0,
-                              callback: function(value) {
-                                return Number.isInteger(value) ? value : '';
-                              }
-                            }
-                          }
-                        }
-                      })
-                    };
-                    return (
-                      <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
-                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
-                        <div style={{ width: '100%', minHeight: 220 }}>
-                          {metricForm.visualizationType === 'pie' ? (
-                            <Pie data={dataPoints} options={chartOptions} />
-                          ) : (
-                            <Bar data={dataPoints} options={chartOptions} />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (metricForm.visualizationType === 'line') {
-                    const dataPoints = (() => {
-                      if (header?.type === 'text' || header?.type === 'dropdown') {
-                        const countsByValueAndDate = {};
-                        cardsForTemplate.forEach(card => {
-                          const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-                          let xLabel = formatTimestamp(timestamp);
-                          if (!xLabel || value === undefined || value === null) return;
-                          if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
-                          countsByValueAndDate[value][xLabel] = (countsByValueAndDate[value][xLabel] || 0) + 1;
-                        });
-                        const allDates = Array.from(new Set(Object.values(countsByValueAndDate).flatMap(obj => Object.keys(obj)))).sort();
-                        const datasets = Object.entries(countsByValueAndDate).map(([val, dateCounts], idx) => ({
-                          label: val,
-                          data: allDates.map(date => dateCounts[date] || 0),
-                          fill: false,
-                          borderColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                          backgroundColor: `hsl(${(idx * 60) % 360}, 70%, 50%)`,
-                          tension: 0.2,
-                          pointRadius: 3,
-                          pointHoverRadius: 5,
-                        }));
-                        return { labels: allDates, datasets };
-                      }
-                      const points = cardsForTemplate.map(card => {
-                        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
-                        let xLabel = formatTimestamp(timestamp);
-                        if (header?.type === 'date' && value) {
-                          let yValue = null;
-                          if (typeof value === 'object' && (value.seconds || value._seconds)) {
-                            yValue = (value.seconds || value._seconds) * 1000;
-                          } else if (typeof value === 'string' || typeof value === 'number') {
-                            const d = new Date(value);
-                            if (!isNaN(d)) yValue = d.getTime();
-                          }
-                          return { x: xLabel, y: yValue };
-                        }
-                        return { x: xLabel, y: value };
-                      }).filter(dp => dp.y !== undefined && dp.y !== null && dp.x);
-                      points.sort((a, b) => (a.x > b.x ? 1 : -1));
-                      return {
-                        labels: points.map(dp => dp.x),
-                        datasets: [
-                          {
-                            label: header?.name || selectedHeaderKey,
-                            data: points.map(dp => dp.y),
-                            fill: false,
-                            borderColor: appleBlue,
-                            backgroundColor: appleBlue,
-                            tension: 0.2,
-                            pointRadius: 3,
-                            pointHoverRadius: 5,
-                          },
-                        ],
-                      };
-                    })();
-                    const chartOptions = {
-                      responsive: true,
-                      plugins: {
-                        legend: { display: true },
-                        title: { display: false },
-                        tooltip: {
-                          callbacks: {
-                            label: function(context) {
-                              if (header?.type === 'date' && context.parsed.y) {
-                                const d = new Date(context.parsed.y);
-                                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-                              }
-                              return context.parsed.y;
-                            }
-                          }
-                        }
-                      },
-                      scales: {
-                        x: { display: true, title: { display: false } },
-                        y: (header?.type === 'text' || header?.type === 'dropdown') ? {
-                          display: true,
-                          title: { display: false },
-                          ticks: {
-                            stepSize: 1,
-                            precision: 0,
-                            callback: function(value) {
-                              return Number.isInteger(value) ? value : '';
-                            }
-                          },
-                          beginAtZero: true,
-                          suggestedMin: 0,
-                        } : (header?.type === 'date' ? {
-                          display: true,
-                          title: { display: false },
-                          ticks: {
-                            callback: function(value) {
-                              const d = new Date(value);
-                              if (!isNaN(d)) return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
-                              return value;
-                            }
-                          }
-                        } : { display: true, title: { display: false } }),
-                      },
-                    };
-                    return (
-                      <div style={{ marginTop: 24, background: isDarkTheme ? '#222' : '#f7f7f7', borderRadius: 12, padding: 16 }}>
-                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chart Preview</div>
-                        <div style={{ width: '100%', minHeight: 220 }}>
-                          <Line data={dataPoints} options={chartOptions} />
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (metricForm.visualizationType === 'number') {
-                    const values = cardsForTemplate
-                      .map(card => {
-                        const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
-                        return value;
-                      })
-                      .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
-                      .map(Number);
-                    const rawResult = metricForm.aggregation === 'average'
-                      ? values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
-                      : values.length > 0 ? values.reduce((sum, v) => sum + v, 0) : 0;
-                    return (
-                      <div className={styles.simpleNumberPreview} style={{
-                        fontSize: 48,
-                        fontWeight: 600,
-                        color: appleBlue,
-                        textAlign: 'center',
-                        padding: '32px 0',
-                        background: isDarkTheme ? '#222' : '#f7f7f7',
-                        borderRadius: 12,
-                        marginTop: 24,
-                      }}>
-                        {Number.isInteger(rawResult) ? rawResult.toString() : rawResult.toFixed(1)}
-                      </div>
-                    );
-                  }
-                  return null;
+                  return (
+                    <CustomMetricChart
+                      visualizationType={metricForm.visualizationType}
+                      cards={cards}
+                      templateKey={templateKey}
+                      selectedHeaderKey={selectedHeaderKey}
+                      header={header}
+                      isDarkTheme={isDarkTheme}
+                      aggregation={metricForm.aggregation}
+                      granularity={metricForm.granularity}
+                    />
+                  );
                 })()}
               </div>
             )}
@@ -1581,7 +1187,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
                     Select a Card Template
                   </div>
-                  {/* This step is now just a placeholder, as selection is handled in step 5 dropdown */}
                   <div className={styles.filterItem} style={{ color: '#888' }}>Use the selector above to choose a template.</div>
                 </div>
               </div>
@@ -1603,8 +1208,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
                           return header.type === 'text' || header.type === 'dropdown';
                         }
-                        if (metricForm.visualizationType === 'number') {
-                          return header.type === 'number';
+                        if (metricForm.visualizationType === 'number' || metricForm.visualizationType === 'line') {
+                          // Allow both number and date fields for number/line outputs
+                          return header.type === 'number' || header.type === 'date';
                         }
                         return true;
                       }
@@ -1659,7 +1265,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   <div className={styles.filterItem} style={{ cursor: 'default', fontWeight: 600 }}>
                     Configure Filters
                   </div>
-                  {/* Filter configuration options can be added here */}
                   <div className={styles.filterItem} style={{ color: '#888' }}>
                     Filter configuration not implemented.
                   </div>

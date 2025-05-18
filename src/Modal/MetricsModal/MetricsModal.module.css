@@ -239,6 +239,19 @@
   background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
 }
 
+/* Chevron Icon */
+.chevronIcon {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  font-size: 14px;
+  color: #888;
+}
+
+.chevronOpen {
+  transform: rotate(-180deg);
+}
+
 /* Card List (for fields in Step 5) */
 .cardList {
   max-height: 150px;
@@ -652,7 +665,6 @@
 .filterList {
   margin-bottom: 20px;
   border-radius: 10px;
-  overflow: hidden;
   background: rgba(243, 242, 248, 0.6);
   transition: background 0.3s ease;
 }
