@@ -406,3 +406,42 @@
   max-height: calc(100% - 16px); /* Account for 8px padding top/bottom */
   transform: scale(0.6); /* Slightly larger for medium/large */
 }
+
+/* Add these styles to DashboardPlane.module.css */
+
+/* Spinner container */
+.spinnerContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  height: 100%;
+  width: 100%;
+  opacity: 1;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spinnerFadeOut {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Spinner icon */
+.iconSpinner {
+  animation: spin 1s linear infinite;
+  display: block;
+}
+
+.iconSpinnerLight {
+  color: #222;
+}
+
+.iconSpinnerDark {
+  color: #fff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

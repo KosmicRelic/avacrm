@@ -641,7 +641,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     console.log('[handleDragStart] called', { widgetInfo, editMode, isInitialized });
     if (!editMode) return;
     setDraggedWidget(widgetInfo);
-    e.dataTransfer.setData('text/plain', JSON.stringify(widget));
+    e.dataTransfer.setData('text/plain', JSON.stringify(widgetInfo));
     e.target.classList.add(styles.dragging);
     e.target.addEventListener(
       'dragend',
@@ -729,6 +729,11 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       const tHeight = windowSizes[draggedSize].height;
       return wRow < tRow + tHeight && wRow + height > tRow && wCol < tCol + tWidth && wCol + width > tCol;
     });
+
+    const overlappedArea = overlappedWidgets.reduce(
+      (sum, w) => sum + getWidgetArea(w.size),
+      0
+    );
 
     // --- INTRA-PLANE SWAP LOGIC ---
     if (sourceDashboardId === dashboardId && overlappedWidgets.length > 0 && draggedArea >= overlappedArea) {
