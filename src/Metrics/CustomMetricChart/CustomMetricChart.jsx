@@ -334,14 +334,14 @@ const CustomMetricChart = ({
         labels: sortedLabels,
         datasets: [
           {
-            label: header?.name || selectedHeaderKey,
             data: dataForLabels,
             fill: false,
             borderColor: appleBlue,
             backgroundColor: appleBlue,
             tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 0,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            spanGaps: true, // Connect points across nulls (month labels)
           },
         ],
       };
@@ -518,8 +518,8 @@ const CustomMetricChart = ({
               <Pie data={dataPoints} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, legend: { display: false } } }} />
             </div>
             <div className={styles.legend} style={{ flex: '0 0 40%', minWidth: 0, minHeight: 0, paddingLeft: 16, overflow: 'hidden' }}>
-              <h4 style={{margin:0,marginBottom:8,fontWeight:600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>Data</h4>
-              <ul style={{listStyle:'none',padding:0,margin:0}}>
+              <h4 style={{ margin: 0, marginBottom: 8, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Data</h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {dataPoints.labels.map((label, idx) => (
                   <li
                     key={label}
@@ -534,9 +534,9 @@ const CustomMetricChart = ({
                     }}
                     title={`${label}: ${dataPoints.datasets[0].data[idx]}`}
                   >
-                    <span style={{display:'inline-block',width:14,height:14,background:dataPoints.datasets[0].backgroundColor[idx],borderRadius:3,marginRight:8}} />
+                    <span style={{ display: 'inline-block', width: 14, height: 14, background: dataPoints.datasets[0].backgroundColor[idx], borderRadius: 3, marginRight: 8 }} />
                     <span style={{
-                      fontWeight:500,
+                      fontWeight: 500,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       maxWidth: 70,
@@ -546,8 +546,8 @@ const CustomMetricChart = ({
                       {label.length > 12 ? label.slice(0, 12) + '...' : label}
                     </span>
                     <span style={{
-                      marginLeft:'auto',
-                      fontWeight:400,
+                      marginLeft: 'auto',
+                      fontWeight: 400,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       maxWidth: 40,
@@ -582,12 +582,23 @@ const CustomMetricChart = ({
       );
     }
 
-    // LINE
-    return (
-      <div className={styles.chartWrapper}>
-        {visualizationType === 'line' && <Line data={dataPoints} options={chartOptions} />}
-      </div>
-    );
+    // LINE: Only show the chart, no legend or value above
+    if (visualizationType === 'line') {
+      return (
+        <div className={styles.chartWrapper}>
+          <Line
+            data={dataPoints}
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                legend: { display: false }, // Disable legend for all sizes
+              },
+            }}
+          />
+        </div>
+      );
+    }
   };
 
   return (

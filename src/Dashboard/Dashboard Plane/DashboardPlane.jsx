@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef, useCallback } from 'rea
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
-import { FaChevronRight } from 'react-icons/fa';
+import { FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 
 // Window component
@@ -15,8 +15,6 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
         .flatMap((category) => category.metrics)
         .find((m) => m.id === widget.metricId)
     : null;
-
-  // Debug metric lookup
 
   const sizeClasses = {
     verySmall: styles.verySmallWindow,
@@ -67,7 +65,51 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   const isBlank = !widget?.metricId || !metric;
   const isChartType = metric && ['line', 'pie', 'bar', 'number', 'speedometer'].includes(metric.type);
 
-  // Prepare props for CustomMetricChart
+  // --- Granularity state for line chart navigation ---
+  const [granularity, setGranularity] = useState('month'); // 'month' or 'year'
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  // Only show controls for line chart
+  const isLineChart = metric && metric.type === 'line';
+
+  // Calculate month label
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthLabel = `${monthNames[currentMonth]} ${currentYear}`;
+
+  // Handlers for chevrons and granularity
+  const handlePrev = () => {
+    if (granularity === 'month') {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear((y) => y - 1);
+      } else {
+        setCurrentMonth((m) => m - 1);
+      }
+    } else {
+      setCurrentYear((y) => y - 1);
+    }
+  };
+  const handleNext = () => {
+    if (granularity === 'month') {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear((y) => y + 1);
+      } else {
+        setCurrentMonth((m) => m + 1);
+      }
+    } else {
+      setCurrentYear((y) => y + 1);
+    }
+  };
+  const handleGranularityToggle = () => {
+    setGranularity((g) => (g === 'month' ? 'year' : 'month'));
+  };
+
+  // Filter chart data by month/year for line chart
   let chartProps = {};
   if (metric && isChartType) {
     const config = metric.config || {};
@@ -75,16 +117,33 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     const selectedHeaderKey = config.fields?.[templateKey]?.[0] || '';
     const template = cardTemplates?.find((t) => (t.name || t.typeOfCards) === templateKey);
     const header = template?.headers?.find((h) => h.key === selectedHeaderKey);
-
+    let filteredCards = metric.records || [];
+    if (isLineChart) {
+      if (granularity === 'month') {
+        filteredCards = filteredCards.filter(card => {
+          const ts = card[`${selectedHeaderKey}_timestamp`];
+          if (!ts || !(ts.seconds || ts._seconds)) return false;
+          const d = new Date((ts.seconds || ts._seconds) * 1000);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        });
+      } else if (granularity === 'year') {
+        filteredCards = filteredCards.filter(card => {
+          const ts = card[`${selectedHeaderKey}_timestamp`];
+          if (!ts || !(ts.seconds || ts._seconds)) return false;
+          const d = new Date((ts.seconds || ts._seconds) * 1000);
+          return d.getFullYear() === currentYear;
+        });
+      }
+    }
     chartProps = {
       visualizationType: metric.type === 'speedometer' ? 'number' : metric.type,
-      cards: metric.records || [], // Use metric.records if available
+      cards: filteredCards,
       templateKey,
       selectedHeaderKey,
       header,
       isDarkTheme,
       aggregation: config.aggregation || 'average',
-      granularity: config.granularity || 'monthly',
+      granularity: isLineChart ? (granularity === 'month' ? 'daily' : 'monthly') : config.granularity || 'monthly',
       size: size, // Pass widget size to CustomMetricChart
     };
   }
@@ -128,9 +187,20 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
               <div className={`${styles.widgetData} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {metric ? (
                   isChartType ? (
-                    <div className={styles.chartWrapper}>
-                      <CustomMetricChart {...chartProps} />
-                    </div>
+                    <>
+                      {isLineChart && (
+                        <div className={styles.lineChartControls}>
+                          <button onClick={handlePrev} className={styles.chevronBtn}><FaChevronLeft /></button>
+                          <button onClick={handleGranularityToggle} className={styles.granularityBtn}>
+                            {granularity === 'month' ? monthLabel : currentYear}
+                          </button>
+                          <button onClick={handleNext} className={styles.chevronBtn}><FaChevronRight /></button>
+                        </div>
+                      )}
+                      <div className={styles.chartWrapper}>
+                        <CustomMetricChart {...chartProps} />
+                      </div>
+                    </>
                   ) : (
                     <button
                       className={`${styles.metricButton} ${isDarkTheme ? styles.darkTheme : ''}`}

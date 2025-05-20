@@ -28,7 +28,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     filterValues: {},
     groupBy: '',
     includeHistory: true,
-    granularity: 'monthly',
     comparisonFields: [],
   });
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
@@ -75,7 +74,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   const validateMetric = useCallback(
     (form) => {
-      const { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation, granularity } = form;
+      const { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation } = form;
       const trimmedName = name.trim();
       console.log('[validateMetric] called', { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation });
 
@@ -146,16 +145,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           console.log('[validateMetric] failed: invalidFields', invalidFields);
           return false;
         }
-        // If granularity is set, ensure at least one date field exists
-        if (granularity && granularity !== 'none') {
-          const tKey = cardTemplates[0];
-          const headers = templateHeaderMap[tKey] || [];
-          const hasDateHeader = headers.some(h => h.type === 'date');
-          if (!hasDateHeader) {
-            console.log('[validateMetric] failed: no date header in template', { tKey, headers });
-            return false;
-          }
-        }
       }
       const nameConflict = currentCategories[activeCategoryIndex]?.metrics.some(
         (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && i !== activeMetricIndex
@@ -183,7 +172,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       filterValues: {},
       groupBy: '',
       includeHistory: true,
-      granularity: 'monthly',
       comparisonFields: [],
     });
     setDateRangeMode({});
@@ -230,8 +218,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       return;
     }
 
-    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
-    const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
+    const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, comparisonFields } = formToSave;
+    const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, comparisonFields };
 
     const templateObj = mainContext.cardTemplates.find(
       (t) => (t.name || t.typeOfCards) === cardTemplates[0]
@@ -368,8 +356,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         return;
       }
 
-      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, granularity, comparisonFields } = formToSave;
-      const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, granularity, comparisonFields };
+      const { name, cardTemplates, fields, aggregation, visualizationType, dateRange, filterValues, groupBy, includeHistory, comparisonFields } = formToSave;
+      const config = { cardTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, comparisonFields };
 
       const templateObj = mainContext.cardTemplates.find(
         (t) => (t.name || t.typeOfCards) === cardTemplates[0]
@@ -813,7 +801,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           filterValues: metric.config?.filterValues || {},
           groupBy: metric.config?.groupBy || '',
           includeHistory: metric.config?.includeHistory !== undefined ? metric.config.includeHistory : true,
-          granularity: metric.config?.granularity || 'monthly',
           comparisonFields: metric.config?.comparisonFields || [],
         });
       } else {
@@ -1254,23 +1241,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     </div>
                   )}
                 </div>
-                {/* Granularity selector for line chart */}
-                {metricForm.visualizationType === 'line' && (
-                  <div className={styles.granularityButtonGroup} style={{ marginTop: 12 }}>
-                    {['daily', 'weekly', 'monthly'].map((g) => (
-                      <button
-                        key={g}
-                        className={
-                          styles.granularityButton +
-                          (metricForm.granularity === g ? ' ' + styles.activeItem : '')
-                        }
-                        onClick={() => setMetricForm((prev) => ({ ...prev, granularity: g }))}
-                      >
-                        {g.charAt(0).toUpperCase() + g.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 {/* Live Chart Preview using CustomMetricChart */}
                 {(() => {
                   const templateKey = metricForm.cardTemplates[0];
@@ -1296,7 +1266,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       header={header}
                       isDarkTheme={isDarkTheme}
                       aggregation={metricForm.aggregation}
-                      granularity={metricForm.granularity}
                     />
                   );
                 })()}
@@ -1422,7 +1391,6 @@ MetricsModal.propTypes = {
               groupBy: PropTypes.string,
               visualizationType: PropTypes.string,
               includeHistory: PropTypes.bool,
-              granularity: PropTypes.string,
               comparisonFields: PropTypes.arrayOf(PropTypes.string),
             }),
             data: PropTypes.object,
