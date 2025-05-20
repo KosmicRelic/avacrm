@@ -8,6 +8,45 @@ import { FaRegCircle, FaRegCheckCircle, FaPlus, FaChevronDown, FaChevronLeft, Fa
 import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 import { computeMetricData } from '../../Metrics/metricsUtils';
 
+// Helper to evaluate the formula for number output
+const evaluateNumberFormula = (formula, cards, templateKey, headers) => {
+  if (!Array.isArray(formula) || formula.length === 0) return '';
+  // Build an array of values and operators
+  const values = [];
+  for (let i = 0; i < formula.length; i++) {
+    const part = formula[i];
+    if (part.header) {
+      const header = headers.find(h => h.key === part.header);
+      if (!header) return '';
+      let val = 0;
+      if (part.calc === 'count') {
+        val = cards.filter(card => card[part.header] !== undefined && card[part.header] !== null && card[part.header] !== '').length;
+      } else if (header.type === 'number') {
+        const nums = cards.map(card => Number(card[part.header])).filter(v => !isNaN(v));
+        if (part.calc === 'sum') val = nums.reduce((a, b) => a + b, 0);
+        else if (part.calc === 'average') val = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+      } else {
+        val = 0;
+      }
+      values.push(val);
+    } else if (part.op) {
+      values.push(part.op);
+    }
+  }
+  // Evaluate the expression left to right (no operator precedence)
+  let result = values[0];
+  for (let i = 1; i < values.length; i += 2) {
+    const op = values[i];
+    const next = values[i + 1];
+    if (typeof next === 'undefined') break;
+    if (op === '+') result += next;
+    else if (op === '-') result -= next;
+    else if (op === '*') result *= next;
+    else if (op === '/') result = next === 0 ? 0 : result / next;
+  }
+  return Number.isFinite(result) ? result : '';
+};
+
 const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, isDarkTheme }) => {
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -73,6 +112,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     groupBy: '',
     includeHistory: true,
     comparisonFields: [],
+    formula: [],
   });
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
   const [activeMetricIndex, setActiveMetricIndex] = useState(-1);
@@ -163,6 +203,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           return false;
         }
       } else if (visualizationType === 'number') {
+        if (Array.isArray(form.formula) && form.formula.length > 0) {
+          // Validate that all header parts have a header and calc
+          for (const part of form.formula) {
+            if (part.header && (!part.header || !part.calc)) return false;
+          }
+          return true;
+        }
         // Validate that the selected field is number
         const tKey = cardTemplates[0];
         const headers = templateHeaderMap[tKey] || [];
@@ -221,6 +268,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       groupBy: '',
       includeHistory: true,
       comparisonFields: [],
+      formula: [],
     });
     setDateRangeMode({});
     setNumberRangeMode({});
@@ -287,8 +335,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
     // Compute chart data for the metric using computeMetricData
     const chartData = computeMetricData(cards, config, templateObj.headers || []);
-    let value = undefined;
-    if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
+    let value;
+    if (formToSave.visualizationType === 'number' && Array.isArray(formToSave.formula) && formToSave.formula.length > 0) {
+      const cardsForTemplate = cards.filter(card => card.typeOfCards === templateKey);
+      value = evaluateNumberFormula(formToSave.formula, cardsForTemplate, templateKey, templateObj.headers || []);
+    } else if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
       value = chartData.value;
     }
     // Store only the fields used from relevant cards, and for date fields, also store the latest timestamp from history if available
@@ -349,7 +400,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       id: `metric-${uuidv4()}`,
       name: name.trim(),
       type: visualizationType,
-      config,
+      config: { ...config, formula: formToSave.formula },
       data: chartData,
       value,
       records, // <-- add this property
@@ -425,8 +476,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
       // Compute chart data for the metric using computeMetricData
       const chartData = computeMetricData(cards, config, templateObj.headers || []);
-      let value = undefined;
-      if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
+      let value;
+      if (formToSave.visualizationType === 'number' && Array.isArray(formToSave.formula) && formToSave.formula.length > 0) {
+        const cardsForTemplate = cards.filter(card => card.typeOfCards === templateKey);
+        value = evaluateNumberFormula(formToSave.formula, cardsForTemplate, templateKey, templateObj.headers || []);
+      } else if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
         value = chartData.value;
       }
       // Store only the fields used from relevant cards, and for date fields, also store the latest timestamp from history if available
@@ -487,7 +541,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
         name: name.trim(),
         type: visualizationType,
-        config,
+        config: { ...config, formula: formToSave.formula },
         data: chartData,
         value,
         records, // <-- add this property
@@ -850,6 +904,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           groupBy: metric.config?.groupBy || '',
           includeHistory: metric.config?.includeHistory !== undefined ? metric.config.includeHistory : true,
           comparisonFields: metric.config?.comparisonFields || [],
+          formula: metric.config?.formula || [],
         });
       } else {
         resetForm();
@@ -1254,37 +1309,124 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       )}
                     </div>
                   )}
-                  {/* Aggregation selector for number output */}
+                  {/* Formula builder for number output */}
                   {metricForm.visualizationType === 'number' && (
                     <div
                       className={`${styles.filterItem} ${activeSectionIndex === 5 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                       tabIndex={0}
-                      style={{ cursor: 'default' }}
+                      style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start' }}
                     >
                       <div className={styles.filterRow}>
                         <div className={styles.filterNameType}>
-                          <span>Aggregation</span>
+                          <span>Formula</span>
                         </div>
                         <div className={styles.primaryButtons}>
-                          <span className={styles.filterSummary}>
-                            {metricForm.aggregation === 'average' ? 'Average' : 'Count'}
-                          </span>
+                          <span className={styles.filterSummary}>Build a custom calculation</span>
                         </div>
                       </div>
-                      <div className={styles.filterActions} style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                        {['average', 'count'].map((agg) => (
-                          <button
-                            key={agg}
-                            className={
-                              styles.granularityButton +
-                              (metricForm.aggregation === agg ? ' ' + styles.activeItem : '')
-                            }
-                            style={{ minWidth: 80, fontWeight: 500, borderRadius: 8 }}
-                            onClick={() => setMetricForm((prev) => ({ ...prev, aggregation: agg }))}
-                          >
-                            {agg.charAt(0).toUpperCase() + agg.slice(1)}
-                          </button>
+                      <div className={styles.filterActions} style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                        {/* Formula builder UI */}
+                        {(metricForm.formula || []).map((part, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            {('header' in part) ? (
+                              <>
+                                {/* Header selector always visible */}
+                                <select
+                                  value={part.header || ''}
+                                  onChange={e => {
+                                    const newFormula = [...(metricForm.formula || [])];
+                                    newFormula[idx].header = e.target.value;
+                                    setMetricForm(prev => ({ ...prev, formula: newFormula }));
+                                  }}
+                                  style={{ minWidth: 120 }}
+                                  autoFocus={part.header === ''}
+                                >
+                                  <option value="">Select Header</option>
+                                  {(cardTemplates.find(t => (t.name || t.typeOfCards) === metricForm.cardTemplates[0])?.headers || []).map(h => (
+                                    <option key={h.key} value={h.key}>{h.name}</option>
+                                  ))}
+                                </select>
+                                {/* Calculation type selector always visible */}
+                                <select
+                                  value={part.calc || 'sum'}
+                                  onChange={e => {
+                                    const newFormula = [...(metricForm.formula || [])];
+                                    newFormula[idx].calc = e.target.value;
+                                    setMetricForm(prev => ({ ...prev, formula: newFormula }));
+                                  }}
+                                  style={{ minWidth: 90 }}
+                                >
+                                  <option value="count">Count</option>
+                                  <option value="sum">Sum</option>
+                                  <option value="average">Average</option>
+                                </select>
+                              </>
+                            ) : part.op ? (
+                              <select
+                                value={part.op}
+                                onChange={e => {
+                                  const newFormula = [...(metricForm.formula || [])];
+                                  newFormula[idx].op = e.target.value;
+                                  setMetricForm(prev => ({ ...prev, formula: newFormula }));
+                                }}
+                                style={{ minWidth: 50 }}
+                              >
+                                <option value="+">+</option>
+                                <option value="-">-</option>
+                                <option value="*">*</option>
+                                <option value="/">/</option>
+                              </select>
+                            ) : null}
+                            {/* Remove part button */}
+                            <button
+                              style={{ marginLeft: 4, color: '#c00', background: 'none', border: 'none', cursor: 'pointer' }}
+                              onClick={() => {
+                                const newFormula = [...(metricForm.formula || [])];
+                                newFormula.splice(idx, 1);
+                                setMetricForm(prev => ({ ...prev, formula: newFormula }));
+                              }}
+                              title="Remove"
+                            >
+                              ×
+                            </button>
+                          </div>
                         ))}
+                        {/* Add new part buttons, enforcing logic: header first, then operator, then header, etc. */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            style={{ minWidth: 120, borderRadius: 6, border: '1px solid #ccc', background: isDarkTheme ? '#222' : '#f8f8f8', color: isDarkTheme ? '#fff' : '#222', cursor: 'pointer' }}
+                            disabled={metricForm.formula && metricForm.formula.length > 0 && !metricForm.formula[metricForm.formula.length - 1].op}
+                            onClick={() => {
+                              setMetricForm(prev => ({ ...prev, formula: [...(prev.formula || []), { header: '', calc: 'sum' }] }));
+                            }}
+                          >
+                            + Add Header
+                          </button>
+                          <button
+                            style={{ minWidth: 50, borderRadius: 6, border: '1px solid #ccc', background: isDarkTheme ? '#222' : '#f8f8f8', color: isDarkTheme ? '#fff' : '#222', cursor: 'pointer' }}
+                            disabled={!(metricForm.formula && metricForm.formula.length > 0 && metricForm.formula[metricForm.formula.length - 1].header)}
+                            onClick={() => {
+                              setMetricForm(prev => ({ ...prev, formula: [...(prev.formula || []), { op: '+' }] }));
+                            }}
+                          >
+                            + Add Operator
+                          </button>
+                        </div>
+                        {/* Formula preview */}
+                        <div style={{ marginTop: 8, color: isDarkTheme ? '#fff' : '#222', fontWeight: 500 }}>
+                          Formula: {Array.isArray(metricForm.formula) && metricForm.formula.length > 0 ? metricForm.formula.map((part, idx) => ('header' in part) ? `${cardTemplates.find(t => (t.name || t.typeOfCards) === metricForm.cardTemplates[0])?.headers?.find(h => h.key === part.header)?.name || 'Select Header'} (${part.calc})` : part.op).join(' ') : '—'}
+                        </div>
+                        {/* Result preview */}
+                        <div style={{ marginTop: 4, color: '#888', fontSize: 13 }}>
+                          {(() => {
+                            const templateKey = metricForm.cardTemplates[0];
+                            const template = cardTemplates.find(t => (t.name || t.typeOfCards) === templateKey);
+                            if (!template || !Array.isArray(metricForm.formula) || metricForm.formula.length === 0) return 'Result preview will appear here';
+                            const cardsForTemplate = cards.filter(card => card.typeOfCards === templateKey);
+                            const result = evaluateNumberFormula(metricForm.formula, cardsForTemplate, templateKey, template.headers || []);
+                            return result === '' ? 'Result preview will appear here' : `Result: ${result}`;
+                          })()}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1453,6 +1595,17 @@ MetricsModal.propTypes = {
               visualizationType: PropTypes.string,
               includeHistory: PropTypes.bool,
               comparisonFields: PropTypes.arrayOf(PropTypes.string),
+              formula: PropTypes.arrayOf(
+                PropTypes.oneOfType([
+                  PropTypes.shape({
+                    header: PropTypes.string,
+                    calc: PropTypes.string,
+                  }),
+                  PropTypes.shape({
+                    op: PropTypes.string,
+                  }),
+                ])
+              ),
             }),
             data: PropTypes.object,
           })
