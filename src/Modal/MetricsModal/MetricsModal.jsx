@@ -255,7 +255,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
       value = chartData.value;
     }
-    // Store only the fields used from relevant cards
+    // Store only the fields used from relevant cards, and for date fields, also store the latest timestamp from history if available
     const relevantCards = cards.filter(card => {
       if (!cardTemplates.includes(card.typeOfCards)) return false;
       return Object.keys(filterValues || {}).every(key => {
@@ -287,6 +287,25 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const obj = { id: card.id, typeOfCards: card.typeOfCards };
       selectedFields.forEach(field => {
         obj[field] = card[field];
+        // For line charts, always store the latest timestamp from history for every field if available
+        if (visualizationType === 'line' && Array.isArray(card.history)) {
+          const fieldHistory = card.history.filter(h => h.field === field && h.timestamp);
+          if (fieldHistory.length > 0) {
+            // Use the latest timestamp
+            const latest = fieldHistory.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+            obj[`${field}_timestamp`] = latest.timestamp;
+          }
+        } else {
+          // For non-line charts, keep previous logic for date fields
+          const header = templateObj.headers?.find(h => h.key === field);
+          if (header && header.type === 'date' && Array.isArray(card.history)) {
+            const dateHistory = card.history.filter(h => h.field === field && h.timestamp);
+            if (dateHistory.length > 0) {
+              const latest = dateHistory.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+              obj[`${field}_timestamp`] = latest.timestamp;
+            }
+          }
+        }
       });
       return obj;
     });
@@ -374,7 +393,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
         value = chartData.value;
       }
-      // Store only the fields used from relevant cards
+      // Store only the fields used from relevant cards, and for date fields, also store the latest timestamp from history if available
       const relevantCards = cards.filter(card => {
         if (!cardTemplates.includes(card.typeOfCards)) return false;
         return Object.keys(filterValues || {}).every(key => {
@@ -406,6 +425,25 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         const obj = { id: card.id, typeOfCards: card.typeOfCards };
         selectedFields.forEach(field => {
           obj[field] = card[field];
+          // For line charts, always store the latest timestamp from history for every field if available
+          if (visualizationType === 'line' && Array.isArray(card.history)) {
+            const fieldHistory = card.history.filter(h => h.field === field && h.timestamp);
+            if (fieldHistory.length > 0) {
+              // Use the latest timestamp
+              const latest = fieldHistory.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+              obj[`${field}_timestamp`] = latest.timestamp;
+            }
+          } else {
+            // For non-line charts, keep previous logic for date fields
+            const header = templateObj.headers?.find(h => h.key === field);
+            if (header && header.type === 'date' && Array.isArray(card.history)) {
+              const dateHistory = card.history.filter(h => h.field === field && h.timestamp);
+              if (dateHistory.length > 0) {
+                const latest = dateHistory.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
+                obj[`${field}_timestamp`] = latest.timestamp;
+              }
+            }
+          }
         });
         return obj;
       });

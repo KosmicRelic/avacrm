@@ -112,11 +112,23 @@ const CustomMetricChart = ({
         const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
         if (entries.length > 0) {
           const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
-          timestamp = latest.timestamp;
+          // Use the timestamp from the history entry if the header is a date field
+          if (dateHeaderKey && latest.field === dateHeaderKey && latest.timestamp) {
+            timestamp = latest.timestamp;
+          } else {
+            timestamp = latest.timestamp;
+          }
         }
       }
       if (!timestamp && dateHeaderKey && card[dateHeaderKey]) {
         timestamp = card[dateHeaderKey];
+      }
+    }
+    // If the header is a date field and we have a history entry for it, use its timestamp
+    if (!timestamp && dateHeaderKey && Array.isArray(card.history)) {
+      const dateHistory = card.history.find(h => h.field === dateHeaderKey && h.timestamp);
+      if (dateHistory) {
+        timestamp = dateHistory.timestamp;
       }
     }
     if (!timestamp) timestamp = card.id || card.docId;
@@ -172,9 +184,11 @@ const CustomMetricChart = ({
 
   // Generate chart data based on visualization type
   const generateChartData = () => {
-    if (!cards || !templateKey || !selectedHeaderKey) return null;
+    // Use metric.records if present (passed as cards), fallback to cards
+    const dataSource = Array.isArray(cards) && cards.length && cards[0]?.records ? cards[0].records : cards;
+    if (!dataSource || !templateKey || !selectedHeaderKey) return null;
 
-    const cardsForTemplate = cards.filter(card => card.typeOfCards === templateKey);
+    const cardsForTemplate = dataSource.filter(card => card.typeOfCards === templateKey);
     if (!cardsForTemplate.length) return null;
 
     const dateHeader = header?.type === 'date' ? header : cardsForTemplate[0]?.headers?.find(h => h.type === 'date');
@@ -202,6 +216,134 @@ const CustomMetricChart = ({
           data: [result],
           backgroundColor: appleBlue,
         }],
+      };
+    }
+
+    // For line charts, use <field>_timestamp for x-axis if present, and format by granularity
+    if (visualizationType === 'line') {
+      const pointMap = {};
+      let dateList = [];
+      if (granularity === 'daily') {
+        // Collect all unique dates (as Date objects) from the data
+        const dateSet = new Set();
+        cardsForTemplate.forEach(card => {
+          const ts = card[`${selectedHeaderKey}_timestamp`];
+          if (ts && typeof ts === 'object' && (ts.seconds || ts._seconds)) {
+            const d = new Date((ts.seconds || ts._seconds) * 1000);
+            // Use ISO string for uniqueness
+            dateSet.add(d.toISOString().slice(0, 10));
+          }
+        });
+        // Sort dates chronologically
+        dateList = Array.from(dateSet).sort().map(str => new Date(str));
+      }
+      // Map from ISO date string to label
+      const dateLabelMap = {};
+      if (granularity === 'daily' && dateList.length > 0) {
+        dateList.forEach((date, idx) => {
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          if (idx === 0 || date.getMonth() !== dateList[idx - 1].getMonth() || date.getFullYear() !== dateList[idx - 1].getFullYear()) {
+            dateLabelMap[date.toISOString().slice(0, 10)] = `${day}/${month}`;
+          } else {
+            dateLabelMap[date.toISOString().slice(0, 10)] = day;
+          }
+        });
+      }
+      // Aggregate values by label
+      cardsForTemplate.forEach(card => {
+        const value = card[selectedHeaderKey];
+        const ts = card[`${selectedHeaderKey}_timestamp`];
+        let xLabel = '';
+        if (ts && typeof ts === 'object' && (ts.seconds || ts._seconds)) {
+          const date = new Date((ts.seconds || ts._seconds) * 1000);
+          if (granularity === 'monthly') {
+            xLabel = date.toLocaleString('default', { month: 'short' });
+          } else if (granularity === 'weekly') {
+            const day = date.getDay();
+            const diffToMonday = (day === 0 ? -6 : 1) - day;
+            const weekStart = new Date(date);
+            weekStart.setHours(0,0,0,0);
+            weekStart.setDate(date.getDate() + diffToMonday);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            xLabel = `${weekStart.getDate().toString().padStart(2, '0')}-${weekEnd.getDate().toString().padStart(2, '0')}/${(weekStart.getMonth() + 1).toString().padStart(2, '0')}`;
+          } else if (granularity === 'daily') {
+            const iso = date.toISOString().slice(0, 10);
+            xLabel = dateLabelMap[iso] || date.getDate().toString().padStart(2, '0');
+          } else {
+            xLabel = date.toLocaleDateString();
+          }
+        } else {
+          xLabel = formatTimestamp(ts);
+        }
+        const numValue = Number(value);
+        if (!xLabel || isNaN(numValue)) return;
+        if (!pointMap[xLabel]) pointMap[xLabel] = 0;
+        pointMap[xLabel] += numValue;
+      });
+      // For daily, use dateList to preserve order and avoid duplicates
+      let sortedLabels;
+      if (granularity === 'daily' && dateList.length > 0) {
+        let lastMonth = null;
+        sortedLabels = [];
+        dateList.forEach((date, idx) => {
+          const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+          const day = date.getDate().toString().padStart(2, '0');
+          if (lastMonth !== date.getMonth()) {
+            sortedLabels.push(month);
+            lastMonth = date.getMonth();
+          }
+          sortedLabels.push(day);
+        });
+      } else {
+        sortedLabels = Object.keys(pointMap).sort((a, b) => {
+          const parseDate = (label) => {
+            if (granularity === 'monthly') {
+              return new Date(`01 ${label} 2025`).getTime();
+            } else if (granularity === 'weekly') {
+              const [start, rest] = label.split('-');
+              const [end, month] = rest.split('/');
+              return new Date(`2025-${month}-${start}`).getTime();
+            } else if (granularity === 'daily') {
+              const parts = label.split(', ');
+              const day = parts[0];
+              const month = parts[1] || (new Date().getMonth() + 1).toString().padStart(2, '0');
+              return new Date(`2025-${month}-${day}`).getTime();
+            }
+            return 0;
+          };
+          return parseDate(a) - parseDate(b);
+        });
+      }
+      // For daily, map data to sortedLabels, skipping month labels
+      let dataForLabels;
+      if (granularity === 'daily' && dateList.length > 0) {
+        let dateIdx = 0;
+        dataForLabels = sortedLabels.map(label => {
+          if (label.length === 3) return null; // Month label
+          // label is day, get corresponding date
+          const date = dateList[dateIdx++];
+          const iso = date.toISOString().slice(0, 10);
+          return pointMap[dateLabelMap[iso]] || 0;
+        });
+      } else {
+        dataForLabels = sortedLabels.map(l => pointMap[l] || 0);
+      }
+      return {
+        labels: sortedLabels,
+        datasets: [
+          {
+            label: header?.name || selectedHeaderKey,
+            data: dataForLabels,
+            fill: false,
+            borderColor: appleBlue,
+            backgroundColor: appleBlue,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+          },
+        ],
       };
     }
 
@@ -352,7 +494,7 @@ const CustomMetricChart = ({
     if (visualizationType === 'number') {
       const value = dataPoints.datasets[0]?.data[0] || 0;
       return (
-        <div className={styles.simpleNumberPreview}>
+        <div className={styles.simpleNumberPreview} style={{ fontSize: 28, padding: 12 }}>
           {Number.isInteger(value) ? value.toString() : value.toFixed(1)}
         </div>
       );
@@ -369,20 +511,53 @@ const CustomMetricChart = ({
         );
       }
       if (size === 'medium') {
-        // Chart and legend/data side by side, 50-50 split
+        // Chart and legend/data side by side, 70-30 split, with ellipsis for overflow
         return (
           <div className={styles.mediumPieLayout}>
-            <div className={styles.chartWrapper} style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+            <div className={styles.chartWrapper} style={{ flex: '0 0 60%', minWidth: 0, minHeight: 0 }}>
               <Pie data={dataPoints} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, legend: { display: false } } }} />
             </div>
-            <div className={styles.legend} style={{ flex: 1, minWidth: 0, minHeight: 0, paddingLeft: 24 }}>
-              <h4 style={{margin:0,marginBottom:8,fontWeight:600}}>Data</h4>
+            <div className={styles.legend} style={{ flex: '0 0 40%', minWidth: 0, minHeight: 0, paddingLeft: 16, overflow: 'hidden' }}>
+              <h4 style={{margin:0,marginBottom:8,fontWeight:600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>Data</h4>
               <ul style={{listStyle:'none',padding:0,margin:0}}>
                 {dataPoints.labels.map((label, idx) => (
-                  <li key={label} style={{display:'flex',alignItems:'center',marginBottom:6}}>
+                  <li
+                    key={label}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginBottom: 6,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%',
+                    }}
+                    title={`${label}: ${dataPoints.datasets[0].data[idx]}`}
+                  >
                     <span style={{display:'inline-block',width:14,height:14,background:dataPoints.datasets[0].backgroundColor[idx],borderRadius:3,marginRight:8}} />
-                    <span style={{fontWeight:500}}>{label}</span>
-                    <span style={{marginLeft:'auto',fontWeight:400}}>{dataPoints.datasets[0].data[idx]}</span>
+                    <span style={{
+                      fontWeight:500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: 70,
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }}>
+                      {label.length > 12 ? label.slice(0, 12) + '...' : label}
+                    </span>
+                    <span style={{
+                      marginLeft:'auto',
+                      fontWeight:400,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: 40,
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }}>
+                      {String(dataPoints.datasets[0].data[idx]).length > 6
+                        ? String(dataPoints.datasets[0].data[idx]).slice(0, 6) + '...'
+                        : dataPoints.datasets[0].data[idx]}
+                    </span>
                   </li>
                 ))}
               </ul>
