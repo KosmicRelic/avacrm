@@ -78,16 +78,15 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
 
     chartProps = {
       visualizationType: metric.type === 'speedometer' ? 'number' : metric.type,
-      cards,
+      cards: metric.records || [], // Use metric.records if available
       templateKey,
       selectedHeaderKey,
       header,
       isDarkTheme,
       aggregation: config.aggregation || 'average',
       granularity: config.granularity || 'monthly',
+      size: size, // Pass widget size to CustomMetricChart
     };
-
-    // Debug chart props
   }
 
   return (

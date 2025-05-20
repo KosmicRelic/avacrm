@@ -65,6 +65,7 @@ const CustomMetricChart = ({
   isDarkTheme,
   aggregation,
   granularity,
+  size = 'large', // Add size prop with default 'large'
 }) => {
   const appleBlue = '#007AFF';
   const backgroundColor = isDarkTheme ? '#222' : '#f7f7f7';
@@ -357,10 +358,58 @@ const CustomMetricChart = ({
       );
     }
 
+    // PIE CHART LAYOUTS
+    if (visualizationType === 'pie') {
+      if (size === 'small' || size === 'verySmall') {
+        // Only show the chart, no legend or data on top
+        return (
+          <div className={styles.chartWrapper}>
+            <Pie data={dataPoints} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, legend: { display: false } } }} />
+          </div>
+        );
+      }
+      if (size === 'medium') {
+        // Chart and legend/data side by side, 50-50 split
+        return (
+          <div className={styles.mediumPieLayout}>
+            <div className={styles.chartWrapper} style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+              <Pie data={dataPoints} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, legend: { display: false } } }} />
+            </div>
+            <div className={styles.legend} style={{ flex: 1, minWidth: 0, minHeight: 0, paddingLeft: 24 }}>
+              <h4 style={{margin:0,marginBottom:8,fontWeight:600}}>Data</h4>
+              <ul style={{listStyle:'none',padding:0,margin:0}}>
+                {dataPoints.labels.map((label, idx) => (
+                  <li key={label} style={{display:'flex',alignItems:'center',marginBottom:6}}>
+                    <span style={{display:'inline-block',width:14,height:14,background:dataPoints.datasets[0].backgroundColor[idx],borderRadius:3,marginRight:8}} />
+                    <span style={{fontWeight:500}}>{label}</span>
+                    <span style={{marginLeft:'auto',fontWeight:400}}>{dataPoints.datasets[0].data[idx]}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        );
+      }
+      // Large: default (legend on bottom)
+      return (
+        <div className={styles.chartWrapper}>
+          <Pie data={dataPoints} options={chartOptions} />
+        </div>
+      );
+    }
+
+    // BAR: Only show the chart, no data/label for all sizes
+    if (visualizationType === 'bar') {
+      return (
+        <div className={styles.chartWrapper}>
+          <Bar data={dataPoints} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, legend: { display: false } } }} />
+        </div>
+      );
+    }
+
+    // LINE
     return (
       <div className={styles.chartWrapper}>
-        {visualizationType === 'pie' && <Pie data={dataPoints} options={chartOptions} />}
-        {visualizationType === 'bar' && <Bar data={dataPoints} options={chartOptions} />}
         {visualizationType === 'line' && <Line data={dataPoints} options={chartOptions} />}
       </div>
     );
@@ -380,7 +429,7 @@ const CustomMetricChart = ({
 
 CustomMetricChart.propTypes = {
   visualizationType: PropTypes.oneOf(['line', 'pie', 'bar', 'number']).isRequired,
-  cards: PropTypes.arrayOf(PropTypes.object).isRequired,
+  cards: PropTypes.arrayOf(PropTypes.object), // Now optional, can be []
   templateKey: PropTypes.string.isRequired,
   selectedHeaderKey: PropTypes.string.isRequired,
   header: PropTypes.shape({
@@ -391,6 +440,7 @@ CustomMetricChart.propTypes = {
   isDarkTheme: PropTypes.bool.isRequired,
   aggregation: PropTypes.oneOf(['average', 'count']),
   granularity: PropTypes.oneOf(['daily', 'weekly', 'monthly', 'none']),
+  size: PropTypes.oneOf(['verySmall', 'small', 'medium', 'large']), // Add size prop
 };
 
 export default CustomMetricChart;

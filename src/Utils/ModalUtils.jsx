@@ -461,6 +461,18 @@ export const handleModalSave = async ({
       break;
     case 'metrics':
       if (data?.currentCategories && metrics) {
+        // DEBUG: Log metrics before saving to state
+        console.log('[ModalUtils] setMetrics: about to save categories with metrics:',
+          data.currentCategories.map(cat => ({
+            category: cat.category,
+            metrics: cat.metrics.map(m => ({
+              name: m.name,
+              id: m.id,
+              data: m.data,
+              value: m.value
+            }))
+          }))
+        );
         setMetrics((prev) => {
           const existingCategories = new Set(prev.map((c) => c.category));
           return data.currentCategories.map((category) => {
