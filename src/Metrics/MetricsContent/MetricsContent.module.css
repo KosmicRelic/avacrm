@@ -1,6 +1,4 @@
-
-  
-  .viewContainer {
+.viewContainer {
     width: 100%;
     height: 100%;
     padding: 16px;
@@ -215,6 +213,118 @@
     font-weight: 600;
   }
   
+  .metricChartPreview {
+    width: 100%;
+    min-height: 220px;
+    height: auto; /* Allow chart to grow as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border-radius: 10px;
+    margin: 24px 0 0 0;
+    overflow: visible;
+  }
+  
+  .darkTheme .metricChartPreview {
+    background: transparent;
+  }
+  
+  .metricChartWidgetWrapper {
+    height: auto;
+    width: 100%;
+    margin: 0 auto;
+    background: transparent;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: visible;
+  }
+  
+  .darkTheme .metricChartWidgetWrapper {
+    background: transparent;
+  }
+  
+  .metricsLegendBottom {
+    width: 100%;
+    margin-top: 12px;
+    padding-bottom: 18px;
+  }
+  
+  .metricsLegendTitle {
+    margin: 0 0 8px 0;
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #222;
+  }
+  
+  .darkTheme .metricsLegendTitle {
+    color: #fff;
+  }
+  
+  .metricsLegendList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: #000 !important;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+  
+  .darkTheme .metricsLegendList {
+    color: #fff !important;
+  }
+  
+  .metricsLegendList li {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+  
+  .metricsLegendItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  
+  .metricsLegendColor {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background: #007AFF;
+    border-radius: 3px;
+    margin-right: 8px;
+  }
+  
+  .metricsLegendLabel {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  .metricsLegendValue {
+    margin-left: auto;
+    font-weight: 400;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 40px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
   .actionButton {
     background: none;
     border: none;
@@ -237,4 +347,45 @@
   
   .actionButton.darkTheme:hover {
     background: rgba(10, 132, 255, 0.2);
+  }
+
+  .lineChartControls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .chevronBtn {
+    background: none;
+    border: none;
+    color: #222;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .darkTheme .chevronBtn {
+    color: #fff;
+  }
+
+  .granularityBtn {
+    background: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 4px 16px;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    color: #222;
+    transition: background 0.15s, border 0.15s;
+  }
+
+  .darkTheme .granularityBtn {
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
   }

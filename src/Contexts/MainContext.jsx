@@ -690,10 +690,6 @@ export const MainContextProvider = ({ children }) => {
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
-
-  useEffect(() => {
-    console.log(metrics);
-  }, [metrics]);
   return (
     <MainContext.Provider
       value={{

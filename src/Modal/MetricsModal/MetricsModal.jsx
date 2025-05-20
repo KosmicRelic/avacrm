@@ -4,9 +4,53 @@ import styles from './MetricsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
-import { FaRegCircle, FaRegCheckCircle, FaPlus, FaChevronDown } from 'react-icons/fa';
+import { FaRegCircle, FaRegCheckCircle, FaPlus, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 import { computeMetricData } from '../../Metrics/metricsUtils';
+
+const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, isDarkTheme }) => {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthLabel = `${monthNames[currentMonth]} ${currentYear}`;
+  const handlePrev = () => {
+    if (granularity === 'month') {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear((y) => y - 1);
+      } else {
+        setCurrentMonth((m) => m - 1);
+      }
+    } else {
+      setCurrentYear((y) => y - 1);
+    }
+  };
+  const handleNext = () => {
+    if (granularity === 'month') {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear((y) => y + 1);
+      } else {
+        setCurrentMonth((m) => m + 1);
+      }
+    } else {
+      setCurrentYear((y) => y + 1);
+    }
+  };
+  const handleGranularityToggle = () => {
+    setGranularity((g) => (g === 'month' ? 'year' : 'month'));
+  };
+  return (
+    <div className={styles.lineChartControls}>
+      <button onClick={handlePrev} className={styles.chevronBtn}><FaChevronLeft /></button>
+      <button onClick={handleGranularityToggle} className={styles.granularityBtn}>
+        {granularity === 'month' ? monthLabel : currentYear}
+      </button>
+      <button onClick={handleNext} className={styles.chevronBtn}><FaChevronRight /></button>
+    </div>
+  );
+};
 
 const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const mainContext = useContext(MainContext);
@@ -49,6 +93,10 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const [outputDropdownOpen, setOutputDropdownOpen] = useState(false);
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
   const [fieldDropdownOpen, setFieldDropdownOpen] = useState(false);
+
+  const [granularity, setGranularity] = useState('month');
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   // Colors for Apple-inspired UI
   const appleBlue = '#007AFF';
@@ -1258,15 +1306,28 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   );
 
                   return (
-                    <CustomMetricChart
-                      visualizationType={metricForm.visualizationType}
-                      cards={cards}
-                      templateKey={templateKey}
-                      selectedHeaderKey={selectedHeaderKey}
-                      header={header}
-                      isDarkTheme={isDarkTheme}
-                      aggregation={metricForm.aggregation}
-                    />
+                    <>
+                      {metricForm.visualizationType === 'line' && (
+                        <MetricsLineChartControls
+                          granularity={granularity}
+                          setGranularity={setGranularity}
+                          currentMonth={currentMonth}
+                          setCurrentMonth={setCurrentMonth}
+                          currentYear={currentYear}
+                          setCurrentYear={setCurrentYear}
+                          isDarkTheme={isDarkTheme}
+                        />
+                      )}
+                      <CustomMetricChart
+                        visualizationType={metricForm.visualizationType}
+                        cards={cards}
+                        templateKey={templateKey}
+                        selectedHeaderKey={selectedHeaderKey}
+                        header={header}
+                        isDarkTheme={isDarkTheme}
+                        aggregation={metricForm.aggregation}
+                      />
+                    </>
                   );
                 })()}
               </div>

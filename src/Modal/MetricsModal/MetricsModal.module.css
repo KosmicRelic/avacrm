@@ -211,6 +211,8 @@
   transition: border-color 0.2s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
   appearance: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .darkTheme.inputField,
@@ -381,21 +383,21 @@
 /* Chart Container (New for Step 6 Chart Preview) */
 .chartContainer {
   margin-top: 16px;
-  background: rgba(255, 255, 255, 0.95); /* Light mode: semi-transparent white */
+  background: transparent;
   border-radius: 12px;
   padding: 16px;
-  min-height: 200px; /* Ensure sufficient space for charts */
-  max-height: 400px; /* Limit height to prevent overflow */
-  overflow: hidden; /* Prevent overflow issues */
+  min-height: 200px;
+  max-height: 400px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s ease; /* Smooth theme transition */
+  transition: background 0.3s ease;
 }
 
 .chartContainer.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* Dark mode: semi-transparent dark */
+  background: transparent;
 }
 
 .chartContainer p {
@@ -830,6 +832,7 @@
 
 .filterInput[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* Separator */
