@@ -45,7 +45,6 @@ export const getFieldChanges = (
   includeHistory = true,
   headers = []
 ) => {
-  console.log('getFieldChanges input:', { fields, dateRange, cardTemplates, filterValues, includeHistory });
   const { start, end } = dateRange;
   const startDate = startOfDay(new Date(start));
   const endDate = startOfDay(new Date(end));
@@ -99,9 +98,8 @@ export const getFieldChanges = (
     });
   });
 
-  console.log('Filtered cards:', filteredCards.length);
   if (filteredCards.length === 0) {
-    console.warn('No cards match the filters or card templates.');
+    // No cards match the filters or card templates.
   }
 
   let history = [];
@@ -168,7 +166,6 @@ export const getFieldChanges = (
 
   const result = includeHistory ? [...currentValues, ...history] : currentValues;
   const filteredResult = result.filter((entry) => entry.newValue !== undefined && isNumeric(entry.newValue));
-  console.log('History and current entries:', filteredResult);
   return filteredResult;
 };
 
@@ -208,7 +205,6 @@ export const aggregateByDay = (
   cardTemplates
 ) => {
   if (!history.length) {
-    console.warn('No history entries, returning default dataset');
     return {
       labels: [format(new Date(), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd')],
       datasets: [
@@ -237,7 +233,6 @@ export const aggregateByDay = (
   }
 
   if (startDate > endDate) {
-    console.warn('startDate after endDate, swapping:', { startDate, endDate });
     [startDate, endDate] = [endDate, startDate];
   }
 
@@ -301,7 +296,6 @@ export const aggregateByDay = (
     };
   });
 
-  console.log('aggregateByDay output:', { labels, datasets });
   return { labels, datasets };
 };
 
@@ -366,7 +360,6 @@ export const aggregateByDayForComparison = (
   cardTemplates
 ) => {
   if (!history.length) {
-    console.warn('No history entries, returning default dataset');
     return {
       labels: [format(new Date(), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd')],
       datasets: [
@@ -389,7 +382,6 @@ export const aggregateByDayForComparison = (
   let endDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.end)) : startOfDay(timestampToDate(dateRange.end));
 
   if (startDate > endDate) {
-    console.warn('startDate after endDate, swapping:', { startDate, endDate });
     [startDate, endDate] = [endDate, startDate];
   }
 
@@ -461,7 +453,6 @@ export const computeScatterData = (
   cardTemplates
 ) => {
   if (comparisonFields.length !== 2) {
-    console.warn('Exactly two fields required for scatter plot');
     return {
       labels: [],
       datasets: [
@@ -535,7 +526,6 @@ export const computeCorrelation = (data1, data2) => {
 
 // Compute metric data
 export const computeMetricData = (cards, config, headers = []) => {
-  console.log('computeMetricData config:', config);
   const {
     fields,
     dateRange,
@@ -552,7 +542,6 @@ export const computeMetricData = (cards, config, headers = []) => {
   // Validate fields
   const allFields = comparisonFields.length > 0 ? comparisonFields : cardTemplates.flatMap((template) => fields[template] || []);
   if (allFields.length === 0) {
-    console.warn('No fields provided, returning default dataset');
     return {
       labels: [format(new Date(), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd')],
       datasets: [
@@ -572,7 +561,7 @@ export const computeMetricData = (cards, config, headers = []) => {
     return header && header.type !== 'number';
   });
   if (invalidFields.length > 0 && visualizationType !== 'pie' && aggregation !== 'count') {
-    console.warn(`Non-numeric fields selected for numeric aggregation: ${invalidFields.join(', ')}`);
+    // Non-numeric fields selected for numeric aggregation.
   }
 
   const history = getFieldChanges(
@@ -584,23 +573,19 @@ export const computeMetricData = (cards, config, headers = []) => {
     includeHistory,
     headers
   );
-  console.log('History from getFieldChanges:', history);
 
   if (visualizationType === 'pie') {
     const result = aggregateForPie(history, groupBy, fields, cardTemplates);
-    console.log('Pie chart data:', result);
     return result;
   }
 
   if (visualizationType === 'number') {
     const result = computeNumberMetric(history, aggregation, fields, cardTemplates);
-    console.log('Number metric data:', result);
     return result;
   }
 
   if (visualizationType === 'scatter' && comparisonFields.length === 2) {
     const result = computeScatterData(history, comparisonFields, cardTemplates);
-    console.log('Scatter plot data:', result);
     return result;
   }
 
@@ -613,7 +598,6 @@ export const computeMetricData = (cards, config, headers = []) => {
       granularity,
       cardTemplates
     );
-    console.log('Two-line chart data:', result);
     return result;
   }
 
@@ -626,7 +610,6 @@ export const computeMetricData = (cards, config, headers = []) => {
     fields,
     cardTemplates
   );
-  console.log('Line/Bar chart data:', result);
   return result;
 };
 

@@ -164,7 +164,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     (form) => {
       const { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation } = form;
       const trimmedName = name.trim();
-      console.log('[validateMetric] called', { name, cardTemplates, fields, comparisonFields, visualizationType, aggregation });
 
       // Build a map of templateKey -> headers from mainContext.cardTemplates
       const templateHeaderMap = {};
@@ -172,24 +171,18 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         const key = (tpl.name || tpl.typeOfCards || '').toString().trim();
         templateHeaderMap[key] = tpl.headers || [];
       });
-      console.log('[validateMetric] templateHeaderMap keys:', Object.keys(templateHeaderMap));
-      console.log('[validateMetric] cardTemplates from form:', cardTemplates);
 
       if (!trimmedName) {
-        console.log('[validateMetric] failed: name is empty');
         return false;
       }
       if (cardTemplates.length === 0) {
-        console.log('[validateMetric] failed: no cardTemplates');
         return false;
       }
       const hasFields = comparisonFields.length > 0 || cardTemplates.some((template) => fields[template]?.length > 0);
       if (!hasFields) {
-        console.log('[validateMetric] failed: no fields');
         return false;
       }
       if (comparisonFields.length > 0 && comparisonFields.length !== 2) {
-        console.log('[validateMetric] failed: comparisonFields wrong length', comparisonFields);
         return false;
       }
       if (visualizationType === 'pie' || visualizationType === 'bar') {
@@ -199,7 +192,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         const field = fields[tKey]?.[0];
         const header = headers.find((h) => h.key === field);
         if (!header || (header.type !== 'text' && header.type !== 'dropdown')) {
-          console.log('[validateMetric] failed: invalid field type for pie/bar chart', { field, header });
           return false;
         }
       } else if (visualizationType === 'number') {
@@ -216,11 +208,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         const field = fields[tKey]?.[0];
         const header = headers.find((h) => h.key === field);
         if (!header || header.type !== 'number') {
-          console.log('[validateMetric] failed: invalid field type for number output', { field, header });
           return false;
         }
         if (aggregation !== 'average' && aggregation !== 'count') {
-          console.log('[validateMetric] failed: invalid aggregation for number output', { aggregation });
           return false;
         }
       } else if (visualizationType !== 'pie' && visualizationType !== 'bar' && visualizationType !== 'number' && aggregation !== 'count') {
@@ -231,13 +221,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           const headers = templateHeaderMap[tKey] || [];
           const header = headers.find((h) => h.key === field);
           const valid = header && (header.type === 'number' || header.type === 'currency' || header.type === 'date' || header.type === 'text' || header.type === 'dropdown');
-          if (!valid) {
-            console.log('[validateMetric] invalid field', { field, header, tKey, headers });
-          }
           return !valid;
         });
         if (invalidFields.length > 0) {
-          console.log('[validateMetric] failed: invalidFields', invalidFields);
           return false;
         }
       }
@@ -245,10 +231,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         (m, i) => m.name.toLowerCase() === trimmedName.toLowerCase() && i !== activeMetricIndex
       );
       if (nameConflict) {
-        console.log('[validateMetric] failed: name conflict');
         return false;
       }
-      console.log('[validateMetric] passed');
       return true;
     },
     [activeCategoryIndex, currentCategories, activeMetricIndex, mainContext.cardTemplates]
@@ -288,7 +272,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     const templateKey = cardTemplatesArr[0];
 
     if (!templateKey || !mainContext.cardTemplates || !cards) {
-      console.log('[MetricsModal] addMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
       alert('Cannot add metric: Missing card templates or cards data.');
       return;
     }
@@ -307,9 +290,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       }
     }
 
-    console.log('[MetricsModal] addMetric called', formToSave);
     if (!validateMetric(formToSave)) {
-      console.log('[MetricsModal] addMetric: validation failed', formToSave);
       alert('Metric validation failed. Please check your inputs.');
       return;
     }
@@ -321,14 +302,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       (t) => (t.name || t.typeOfCards) === cardTemplates[0]
     );
     if (!templateObj) {
-      console.log('[MetricsModal] addMetric: Template not found', { templateKey });
       alert('Cannot add metric: Selected template not found.');
       return;
     }
 
     const selectedHeaderKey = fields[templateKey]?.[0];
     if (!selectedHeaderKey) {
-      console.log('[MetricsModal] addMetric: No selected field', { fields });
       alert('Cannot add metric: No field selected.');
       return;
     }
@@ -398,12 +377,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     });
     const newMetric = {
       id: `metric-${uuidv4()}`,
-      name: name.trim(),
+      name: name.trim(), // Ensure full name is used
       type: visualizationType,
       config: { ...config, formula: formToSave.formula },
       data: chartData,
       value,
-      records, // <-- add this property
+      records,
     };
 
     setCurrentCategories((prev) => {
@@ -412,14 +391,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
           ? { ...c, metrics: [...c.metrics, newMetric] }
           : c
       );
-      console.log('[MetricsModal] addMetric: setCurrentCategories updated', updated);
       setTempData({ currentCategories: updated });
       return updated;
     });
     resetForm();
-    setNavigationDirection('forward');
+    setNavigationDirection('backward');
     goToStep(3);
-  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, mainContext.cardTemplates]);
+  }, [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, setTempData, mainContext.cardTemplates]);
 
   // Update metric
   const updateMetric = useCallback(
@@ -429,7 +407,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const templateKey = cardTemplatesArr[0];
 
       if (!templateKey || !mainContext.cardTemplates || !cards) {
-        console.log('[MetricsModal] updateMetric: Missing required data', { templateKey, cardTemplates: mainContext.cardTemplates, cards });
         alert('Cannot update metric: Missing card templates or cards data.');
         return;
       }
@@ -448,9 +425,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         }
       }
 
-      console.log('[MetricsModal] updateMetric called', formToSave, metricIndex);
       if (!validateMetric(formToSave)) {
-        console.log('[MetricsModal] updateMetric: validation failed', formToSave);
         alert('Metric validation failed. Please check your inputs.');
         return;
       }
@@ -462,14 +437,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         (t) => (t.name || t.typeOfCards) === cardTemplates[0]
       );
       if (!templateObj) {
-        console.log('[MetricsModal] updateMetric: Template not found', { templateKey });
         alert('Cannot update metric: Selected template not found.');
         return;
       }
 
       const selectedHeaderKey = fields[templateKey]?.[0];
       if (!selectedHeaderKey) {
-        console.log('[MetricsModal] updateMetric: No selected field', { fields });
         alert('Cannot update metric: No field selected.');
         return;
       }
@@ -539,12 +512,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       });
       const updatedMetric = {
         id: currentCategories[activeCategoryIndex].metrics[metricIndex].id,
-        name: name.trim(),
+        name: name.trim(), // Ensure full name is used
         type: visualizationType,
         config: { ...config, formula: formToSave.formula },
         data: chartData,
         value,
-        records, // <-- add this property
+        records,
       };
 
       setCurrentCategories((prev) => {
@@ -556,15 +529,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               }
             : c
         );
-        console.log('[MetricsModal] updateMetric: setCurrentCategories updated', updated);
         setTempData({ currentCategories: updated });
         return updated;
       });
       resetForm();
-      setNavigationDirection('forward');
+      setNavigationDirection('backward');
       goToStep(3);
     },
-    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, goToStep, setTempData, currentCategories, mainContext.cardTemplates]
+    [metricForm, activeCategoryIndex, validateMetric, cards, resetForm, setTempData, currentCategories, mainContext.cardTemplates]
   );
 
   // Delete metric
@@ -576,19 +548,18 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             ? { ...c, metrics: c.metrics.filter((_, j) => j !== metricIndex) }
             : c
         );
-        setTempData({ currentCategories: updated });
+        setTempData({ currentCategories: updated });  
         return updated;
       });
       setActiveMetricIndex(-1);
-      setNavigationDirection('forward');
+      setNavigationDirection('backward');
       goToStep(3);
     },
-    [activeCategoryIndex, goToStep, setTempData]
+    [activeCategoryIndex, setTempData]
   );
 
   // Save metric
   const saveMetric = useCallback(() => {
-    console.log('[MetricsModal] saveMetric called', { activeMetricIndex, metricForm });
     if (activeMetricIndex === -1) {
       addMetric();
     } else {
@@ -609,9 +580,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     setNewCategoryName('');
     setActiveCategoryIndex(currentCategories.length);
     setActiveMetricIndex(-1);
-    setNavigationDirection('forward');
+    setNavigationDirection('backward');
     goToStep(3);
-  }, [newCategoryName, currentCategories, validateCategory, goToStep, setTempData]);
+  }, [newCategoryName, currentCategories, validateCategory, setTempData]);
 
   // Navigate to create category step
   const goToCreateCategory = useCallback(() => {
@@ -679,7 +650,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
             rightButton: {
               label: 'Save',
               onClick: () => {
-                console.log('[MetricsModal] Save button clicked');
                 saveMetric();
               },
               isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
@@ -799,7 +769,6 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
         rightButton: {
           label: 'Save',
           onClick: () => {
-            console.log('[MetricsModal] Save button clicked');
             saveMetric();
           },
           isActive: metricForm.name && (metricForm.cardTemplates.some((t) => metricForm.fields[t]?.length > 0) || metricForm.comparisonFields.length === 2),
@@ -847,11 +816,15 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       prevConfigRef.current = newConfig;
     }
 
+    // Only set navigationDirection automatically if it is null
     if (prevStepRef.current !== currentStep) {
-      setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
+      if (navigationDirection === null) {
+        setNavigationDirection(currentStep > prevStepRef.current ? 'forward' : 'backward');
+      }
       prevStepRef.current = currentStep;
+      setTimeout(() => setNavigationDirection(null), 300); // Reset after animation
     }
-  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, currentCategories, goToStep, metricForm, selectedCardTemplate, newCategoryName, addCategory]);
+  }, [currentStep, activeCategoryIndex, setModalConfig, saveMetric, handleClose, setTempData, currentCategories, goToStep, metricForm, selectedCardTemplate, newCategoryName, addCategory, navigationDirection]);
 
   // Sync categories
   useEffect(() => {
@@ -1223,7 +1196,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                     )}
                   </div>
                   {/* Field selector (Y Axis/Data Field) */}
-                  {(metricForm.visualizationType === 'line' || metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar' || metricForm.visualizationType === 'number') && (
+                  {(metricForm.visualizationType === 'line' || metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') && (
                     <div
                       className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                       style={{ cursor: 'pointer', position: 'relative' }}
