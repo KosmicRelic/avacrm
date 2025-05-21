@@ -991,71 +991,57 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
               </div>
             )}
             {step === 4 && (
-              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    style={{ cursor: 'default' }}>
-                    <div className={styles.filterRow}>
-                      <div className={styles.filterNameType}>
-                        <span>Metric Name</span>
-                      </div>
-                      <div className={styles.primaryButtons}>
-                      </div>
-                    </div>
-                    <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      style={{ marginTop: 0 }}>
-                      <input
-                        type="text"
-                        value={metricForm.name}
-                        onChange={(e) => setMetricForm((prev) => ({ ...prev, name: e.target.value }))}
-                        onKeyPress={handleKeyPress}
-                        placeholder="e.g., Lead Trends"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        autoFocus
-                      />
-                    </div>
+              <div className={`${styles.metricForm} ${isDarkTheme ? styles.darkTheme : ''}`}>  
+                {/* Metric name input styled as a selector button for perfect match */}
+                <div className={styles.metricNameInputContainer}>
+                  <div
+                    className={`${styles.filterItem} ${styles.metricNameInputWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    tabIndex={0}
+                    onClick={e => {
+                      e.currentTarget.querySelector('input')?.focus();
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={metricForm.name}
+                      onChange={e => setMetricForm(prev => ({ ...prev, name: e.target.value }))}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Metric name"
+                      className={`${styles.metricNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      autoFocus
+                    />
                   </div>
-                  <div className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                </div>
+                <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>  
+                  <button
+                    className={`${styles.metricOutputButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    type="button"
                     onClick={() => {
                       setNavigationDirection('forward');
                       goToStep(5);
                     }}
                   >
-                    <div className={styles.filterRow}>
-                      <div className={styles.filterNameType}>
-                        <span>Metric Output</span>
-                      </div>
-                      <div className={styles.primaryButtons}>
-                        <span className={styles.filterSummary}>Select Output</span>
-                      </div>
-                    </div>
-                  </div>
-                  {activeMetricIndex !== -1 && (
-                    <div
-                      className={`${styles.filterItem} ${activeSectionIndex === 1 ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => toggleSection(1)}
-                    >
-                      <div className={styles.filterRow}>
-                        <div className={styles.filterNameType}>
-                          <span>Delete Metric</span>
-                        </div>
-                        <div className={styles.primaryButtons}>
-                          <span className={styles.filterSummary}>Remove this metric</span>
-                        </div>
-                      </div>
-                      {activeSectionIndex === 1 && (
-                        <div className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          <button
-                            onClick={() => deleteMetric(activeMetricIndex)}
-                            className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          >
-                            Delete Metric
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    Metric Output
+                    <span className={styles.chevronIcon}>
+                      <FaChevronRight />
+                    </span>
+                  </button>
                 </div>
+                {/* Centered Delete Metric button below filterList */}
+                {activeMetricIndex !== -1 && (
+                  <div className={styles.deleteMetricButtonContainer}>
+                    <button
+                      className={styles.deleteButton}
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this metric? This action cannot be undone.')) {
+                          deleteMetric(activeMetricIndex);
+                        }
+                      }}
+                    >
+                      Delete Metric
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {step === 5 && (

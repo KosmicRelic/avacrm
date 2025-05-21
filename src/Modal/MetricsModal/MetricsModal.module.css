@@ -483,16 +483,16 @@
   font-size: 17px;
   font-weight: 600;
   color: #ff3b30;
-  background: #f2f2f7;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s ease;
+  background: none;
 }
 
 .darkTheme.deleteButton {
   color: #ff453a;
-  background: #2c2c2e;
+  background: none;
 }
 
 .deleteButton:hover {
@@ -681,6 +681,7 @@
   display: flex;
   flex-direction: column; /* Ensure content stacks vertically */
   align-items: stretch;
+  border-radius: 0;
 }
 
 .filterItem.darkTheme {
@@ -911,6 +912,38 @@
   align-items: center;
 }
 
+/* Metric Output Button */
+.metricOutputButton {
+  background: rgba(243, 242, 248, 0.95);
+  border: none;
+  border-radius: 10px;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 13.5px 16px;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metricOutputButton.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+  color: #fff;
+}
+
+.metricOutputButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.metricOutputButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Animations */
 @keyframes slideUp {
   from {
@@ -1093,4 +1126,51 @@ div.granularityButtonGroup {
   background: #007AFF;
   color: #fff;
   border: 1px solid #007AFF;
+}
+
+/* Metric Name Input */
+.metricNameInputWrapper {
+  border-bottom: none;
+  width: 100%;
+  max-width: 600px;
+  cursor: text;
+  align-items: center;
+  padding: 0;
+  background: rgba(243, 242, 248, 0.95);
+  border-radius: 10px;
+  margin: 0 auto;
+  display: flex;
+}
+.metricNameInputWrapper.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+}
+
+.metricNameInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  width: 100%;
+  text-align: center;
+  padding: 13.5px 16px;
+  border-radius: 10px;
+}
+.metricNameInput.darkTheme {
+  color: #fff;
+}
+
+/* Metric Name Input Container */
+.metricNameInputContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+/* Delete Metric Button Container */
+.deleteMetricButtonContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
 }
