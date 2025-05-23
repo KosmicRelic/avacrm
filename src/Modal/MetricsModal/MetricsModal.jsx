@@ -943,6 +943,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           <span>{category.category}</span>
                         </div>
+                        <span className={styles.chevronIcon}>
+                          <FaChevronRight />
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -978,10 +981,13 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       <div className={styles.headerRow}>
                         <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           <span>{metric.name}</span>
-                          <span className={`${styles.headerType} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            ({metric.type})
+                          <span className={styles.metricTypeLabel + (isDarkTheme ? ' ' + styles.darkTheme : '')}>
+                            {metric.type === 'line' ? 'Line' : metric.type === 'bar' ? 'Bar' : metric.type === 'pie' ? 'Pie' : metric.type === 'number' ? 'Number' : metric.type}
                           </span>
                         </div>
+                        <span className={styles.chevronIcon}>
+                          <FaChevronRight />
+                        </span>
                       </div>
                     </div>
                   ))

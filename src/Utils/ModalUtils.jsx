@@ -465,10 +465,25 @@ export const handleModalSave = async ({
           return data.currentCategories.map((category) => {
             const cleanedCategory = cleanObject(category, true);
             const existingCategory = prev.find((c) => c.category === category.category);
-            const isNew = !existingCategories.has(category.category);
-            const hasChanged = existingCategory
-              ? JSON.stringify(cleanedCategory) !== JSON.stringify(cleanObject(existingCategory, true))
-              : true;
+            let isNew = !existingCategories.has(category.category);
+            let hasChanged = true;
+            if (existingCategory) {
+              // Deep compare metrics array and force update if any metric property (including name) changes
+              const prevMetrics = (existingCategory.metrics || []).map(cleanObject);
+              const newMetrics = (cleanedCategory.metrics || []).map(cleanObject);
+              // Check for any difference in metrics length or any property (including name)
+              if (prevMetrics.length !== newMetrics.length) {
+                hasChanged = true;
+              } else {
+                hasChanged = prevMetrics.some((m, idx) => JSON.stringify(m) !== JSON.stringify(newMetrics[idx]));
+              }
+              // Also check if any other category property (besides metrics) changed
+              if (!hasChanged) {
+                const { metrics: _nm, ...restNew } = cleanedCategory;
+                const { metrics: _om, ...restOld } = existingCategory;
+                hasChanged = JSON.stringify(restNew) !== JSON.stringify(cleanObject(restOld, true));
+              }
+            }
             return {
               ...cleanedCategory,
               isModified: isNew || hasChanged,

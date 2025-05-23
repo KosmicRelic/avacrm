@@ -18,6 +18,15 @@ const corsOptions = {
 };
 const corsMiddleware = cors(corsOptions);
 
+// Backend-safe helper to get headers for a given card template key
+function getHeaders(templateKey, cardTemplatesArr) {
+  if (!Array.isArray(cardTemplatesArr)) return [];
+  const template = cardTemplatesArr.find(
+    t => (t.name || t.typeOfCards) === templateKey
+  );
+  return template && Array.isArray(template.headers) ? template.headers : [];
+}
+
 exports.businessSignUp = functions.https.onCall(async (data, context) => {
   try {
     // Log raw data to inspect its structure
@@ -1762,5 +1771,122 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
     let statusCode = error.code || 'internal';
     let errorMessage = error.message || 'Failed to delete team member';
     throw new functions.https.HttpsError(statusCode, errorMessage);
+  }
+});
+
+exports.updateMetrics = functions.https.onCall(async (data, context) => {
+  functions.logger.info('[updateMetrics] Raw data received:', { data });
+  // Expects: { businessId }
+  const businessId = data.businessId;
+
+  if (!businessId || typeof businessId !== 'string' || !businessId.trim()) {
+    functions.logger.error('[updateMetrics] Invalid businessId:', { businessId });
+    throw new functions.https.HttpsError('invalid-argument', 'businessId must be a non-empty string');
+  }
+
+  try {
+    // Fetch all cards for the business
+    const cardsSnap = await db.collection('businesses').doc(businessId).collection('cards').get();
+    const cards = cardsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    functions.logger.info('[updateMetrics] Fetched cards:', { cardCount: cards.length });
+
+    // Fetch all card templates for the business
+    const cardTemplatesSnap = await db.collection('businesses').doc(businessId).collection('cardTemplates').get();
+    const cardTemplatesArr = cardTemplatesSnap.docs.map(doc => doc.data());
+
+    // Fetch all metrics categories
+    const metricsSnap = await db.collection('businesses').doc(businessId).collection('metrics').get();
+    if (metricsSnap.empty) {
+      functions.logger.warn('[updateMetrics] No metrics found for business:', { businessId });
+      throw new functions.https.HttpsError('not-found', 'No metrics categories found for the given businessId');
+    }
+
+    // Log all Firestore doc IDs
+    const allDocIds = metricsSnap.docs.map(doc => doc.id);
+    functions.logger.info('[updateMetrics] All Firestore metrics doc IDs:', { allDocIds });
+
+    // Check for invalid document IDs
+    const invalidDocIds = allDocIds.filter(id => !id || typeof id !== 'string' || !id.trim());
+    if (invalidDocIds.length > 0) {
+      functions.logger.error('[updateMetrics] Invalid Firestore metrics doc IDs found:', { invalidDocIds, allDocIds });
+      functions.logger.error('[updateMetrics] Full Firestore metrics docs:', {
+        docs: metricsSnap.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+      });
+      throw new functions.https.HttpsError('internal', `Invalid Firestore metrics doc IDs found: ${JSON.stringify(invalidDocIds)}`);
+    }
+
+    // Map metrics categories using doc.id
+    const metricsCategories = metricsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const allCategoryIds = metricsCategories.map(cat => cat.id);
+    functions.logger.info('[updateMetrics] All metrics category IDs:', { allCategoryIds });
+
+    // Validate category IDs
+    const invalidIds = allCategoryIds.filter(id => !id || typeof id !== 'string' || !id.trim());
+    if (invalidIds.length > 0) {
+      functions.logger.error('[updateMetrics] Invalid metrics category IDs found:', { invalidIds, allCategoryIds, metricsCategories });
+      throw new functions.https.HttpsError('internal', `Invalid metrics category IDs found: ${JSON.stringify(invalidIds)}`);
+    }
+
+    // Log metricsCategories
+    functions.logger.info('[updateMetrics] Metrics categories:', {
+      metricsCategories: metricsCategories.map(cat => ({ id: cat.id, category: cat.category }))
+    });
+
+    // Prepare batch update
+    const batch = db.batch();
+    const docIdsToUpdate = [];
+
+    for (const category of metricsCategories) {
+      functions.logger.info('[updateMetrics] Processing category:', { id: category.id, category: category.category });
+
+      // Validate category.id
+      if (!category.id || typeof category.id !== 'string' || !category.id.trim()) {
+        functions.logger.error('[updateMetrics] Skipping metrics update: category.id is invalid', { category });
+        continue;
+      }
+
+      // Validate category.metrics
+      if (!Array.isArray(category.metrics)) {
+        functions.logger.error('[updateMetrics] Skipping: category.metrics is not an array', { id: category.id, metrics: category.metrics });
+        continue;
+      }
+
+      // Compute updated metrics
+      const updatedMetrics = category.metrics.map(metric => {
+        const headers = getHeaders((metric.config && metric.config.cardTemplates && metric.config.cardTemplates[0]) || metric.cardTemplate || metric.typeOfCards, cardTemplatesArr);
+        // ...existing code for computing metric values, data, and records...
+        return metric; // Placeholder: implement your metric update logic here
+      });
+
+      // Construct document path
+      const catRefPath = `businesses/${businessId}/metrics/${category.id}`;
+      functions.logger.info('[updateMetrics] Setting doc at:', { catRefPath });
+
+      // Use category.id for document reference
+      const catRef = db.collection('businesses').doc(businessId).collection('metrics').doc(category.id);
+      batch.set(catRef, { ...category, id: category.id, metrics: updatedMetrics });
+      docIdsToUpdate.push(category.id);
+    }
+
+    // Log documents to update
+    functions.logger.info('[updateMetrics] Document IDs to update:', { docIdsToUpdate });
+
+    // Commit batch
+    if (docIdsToUpdate.length > 0) {
+      await batch.commit();
+      functions.logger.info('[updateMetrics] Batch commit successful', { businessId, updatedDocs: docIdsToUpdate });
+    } else {
+      functions.logger.warn('[updateMetrics] No documents to update', { businessId });
+    }
+
+    return { success: true };
+  } catch (err) {
+    functions.logger.error('[updateMetrics] Error:', {
+      message: err.message,
+      stack: err.stack,
+      code: err.code,
+      businessId
+    });
+    throw new functions.https.HttpsError('internal', err.message || 'Failed to update metrics');
   }
 });

@@ -1174,3 +1174,18 @@ div.granularityButtonGroup {
   justify-content: center;
   margin-top: 32px;
 }
+
+/* Metric Type Label */
+.metricTypeLabel {
+  margin-left: 14px; /* more space from name */
+  margin-right: 24px; /* more space before chevron */
+  font-size: 13px;
+  color: #d1d1d6; /* lighter gray for better contrast */
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: capitalize;
+  transition: color 0.3s;
+}
+.metricTypeLabel.darkTheme {
+  color: #a1a1aa;
+}
