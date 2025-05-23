@@ -109,7 +109,7 @@
 
 .themeOption:hover {
   background: rgba(0, 0, 0, 0.06);
-  color: #007AFF;
+  color: #007aff;
 }
 
 .themeOption.darkTheme:hover {
@@ -118,7 +118,7 @@
 }
 
 .activeTheme {
-  color: #007AFF;
+  color: #007aff;
   background: rgba(0, 122, 255, 0.15);
   font-weight: 600;
 }

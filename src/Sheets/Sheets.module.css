@@ -179,7 +179,7 @@
 
 .tabButton.darkTheme:hover {
   background: rgba(72, 72, 74, 0.9);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .tabButton.dragging {
@@ -198,7 +198,7 @@
 
 .activeTab.darkTheme {
   background: rgba(10, 132, 255, 0.2);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .activeFolder {
@@ -209,7 +209,7 @@
 
 .activeFolder.darkTheme {
   background: rgba(10, 132, 255, 0.15);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .folderSheets {
@@ -231,7 +231,7 @@
 }
 
 .folderPath.darkTheme {
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .inlineSheet {
@@ -244,7 +244,7 @@
 }
 
 .inlineSheet.darkTheme:hover {
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .activeInlineSheet {
@@ -254,7 +254,7 @@
 }
 
 .activeInlineSheet.darkTheme {
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .folderIcon {
@@ -332,7 +332,7 @@
 
 .activeType.darkTheme {
   background: rgba(72, 72, 74, 0.95);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .addForm {
@@ -410,7 +410,7 @@
 }
 
 .selectionItem.darkTheme input {
-  accent-color: #0A84FF;
+  accent-color: #0a84ff;
 }
 
 .modalButtons {
@@ -433,7 +433,7 @@
 }
 
 .modalButtons button.darkTheme {
-  color: #0A84FF;
+  color: #0a84ff;
   background: rgba(10, 132, 255, 0.2);
 }
 
@@ -527,7 +527,7 @@
 }
 
 .clearButton.darkTheme:hover {
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .tableWrapper {
@@ -618,7 +618,7 @@
 
 .filterButton.darkTheme:hover {
   background: rgba(72, 72, 74, 0.9);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .selectButton {
@@ -712,7 +712,7 @@
 }
 
 .editHeaderButton.darkTheme {
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .editHeaderButton:hover {
@@ -745,7 +745,7 @@
 }
 
 .dropIndicator.darkTheme {
-  background: #0A84FF;
+  background: #0a84ff;
 }
 
 .dropIndicator.left {
@@ -801,7 +801,7 @@
 
 .orderButton.darkTheme:hover {
   background: rgba(72, 72, 74, 0.9);
-  color: #0A84FF;
+  color: #0a84ff;
 }
 
 .addTabButton {
@@ -817,7 +817,7 @@
 }
 
 .addTabButton.darkTheme {
-  color: #0A84FF;
+  color: #0a84ff;
   background: rgba(10, 132, 255, 0.2);
 }
 
@@ -927,7 +927,7 @@
 
   .activeTab.darkTheme {
     background: rgba(10, 132, 255, 0.25);
-    color: #0A84FF;
+    color: #0a84ff;
   }
 
   .cardDetailsMobile {

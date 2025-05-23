@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useEffect, useRef } from "react";
+import { useState, useContext, useCallback, useEffect, useRef, use } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
@@ -8,6 +8,9 @@ import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
+import { db } from '../../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { exportArrayToCsv } from '../../Utils/exportArrayToCsv';
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
@@ -174,7 +177,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     [selectedTemplateIndex, goBack]
   );
 
-  // ... (Rest of the component remains unchanged)
   // Validate header name
   const validateHeader = useCallback(
     (name, existingHeaders, isUpdate = false, index = null) => {
@@ -585,7 +587,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       return newTemplates;
     });
   }, [selectedTemplateIndex]);
-
+  
   // Update section name
   const updateSectionName = useCallback(
     (index, newName) => {
@@ -933,6 +935,34 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     goToStep(5);
   }, [resetHeaderForm, goToStep, currentCardTemplates, selectedTemplateIndex, currentSectionIndex]);
 
+  // Export cards for the current template
+  const exportCards = useCallback(async () => {
+    if (selectedTemplateIndex === null) {
+      alert('No template selected.');
+      return;
+    }
+    const template = currentCardTemplates[selectedTemplateIndex];
+    const typeOfCards = template.name;
+    if (!typeOfCards || !businessId) {
+      alert('Missing template name or business ID.');
+      return;
+    }
+    try {
+      const cardsRef = collection(db, 'businesses', businessId, 'cards');
+      const q = query(cardsRef, where('typeOfCards', '==', typeOfCards));
+      const snapshot = await getDocs(q);
+      const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (!cards.length) {
+        alert('No cards found for this template.');
+        return;
+      }
+      exportArrayToCsv(`${typeOfCards}_cards_export.csv`, cards);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export cards.');
+    }
+  }, [selectedTemplateIndex, currentCardTemplates, businessId]);
+
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
@@ -1008,13 +1038,21 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       ))}
                     </div>
                     {!editMode && (
-                      <button
-                        className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={addSection}
-                      >
-                        Add Section
-                      </button>
-                    )}
+                      <>
+                        <button
+                          className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          onClick={addSection}
+                        >
+                          Add Section
+                        </button>
+                        <button
+                          className={`${styles.addSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          onClick={exportCards}
+                        >
+                          Export Cards
+                        </button>
+                      </>
+                    )} 
                     {editMode && (
                       <button
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
