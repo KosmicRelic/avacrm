@@ -13,6 +13,7 @@ const fetchUserData = async ({
   setCardTemplates,
   setMetrics,
   setDashboards,
+  setActions,
   activeSheetName,
   updateSheets = false,
 }) => {
@@ -355,6 +356,14 @@ const fetchUserData = async ({
         'Error fetching metrics:'
       ),
     ]);
+  } else if (route === '/actions') {
+    // Fetch actions collection
+    await fetchCollection(
+      collection(db, 'businesses', businessId, 'actions'),
+      setActions,
+      [],
+      'Error fetching actions:'
+    );
   }
 
   return () => {};

@@ -16,6 +16,7 @@ import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx'
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
 import Settings from './Settings/Settings';
 import FolderOperations from './Modal/Folder Modal/FolderModal';
+import Actions from './Actions/Actions';
 import {
   handleModalSave,
   handleModalClose,
@@ -582,6 +583,14 @@ function App() {
                   onEditMetrics={() => onManageMetrics(modalUtilsProps)}
                   onMetricDataChange={handleMetricDataChange}
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/actions"
+            element={
+              <ProtectedRoute>
+                <Actions />
               </ProtectedRoute>
             }
           />

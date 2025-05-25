@@ -1,0 +1,653 @@
+.container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 32px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+}
+
+.updateButton {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background: #007aff;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.updateButton:hover {
+  background: #005bb5;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 16px;
+  color: #6e6e73;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.select, .input {
+  width: calc(100% - 32px);
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: rgba(245, 245, 247, 0.9);
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.select:focus, .input:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.inputGroup {
+  margin-bottom: 24px;
+}
+
+.inputGroup:first-child {
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.sectionGroup {
+  margin: 24px 0;
+  padding: 16px;
+  background: rgba(245, 245, 247, 0.5);
+  border-radius: 12px;
+  transition: background 0.3s ease;
+}
+.sectionGroup.darkTheme {
+  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark cards/containers */
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #007aff;
+  margin-bottom: 12px;
+}
+
+.headerConfig {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.3s ease;
+}
+.headerConfig.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css cardDetailsContainer.darkTheme */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.headerLabel {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.configRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 100px;
+  gap: 12px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.configRow.darkTheme {
+  /* No extra background, but for future-proofing if needed */
+}
+
+.addButton, .removeButton, .calculateButton {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addButton {
+  background: #007aff;
+  color: white;
+}
+
+.addButton:hover {
+  background: #005bb5;
+}
+
+.removeButton {
+  background: #ff3b30;
+  color: white;
+}
+
+.removeButton:hover {
+  background: #cc2f27;
+}
+
+.calculateButton {
+  background: #34c759;
+  color: white;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.calculateButton:hover {
+  background: #28a745;
+}
+
+.configInputs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.configInputs.darkTheme {
+  /* No extra background, but for future-proofing if needed */
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6e6e73;
+}
+
+.description {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6e6e73;
+}
+
+.error {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #ff3b30;
+}
+
+.success {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #34c759;
+}
+
+.scoreDisplay {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #007aff, #00c4b4);
+  border-radius: 12px;
+  color: white;
+  text-align: center;
+}
+
+.scoreValue {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.scoreDescription {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* --- Metrics-style layout --- */
+.sheetWrapper {
+  position: absolute;
+  top: 64px;
+  bottom: 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  overflow: hidden;
+  gap: 16px;
+  background: rgba(243, 242, 248);
+  transition: background 0.3s ease;
+}
+.sheetWrapper.darkTheme {
+  background: rgb(0,0,0);
+}
+.tableContainer {
+  width: 30%;
+  background: rgb(255, 255, 255);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  height: 100%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin-left: 16px;
+  position: relative;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+.tableContainer.darkTheme {
+  background: rgb(28,28,30);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: transparent;
+  overflow-y: auto;
+  transition: background 0.3s ease;
+  height: 100%;
+  border-radius: 10px;
+  background-color: rgb(255, 255, 255);
+}
+.categoryList.darkTheme {
+  background: transparent;
+}
+.titleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+.titleActions {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0px;
+  transition: color 0.3s ease;
+}
+.titleActions.darkTheme {
+  color: #fff;
+}
+.categoryItem {
+  padding: 13.5px 16px;
+  background: rgba(243, 242, 248);
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.2s ease, border-bottom 0.3s ease;
+}
+.categoryItem span {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+}
+.categoryItem.darkTheme span {
+  color: #ffffff;
+  background-color: rgb(44, 44, 46);
+}
+.categoryItem.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #fff;
+}
+.categoryItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.05);
+}
+.categoryItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(72, 72, 74, 0.8);
+}
+.categoryItem.activeItem {
+  background: rgba(0, 122, 255, 0.15);
+  color: #007aff;
+}
+.categoryItem.darkTheme.activeItem {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+.cardDetailsContainer {
+  width: 70%;
+  height: 100%;
+  background: rgb(255, 255, 255);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  overflow-y: auto;
+  box-sizing: border-box;
+  margin-right: 16px;
+  display: block;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  padding: 20px;
+}
+.cardDetailsContainer.darkTheme {
+  background: rgb(28,28,30);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.cardDetailsMobile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow-y: auto;
+  box-sizing: border-box;
+  z-index: 40;
+  transition: background 0.3s;
+}
+.cardDetailsMobile .formContent {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  min-height: 100vh;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  padding-bottom: 32px;
+}
+.cardDetailsMobile.darkTheme .formContent {
+  background: #1c1c1e;
+}
+.cardOpen {
+  animation: slideInCard 0.3s ease-out forwards;
+}
+.cardClosed {
+  animation: slideOutCard 0.3s ease-out forwards;
+}
+@keyframes slideInCard {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slideOutCard {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.formContent {
+  padding: 24px 0 0 0;
+}
+.createActionButton {
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  margin-top: 0;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  width: 100%;
+}
+.createActionButton.darkTheme {
+  background: #0a84ff;
+  color: #fff;
+}
+.createActionButton:hover {
+  background: #005bb5;
+}
+.actionTypeButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.actionTypeButton {
+  background: rgba(0,122,255,0.08);
+  color: #007aff;
+  border: 1px solid #007aff;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.actionTypeButton:hover {
+  background: #007aff;
+  color: #fff;
+}
+.activeType, .actionTypeButton.activeType {
+  background: #007aff;
+  color: #fff;
+  border: 1px solid #007aff;
+}
+.backButton {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 0 16px 0;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-bottom: 8px;
+}
+.backButton:hover {
+  color: #005bb5;
+}
+
+/* --- DARK THEME OVERRIDES --- */
+.container.darkTheme {
+  background: rgba(28, 28, 30, 0.98);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.title.darkTheme {
+  color: #fff;
+}
+
+.label.darkTheme {
+  color: #8e8e93;
+}
+
+.select.darkTheme, .input.darkTheme {
+  color: #fff;
+  background: rgba(72, 72, 74, 0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.select.darkTheme:focus, .input.darkTheme:focus {
+  background: rgba(72, 72, 74, 0.6);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border-color: #0a84ff;
+}
+
+.sectionGroup.darkTheme {
+  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark cards/containers */
+}
+
+.sectionTitle.darkTheme {
+  color: #0a84ff;
+}
+
+.headerConfig.darkTheme {
+  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css cardDetailsContainer.darkTheme */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.addButton.darkTheme {
+  background: #0a84ff;
+  color: #fff;
+}
+.addButton.darkTheme:hover {
+  background: #007aff;
+}
+
+.removeButton.darkTheme {
+  background: none;
+  color: #ff453a;
+}
+.removeButton.darkTheme:hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+.calculateButton.darkTheme {
+  background: #0a84ff;
+  color: #fff;
+}
+.calculateButton.darkTheme:hover {
+  background: #007aff;
+}
+
+.sheetWrapper.darkTheme {
+  background: rgb(0,0,0);
+}
+.tableContainer.darkTheme {
+  background: rgb(28,28,30);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.categoryList.darkTheme {
+  background: transparent;
+}
+.titleActions.darkTheme {
+  color: #fff;
+}
+.categoryItem.darkTheme {
+  background: rgba(56, 56, 60, 0.6);
+  color: #fff;
+}
+.categoryItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(72, 72, 74, 0.8);
+}
+.categoryItem.darkTheme.activeItem {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+.cardDetailsContainer.darkTheme {
+  background: rgb(28,28,30);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.cardDetailsMobile.darkTheme .formContent {
+  background: #1c1c1e;
+}
+
+.createActionButton.darkTheme {
+  background: #0a84ff;
+  color: #fff;
+}
+.createActionButton.darkTheme:hover {
+  background: #007aff;
+}
+
+.actionTypeButton.darkTheme {
+  background: rgba(10,132,255,0.08);
+  color: #0a84ff;
+  border: 1px solid #0a84ff;
+}
+.actionTypeButton.darkTheme:hover {
+  background: #0a84ff;
+  color: #fff;
+}
+.actionTypeButton.darkTheme.activeType {
+  background: #0a84ff;
+  color: #fff;
+  border: 1px solid #0a84ff;
+}
+
+.backButton.darkTheme {
+  color: #0a84ff;
+}
+.backButton.darkTheme:hover {
+  color: #007aff;
+}
+
+.hint.darkTheme, .description.darkTheme {
+  color: #8e8e93;
+}
+
+.error.darkTheme {
+  color: #ff453a;
+}
+.success.darkTheme {
+  color: #30d158;
+}
+
+/* Ensure all form fields, containers, and buttons match EditSheetsModal dark mode */
+@media (max-width: 600px) {
+  .container {
+    padding: 20px;
+    max-width: 90vw;
+    margin: 20px auto;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .updateButton {
+    margin-top: 12px;
+    width: 100%;
+  }
+
+  .select, .input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .configRow {
+    grid-template-columns: 1fr 1fr 80px;
+    gap: 8px;
+  }
+  .actionTypeButtons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .actionTypeButton {
+    width: 100%;
+    text-align: center;
+  }
+}
+@media (max-width: 1024px) {
+  .sheetWrapper {
+    display: block;
+    padding: 0;
+    margin: 0;
+    bottom: 0;
+    overflow-x: hidden;
+  }
+  .tableContainer {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+  }
+  .cardDetailsContainer {
+    display: none;
+  }
+  .cardDetailsMobile {
+    width: 100%;
+    height: 100%;
+    z-index: 40;
+  }
+}

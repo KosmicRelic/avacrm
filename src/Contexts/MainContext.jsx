@@ -35,6 +35,7 @@ export const MainContextProvider = ({ children }) => {
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [teamMembers, setTeamMembers] = useState([]);
   const [bannerQueue, setBannerQueue] = useState([]);
+  const [actions, setActions] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
@@ -191,11 +192,22 @@ export const MainContextProvider = ({ children }) => {
               })
             );
           }
+          // Add fetch for /actions
+          if (currentRoute === '/actions' && !hasFetched.current.actions) {
+            fetches.push(
+              fetchUserData({
+                businessId: fetchedBusinessId,
+                route: '/actions',
+                setActions,
+              })
+            );
+          }
           await Promise.all(fetches);
 
           if (currentRoute === '/sheets') hasFetched.current.sheets = true;
           if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
           if (currentRoute === '/metrics') hasFetched.current.metrics = true;
+          if (currentRoute === '/actions') hasFetched.current.actions = true;
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -690,6 +702,10 @@ export const MainContextProvider = ({ children }) => {
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
+useEffect(() => {
+  console.log(actions);
+}, [actions]);
+
   return (
     <MainContext.Provider
       value={{
@@ -731,6 +747,8 @@ export const MainContextProvider = ({ children }) => {
         bannerQueue,
         setBannerQueue,
         addBannerMessage,
+        actions,
+        setActions,
       }}
     >
       {children}
