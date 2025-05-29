@@ -209,6 +209,10 @@ const fetchUserData = async ({
 
     // Determine which sheet to use
     let sheetNameToUse = activeSheetName;
+    // Always normalize the sheet name to avoid cardId issues
+    sheetNameToUse = normalizeSheetName(sheetNameToUse);
+    console.log('[FetchUserData.jsx] Normalized sheetNameToUse:', { input: activeSheetName, sheetNameToUse });
+
     if (!sheetNameToUse && updateSheets) {
       const structure = structureData || [];
       if (structure.length > 0) {
@@ -392,6 +396,12 @@ const fetchUserData = async ({
   }
 
   return () => {}; // For React Suspense compatibility
+};
+
+// Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
+const normalizeSheetName = (name) => {
+  if (!name) return name;
+  return name.split('/')[0].replace(/-/g, ' ');
 };
 
 export const resetFetchedSheetIds = () => {

@@ -602,6 +602,32 @@ function App() {
             }
           />
           <Route
+            path="/sheets/:sheetName/:cardId"
+            element={
+              <ProtectedRoute>
+                <Sheets
+                  headers={resolvedHeaders}
+                  rows={resolvedRows}
+                  sheets={sheets}
+                  setSheets={setSheets}
+                  activeSheetName={activeSheetName}
+                  onSheetChange={handleSheetChange}
+                  onEditSheet={() => onEditSheet(modalUtilsProps)}
+                  onFilter={() => onFilter(modalUtilsProps)}
+                  onRowClick={() => {}}
+                  onCardSave={() => {}}
+                  onCardDelete={() => {}}
+                  onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                  onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                    onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                  }
+                  onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                  onOpenFolderModal={handleOpenFolderModal}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/metrics"
             element={
               <ProtectedRoute>

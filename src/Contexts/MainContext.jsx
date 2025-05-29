@@ -290,6 +290,8 @@ export const MainContextProvider = ({ children }) => {
       return;
     }
 
+    console.log('[MainContext] useEffect: teamMembers listener', { user, businessId });
+
     const setupListener = () => {
       const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
       const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
@@ -329,6 +331,7 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId]);
 
   useEffect(() => {
+    console.log('[MainContext] useEffect: sheet card fetch', { user, businessId, location: location.pathname, activeSheetName, sheets: sheets.allSheets, sheetCardsFetched });
     if (user && businessId && location.pathname === '/sheets' && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
@@ -354,12 +357,22 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
-  // Utility to normalize sheet names (replace dashes with spaces)
-  const normalizeSheetName = (name) => name ? name.replace(/-/g, ' ') : name;
+  // Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
+  const normalizeSheetName = (name) => {
+    if (!name) return name;
+    // If the name contains a slash, only use the first segment (the sheet name)
+    const normalized = name.split('/')[0].replace(/-/g, ' ');
+    console.log('[MainContext] normalizeSheetName', { input: name, normalized });
+    return normalized;
+  };
 
-  // Update setActiveSheetNameWithRef to always normalize
+  // Update setActiveSheetNameWithRef to always normalize (ignore cardId)
   const setActiveSheetNameWithRef = (name) => {
+    if (typeof name === 'string' && name.includes('/')) {
+      console.warn('[setActiveSheetNameWithRef] Received sheet name with "/":', name);
+    }
     const normalized = normalizeSheetName(name);
+    console.log('[MainContext] setActiveSheetNameWithRef', { input: name, normalized });
     lastSheetNameFromClickRef.current = normalized;
     setActiveSheetName(normalized);
   };

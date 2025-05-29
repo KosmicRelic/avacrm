@@ -10,10 +10,12 @@ import { MainContext } from '../Contexts/MainContext';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
+import { useParams, useNavigate } from 'react-router-dom';
 
-// Utility to decode dashes to spaces for sheet names from URL
+// Utility to decode dashes to spaces for sheet names from URL, and ignore cardId if present
 function decodeSheetName(name) {
-  return name ? name.replace(/-/g, ' ') : '';
+  if (!name) return '';
+  return name.split('/')[0].replace(/-/g, ' ');
 }
 
 // Utility function to robustly convert any date value to milliseconds
@@ -61,12 +63,14 @@ const Sheets = ({
   onOpenFolderModal,
 }) => {
   const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
+  const params = useParams();
+  const navigate = useNavigate();
 
   // --- LOGGING FOR DEBUGGING CARD LOADING ---
   console.log('[Sheets][DEBUG] sheets.allSheets:', sheets.allSheets);
   console.log('[Sheets][DEBUG] sheets.structure:', sheets.structure);
   console.log('[Sheets][DEBUG] activeSheetName:', activeSheetName);
-  // Always decode dashes to spaces for matching
+  // Always decode dashes to spaces for matching, and ignore cardId if present
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
@@ -406,30 +410,55 @@ const Sheets = ({
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
+  // Detect cardId from URL
+  const cardIdFromUrl = params.cardId;
+
+  // When cardIdFromUrl is present, open the editor for that card
+  useEffect(() => {
+    if (cardIdFromUrl && cards.length > 0) {
+      const card = cards.find((c) => c.docId === cardIdFromUrl);
+      if (card) {
+        setSelectedRow(card);
+        setIsEditorOpen(true);
+      }
+    }
+  }, [cardIdFromUrl, cards]);
+
+  // When a card is opened in the editor, update the URL
   const handleRowClick = useCallback(
     (rowData) => {
       if (rowData.isAddNew) {
         setIsEditorOpen(true);
         setSelectedRow(null);
+        // Optionally update URL for new card
       } else {
         const fullCard = cards.find((card) => card.docId === rowData.docId) || rowData;
         setSelectedRow(fullCard);
         setIsEditorOpen(true);
         setIsClosing(false);
         onRowClick(fullCard);
+        // Update URL to include cardId
+        if (fullCard?.docId) {
+          const urlSheetName = activeSheetName.replace(/ /g, "-");
+          navigate(`/sheets/${urlSheetName}/${fullCard.docId}`, { replace: false });
+        }
       }
     },
-    [onRowClick, cards]
+    [onRowClick, cards, activeSheetName, navigate]
   );
 
+  // When editor closes, remove cardId from URL
   const handleEditorClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       setIsEditorOpen(false);
       setSelectedRow(null);
       setIsClosing(false);
+      // Remove cardId from URL
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      navigate(`/sheets/${urlSheetName}`, { replace: true });
     }, 300);
-  }, []);
+  }, [activeSheetName, navigate]);
 
   const handleEditorSave = useCallback(
     (updatedRow, isEditing) => {
