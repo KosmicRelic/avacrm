@@ -72,7 +72,7 @@ const fetchUserData = async ({
   if (route && route.startsWith('/sheets/')) {
     // Extract sheetName from route and decode dashes to spaces
     const sheetNameFromUrl = decodeURIComponent(route.replace('/sheets/', '')).replace(/-/g, ' ');
-    console.log('[FetchUserData.jsx] Fetching data for sheet:', sheetNameFromUrl);
+    // console.log('[FetchUserData.jsx] Fetching data for sheet:', sheetNameFromUrl);
     // Fetch all sheets, then filter for the one matching sheetNameFromUrl
     let allSheets = [];
     let structureData = [];
@@ -211,7 +211,7 @@ const fetchUserData = async ({
     let sheetNameToUse = activeSheetName;
     // Always normalize the sheet name to avoid cardId issues
     sheetNameToUse = normalizeSheetName(sheetNameToUse);
-    console.log('[FetchUserData.jsx] Normalized sheetNameToUse:', { input: activeSheetName, sheetNameToUse });
+    // console.log('[FetchUserData.jsx] Normalized sheetNameToUse:', { input: activeSheetName, sheetNameToUse });
 
     if (!sheetNameToUse && updateSheets) {
       const structure = structureData || [];

@@ -50,6 +50,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [newOption, setNewOption] = useState("");
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
+  const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   const keyRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
@@ -1328,11 +1329,23 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   </div>
                 )}
                 <div className={styles.editActionsButtons}>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key);
+                      setCopiedHeaderId(true);
+                      setTimeout(() => setCopiedHeaderId(false), 1200);
+                    }}
+                    className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    style={{ width: "100%", marginBottom: 12 }}
+                  >
+                    {copiedHeaderId ? "Copied!" : "Copy Header ID"}
+                  </button>
                   {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "id" &&
                     currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" && (
                       <button
                         onClick={() => deleteHeader(activeHeaderIndex)}
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        style={{ width: "100%" }}
                       >
                         Remove
                       </button>

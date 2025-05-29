@@ -290,7 +290,7 @@ export const MainContextProvider = ({ children }) => {
       return;
     }
 
-    console.log('[MainContext] useEffect: teamMembers listener', { user, businessId });
+    // console.log('[MainContext] useEffect: teamMembers listener', { user, businessId });
 
     const setupListener = () => {
       const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
@@ -331,7 +331,7 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId]);
 
   useEffect(() => {
-    console.log('[MainContext] useEffect: sheet card fetch', { user, businessId, location: location.pathname, activeSheetName, sheets: sheets.allSheets, sheetCardsFetched });
+    // console.log('[MainContext] useEffect: sheet card fetch', { user, businessId, location: location.pathname, activeSheetName, sheets: sheets.allSheets, sheetCardsFetched });
     if (user && businessId && location.pathname === '/sheets' && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
@@ -372,7 +372,7 @@ export const MainContextProvider = ({ children }) => {
       console.warn('[setActiveSheetNameWithRef] Received sheet name with "/":', name);
     }
     const normalized = normalizeSheetName(name);
-    console.log('[MainContext] setActiveSheetNameWithRef', { input: name, normalized });
+    // console.log('[MainContext] setActiveSheetNameWithRef', { input: name, normalized });
     lastSheetNameFromClickRef.current = normalized;
     setActiveSheetName(normalized);
   };
@@ -750,10 +750,6 @@ export const MainContextProvider = ({ children }) => {
 
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
-
-useEffect(() => {
-  console.log(actions);
-}, [actions]);
 
   useEffect(() => {
     // Only trigger card loading when both the full structure and the correct activeSheetName are available

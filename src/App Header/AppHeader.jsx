@@ -24,7 +24,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     if (path === '/dashboard') setActiveOption('dashboard');
     else if (path.startsWith('/sheets')) {
       setActiveOption('sheets');
-      console.log('[AppHeader.jsx] Active option set to sheets for path:', path);
+      // console.log('[AppHeader.jsx] Active option set to sheets for path:', path);
     }
     else if (path === '/metrics') setActiveOption('metrics');
     else if (path === '/financials') setActiveOption('financials');
