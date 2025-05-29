@@ -11,6 +11,11 @@ import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 
+// Utility to decode dashes to spaces for sheet names from URL
+function decodeSheetName(name) {
+  return name ? name.replace(/-/g, ' ') : '';
+}
+
 // Utility function to robustly convert any date value to milliseconds
 function toMillis(dateValue) {
   // Firestore Timestamp object
@@ -64,7 +69,10 @@ const Sheets = ({
   });
   const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
 
-  const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
+  // Always decode dashes to spaces for matching
+  const decodedActiveSheetName = decodeSheetName(activeSheetName);
+
+  const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
   const sheetId = activeSheet?.docId;
   const isLoading = sheetId && !sheetCardsFetched[sheetId];
 
@@ -632,14 +640,14 @@ const Sheets = ({
             <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
               <button
                 className={`${styles.tabButton} ${
-                  item.sheets.includes(activeSheetName) ? styles.activeTab : ''
+                  item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
                 } ${isDarkTheme ? styles.darkTheme : ''}`}
                 data-folder-name={item.folderName}
                 onClick={() => handleFolderClick(item.folderName)}
               >
                 <FaFolder className={styles.folderIcon} />
-                {item.sheets.includes(activeSheetName)
-                  ? `${item.folderName} > ${activeSheetName}`
+                {item.sheets.includes(decodedActiveSheetName)
+                  ? `${item.folderName} > ${decodedActiveSheetName}`
                   : item.folderName}
               </button>
             </div>
@@ -648,7 +656,7 @@ const Sheets = ({
               <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
                 <button
                   className={`${styles.tabButton} ${
-                    item.sheetName === activeSheetName ? styles.activeTab : ''
+                    item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
                   } ${isDarkTheme ? styles.darkTheme : ''}`}
                   data-sheet-name={item.sheetName}
                   onClick={() => handleSheetClick(item.sheetName)}
