@@ -76,31 +76,33 @@ const fetchUserData = async ({
 
   // Fetch data based on the route
   if (route && route.startsWith('/sheets/')) {
-    // Extract sheetName from route
-    const sheetNameFromUrl = decodeURIComponent(route.replace('/sheets/', ''));
+    // Extract sheetName from route and decode dashes to spaces
+    const sheetNameFromUrl = decodeURIComponent(route.replace('/sheets/', '')).replace(/-/g, ' ');
     console.log('[FetchUserData.jsx] Fetching data for sheet:', sheetNameFromUrl);
     // Fetch all sheets, then filter for the one matching sheetNameFromUrl
     let allSheets = [];
+    let structureData = [];
     try {
       const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
       allSheets = sheetsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
       const matchingSheet = allSheets.find(sheet => sheet.sheetName === sheetNameFromUrl);
+      // Always set the full structure and all sheets, not just the single sheet
+      structureData = deriveStructureFromSheets(allSheets);
+      setSheets && setSheets({ allSheets, structure: structureData });
       if (matchingSheet) {
-        setSheets([matchingSheet]);
         // Fetch cards for this sheet
         const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'cards'));
         const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
-        setCards(cards);
+        setCards && setCards(cards);
         // Optionally fetch templates, metrics, etc. as needed
       } else {
-        setSheets([]);
-        setCards([]);
+        setCards && setCards([]);
         console.warn('[FetchUserData.jsx] No matching sheet found for:', sheetNameFromUrl);
       }
     } catch (error) {
       console.error('[FetchUserData.jsx] Error fetching sheet/cards for:', sheetNameFromUrl, error);
-      setSheets([]);
-      setCards([]);
+      setSheets && setSheets({ allSheets: [], structure: [] });
+      setCards && setCards([]);
     }
     return;
   }

@@ -172,7 +172,7 @@ export const MainContextProvider = ({ children }) => {
             );
             // Set active sheet if coming from /sheets/:sheetName
             if (sheetNameFromUrl) {
-              setActiveSheetName(sheetNameFromUrl);
+              setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
             } else if (!activeSheetName) {
               setActiveSheetName('Leads');
             }
@@ -354,9 +354,14 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
+  // Utility to normalize sheet names (replace dashes with spaces)
+  const normalizeSheetName = (name) => name ? name.replace(/-/g, ' ') : name;
+
+  // Update setActiveSheetNameWithRef to always normalize
   const setActiveSheetNameWithRef = (name) => {
-    lastSheetNameFromClickRef.current = name;
-    setActiveSheetName(name);
+    const normalized = normalizeSheetName(name);
+    lastSheetNameFromClickRef.current = normalized;
+    setActiveSheetName(normalized);
   };
 
   useEffect(() => {
@@ -372,9 +377,9 @@ export const MainContextProvider = ({ children }) => {
         if (
           sheetNameFromUrl &&
           urlFromSheetName === pathname &&
-          sheetNameFromUrl !== activeSheetName
+          normalizeSheetName(sheetNameFromUrl) !== activeSheetName
         ) {
-          setActiveSheetName(sheetNameFromUrl);
+          setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
         }
       }
     };
@@ -738,7 +743,8 @@ useEffect(() => {
 }, [actions]);
 
   useEffect(() => {
-    if (!user || !businessId || !activeSheetName || !sheets.allSheets.length) return;
+    // Only trigger card loading when both the full structure and the correct activeSheetName are available
+    if (!user || !businessId || !activeSheetName || !Array.isArray(sheets.allSheets) || sheets.allSheets.length === 0 || !Array.isArray(sheets.structure) || sheets.structure.length === 0) return;
     const activeSheet = sheets.allSheets.find(s => s.sheetName === activeSheetName);
     if (!activeSheet) return;
     const sheetId = activeSheet.docId;
@@ -760,7 +766,7 @@ useEffect(() => {
     }).catch(() => {
       setSheetCardsFetched(prev => ({ ...prev, [sheetId]: false }));
     });
-  }, [user, businessId, activeSheetName, sheets.allSheets]);
+  }, [user, businessId, activeSheetName, sheets.allSheets, sheets.structure]);
 
   return (
     <MainContext.Provider

@@ -60,19 +60,18 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  // Granular logging for debugging sheet switching
-  console.log('[Sheets.jsx][RENDER] Props:', {
-    activeSheetName,
-    allSheets: sheets.allSheets.map(s => s.sheetName),
-    structure: sheets.structure,
-    pathname: window.location.pathname,
-  });
   const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
 
+  // --- LOGGING FOR DEBUGGING CARD LOADING ---
+  console.log('[Sheets][DEBUG] sheets.allSheets:', sheets.allSheets);
+  console.log('[Sheets][DEBUG] sheets.structure:', sheets.structure);
+  console.log('[Sheets][DEBUG] activeSheetName:', activeSheetName);
   // Always decode dashes to spaces for matching
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
+  console.log('[Sheets][DEBUG] activeSheet:', activeSheet);
+
   const sheetId = activeSheet?.docId;
   const isLoading = sheetId && !sheetCardsFetched[sheetId];
 
@@ -340,19 +339,15 @@ const Sheets = ({
 
   const isBusinessUser = user && user.uid === businessId;
 
-  // Granular debug logging: log every render and all relevant state/props
+  // Add a log before attempting to load cards
   useEffect(() => {
-    console.log('[Sheets.jsx][RENDER] URL:', window.location.pathname);
-    console.log('[Sheets.jsx][RENDER] activeSheetName:', activeSheetName);
-    console.log('[Sheets.jsx][RENDER] activeSheet:', activeSheet);
-    console.log('[Sheets.jsx][RENDER] sheetId:', sheetId);
-    console.log('[Sheets.jsx][RENDER] isLoading:', isLoading);
-    console.log('[Sheets.jsx][RENDER] cards.length:', cards.length);
-    console.log('[Sheets.jsx][RENDER] sheets.allSheets:', sheets.allSheets.map(s => s.sheetName));
-    console.log('[Sheets.jsx][RENDER] sheets.structure:', sheets.structure);
-  }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length, sheets.allSheets, sheets.structure]);
+    if (activeSheet && Array.isArray(sheets.allSheets) && sheets.allSheets.length > 0) {
+      console.log('[Sheets][DEBUG] Attempting to load cards for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
+    } else {
+      console.log('[Sheets][DEBUG] Not loading cards: activeSheet or sheets.allSheets not ready');
+    }
+  }, [activeSheet, sheets.allSheets]);
 
-  // Log every call to handleSheetClick and setActiveSheetNameWithRef
   const handleSheetClick = useCallback(
     (sheetName) => {
       const urlSheetName = sheetName.replace(/ /g, "-");
