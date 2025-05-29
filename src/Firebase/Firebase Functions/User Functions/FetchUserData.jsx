@@ -5,6 +5,9 @@ import { db, auth } from '../../../firebase';
 const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfCards to { filters }
 let currentBusinessId = null;
 
+// Helper: Derive structure from sheets
+const deriveStructureFromSheets = (sheets) => sheets.map((sheet) => ({ sheetName: sheet.sheetName }));
+
 const fetchUserData = async ({
   businessId,
   route,
@@ -54,18 +57,9 @@ const fetchUserData = async ({
     const teamMemberDoc = await getDoc(doc(db, 'businesses', businessId, 'teamMembers', user.uid));
     if (teamMemberDoc.exists()) {
       const data = teamMemberDoc.data();
-      const allowedSheetIds = data.allowedSheetIds || data.permissions?.sheets?.allowedSheetIds || [];
-      return allowedSheetIds;
+      return data.allowedSheetIds || data.permissions?.sheets?.allowedSheetIds || [];
     }
     return [];
-  };
-
-  // Derive structure from sheets
-  const deriveStructureFromSheets = (sheets) => {
-    const structure = sheets.map((sheet) => ({
-      sheetName: sheet.sheetName,
-    }));
-    return structure;
   };
 
   // Reset cache only if businessId changes
@@ -148,7 +142,7 @@ const fetchUserData = async ({
         if (!isBusinessUser) {
           // Team member
           allSheets = sheetsResult
-            .filter((doc) => doc && doc.exists && doc.exists())
+            .filter((doc) => doc && doc.exists())
             .map((doc) => ({
               docId: doc.id,
               ...doc.data(),
@@ -189,7 +183,7 @@ const fetchUserData = async ({
         });
         setSheets && setSheets({ allSheets: [], structure: [] });
         setCards && setCards([]);
-        return () => {};
+        return () => {}; // For React Suspense compatibility
       }
     } else {
       try {
@@ -209,7 +203,7 @@ const fetchUserData = async ({
           timestamp: new Date().toISOString(),
         });
         setCards && setCards([]);
-        return () => {};
+        return () => {}; // For React Suspense compatibility
       }
     }
 
@@ -217,7 +211,7 @@ const fetchUserData = async ({
     let sheetNameToUse = activeSheetName;
     if (!sheetNameToUse && updateSheets) {
       const structure = structureData || [];
-      if (structure?.length > 0) {
+      if (structure.length > 0) {
         if (structure[0].sheetName) {
           sheetNameToUse = structure[0].sheetName;
         } else if (structure[0].folderName && structure[0].sheets?.length > 0) {
@@ -234,7 +228,7 @@ const fetchUserData = async ({
     if (!activeSheet) {
       console.warn('Active sheet not found', { sheetNameToUse, allSheets });
       setCards && setCards([]);
-      return () => {};
+      return () => {}; // For React Suspense compatibility
     }
 
     const sheetId = activeSheet.docId;
@@ -255,13 +249,12 @@ const fetchUserData = async ({
           activeSheet,
         });
         setCards && setCards([]);
-        return () => {};
+        return () => {}; // For React Suspense compatibility
       }
 
-      let filteredCards = [];
+      const filteredCards = [];
       for (const type of typeOfCardsToDisplay) {
         // Invalidate cache if cardTypeFilters have changed
-        const cacheKey = `${sheetId}:${type}`;
         const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
         const currentFilters = cardTypeFilters[type] || {};
         if (cachedFilters && JSON.stringify(cachedFilters) !== JSON.stringify(currentFilters)) {
@@ -398,7 +391,7 @@ const fetchUserData = async ({
     );
   }
 
-  return () => {};
+  return () => {}; // For React Suspense compatibility
 };
 
 export const resetFetchedSheetIds = () => {
