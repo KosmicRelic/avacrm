@@ -1785,13 +1785,14 @@ exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/car
 
   // Only add id if not present
   if (!data.id) {
-    // Build history array from all fields (except id, history)
+    // Use a real timestamp for each history entry
+    const now = admin.firestore.Timestamp.now();
     const history = Object.keys(data)
       .filter((key) => key !== 'id' && key !== 'history')
       .map((key) => ({
         field: key,
         value: data[key],
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: now,
       }));
 
     await cardRef.update({

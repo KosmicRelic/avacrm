@@ -523,7 +523,7 @@ const CardsEditor = ({
                                 </select>
                               ) : (
                                 <input
-                                  type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                                  type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
                                   value={
                                     field.type === 'date'
                                       ? formatDateForInput(historicalFormData[field.key])
@@ -536,7 +536,7 @@ const CardsEditor = ({
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
                                   readOnly={isViewingHistory}
-                                  disabled={field.key === 'typeOfCards' || field.key === 'docId'}
+                                  disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
                                 />
                               )}
                             </div>
