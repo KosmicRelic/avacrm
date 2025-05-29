@@ -695,8 +695,8 @@ const Sheets = ({
     console.log('[Sheets.jsx] Sheet changed, reset UI state.');
   }, [activeSheetName]);
 
-  // Show loading spinner if sheets are not loaded or activeSheet is not found
-  if (!sheets.allSheets.length || !activeSheet) {
+  // Show loading spinner if sheets are not loaded
+  if (!sheets.allSheets.length) {
     return (
       <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
            style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
