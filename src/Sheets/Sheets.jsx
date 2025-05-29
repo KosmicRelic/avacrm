@@ -55,6 +55,13 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
+  // Granular logging for debugging sheet switching
+  console.log('[Sheets.jsx][RENDER] Props:', {
+    activeSheetName,
+    allSheets: sheets.allSheets.map(s => s.sheetName),
+    structure: sheets.structure,
+    pathname: window.location.pathname,
+  });
   const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
@@ -325,22 +332,59 @@ const Sheets = ({
 
   const isBusinessUser = user && user.uid === businessId;
 
+  // Granular debug logging: log every render and all relevant state/props
+  useEffect(() => {
+    console.log('[Sheets.jsx][RENDER] URL:', window.location.pathname);
+    console.log('[Sheets.jsx][RENDER] activeSheetName:', activeSheetName);
+    console.log('[Sheets.jsx][RENDER] activeSheet:', activeSheet);
+    console.log('[Sheets.jsx][RENDER] sheetId:', sheetId);
+    console.log('[Sheets.jsx][RENDER] isLoading:', isLoading);
+    console.log('[Sheets.jsx][RENDER] cards.length:', cards.length);
+    console.log('[Sheets.jsx][RENDER] sheets.allSheets:', sheets.allSheets.map(s => s.sheetName));
+    console.log('[Sheets.jsx][RENDER] sheets.structure:', sheets.structure);
+  }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length, sheets.allSheets, sheets.structure]);
+
+  // Log every call to handleSheetClick and setActiveSheetNameWithRef
   const handleSheetClick = useCallback(
     (sheetName) => {
-      // Replace spaces with dashes for URL
       const urlSheetName = sheetName.replace(/ /g, "-");
       const newUrl = `/sheets/${urlSheetName}`;
-      console.log('[handleSheetClick] Navigating to:', newUrl, 'for sheet:', sheetName);
+      console.log('[Sheets.jsx][handleSheetClick] Clicked sheet:', sheetName, '| URL:', newUrl, '| Current activeSheetName:', activeSheetName, '| Current URL:', window.location.pathname);
       if (window.location.pathname !== newUrl) {
         window.history.pushState({}, '', newUrl);
+        console.log('[Sheets.jsx][handleSheetClick] Pushed new URL:', newUrl);
       }
       if (sheetName !== activeSheetName) {
+        console.log('[Sheets.jsx][handleSheetClick] setActiveSheetNameWithRef:', sheetName);
         setActiveSheetNameWithRef(sheetName);
+        console.log('[Sheets.jsx][handleSheetClick] onSheetChange:', sheetName);
         onSheetChange(sheetName);
+      } else {
+        console.log('[Sheets.jsx][handleSheetClick] Sheet already active, no state change.');
       }
     },
     [activeSheetName, onSheetChange, setActiveSheetNameWithRef]
   );
+
+  // Log when the effect that resets UI state runs, and what the previous and next activeSheetName are
+  const prevActiveSheetNameRef = useRef();
+  useEffect(() => {
+    console.log('[Sheets.jsx][UI RESET EFFECT] Sheet changed from', prevActiveSheetNameRef.current, 'to', activeSheetName);
+    setSpinnerVisible(false);
+    setSpinnerFading(false);
+    setIsEditorOpen(false);
+    setSelectedRow(null);
+    setIsSelectMode(false);
+    setSelectedRowIds([]);
+    setSearchQuery('');
+    prevActiveSheetNameRef.current = activeSheetName;
+    console.log('[Sheets.jsx][UI RESET EFFECT] UI state reset for new sheet.');
+  }, [activeSheetName]);
+
+  // Log when activeSheetName changes due to context (from MainContext)
+  useEffect(() => {
+    console.log('[Sheets.jsx][CONTEXT] activeSheetName from context changed:', activeSheetName);
+  }, [activeSheetName]);
 
   const handleFolderClick = useCallback(
     (folderName) => {
@@ -622,11 +666,12 @@ const Sheets = ({
 
   // Add logging for activeSheetName, activeSheet, and sheetId
   useEffect(() => {
-    console.log('[Sheets.jsx] activeSheetName:', activeSheetName);
-    console.log('[Sheets.jsx] activeSheet:', activeSheet);
-    console.log('[Sheets.jsx] sheetId:', sheetId);
-    console.log('[Sheets.jsx] isLoading:', isLoading);
-    console.log('[Sheets.jsx] cards.length:', cards.length);
+    console.log('[Sheets.jsx][STATE] activeSheetName:', activeSheetName);
+    console.log('[Sheets.jsx][STATE] activeSheet:', activeSheet);
+    console.log('[Sheets.jsx][STATE] sheetId:', sheetId);
+    console.log('[Sheets.jsx][STATE] isLoading:', isLoading);
+    console.log('[Sheets.jsx][STATE] cards.length:', cards.length);
+    console.log('[Sheets.jsx][STATE] pathname:', window.location.pathname);
   }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length]);
 
   // Reset spinner and editor state when switching sheets

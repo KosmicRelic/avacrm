@@ -360,23 +360,27 @@ export const MainContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (location.pathname.startsWith('/sheets/')) {
-      // Convert dashes to spaces for sheet name
-      const sheetNameFromUrl = (location.pathname.split('/sheets/')[1] || '').replace(/-/g, ' ');
-      if (sheetNameFromUrl && sheetNameFromUrl !== activeSheetName) {
-        // Only sync if not just set by click
-        if (lastSheetNameFromClickRef.current === sheetNameFromUrl) {
-          // This change was initiated by a click, skip sync
-          lastSheetNameFromClickRef.current = null;
-          return;
+    const handlePopState = () => {
+      const { pathname } = window.location;
+      if (pathname.startsWith('/sheets/')) {
+        const match = pathname.match(/^\/sheets\/(.+)$/);
+        let sheetNameFromUrl = null;
+        if (match) {
+          sheetNameFromUrl = decodeURIComponent(match[1].replace(/-/g, ' '));
         }
-        console.debug('[MainContext.jsx] Syncing activeSheetName from URL', { sheetNameFromUrl, currentActiveSheetName: activeSheetName });
-        setActiveSheetName(sheetNameFromUrl);
-      } else {
-        console.debug('[MainContext.jsx] No sync needed for activeSheetName', { sheetNameFromUrl, currentActiveSheetName: activeSheetName });
+        const urlFromSheetName = sheetNameFromUrl ? `/sheets/${encodeURIComponent(sheetNameFromUrl.replace(/ /g, '-') )}` : null;
+        if (
+          sheetNameFromUrl &&
+          urlFromSheetName === pathname &&
+          sheetNameFromUrl !== activeSheetName
+        ) {
+          setActiveSheetName(sheetNameFromUrl);
+        }
       }
-    }
-  }, [location.pathname, activeSheetName]);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeSheetName]);
 
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded) return;
