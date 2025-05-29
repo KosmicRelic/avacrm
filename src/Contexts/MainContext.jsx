@@ -362,7 +362,7 @@ export const MainContextProvider = ({ children }) => {
     if (!name) return name;
     // If the name contains a slash, only use the first segment (the sheet name)
     const normalized = name.split('/')[0].replace(/-/g, ' ');
-    console.log('[MainContext] normalizeSheetName', { input: name, normalized });
+
     return normalized;
   };
 

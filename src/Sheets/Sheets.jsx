@@ -67,14 +67,9 @@ const Sheets = ({
   const navigate = useNavigate();
 
   // --- LOGGING FOR DEBUGGING CARD LOADING ---
-  console.log('[Sheets][DEBUG] sheets.allSheets:', sheets.allSheets);
-  console.log('[Sheets][DEBUG] sheets.structure:', sheets.structure);
-  console.log('[Sheets][DEBUG] activeSheetName:', activeSheetName);
-  // Always decode dashes to spaces for matching, and ignore cardId if present
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
-  console.log('[Sheets][DEBUG] activeSheet:', activeSheet);
 
   const sheetId = activeSheet?.docId;
   const isLoading = sheetId && !sheetCardsFetched[sheetId];
@@ -123,7 +118,7 @@ const Sheets = ({
           const value = card[field];
           if (!filter || !header) {
             if (!header) {
-              console.warn('Header not found for cardTypeFilter', { field, cardType: card.typeOfCards, activeSheetName });
+              // console.warn('Header not found for cardTypeFilter', { field, cardType: card.typeOfCards, activeSheetName });
             }
             return true;
           }
@@ -185,7 +180,7 @@ const Sheets = ({
         const rowValue = row[headerKey];
         if (!filter || !header) {
           if (!header) {
-            console.warn('Header not found for global filter', { headerKey, activeSheetName });
+            // console.warn('Header not found for global filter', { headerKey, activeSheetName });
           }
           return true;
         }
@@ -346,9 +341,9 @@ const Sheets = ({
   // Add a log before attempting to load cards
   useEffect(() => {
     if (activeSheet && Array.isArray(sheets.allSheets) && sheets.allSheets.length > 0) {
-      console.log('[Sheets][DEBUG] Attempting to load cards for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
+      // console.log('[Sheets][DEBUG] Attempting to load cards for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
     } else {
-      console.log('[Sheets][DEBUG] Not loading cards: activeSheet or sheets.allSheets not ready');
+      // console.log('[Sheets][DEBUG] Not loading cards: activeSheet or sheets.allSheets not ready');
     }
   }, [activeSheet, sheets.allSheets]);
 
@@ -356,18 +351,18 @@ const Sheets = ({
     (sheetName) => {
       const urlSheetName = sheetName.replace(/ /g, "-");
       const newUrl = `/sheets/${urlSheetName}`;
-      console.log('[Sheets.jsx][handleSheetClick] Clicked sheet:', sheetName, '| URL:', newUrl, '| Current activeSheetName:', activeSheetName, '| Current URL:', window.location.pathname);
+      // console.log('[Sheets.jsx][handleSheetClick] Clicked sheet:', sheetName, '| URL:', newUrl, '| Current activeSheetName:', activeSheetName, '| Current URL:', window.location.pathname);
       if (window.location.pathname !== newUrl) {
         window.history.pushState({}, '', newUrl);
-        console.log('[Sheets.jsx][handleSheetClick] Pushed new URL:', newUrl);
+        // console.log('[Sheets.jsx][handleSheetClick] Pushed new URL:', newUrl);
       }
       if (sheetName !== activeSheetName) {
-        console.log('[Sheets.jsx][handleSheetClick] setActiveSheetNameWithRef:', sheetName);
+        // console.log('[Sheets.jsx][handleSheetClick] setActiveSheetNameWithRef:', sheetName);
         setActiveSheetNameWithRef(sheetName);
-        console.log('[Sheets.jsx][handleSheetClick] onSheetChange:', sheetName);
+        // console.log('[Sheets.jsx][handleSheetClick] onSheetChange:', sheetName);
         onSheetChange(sheetName);
       } else {
-        console.log('[Sheets.jsx][handleSheetClick] Sheet already active, no state change.');
+        // console.log('[Sheets.jsx][handleSheetClick] Sheet already active, no state change.');
       }
     },
     [activeSheetName, onSheetChange, setActiveSheetNameWithRef]
@@ -376,7 +371,7 @@ const Sheets = ({
   // Log when the effect that resets UI state runs, and what the previous and next activeSheetName are
   const prevActiveSheetNameRef = useRef();
   useEffect(() => {
-    console.log('[Sheets.jsx][UI RESET EFFECT] Sheet changed from', prevActiveSheetNameRef.current, 'to', activeSheetName);
+    // console.log('[Sheets.jsx][UI RESET EFFECT] Sheet changed from', prevActiveSheetNameRef.current, 'to', activeSheetName);
     setSpinnerVisible(false);
     setSpinnerFading(false);
     setIsEditorOpen(false);
@@ -385,12 +380,12 @@ const Sheets = ({
     setSelectedRowIds([]);
     setSearchQuery('');
     prevActiveSheetNameRef.current = activeSheetName;
-    console.log('[Sheets.jsx][UI RESET EFFECT] UI state reset for new sheet.');
+    // console.log('[Sheets.jsx][UI RESET EFFECT] UI state reset for new sheet.');
   }, [activeSheetName]);
 
   // Log when activeSheetName changes due to context (from MainContext)
   useEffect(() => {
-    console.log('[Sheets.jsx][CONTEXT] activeSheetName from context changed:', activeSheetName);
+    // console.log('[Sheets.jsx][CONTEXT] activeSheetName from context changed:', activeSheetName);
   }, [activeSheetName]);
 
   const handleFolderClick = useCallback(
@@ -401,7 +396,7 @@ const Sheets = ({
         // Replace spaces with dashes for URL
         const urlSheetName = sheetName.replace(/ /g, "-");
         const newUrl = `/sheets/${urlSheetName}`;
-        console.log('[Sheets.jsx] handleFolderClick: Navigating to', newUrl);
+        // console.log('[Sheets.jsx] handleFolderClick: Navigating to', newUrl);
         window.history.pushState({}, '', newUrl);
       });
     },
@@ -698,12 +693,12 @@ const Sheets = ({
 
   // Add logging for activeSheetName, activeSheet, and sheetId
   useEffect(() => {
-    console.log('[Sheets.jsx][STATE] activeSheetName:', activeSheetName);
-    console.log('[Sheets.jsx][STATE] activeSheet:', activeSheet);
-    console.log('[Sheets.jsx][STATE] sheetId:', sheetId);
-    console.log('[Sheets.jsx][STATE] isLoading:', isLoading);
-    console.log('[Sheets.jsx][STATE] cards.length:', cards.length);
-    console.log('[Sheets.jsx][STATE] pathname:', window.location.pathname);
+    // console.log('[Sheets.jsx][STATE] activeSheetName:', activeSheetName);
+    // console.log('[Sheets.jsx][STATE] activeSheet:', activeSheet);
+    // console.log('[Sheets.jsx][STATE] sheetId:', sheetId);
+    // console.log('[Sheets.jsx][STATE] isLoading:', isLoading);
+    // console.log('[Sheets.jsx][STATE] cards.length:', cards.length);
+    // console.log('[Sheets.jsx][STATE] pathname:', window.location.pathname);
   }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length]);
 
   // Reset spinner and editor state when switching sheets
@@ -716,7 +711,7 @@ const Sheets = ({
     setSelectedRowIds([]);
     setSearchQuery('');
     // Optionally log
-    console.log('[Sheets.jsx] Sheet changed, reset UI state.');
+    // console.log('[Sheets.jsx] Sheet changed, reset UI state.');
   }, [activeSheetName]);
 
   // Show loading spinner if sheets are not loaded

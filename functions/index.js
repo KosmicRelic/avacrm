@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { Resend } = require('resend');
 const cors = require('cors');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1771,5 +1772,31 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
     let statusCode = error.code || 'internal';
     let errorMessage = error.message || 'Failed to delete team member';
     throw new functions.https.HttpsError(statusCode, errorMessage);
+  }
+});
+
+// Cloud Function: Add docId as id and create history array on new document creation
+exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/cards/{cardId}', async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+  const data = snap.data();
+  const docId = event.params.cardId;
+  const cardRef = snap.ref;
+
+  // Only add id if not present
+  if (!data.id) {
+    // Build history array from all fields (except id, history)
+    const history = Object.keys(data)
+      .filter((key) => key !== 'id' && key !== 'history')
+      .map((key) => ({
+        field: key,
+        value: data[key],
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      }));
+
+    await cardRef.update({
+      id: docId,
+      history: history,
+    });
   }
 });
