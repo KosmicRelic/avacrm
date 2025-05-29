@@ -77,6 +77,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
           isDarkTheme ? styles.darkTheme : ""
         }`}
         ref={modalRef}
+        onMouseDown={e => e.stopPropagation()} // Prevent modal from closing on inside click
       >
         {(modalConfig.showTitle ||
           modalConfig.showBackButton ||

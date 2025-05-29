@@ -117,7 +117,6 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
               leadStatus: { condition: 'equals', value: 'New' }
             }
           },
-          isActive: false,
         },
         {
           id: 'campaignsSheet',
@@ -139,7 +138,6 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
               status: { condition: 'equals', value: 'Active' }
             }
           },
-          isActive: false,
         },
         {
           id: 'partnersSheet',
@@ -156,7 +154,6 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           cardTypeFilters: {
             'Business Partners': {}
           },
-          isActive: false,
         },
         {
           id: 'paymentsSheet',
@@ -174,7 +171,6 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           cardTypeFilters: {
             Payments: {}
           },
-          isActive: false,
         },
       ],
       structure: [
@@ -1105,6 +1101,10 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
             title: 'Leads',
             metricId: 'metric-google-conversion',
             position: { row: 1, col: 0 },
+            dashboardId: 'dashboard-3',
+          },
+          {
+            id: 'widget-linkedin-conversion',
             dashboardId: 'dashboard-3',
           },
           {

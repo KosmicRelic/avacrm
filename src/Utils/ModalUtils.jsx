@@ -78,7 +78,6 @@ export const handleModalSave = async ({
       break;
     case 'sheet':
       if (data?.sheetName && data.currentHeaders && sheets) {
-
         const cleanedCardTypeFilters = {};
         Object.entries(data.cardTypeFilters || {}).forEach(([cardType, filters]) => {
           const cleanedFilters = {};
@@ -99,55 +98,45 @@ export const handleModalSave = async ({
         });
 
         setSheets((prev) => {
-          const updatedSheets = {
+          // Update allSheets as before
+          const updatedAllSheets = prev.allSheets.map((sheet) =>
+            sheet.sheetName === activeSheetName
+              ? {
+                  ...sheet,
+                  sheetName: data.sheetName,
+                  headers: data.currentHeaders,
+                  typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
+                  cardTypeFilters: cleanedCardTypeFilters,
+                  cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch,
+                  isModified: true,
+                  action: 'update',
+                }
+              : sheet
+          );
+
+          // Update structure: replace old sheetName with new one, do not leave empty/null/empty string
+          const updatedStructure = prev.structure.map((item) => {
+            if (item.sheetName === activeSheetName) {
+              return { sheetName: data.sheetName };
+            }
+            if (item.folderName && Array.isArray(item.sheets)) {
+              // Replace old sheet name with new one, filter out empty/falsey
+              const newSheets = item.sheets.map((s) => (s === activeSheetName ? data.sheetName : s)).filter((s) => !!s && typeof s === 'string' && s.trim() !== '');
+              return { ...item, sheets: newSheets };
+            }
+            return item;
+          }).filter(Boolean); // Remove any null/undefined
+
+          return {
             ...prev,
-            allSheets: prev.allSheets.map((sheet) =>
-              sheet.sheetName === activeSheetName && isSheetModalEditMode
-                ? {
-                    ...sheet,
-                    sheetName: data.sheetName,
-                    headers: data.currentHeaders.map((h) => ({
-                      key: h.key,
-                      name: h.name,
-                      type: h.type,
-                      options: h.options || [],
-                      visible: h.visible,
-                      hidden: h.hidden,
-                    })),
-                    typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
-                    cardTypeFilters: cleanedCardTypeFilters,
-                    cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch,
-                    isModified: true,
-                    action: 'update',
-                  }
-                : sheet
-            ),
-            structure: prev.structure.map((item) => {
-              if (item.sheetName === activeSheetName) {
-                return { sheetName: data.sheetName };
-              }
-              if (item.folderName) {
-                const updatedSheets = item.sheets.map((sheet) =>
-                  sheet === activeSheetName ? data.sheetName : sheet
-                );
-                return { ...item, sheets: updatedSheets };
-              }
-              return item;
-            }),
+            allSheets: updatedAllSheets,
+            structure: updatedStructure,
           };
-          if (activeSheetName !== data.sheetName) {
-            updatedSheets.structure = [
-              ...updatedSheets.structure,
-              { isModified: true, action: 'update' },
-            ];
-          }
-          return updatedSheets;
         });
         handleSheetChange(data.sheetName);
       } else {
         console.warn('Missing required data for sheet modal save:', {
-          sheetName: data?.sheetName,
-          currentHeaders: data?.currentHeaders,
+          data,
           sheets,
         });
       }
@@ -155,27 +144,62 @@ export const handleModalSave = async ({
     case 'sheets':
       if (data?.newOrder && sheets) {
         setSheets((prev) => {
-          const newStructure = [...data.newOrder];
-          let newActiveSheetName = null;
-          for (const item of newStructure) {
-            if (item.sheetName) {
-              newActiveSheetName = item.sheetName;
-              break;
-            } else if (item.folderName && item.sheets?.length > 0) {
-              newActiveSheetName = item.sheets[0];
-              break;
-            }
-          }
-          const updatedSheets = {
-            ...prev,
-            structure: [...newStructure, { isModified: true, action: 'update' }],
-            allSheets: prev.allSheets.map((sheet) => ({
-              ...sheet,
-              isActive: sheet.sheetName === newActiveSheetName,
-            })),
+          // Clean up newOrder: remove empty/falsey, empty string, and duplicate sheet names in folders
+          const cleanStructure = (structure) => {
+            const seenSheets = new Set();
+            return structure
+              .map((item) => {
+                if (item.sheetName && typeof item.sheetName === 'string' && item.sheetName.trim() !== '') {
+                  if (seenSheets.has(item.sheetName)) return null;
+                  seenSheets.add(item.sheetName);
+                  return { sheetName: item.sheetName };
+                }
+                if (item.folderName && Array.isArray(item.sheets)) {
+                  // Remove empty/falsey/duplicate sheet names in folder
+                  const cleanSheets = item.sheets.filter(
+                    (s) => s && typeof s === 'string' && s.trim() !== '' && !seenSheets.has(s) && seenSheets.add(s)
+                  );
+                  return { folderName: item.folderName, sheets: cleanSheets };
+                }
+                return null;
+              })
+              .filter(Boolean);
           };
-          return updatedSheets;
+
+          const prevStructure = prev.structure || [];
+          const newStructure = cleanStructure(data.newOrder);
+
+          // Only update if structure actually changed
+          if (JSON.stringify(prevStructure) !== JSON.stringify(newStructure)) {
+            // Mark only changed sheets/folders as isModified for local state, but do not persist isModified to Firestore
+            const prevFlat = JSON.stringify(prevStructure);
+            const newFlat = JSON.stringify(newStructure);
+            const allSheets = prev.allSheets.map((sheet) => {
+              // If the sheet's position or folder changed, mark as isModified (for local, not for Firestore)
+              const wasInFolder = prevStructure.some(
+                (item) => item.folderName && item.sheets && item.sheets.includes(sheet.sheetName)
+              );
+              const isInFolder = newStructure.some(
+                (item) => item.folderName && item.sheets && item.sheets.includes(sheet.sheetName)
+              );
+              if (prevFlat !== newFlat && (wasInFolder !== isInFolder)) {
+                return { ...sheet, isModified: true };
+              }
+              return { ...sheet };
+            });
+            // Remove isModified before saving to Firestore
+            const allSheetsNoIsModified = allSheets.map(({ isModified, ...rest }) => rest);
+            return {
+              ...prev,
+              structure: newStructure,
+              allSheets: allSheetsNoIsModified,
+            };
+          } else {
+            // No change, return previous state
+            return prev;
+          }
         });
+        // Set active sheet if needed
         if (data.newOrder[0]?.sheetName) {
           handleSheetChange(data.newOrder[0].sheetName);
         } else if (data.newOrder[0]?.folderName && data.newOrder[0]?.sheets?.length > 0) {
@@ -346,24 +370,6 @@ export const handleModalSave = async ({
                     : item
                 );
               }
-            } else if (actionData.action === 'deleteFolder' && actionData.folderName) {
-              const folder = currentStructure.find(
-                (item) => item.folderName === actionData.folderName
-              );
-              const folderSheets = folder?.sheets || [];
-              const existingSheetNames = currentStructure
-                .filter((item) => item.sheetName)
-                .map((item) => item.sheetName);
-              const newSheetsToAdd = folderSheets.filter(
-                (sheetName) => !existingSheetNames.includes(sheetName)
-              );
-              currentStructure = [
-                ...currentStructure.filter(
-                  (item) => item.folderName !== actionData.folderName
-                ),
-                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-              ];
-              folderSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
             }
           });
           return {
@@ -405,6 +411,81 @@ export const handleModalSave = async ({
       }
       break;
     case 'folderModal':
+      if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
+        setSheets((prev) => {
+          let currentStructure = [...prev.structure];
+          data.tempData.actions.forEach((actionData) => {
+            if (
+              actionData.action === 'removeSheets' &&
+              actionData.selectedSheets &&
+              actionData.folderName
+            ) {
+              const folder = currentStructure.find(
+                (item) => item.folderName === actionData.folderName
+              );
+              const folderSheets = folder?.sheets || [];
+              const remainingSheets = folderSheets.filter(
+                (sheet) => !actionData.selectedSheets.includes(sheet)
+              );
+              const removedSheets = folderSheets.filter((sheet) =>
+                actionData.selectedSheets.includes(sheet)
+              );
+              const existingSheetNames = currentStructure
+                .filter((item) => item.sheetName)
+                .map((item) => item.sheetName);
+              const newSheetsToAdd = removedSheets.filter(
+                (sheetName) => !existingSheetNames.includes(sheetName)
+              );
+              currentStructure = [
+                ...currentStructure.filter(
+                  (item) => item.folderName !== actionData.folderName
+                ),
+                { folderName: actionData.folderName, sheets: remainingSheets },
+                ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+              ];
+            } else if (
+              actionData.action === 'addSheets' &&
+              actionData.selectedSheets &&
+              actionData.folderName
+            ) {
+              const folder = currentStructure.find(
+                (item) => item.folderName === actionData.folderName
+              );
+              const existingSheets = folder?.sheets || [];
+              const newSheets = actionData.selectedSheets.filter(
+                (sheet) => !existingSheets.includes(sheet)
+              );
+              if (newSheets.length > 0) {
+                currentStructure = currentStructure.map((item) =>
+                  item.folderName === actionData.folderName
+                    ? { ...item, sheets: [...existingSheets, ...newSheets] }
+                    : item
+                );
+              }
+            }
+          });
+          // Clean up structure: remove empty/falsey/empty string sheet names
+          const cleanStructure = (structure) =>
+            structure
+              .map((item) => {
+                if (item.sheetName && typeof item.sheetName === 'string' && item.sheetName.trim() !== '') {
+                  return { sheetName: item.sheetName };
+                }
+                if (item.folderName && Array.isArray(item.sheets)) {
+                  const cleanSheets = item.sheets.filter(
+                    (s) => s && typeof s === 'string' && s.trim() !== ''
+                  );
+                  return { folderName: item.folderName, sheets: cleanSheets };
+                }
+                return null;
+              })
+              .filter(Boolean);
+          return {
+            ...prev,
+            structure: cleanStructure(currentStructure),
+          };
+        });
+      }
       break;
     case 'widgetView':
       if (data?.action === 'deleteCategories' && data?.deletedCategories && metrics) {
