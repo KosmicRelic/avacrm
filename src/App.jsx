@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useContext, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Sheets from './Sheets/Sheets';
 import AppHeader from './App Header/AppHeader';
@@ -98,8 +98,9 @@ function App() {
     setSheetCardsFetched,
   } = useContext(MainContext);
 
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
   const sheetModal = useModal();
   const filterModal = useModal();
   const sheetsModal = useModal();
@@ -550,6 +551,32 @@ function App() {
           />
           <Route
             path="/sheets"
+            element={
+              <ProtectedRoute>
+                <Sheets
+                  headers={resolvedHeaders}
+                  rows={resolvedRows}
+                  sheets={sheets}
+                  setSheets={setSheets}
+                  activeSheetName={activeSheetName}
+                  onSheetChange={handleSheetChange}
+                  onEditSheet={() => onEditSheet(modalUtilsProps)}
+                  onFilter={() => onFilter(modalUtilsProps)}
+                  onRowClick={() => {}}
+                  onCardSave={() => {}}
+                  onCardDelete={() => {}}
+                  onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                  onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                    onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                  }
+                  onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                  onOpenFolderModal={handleOpenFolderModal}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sheets/:sheetName"
             element={
               <ProtectedRoute>
                 <Sheets

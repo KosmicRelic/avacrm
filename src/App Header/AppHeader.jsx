@@ -22,7 +22,10 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   useEffect(() => {
     const path = location.pathname;
     if (path === '/dashboard') setActiveOption('dashboard');
-    else if (path === '/sheets') setActiveOption('sheets');
+    else if (path.startsWith('/sheets')) {
+      setActiveOption('sheets');
+      console.log('[AppHeader.jsx] Active option set to sheets for path:', path);
+    }
     else if (path === '/metrics') setActiveOption('metrics');
     else if (path === '/financials') setActiveOption('financials');
     else if (path === '/actions') setActiveOption('actions');

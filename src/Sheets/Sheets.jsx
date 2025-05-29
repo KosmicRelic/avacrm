@@ -55,7 +55,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName, sheetCardsFetched, user, businessId } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === activeSheetName);
   const sheetId = activeSheet?.docId;
@@ -156,7 +156,7 @@ const Sheets = ({
             default:
               return true;
           }
-        });
+       });
       });
   }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName, user.uid]);
 
@@ -327,12 +327,34 @@ const Sheets = ({
 
   const handleSheetClick = useCallback(
     (sheetName) => {
+      // Replace spaces with dashes for URL
+      const urlSheetName = sheetName.replace(/ /g, "-");
+      const newUrl = `/sheets/${urlSheetName}`;
+      console.log('[handleSheetClick] Navigating to:', newUrl, 'for sheet:', sheetName);
+      if (window.location.pathname !== newUrl) {
+        window.history.pushState({}, '', newUrl);
+      }
       if (sheetName !== activeSheetName) {
-        setActiveSheetName(sheetName);
+        setActiveSheetNameWithRef(sheetName);
         onSheetChange(sheetName);
       }
     },
-    [activeSheetName, onSheetChange, setActiveSheetName]
+    [activeSheetName, onSheetChange, setActiveSheetNameWithRef]
+  );
+
+  const handleFolderClick = useCallback(
+    (folderName) => {
+      onOpenFolderModal(folderName, (sheetName) => {
+        setActiveSheetNameWithRef(sheetName);
+        onSheetChange(sheetName);
+        // Replace spaces with dashes for URL
+        const urlSheetName = sheetName.replace(/ /g, "-");
+        const newUrl = `/sheets/${urlSheetName}`;
+        console.log('[Sheets.jsx] handleFolderClick: Navigating to', newUrl);
+        window.history.pushState({}, '', newUrl);
+      });
+    },
+    [onOpenFolderModal, onSheetChange, setActiveSheetNameWithRef]
   );
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
@@ -379,17 +401,6 @@ const Sheets = ({
       setIsEditorOpen(false);
     },
     [onCardSave, setCards]
-  );
-
-  const handleFolderClick = useCallback(
-    (folderName) => {
-      onOpenFolderModal(folderName, (sheetName) => {
-        setActiveSheetName(sheetName);
-        onSheetChange(sheetName);
-        window.history.pushState({}, '', `/sheets/${encodeURIComponent(sheetName)}`);
-      });
-    },
-    [onOpenFolderModal, onSheetChange, setActiveSheetName]
   );
 
   const handleSelectToggle = useCallback(() => {
@@ -523,6 +534,8 @@ const Sheets = ({
               size={24}
             />
           </div>
+        ) : !activeSheet ? (
+          <div className={styles.noResults}>Select a sheet</div>
         ) : (
           <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <RowComponent
@@ -533,6 +546,7 @@ const Sheets = ({
               isSelectMode={isSelectMode}
               onSelect={handleSelectToggle}
               onAddRow={() => handleRowClick({ isAddNew: true })}
+              style={{ display: activeSheet ? undefined : 'none' }}
             />
             {finalRows.length > 0 ? (
               finalRows.map((rowData, rowIndex) => (
@@ -605,6 +619,28 @@ const Sheets = ({
       </div>
     </div>
   );
+
+  // Add logging for activeSheetName, activeSheet, and sheetId
+  useEffect(() => {
+    console.log('[Sheets.jsx] activeSheetName:', activeSheetName);
+    console.log('[Sheets.jsx] activeSheet:', activeSheet);
+    console.log('[Sheets.jsx] sheetId:', sheetId);
+    console.log('[Sheets.jsx] isLoading:', isLoading);
+    console.log('[Sheets.jsx] cards.length:', cards.length);
+  }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length]);
+
+  // Reset spinner and editor state when switching sheets
+  useEffect(() => {
+    setSpinnerVisible(false);
+    setSpinnerFading(false);
+    setIsEditorOpen(false);
+    setSelectedRow(null);
+    setIsSelectMode(false);
+    setSelectedRowIds([]);
+    setSearchQuery('');
+    // Optionally log
+    console.log('[Sheets.jsx] Sheet changed, reset UI state.');
+  }, [activeSheetName]);
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>

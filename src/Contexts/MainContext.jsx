@@ -52,6 +52,7 @@ export const MainContextProvider = ({ children }) => {
   const displayedMessages = useRef(new Set());
   const navigate = useNavigate();
   const location = useLocation();
+  const lastSheetNameFromClickRef = useRef(null);
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedCards = useMemo(() => cards, [cards]);
@@ -148,21 +149,33 @@ export const MainContextProvider = ({ children }) => {
         const currentRoute = location.pathname;
         try {
           const fetches = [];
-          if (currentRoute === '/sheets' && !hasFetched.current.sheets) {
-            if (!activeSheetName) setActiveSheetName('Leads');
+          // Always fetch full sheets structure if on /sheets or /sheets/:sheetName
+          if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
+            // Parse sheet name from URL if present
+            let sheetNameFromUrl = null;
+            if (currentRoute.startsWith('/sheets/')) {
+              sheetNameFromUrl = decodeURIComponent(currentRoute.replace('/sheets/', ''));
+            }
+            // Always fetch full structure and all sheets
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
-                route: '/sheets',
+                route: '/sheets', // Always fetch full structure
                 setSheets,
                 setCards,
                 setCardTemplates,
                 setMetrics,
                 setDashboards,
-                activeSheetName: activeSheetName || 'Leads',
+                activeSheetName: sheetNameFromUrl || activeSheetName || 'Leads',
                 updateSheets: true,
               })
             );
+            // Set active sheet if coming from /sheets/:sheetName
+            if (sheetNameFromUrl) {
+              setActiveSheetName(sheetNameFromUrl);
+            } else if (!activeSheetName) {
+              setActiveSheetName('Leads');
+            }
           }
           if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
             fetches.push(
@@ -341,12 +354,26 @@ export const MainContextProvider = ({ children }) => {
     }
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
+  const setActiveSheetNameWithRef = (name) => {
+    lastSheetNameFromClickRef.current = name;
+    setActiveSheetName(name);
+  };
+
   useEffect(() => {
     if (location.pathname.startsWith('/sheets/')) {
-      const sheetName = decodeURIComponent(location.pathname.split('/sheets/')[1] || '');
-      if (sheetName && sheetName !== activeSheetName) {
-        console.debug('Updating activeSheetName from URL', { sheetName, currentActiveSheetName: activeSheetName });
-        setActiveSheetName(sheetName);
+      // Convert dashes to spaces for sheet name
+      const sheetNameFromUrl = (location.pathname.split('/sheets/')[1] || '').replace(/-/g, ' ');
+      if (sheetNameFromUrl && sheetNameFromUrl !== activeSheetName) {
+        // Only sync if not just set by click
+        if (lastSheetNameFromClickRef.current === sheetNameFromUrl) {
+          // This change was initiated by a click, skip sync
+          lastSheetNameFromClickRef.current = null;
+          return;
+        }
+        console.debug('[MainContext.jsx] Syncing activeSheetName from URL', { sheetNameFromUrl, currentActiveSheetName: activeSheetName });
+        setActiveSheetName(sheetNameFromUrl);
+      } else {
+        console.debug('[MainContext.jsx] No sync needed for activeSheetName', { sheetNameFromUrl, currentActiveSheetName: activeSheetName });
       }
     }
   }, [location.pathname, activeSheetName]);
@@ -706,6 +733,31 @@ useEffect(() => {
   console.log(actions);
 }, [actions]);
 
+  useEffect(() => {
+    if (!user || !businessId || !activeSheetName || !sheets.allSheets.length) return;
+    const activeSheet = sheets.allSheets.find(s => s.sheetName === activeSheetName);
+    if (!activeSheet) return;
+    const sheetId = activeSheet.docId;
+    if (sheetCardsFetched[sheetId]) return;
+    // Mark as fetching to avoid duplicate fetches
+    setSheetCardsFetched(prev => ({ ...prev, [sheetId]: false }));
+    // Fetch cards for this sheet
+    fetchUserData({
+      businessId,
+      route: '/sheets',
+      setCards,
+      setCardTemplates,
+      setMetrics,
+      setDashboards,
+      activeSheetName,
+      updateSheets: false,
+    }).then(() => {
+      setSheetCardsFetched(prev => ({ ...prev, [sheetId]: true }));
+    }).catch(() => {
+      setSheetCardsFetched(prev => ({ ...prev, [sheetId]: false }));
+    });
+  }, [user, businessId, activeSheetName, sheets.allSheets]);
+
   return (
     <MainContext.Provider
       value={{
@@ -737,7 +789,7 @@ useEffect(() => {
         isSignup,
         setIsSignup,
         activeSheetName,
-        setActiveSheetName,
+        setActiveSheetName: setActiveSheetNameWithRef,
         sheetCardsFetched,
         setSheetCardsFetched,
         businessId,

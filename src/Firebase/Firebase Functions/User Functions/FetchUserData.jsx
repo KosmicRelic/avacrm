@@ -75,6 +75,36 @@ const fetchUserData = async ({
   }
 
   // Fetch data based on the route
+  if (route && route.startsWith('/sheets/')) {
+    // Extract sheetName from route
+    const sheetNameFromUrl = decodeURIComponent(route.replace('/sheets/', ''));
+    console.log('[FetchUserData.jsx] Fetching data for sheet:', sheetNameFromUrl);
+    // Fetch all sheets, then filter for the one matching sheetNameFromUrl
+    let allSheets = [];
+    try {
+      const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
+      allSheets = sheetsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+      const matchingSheet = allSheets.find(sheet => sheet.sheetName === sheetNameFromUrl);
+      if (matchingSheet) {
+        setSheets([matchingSheet]);
+        // Fetch cards for this sheet
+        const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'cards'));
+        const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+        setCards(cards);
+        // Optionally fetch templates, metrics, etc. as needed
+      } else {
+        setSheets([]);
+        setCards([]);
+        console.warn('[FetchUserData.jsx] No matching sheet found for:', sheetNameFromUrl);
+      }
+    } catch (error) {
+      console.error('[FetchUserData.jsx] Error fetching sheet/cards for:', sheetNameFromUrl, error);
+      setSheets([]);
+      setCards([]);
+    }
+    return;
+  }
+
   if (route === '/sheets') {
     let allSheets = [];
     let structureData = [];
