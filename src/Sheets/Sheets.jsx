@@ -695,6 +695,17 @@ const Sheets = ({
     console.log('[Sheets.jsx] Sheet changed, reset UI state.');
   }, [activeSheetName]);
 
+  // Show loading spinner if sheets are not loaded or activeSheet is not found
+  if (!sheets.allSheets.length || !activeSheet) {
+    return (
+      <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
+           style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
+        <span>Loading sheet data...</span>
+      </div>
+    );
+  }
+
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
