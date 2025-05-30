@@ -150,29 +150,47 @@ export const MainContextProvider = ({ children }) => {
         const currentRoute = location.pathname;
         try {
           const fetches = [];
-          // Always fetch full sheets structure if on /sheets or /sheets/:sheetName
+          // Always fetch full sheets structure if on /sheets or /sheets/:sheetName or /sheets/:sheetName/:cardId
           if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
             let sheetNameFromUrl = null;
-            if (currentRoute.startsWith('/sheets/')) {
-              sheetNameFromUrl = decodeURIComponent(currentRoute.replace('/sheets/', ''));
+            let cardIdFromUrl = null;
+            // Support /sheets/:sheetName and /sheets/:sheetName/:cardId
+            const match = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
+            if (match) {
+              sheetNameFromUrl = decodeURIComponent(match[1]);
+              if (match[2]) {
+                cardIdFromUrl = decodeURIComponent(match[2]);
+              }
             }
-            fetches.push(
-              fetchUserData({
-                businessId: fetchedBusinessId,
-                route: '/sheets',
-                setSheets,
-                setCards,
-                setCardTemplates,
-                setMetrics,
-                setDashboards,
-                activeSheetName: sheetNameFromUrl || activeSheetName || null,
-                updateSheets: true,
-              })
-            );
             if (sheetNameFromUrl) {
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/sheets',
+                  setSheets,
+                  setCards,
+                  setCardTemplates,
+                  setMetrics,
+                  setDashboards,
+                  activeSheetName: sheetNameFromUrl,
+                  updateSheets: true,
+                })
+              );
               setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
-            } else if (!activeSheetName) {
-              setActiveSheetName(null);
+            } else {
+              // Only fetch sheets structure, but also fetch cardTemplates
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/sheets',
+                  setSheets,
+                  setCardTemplates, // <-- fetch cardTemplates even if no sheet is selected
+                  updateSheets: true,
+                })
+              );
+              if (!activeSheetName) {
+                setActiveSheetName(null);
+              }
             }
           }
           if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
@@ -869,6 +887,10 @@ export const MainContextProvider = ({ children }) => {
     return () => clearTimeout(debounceRef.current);
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
+  useEffect(() => {
+    console.log(cards);
+  },[cards]);
+  
   return (
     <MainContext.Provider value={contextValue}>
       {children}
