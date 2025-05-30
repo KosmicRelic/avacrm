@@ -505,6 +505,8 @@ function App() {
     setCards,
   };
 
+  // Show header and main content immediately, even if data is not yet loaded
+  // Sheets and AppHeader will receive empty arrays/objects at first, and update as data arrives
   const showHeader =
     !['/signin', '/signup/business'].includes(location.pathname) &&
     !location.pathname.startsWith('/signup/');
@@ -525,7 +527,7 @@ function App() {
       {showHeader && (
         <ProtectedRoute>
           <AppHeader
-            sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName)}
+            sheets={(sheets?.structure || []).map((item) => item.sheetName || item.folderName) || []}
             activeSheet={activeSheetName}
             onSheetChange={handleSheetChange}
             setIsProfileModalOpen={handleOpenProfileModal}

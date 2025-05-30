@@ -29,7 +29,7 @@ export const MainContextProvider = ({ children }) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(true); // UI loads immediately
   const [activeSheetName, setActiveSheetName] = useState(null);
   const [sheetCardsFetched, setSheetCardsFetched] = useState({});
   const [pendingInvitations, setPendingInvitations] = useState(0);
@@ -87,7 +87,6 @@ export const MainContextProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('[MainContext] onAuthStateChanged triggered');
       if (firebaseUser) {
         let userPermissions = {
           dashboard: 'editor',
@@ -100,10 +99,8 @@ export const MainContextProvider = ({ children }) => {
         let fetchedBusinessId = firebaseUser.uid;
         let userData = null;
         try {
-          console.time('[MainContext] Fetch user doc');
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
-          console.timeEnd('[MainContext] Fetch user doc');
           if (userDoc.exists() && userDoc.data().businessId) {
             fetchedBusinessId = userDoc.data().businessId;
             userType = userDoc.data().userType || 'business';
@@ -113,9 +110,7 @@ export const MainContextProvider = ({ children }) => {
 
           // If not business user, fetch permissions from teamMembers
           if (firebaseUser.uid !== fetchedBusinessId) {
-            console.time('[MainContext] Fetch teamMember doc');
             const teamMemberDoc = await getDoc(doc(db, 'businesses', fetchedBusinessId, 'teamMembers', firebaseUser.uid));
-            console.timeEnd('[MainContext] Fetch teamMember doc');
             if (teamMemberDoc.exists()) {
               const perms = teamMemberDoc.data().permissions;
               userPermissions = {
@@ -161,7 +156,6 @@ export const MainContextProvider = ({ children }) => {
             if (currentRoute.startsWith('/sheets/')) {
               sheetNameFromUrl = decodeURIComponent(currentRoute.replace('/sheets/', ''));
             }
-            console.time('[MainContext] fetchUserData /sheets');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
@@ -173,9 +167,6 @@ export const MainContextProvider = ({ children }) => {
                 setDashboards,
                 activeSheetName: sheetNameFromUrl || activeSheetName || null,
                 updateSheets: true,
-              }).then((res) => {
-                console.timeEnd('[MainContext] fetchUserData /sheets');
-                return res;
               })
             );
             if (sheetNameFromUrl) {
@@ -185,7 +176,6 @@ export const MainContextProvider = ({ children }) => {
             }
           }
           if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
-            console.time('[MainContext] fetchUserData /dashboard');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
@@ -196,14 +186,10 @@ export const MainContextProvider = ({ children }) => {
                 setMetrics,
                 setDashboards,
                 updateSheets: false,
-              }).then((res) => {
-                console.timeEnd('[MainContext] fetchUserData /dashboard');
-                return res;
               })
             );
           }
           if (currentRoute === '/metrics' && !hasFetched.current.metrics) {
-            console.time('[MainContext] fetchUserData /metrics');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
@@ -214,28 +200,19 @@ export const MainContextProvider = ({ children }) => {
                 setMetrics,
                 setDashboards,
                 updateSheets: false,
-              }).then((res) => {
-                console.timeEnd('[MainContext] fetchUserData /metrics');
-                return res;
               })
             );
           }
           if (currentRoute === '/actions' && !hasFetched.current.actions) {
-            console.time('[MainContext] fetchUserData /actions');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
                 route: '/actions',
                 setActions,
-              }).then((res) => {
-                console.timeEnd('[MainContext] fetchUserData /actions');
-                return res;
               })
             );
           }
-          console.time('[MainContext] Promise.all(fetches)');
           await Promise.all(fetches);
-          console.timeEnd('[MainContext] Promise.all(fetches)');
 
           if (currentRoute === '/sheets') hasFetched.current.sheets = true;
           if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
@@ -244,8 +221,7 @@ export const MainContextProvider = ({ children }) => {
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
-
-        setIsDataLoaded(true);
+        // setIsDataLoaded(true); // No longer needed here
       } else {
         setUser(null);
         setBusinessId(null);
@@ -272,7 +248,6 @@ export const MainContextProvider = ({ children }) => {
       }
       setUserAuthChecked(true);
     });
-
     return () => unsubscribeAuth();
   }, [navigate, isSignup, location.pathname]);
 
@@ -359,7 +334,6 @@ export const MainContextProvider = ({ children }) => {
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
-      console.time(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
       fetchUserData({
         businessId,
         route: '/sheets',
@@ -370,7 +344,6 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then(() => {
-        console.timeEnd(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
         setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
       }).catch(() => {
@@ -501,28 +474,22 @@ export const MainContextProvider = ({ children }) => {
 
     const processUpdates = async () => {
       isBatchProcessing.current = true;
-      console.time('[MainContext] processUpdates');
       const batch = writeBatch(db);
       let hasChanges = false;
 
       try {
         const isBusinessUser = user.uid === businessId;
 
-        // Profile filtering and mapping
-        console.time('[MainContext] filter modifiedCards');
+        // Filtering and mapping
         const modifiedCards = cards.filter((card) => card.isModified);
-        console.timeEnd('[MainContext] filter modifiedCards');
-        console.time('[MainContext] build accessibleCardTypes');
         const accessibleSheets = sheets.allSheets;
         const accessibleCardTypes = new Set(
           accessibleSheets.flatMap((sheet) =>
             Array.isArray(sheet.typeOfCardsToDisplay) ? sheet.typeOfCardsToDisplay : []
           )
         );
-        console.timeEnd('[MainContext] build accessibleCardTypes');
 
-        // Profile batch add for cards
-        console.time('[MainContext] batch cards');
+        // Batch add for cards
         for (const card of modifiedCards) {
           const isCardAccessible = isBusinessUser || accessibleCardTypes.has(card.typeOfCards);
           if (!isCardAccessible) {
@@ -538,11 +505,9 @@ export const MainContextProvider = ({ children }) => {
             hasChanges = true;
           }
         }
-        console.timeEnd('[MainContext] batch cards');
 
         if (isBusinessUser) {
-          // Profile batch add for dashboards
-          console.time('[MainContext] batch dashboards');
+          // Batch add for dashboards
           const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
           for (const dashboard of modifiedDashboards) {
             const docRef = doc(stateConfig.dashboards.collectionPath(), dashboard.docId);
@@ -555,10 +520,8 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
-          console.timeEnd('[MainContext] batch dashboards');
 
-          // Profile batch add for cardTemplates
-          console.time('[MainContext] batch cardTemplates');
+          // Batch add for cardTemplates
           const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
           for (const template of modifiedCardTemplates) {
             const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
@@ -571,10 +534,8 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
-          console.timeEnd('[MainContext] batch cardTemplates');
 
-          // Profile batch add for metrics
-          console.time('[MainContext] batch metrics');
+          // Batch add for metrics
           const modifiedMetrics = metrics.filter((metric) => metric.isModified);
           for (const metric of modifiedMetrics) {
             const docRef = doc(stateConfig.metrics.collectionPath(), metric.category);
@@ -587,10 +548,8 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
-          console.timeEnd('[MainContext] batch metrics');
 
-          // Profile collection changes for sheets
-          console.time('[MainContext] detectCollectionChanges sheets');
+          // Collection changes for sheets
           const collectionsToCheck = ['sheets'];
           for (const stateKey of collectionsToCheck) {
             const config = stateConfig[stateKey];
@@ -637,10 +596,8 @@ export const MainContextProvider = ({ children }) => {
               }
             }
           }
-          console.timeEnd('[MainContext] detectCollectionChanges sheets');
 
           if (sheets.deletedSheetId) {
-            console.time('[MainContext] update allowedSheetIds');
             const teamMembersSnapshot = await getDocs(
               collection(db, 'businesses', businessId, 'teamMembers')
             );
@@ -658,14 +615,11 @@ export const MainContextProvider = ({ children }) => {
                 hasChanges = true;
               }
             });
-            console.timeEnd('[MainContext] update allowedSheetIds');
           }
         }
 
         if (hasChanges) {
-          console.time('[MainContext] batch.commit');
           await batch.commit();
-          console.timeEnd('[MainContext] batch.commit');
 
           setCards((prev) =>
             prev
@@ -744,7 +698,6 @@ export const MainContextProvider = ({ children }) => {
         console.error('Error processing Firestore updates:', error);
         alert('Failed to save changes. Please try again.');
       } finally {
-        console.timeEnd('[MainContext] processUpdates');
         isBatchProcessing.current = false;
         prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       }
@@ -819,7 +772,6 @@ export const MainContextProvider = ({ children }) => {
     sheets,
     setSheets: (newSheets) => {
       if (shallowEqual(sheets, newSheets)) {
-        console.log('[MainContext] setSheets skipped (no change)');
         return;
       }
       setSheets(newSheets);
@@ -827,7 +779,6 @@ export const MainContextProvider = ({ children }) => {
     cards,
     setCards: (newCards) => {
       if (shallowEqual(cards, newCards)) {
-        console.log('[MainContext] setCards skipped (no change)');
         return;
       }
       setCards(newCards);
@@ -838,7 +789,6 @@ export const MainContextProvider = ({ children }) => {
     cardTemplates,
     setCardTemplates: (newTemplates) => {
       if (shallowEqual(cardTemplates, newTemplates)) {
-        console.log('[MainContext] setCardTemplates skipped (no change)');
         return;
       }
       setCardTemplates(newTemplates);
@@ -854,7 +804,6 @@ export const MainContextProvider = ({ children }) => {
     dashboards,
     setDashboards: (newDashboards) => {
       if (shallowEqual(dashboards, newDashboards)) {
-        console.log('[MainContext] setDashboards skipped (no change)');
         return;
       }
       setDashboards(newDashboards);
@@ -862,7 +811,6 @@ export const MainContextProvider = ({ children }) => {
     metrics,
     setMetrics: (newMetrics) => {
       if (shallowEqual(metrics, newMetrics)) {
-        console.log('[MainContext] setMetrics skipped (no change)');
         return;
       }
       setMetrics(newMetrics);
@@ -899,11 +847,9 @@ export const MainContextProvider = ({ children }) => {
     }
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
-      console.log('[MainContext] Debounced previous sheet card fetch');
     }
     debounceRef.current = setTimeout(() => {
       fetchingSheetIdsRef.current.add(sheetId);
-      console.time(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
       fetchUserData({
         businessId,
         route: '/sheets',
@@ -914,7 +860,6 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then(() => {
-        console.timeEnd(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
         setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
       }).catch(() => {

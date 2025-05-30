@@ -20,10 +20,8 @@ const fetchUserData = async ({
   activeSheetName,
   updateSheets = false,
 }) => {
-  console.time(`[FetchUserData] total for route ${route}`);
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
-    console.time(`[FetchUserData] fetchCollection ${errorMessage}`);
     try {
       const snapshot = await getDocs(path);
       const data = snapshot.docs.map((doc) => ({
@@ -41,8 +39,6 @@ const fetchUserData = async ({
         timestamp: new Date().toISOString(),
       });
       setState(defaultValue);
-    } finally {
-      console.timeEnd(`[FetchUserData] fetchCollection ${errorMessage}`);
     }
   };
 
@@ -76,23 +72,18 @@ const fetchUserData = async ({
   if (route && route.startsWith('/sheets/')) {
     // Extract sheetName from route and decode dashes to spaces
     const sheetNameFromUrl = decodeURIComponent(route.replace('/sheets/', '')).replace(/-/g, ' ');
-    // console.log('[FetchUserData.jsx] Fetching data for sheet:', sheetNameFromUrl);
     // Fetch all sheets, then filter for the one matching sheetNameFromUrl
     let allSheets = [];
     let structureData = [];
     try {
-      console.time('[FetchUserData] getDocs sheets');
       const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
-      console.timeEnd('[FetchUserData] getDocs sheets');
       allSheets = sheetsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
       const matchingSheet = allSheets.find(sheet => sheet.sheetName === sheetNameFromUrl);
       // Always set the full structure and all sheets, not just the single sheet
       structureData = deriveStructureFromSheets(allSheets);
       setSheets && setSheets({ allSheets, structure: structureData });
       if (matchingSheet) {
-        console.time('[FetchUserData] getDocs cards for matchingSheet');
         const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'cards'));
-        console.timeEnd('[FetchUserData] getDocs cards for matchingSheet');
         const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
         setCards && setCards(cards);
         // Optionally fetch templates, metrics, etc. as needed
@@ -105,7 +96,6 @@ const fetchUserData = async ({
       setSheets && setSheets({ allSheets: [], structure: [] });
       setCards && setCards([]);
     }
-    console.timeEnd(`[FetchUserData] total for route ${route}`);
     return;
   }
   if (route === '/sheets') {
@@ -121,9 +111,7 @@ const fetchUserData = async ({
           if (allowedSheetIds && allowedSheetIds.length > 0) {
             sheetsPromise = Promise.all(
               allowedSheetIds.map((sheetId) => {
-                console.time(`[FetchUserData] getDoc sheet ${sheetId}`);
                 return getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId)).then((docSnap) => {
-                  console.timeEnd(`[FetchUserData] getDoc sheet ${sheetId}`);
                   return docSnap;
                 });
               })
@@ -133,16 +121,10 @@ const fetchUserData = async ({
           }
           structureDocPromise = Promise.resolve(null);
         } else {
-          console.time('[FetchUserData] getDocs all sheets');
           sheetsPromise = getDocs(collection(db, 'businesses', businessId, 'sheets'));
-          console.timeEnd('[FetchUserData] getDocs all sheets');
-          console.time('[FetchUserData] getDoc structure');
           structureDocPromise = getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
-          console.timeEnd('[FetchUserData] getDoc structure');
         }
-        console.time('[FetchUserData] getDocs cardTemplates');
         cardTemplatesPromise = getDocs(collection(db, 'businesses', businessId, 'cardTemplates'));
-        console.timeEnd('[FetchUserData] getDocs cardTemplates');
         const [sheetsResult, structureDoc, cardTemplatesSnapshot] = await Promise.all([
           sheetsPromise,
           structureDocPromise,
@@ -221,7 +203,6 @@ const fetchUserData = async ({
     let sheetNameToUse = activeSheetName;
     // Always normalize the sheet name to avoid cardId issues
     sheetNameToUse = normalizeSheetName(sheetNameToUse);
-    // console.log('[FetchUserData.jsx] Normalized sheetNameToUse:', { input: activeSheetName, sheetNameToUse });
 
     if (!sheetNameToUse && updateSheets) {
       const structure = structureData || [];
@@ -256,11 +237,6 @@ const fetchUserData = async ({
     // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
     try {
       if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
-        // console.warn('No typeOfCardsToDisplay defined for active sheet', {
-        //   sheetName: sheetNameToUse,
-        //   sheetId,
-        //   activeSheet,
-        // });
         setCards && setCards([]);
         return () => {}; // For React Suspense compatibility
       }
@@ -404,7 +380,6 @@ const fetchUserData = async ({
     );
   }
 
-  console.timeEnd(`[FetchUserData] total for route ${route}`);
   return () => {}; // For React Suspense compatibility
 };
 
