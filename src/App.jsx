@@ -15,7 +15,6 @@ import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
 import Settings from './Settings/Settings';
-import FolderOperations from './Modal/Folder Modal/FolderModal';
 import Actions from './Actions/Actions';
 import {
   handleModalSave,
@@ -106,12 +105,11 @@ function App() {
   const transportModal = useModal();
   const cardsTemplateModal = useModal();
   const sheetFolderModal = useModal();
-  const folderOperationsModal = useModal();
+  const folderModal = useModal();
   const widgetSizeModal = useModal();
   const widgetViewModal = useModal();
   const widgetSetupModal = useModal();
   const metricsModal = useModal();
-  const folderModal = useModal();
   const [isSheetModalEditMode, setIsSheetModalEditMode] = useState(false);
   const [activeOption, setActiveOption] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
@@ -480,7 +478,6 @@ function App() {
     transportModal,
     cardsTemplateModal,
     sheetFolderModal,
-    folderOperationsModal,
     widgetSizeModal,
     widgetViewModal,
     widgetSetupModal,

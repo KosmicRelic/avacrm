@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
 
 const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleClose }) => {
-  const { sheets, isDarkTheme } = useContext(MainContext);
+  const { sheets, isDarkTheme, setActiveSheetName: setActiveSheetNameWithRef } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, goBack, currentStep } = useContext(ModalNavigatorContext);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedSheets, setSelectedSheets] = useState(tempData?.selectedSheets || []);
@@ -133,11 +133,18 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
       if (isEditMode || currentStep === 2) {
         toggleSheetSelection(sheetName);
       } else {
+        // Match Sheets.jsx tab click behavior
+        const urlSheetName = sheetName.replace(/ /g, "-");
+        const newUrl = `/sheets/${urlSheetName}`;
+        if (window.location.pathname !== newUrl) {
+          window.history.pushState({}, '', newUrl);
+        }
+        setActiveSheetNameWithRef(sheetName);
         onSheetSelect(sheetName);
         handleClose({ fromSave: false });
       }
     },
-    [isEditMode, currentStep, onSheetSelect, toggleSheetSelection, handleClose]
+    [isEditMode, currentStep, onSheetSelect, toggleSheetSelection, handleClose, setActiveSheetNameWithRef]
   );
 
   // Initialize displayedSheets

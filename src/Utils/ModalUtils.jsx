@@ -606,13 +606,6 @@ export const handleModalClose = ({
       }
       handleModalSave({ modalType: 'folderModal', data: modalData });
     }
-  } else if (activeModal?.type === 'folderOperations') {
-    if (options.fromSave || options.fromDelete) {
-      const modalData = {
-        tempData: options.tempData || activeModal.data.tempData || {},
-      };
-      handleModalSave({ modalType: 'folderOperations', data: modalData });
-    }
   } else if (options.fromSave && options.openWidgetSetup) {
     setActiveModal({
       type: 'widgetSetup',
