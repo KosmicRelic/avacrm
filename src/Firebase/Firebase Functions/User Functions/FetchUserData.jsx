@@ -20,8 +20,10 @@ const fetchUserData = async ({
   activeSheetName,
   updateSheets = false,
 }) => {
+  console.time(`[FetchUserData] total for route ${route}`);
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
+    console.time(`[FetchUserData] fetchCollection ${errorMessage}`);
     try {
       const snapshot = await getDocs(path);
       const data = snapshot.docs.map((doc) => ({
@@ -39,6 +41,8 @@ const fetchUserData = async ({
         timestamp: new Date().toISOString(),
       });
       setState(defaultValue);
+    } finally {
+      console.timeEnd(`[FetchUserData] fetchCollection ${errorMessage}`);
     }
   };
 
@@ -77,15 +81,18 @@ const fetchUserData = async ({
     let allSheets = [];
     let structureData = [];
     try {
+      console.time('[FetchUserData] getDocs sheets');
       const sheetsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets'));
+      console.timeEnd('[FetchUserData] getDocs sheets');
       allSheets = sheetsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
       const matchingSheet = allSheets.find(sheet => sheet.sheetName === sheetNameFromUrl);
       // Always set the full structure and all sheets, not just the single sheet
       structureData = deriveStructureFromSheets(allSheets);
       setSheets && setSheets({ allSheets, structure: structureData });
       if (matchingSheet) {
-        // Fetch cards for this sheet
+        console.time('[FetchUserData] getDocs cards for matchingSheet');
         const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'cards'));
+        console.timeEnd('[FetchUserData] getDocs cards for matchingSheet');
         const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
         setCards && setCards(cards);
         // Optionally fetch templates, metrics, etc. as needed
@@ -98,41 +105,44 @@ const fetchUserData = async ({
       setSheets && setSheets({ allSheets: [], structure: [] });
       setCards && setCards([]);
     }
+    console.timeEnd(`[FetchUserData] total for route ${route}`);
     return;
   }
-
   if (route === '/sheets') {
     let allSheets = [];
     let structureData = [];
     let allowedSheetIds = null;
-
     if (updateSheets) {
       try {
         const isBusinessUser = auth.currentUser?.uid === businessId;
         allowedSheetIds = await getAllowedSheetIds();
-
-        // Parallelize fetching sheets and cardTemplates
         let sheetsPromise, structureDocPromise, cardTemplatesPromise;
         if (!isBusinessUser) {
-          // Team member: Fetch only allowed sheets
           if (allowedSheetIds && allowedSheetIds.length > 0) {
             sheetsPromise = Promise.all(
-              allowedSheetIds.map((sheetId) =>
-                getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId))
-              )
+              allowedSheetIds.map((sheetId) => {
+                console.time(`[FetchUserData] getDoc sheet ${sheetId}`);
+                return getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId)).then((docSnap) => {
+                  console.timeEnd(`[FetchUserData] getDoc sheet ${sheetId}`);
+                  return docSnap;
+                });
+              })
             );
           } else {
             sheetsPromise = Promise.resolve([]);
           }
-          structureDocPromise = Promise.resolve(null); // No structure doc for team member
+          structureDocPromise = Promise.resolve(null);
         } else {
-          // Business user: Fetch all sheets and structure doc in parallel
+          console.time('[FetchUserData] getDocs all sheets');
           sheetsPromise = getDocs(collection(db, 'businesses', businessId, 'sheets'));
+          console.timeEnd('[FetchUserData] getDocs all sheets');
+          console.time('[FetchUserData] getDoc structure');
           structureDocPromise = getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
+          console.timeEnd('[FetchUserData] getDoc structure');
         }
+        console.time('[FetchUserData] getDocs cardTemplates');
         cardTemplatesPromise = getDocs(collection(db, 'businesses', businessId, 'cardTemplates'));
-
-        // Await all in parallel
+        console.timeEnd('[FetchUserData] getDocs cardTemplates');
         const [sheetsResult, structureDoc, cardTemplatesSnapshot] = await Promise.all([
           sheetsPromise,
           structureDocPromise,
@@ -394,6 +404,7 @@ const fetchUserData = async ({
     );
   }
 
+  console.timeEnd(`[FetchUserData] total for route ${route}`);
   return () => {}; // For React Suspense compatibility
 };
 

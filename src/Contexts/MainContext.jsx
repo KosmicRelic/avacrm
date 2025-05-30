@@ -87,6 +87,7 @@ export const MainContextProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('[MainContext] onAuthStateChanged triggered');
       if (firebaseUser) {
         let userPermissions = {
           dashboard: 'editor',
@@ -99,8 +100,10 @@ export const MainContextProvider = ({ children }) => {
         let fetchedBusinessId = firebaseUser.uid;
         let userData = null;
         try {
+          console.time('[MainContext] Fetch user doc');
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
+          console.timeEnd('[MainContext] Fetch user doc');
           if (userDoc.exists() && userDoc.data().businessId) {
             fetchedBusinessId = userDoc.data().businessId;
             userType = userDoc.data().userType || 'business';
@@ -110,7 +113,9 @@ export const MainContextProvider = ({ children }) => {
 
           // If not business user, fetch permissions from teamMembers
           if (firebaseUser.uid !== fetchedBusinessId) {
+            console.time('[MainContext] Fetch teamMember doc');
             const teamMemberDoc = await getDoc(doc(db, 'businesses', fetchedBusinessId, 'teamMembers', firebaseUser.uid));
+            console.timeEnd('[MainContext] Fetch teamMember doc');
             if (teamMemberDoc.exists()) {
               const perms = teamMemberDoc.data().permissions;
               userPermissions = {
@@ -125,6 +130,7 @@ export const MainContextProvider = ({ children }) => {
           }
         } catch (e) {
           // fallback: treat as business user
+          console.log('[MainContext] Error fetching user/teamMember doc', e);
         }
         setUser({
           uid: firebaseUser.uid,
@@ -151,27 +157,27 @@ export const MainContextProvider = ({ children }) => {
           const fetches = [];
           // Always fetch full sheets structure if on /sheets or /sheets/:sheetName
           if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
-            // Parse sheet name from URL if present
             let sheetNameFromUrl = null;
             if (currentRoute.startsWith('/sheets/')) {
               sheetNameFromUrl = decodeURIComponent(currentRoute.replace('/sheets/', ''));
             }
-            // Always fetch full structure and all sheets
+            console.time('[MainContext] fetchUserData /sheets');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
-                route: '/sheets', // Always fetch full structure
+                route: '/sheets',
                 setSheets,
                 setCards,
                 setCardTemplates,
                 setMetrics,
                 setDashboards,
-                // Only set activeSheetName if present in URL or already set
                 activeSheetName: sheetNameFromUrl || activeSheetName || null,
                 updateSheets: true,
+              }).then((res) => {
+                console.timeEnd('[MainContext] fetchUserData /sheets');
+                return res;
               })
             );
-            // Set active sheet if coming from /sheets/:sheetName
             if (sheetNameFromUrl) {
               setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
             } else if (!activeSheetName) {
@@ -179,6 +185,7 @@ export const MainContextProvider = ({ children }) => {
             }
           }
           if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
+            console.time('[MainContext] fetchUserData /dashboard');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
@@ -189,10 +196,14 @@ export const MainContextProvider = ({ children }) => {
                 setMetrics,
                 setDashboards,
                 updateSheets: false,
+              }).then((res) => {
+                console.timeEnd('[MainContext] fetchUserData /dashboard');
+                return res;
               })
             );
           }
           if (currentRoute === '/metrics' && !hasFetched.current.metrics) {
+            console.time('[MainContext] fetchUserData /metrics');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
@@ -203,20 +214,28 @@ export const MainContextProvider = ({ children }) => {
                 setMetrics,
                 setDashboards,
                 updateSheets: false,
+              }).then((res) => {
+                console.timeEnd('[MainContext] fetchUserData /metrics');
+                return res;
               })
             );
           }
-          // Add fetch for /actions
           if (currentRoute === '/actions' && !hasFetched.current.actions) {
+            console.time('[MainContext] fetchUserData /actions');
             fetches.push(
               fetchUserData({
                 businessId: fetchedBusinessId,
                 route: '/actions',
                 setActions,
+              }).then((res) => {
+                console.timeEnd('[MainContext] fetchUserData /actions');
+                return res;
               })
             );
           }
+          console.time('[MainContext] Promise.all(fetches)');
           await Promise.all(fetches);
+          console.timeEnd('[MainContext] Promise.all(fetches)');
 
           if (currentRoute === '/sheets') hasFetched.current.sheets = true;
           if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
@@ -340,6 +359,7 @@ export const MainContextProvider = ({ children }) => {
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
+      console.time(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
       fetchUserData({
         businessId,
         route: '/sheets',
@@ -350,6 +370,7 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then(() => {
+        console.timeEnd(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
         setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
       }).catch(() => {
@@ -480,33 +501,33 @@ export const MainContextProvider = ({ children }) => {
 
     const processUpdates = async () => {
       isBatchProcessing.current = true;
+      console.time('[MainContext] processUpdates');
       const batch = writeBatch(db);
       let hasChanges = false;
 
       try {
         const isBusinessUser = user.uid === businessId;
 
+        // Profile filtering and mapping
+        console.time('[MainContext] filter modifiedCards');
         const modifiedCards = cards.filter((card) => card.isModified);
+        console.timeEnd('[MainContext] filter modifiedCards');
+        console.time('[MainContext] build accessibleCardTypes');
         const accessibleSheets = sheets.allSheets;
         const accessibleCardTypes = new Set(
           accessibleSheets.flatMap((sheet) =>
             Array.isArray(sheet.typeOfCardsToDisplay) ? sheet.typeOfCardsToDisplay : []
           )
         );
+        console.timeEnd('[MainContext] build accessibleCardTypes');
 
+        // Profile batch add for cards
+        console.time('[MainContext] batch cards');
         for (const card of modifiedCards) {
           const isCardAccessible = isBusinessUser || accessibleCardTypes.has(card.typeOfCards);
           if (!isCardAccessible) {
-            console.warn('User not authorized to modify card', {
-              cardId: card.docId,
-              cardType: card.typeOfCards,
-              userId: user.uid,
-              businessId,
-              accessibleCardTypes: Array.from(accessibleCardTypes),
-            });
             continue;
           }
-
           const docRef = doc(stateConfig.cards.collectionPath(), card.docId);
           if (card.action === 'remove') {
             batch.delete(docRef);
@@ -517,8 +538,11 @@ export const MainContextProvider = ({ children }) => {
             hasChanges = true;
           }
         }
+        console.timeEnd('[MainContext] batch cards');
 
         if (isBusinessUser) {
+          // Profile batch add for dashboards
+          console.time('[MainContext] batch dashboards');
           const modifiedDashboards = dashboards.filter((dashboard) => dashboard.isModified);
           for (const dashboard of modifiedDashboards) {
             const docRef = doc(stateConfig.dashboards.collectionPath(), dashboard.docId);
@@ -531,7 +555,10 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
+          console.timeEnd('[MainContext] batch dashboards');
 
+          // Profile batch add for cardTemplates
+          console.time('[MainContext] batch cardTemplates');
           const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
           for (const template of modifiedCardTemplates) {
             const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
@@ -544,7 +571,10 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
+          console.timeEnd('[MainContext] batch cardTemplates');
 
+          // Profile batch add for metrics
+          console.time('[MainContext] batch metrics');
           const modifiedMetrics = metrics.filter((metric) => metric.isModified);
           for (const metric of modifiedMetrics) {
             const docRef = doc(stateConfig.metrics.collectionPath(), metric.category);
@@ -557,7 +587,10 @@ export const MainContextProvider = ({ children }) => {
               hasChanges = true;
             }
           }
+          console.timeEnd('[MainContext] batch metrics');
 
+          // Profile collection changes for sheets
+          console.time('[MainContext] detectCollectionChanges sheets');
           const collectionsToCheck = ['sheets'];
           for (const stateKey of collectionsToCheck) {
             const config = stateConfig[stateKey];
@@ -604,8 +637,10 @@ export const MainContextProvider = ({ children }) => {
               }
             }
           }
+          console.timeEnd('[MainContext] detectCollectionChanges sheets');
 
           if (sheets.deletedSheetId) {
+            console.time('[MainContext] update allowedSheetIds');
             const teamMembersSnapshot = await getDocs(
               collection(db, 'businesses', businessId, 'teamMembers')
             );
@@ -623,11 +658,14 @@ export const MainContextProvider = ({ children }) => {
                 hasChanges = true;
               }
             });
+            console.timeEnd('[MainContext] update allowedSheetIds');
           }
         }
 
         if (hasChanges) {
+          console.time('[MainContext] batch.commit');
           await batch.commit();
+          console.timeEnd('[MainContext] batch.commit');
 
           setCards((prev) =>
             prev
@@ -706,6 +744,7 @@ export const MainContextProvider = ({ children }) => {
         console.error('Error processing Firestore updates:', error);
         alert('Failed to save changes. Please try again.');
       } finally {
+        console.timeEnd('[MainContext] processUpdates');
         isBatchProcessing.current = false;
         prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
       }
@@ -752,77 +791,141 @@ export const MainContextProvider = ({ children }) => {
     processUpdates();
   }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
+  // Utility: shallow compare for arrays/objects
+  const shallowEqual = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+    if (typeof a === 'object' && typeof b === 'object') {
+      const keysA = Object.keys(a);
+      const keysB = Object.keys(b);
+      if (keysA.length !== keysB.length) return false;
+      for (let key of keysA) {
+        if (a[key] !== b[key]) return false;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // Memoize context value to avoid unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    sheets,
+    setSheets: (newSheets) => {
+      if (shallowEqual(sheets, newSheets)) {
+        console.log('[MainContext] setSheets skipped (no change)');
+        return;
+      }
+      setSheets(newSheets);
+    },
+    cards,
+    setCards: (newCards) => {
+      if (shallowEqual(cards, newCards)) {
+        console.log('[MainContext] setCards skipped (no change)');
+        return;
+      }
+      setCards(newCards);
+    },
+    isDarkTheme,
+    setIsDarkTheme,
+    themeRef,
+    cardTemplates,
+    setCardTemplates: (newTemplates) => {
+      if (shallowEqual(cardTemplates, newTemplates)) {
+        console.log('[MainContext] setCardTemplates skipped (no change)');
+        return;
+      }
+      setCardTemplates(newTemplates);
+    },
+    tempData,
+    setTempData,
+    selectedTemplateIndex,
+    setSelectedTemplateIndex,
+    currentSectionIndex,
+    setCurrentSectionIndex,
+    editMode,
+    setEditMode,
+    dashboards,
+    setDashboards: (newDashboards) => {
+      if (shallowEqual(dashboards, newDashboards)) {
+        console.log('[MainContext] setDashboards skipped (no change)');
+        return;
+      }
+      setDashboards(newDashboards);
+    },
+    metrics,
+    setMetrics: (newMetrics) => {
+      if (shallowEqual(metrics, newMetrics)) {
+        console.log('[MainContext] setMetrics skipped (no change)');
+        return;
+      }
+      setMetrics(newMetrics);
+    },
+    user,
+    setUser,
+    userAuthChecked,
+    setUserAuthChecked,
+    isSignup,
+    setIsSignup,
+    activeSheetName,
+    setActiveSheetName: setActiveSheetNameWithRef,
+    sheetCardsFetched,
+    setSheetCardsFetched,
+    businessId,
+    pendingInvitations,
+    teamMembers,
+    setTeamMembers,
+    bannerQueue,
+    setBannerQueue,
+    addBannerMessage,
+    actions,
+    setActions,
+  }), [sheets, cards, isDarkTheme, cardTemplates, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions]);
+
+  // Debounce for sheet card fetches
+  const debounceRef = useRef();
   useEffect(() => {
-    // Only trigger card loading when both the full structure and the correct activeSheetName are available
-    if (!user || !businessId || !activeSheetName || !Array.isArray(sheets.allSheets) || sheets.allSheets.length === 0 || !Array.isArray(sheets.structure) || sheets.structure.length === 0) return;
-    const activeSheet = sheets.allSheets.find(s => s.sheetName === activeSheetName);
-    if (!activeSheet) return;
-    const sheetId = activeSheet.docId;
-    if (sheetCardsFetched[sheetId]) return;
-    // Mark as fetching to avoid duplicate fetches
-    setSheetCardsFetched(prev => ({ ...prev, [sheetId]: false }));
-    // Fetch cards for this sheet
-    fetchUserData({
-      businessId,
-      route: '/sheets',
-      setCards,
-      setCardTemplates,
-      setMetrics,
-      setDashboards,
-      activeSheetName,
-      updateSheets: false,
-    }).then(() => {
-      setSheetCardsFetched(prev => ({ ...prev, [sheetId]: true }));
-    }).catch(() => {
-      setSheetCardsFetched(prev => ({ ...prev, [sheetId]: false }));
-    });
-  }, [user, businessId, activeSheetName, sheets.allSheets, sheets.structure]);
+    if (!user || !businessId || location.pathname !== '/sheets' || !activeSheetName) return;
+    const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
+    const sheetId = sheetObj?.docId;
+    if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
+      return;
+    }
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      console.log('[MainContext] Debounced previous sheet card fetch');
+    }
+    debounceRef.current = setTimeout(() => {
+      fetchingSheetIdsRef.current.add(sheetId);
+      console.time(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
+      fetchUserData({
+        businessId,
+        route: '/sheets',
+        setCards,
+        setCardTemplates,
+        setMetrics,
+        setDashboards,
+        activeSheetName,
+        updateSheets: false,
+      }).then(() => {
+        console.timeEnd(`[MainContext] fetchUserData cards for sheet ${sheetId}`);
+        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
+        fetchingSheetIdsRef.current.delete(sheetId);
+      }).catch(() => {
+        fetchingSheetIdsRef.current.delete(sheetId);
+      });
+    }, 200); // 200ms debounce
+    return () => clearTimeout(debounceRef.current);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
   return (
-    <MainContext.Provider
-      value={{
-        sheets,
-        setSheets,
-        cards,
-        setCards,
-        isDarkTheme,
-        setIsDarkTheme,
-        themeRef,
-        cardTemplates,
-        setCardTemplates,
-        tempData,
-        setTempData,
-        selectedTemplateIndex,
-        setSelectedTemplateIndex,
-        currentSectionIndex,
-        setCurrentSectionIndex,
-        editMode,
-        setEditMode,
-        dashboards,
-        setDashboards,
-        metrics,
-        setMetrics,
-        user,
-        setUser,
-        userAuthChecked,
-        setUserAuthChecked,
-        isSignup,
-        setIsSignup,
-        activeSheetName,
-        setActiveSheetName: setActiveSheetNameWithRef,
-        sheetCardsFetched,
-        setSheetCardsFetched,
-        businessId,
-        pendingInvitations,
-        teamMembers,
-        setTeamMembers,
-        bannerQueue,
-        setBannerQueue,
-        addBannerMessage,
-        actions,
-        setActions,
-      }}
-    >
+    <MainContext.Provider value={contextValue}>
       {children}
     </MainContext.Provider>
   );
