@@ -28,7 +28,6 @@ import {
   onOpenTransportModal,
   onOpenCardsTemplateModal,
   onOpenSheetFolderModal,
-  onOpenFolderOperationsModal,
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
 
@@ -528,7 +527,7 @@ function App() {
             activeOption={activeOption}
             setActiveOption={setActiveOption}
             onOpenFolderModal={(folderName) =>
-              onOpenFolderOperationsModal({ folderName, ...modalUtilsProps })
+              onOpenFolderModal({ folderName, ...modalUtilsProps })
             }
             onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
           />

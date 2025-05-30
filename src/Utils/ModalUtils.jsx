@@ -5,7 +5,7 @@ import ReOrderModal from '../Modal/Re Order Modal/ReOrderModal';
 import TransportModal from '../Modal/Cards Transportaion Modal/TransportModal';
 import CardsTemplate from '../Modal/Cards Template/CardsTemplate';
 import CreateSheetsAndFolders from '../Modal/Create Sheets And Folders/CreateSheetsAndFolders';
-import FolderOperations from '../Modal/Folder Modal/FolderModal';
+import FolderModal from '../Modal/Folder Modal/FolderModal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from '../Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from '../Dashboard/WidgetSetupModal/WidgetSetupModal';
@@ -317,12 +317,30 @@ export const handleModalSave = async ({
         console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
       }
       break;
-    case 'folderOperations':
+    case 'folderModal':
+      // LOG: Entered folderModal case
+      console.log('[ModalUtils] folderModal: data', data);
+      // DEBUG: Log tempData and actions
+      if (data?.tempData) {
+        console.log('[ModalUtils] folderModal: tempData', data.tempData);
+        if (data.tempData.actions) {
+          console.log('[ModalUtils] folderModal: tempData.actions', data.tempData.actions);
+        } else {
+          console.log('[ModalUtils] folderModal: tempData.actions is missing or falsy');
+        }
+        if (data.tempData.action) {
+          console.log('[ModalUtils] folderModal: tempData.action', data.tempData.action);
+        }
+      } else {
+        console.log('[ModalUtils] folderModal: tempData is missing');
+      }
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {
+          console.log('[ModalUtils] folderModal: setSheets prev', prev);
           let currentStructure = [...prev.structure];
           const modifiedSheets = new Set();
-          data.tempData.actions.forEach((actionData) => {
+          data.tempData.actions.forEach((actionData, idx) => {
+            console.log(`[ModalUtils] folderModal: actionData[${idx}]`, actionData);
             if (
               actionData.action === 'removeSheets' &&
               actionData.selectedSheets &&
@@ -344,6 +362,7 @@ export const handleModalSave = async ({
               const newSheetsToAdd = removedSheets.filter(
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
+              console.log('[ModalUtils] folderModal: removeSheets', { folder, folderSheets, remainingSheets, removedSheets, existingSheetNames, newSheetsToAdd });
               currentStructure = [
                 ...currentStructure.filter(
                   (item) => item.folderName !== actionData.folderName
@@ -351,6 +370,7 @@ export const handleModalSave = async ({
                 { folderName: actionData.folderName, sheets: remainingSheets },
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ];
+              removedSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
             } else if (
               actionData.action === 'addSheets' &&
               actionData.selectedSheets &&
@@ -369,99 +389,32 @@ export const handleModalSave = async ({
                     ? { ...item, sheets: [...existingSheets, ...newSheets] }
                     : item
                 );
+                newSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
               }
-            }
-          });
-          return {
-            ...prev,
-            structure: [...currentStructure],
-            allSheets: prev.allSheets.map((sheet) =>
-              modifiedSheets.has(sheet.sheetName)
-                ? { ...sheet, isModified: true, action: 'update' }
-                : sheet
-            ),
-          };
-        });
-      } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
-        setSheets((prev) => {
-          const folderSheets = prev.structure.find(
-            (item) => item.folderName === data.tempData.folderName
-          )?.sheets || [];
-          const existingSheetNames = prev.structure
-            .filter((item) => item.sheetName)
-            .map((item) => item.sheetName);
-          const newSheetsToAdd = folderSheets.filter(
-            (sheetName) => !existingSheetNames.includes(sheetName)
-          );
-          return {
-            ...prev,
-            structure: [
-              ...prev.structure.filter(
-                (item) => item.folderName !== data.tempData.folderName
-              ),
-              ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
-            ],
-            allSheets: prev.allSheets.map((sheet) =>
-              folderSheets.includes(sheet.sheetName)
-                ? { ...sheet, isModified: true, action: 'update' }
-                : sheet
-            ),
-          };
-        });
-      }
-      break;
-    case 'folderModal':
-      if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
-        setSheets((prev) => {
-          let currentStructure = [...prev.structure];
-          data.tempData.actions.forEach((actionData) => {
-            if (
-              actionData.action === 'removeSheets' &&
-              actionData.selectedSheets &&
+              console.log('[ModalUtils] folderModal: addSheets', { folder, existingSheets, newSheets, currentStructure });
+            } else if (
+              actionData.action === 'deleteFolder' &&
               actionData.folderName
             ) {
+              // Move all sheets out of the folder and delete the folder
               const folder = currentStructure.find(
                 (item) => item.folderName === actionData.folderName
               );
               const folderSheets = folder?.sheets || [];
-              const remainingSheets = folderSheets.filter(
-                (sheet) => !actionData.selectedSheets.includes(sheet)
-              );
-              const removedSheets = folderSheets.filter((sheet) =>
-                actionData.selectedSheets.includes(sheet)
-              );
               const existingSheetNames = currentStructure
                 .filter((item) => item.sheetName)
                 .map((item) => item.sheetName);
-              const newSheetsToAdd = removedSheets.filter(
+              const newSheetsToAdd = folderSheets.filter(
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
+              console.log('[ModalUtils] folderModal: deleteFolder', { folder, folderSheets, existingSheetNames, newSheetsToAdd });
               currentStructure = [
                 ...currentStructure.filter(
                   (item) => item.folderName !== actionData.folderName
                 ),
-                { folderName: actionData.folderName, sheets: remainingSheets },
                 ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
               ];
-            } else if (
-              actionData.action === 'addSheets' &&
-              actionData.selectedSheets &&
-              actionData.folderName
-            ) {
-              const folder = currentStructure.find(
-                (item) => item.folderName === actionData.folderName
-              );
-              const existingSheets = folder?.sheets || [];
-              const newSheets = actionData.selectedSheets.filter(
-                (sheet) => !existingSheets.includes(sheet)
-              );
-              if (newSheets.length > 0) {
-                currentStructure = currentStructure.map((item) =>
-                  item.folderName === actionData.folderName
-                    ? { ...item, sheets: [...existingSheets, ...newSheets] }
-                    : item
-                );
-              }
+              folderSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
             }
           });
           // Clean up structure: remove empty/falsey/empty string sheet names
@@ -480,11 +433,49 @@ export const handleModalSave = async ({
                 return null;
               })
               .filter(Boolean);
+          const cleaned = cleanStructure(currentStructure);
+          console.log('[ModalUtils] folderModal: final structure', cleaned);
           return {
             ...prev,
-            structure: cleanStructure(currentStructure),
+            structure: cleaned,
+            allSheets: prev.allSheets.map((sheet) =>
+              modifiedSheets.has(sheet.sheetName)
+                ? { ...sheet, isModified: true, action: 'update' }
+                : sheet
+            ),
           };
         });
+      } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
+        setSheets((prev) => {
+          console.log('[ModalUtils] folderModal: direct deleteFolder', data.tempData);
+          const folderSheets = prev.structure.find(
+            (item) => item.folderName === data.tempData.folderName
+          )?.sheets || [];
+          const existingSheetNames = prev.structure
+            .filter((item) => item.sheetName)
+            .map((item) => item.sheetName);
+          const newSheetsToAdd = folderSheets.filter(
+            (sheetName) => !existingSheetNames.includes(sheetName)
+          );
+          const newStructure = [
+            ...prev.structure.filter(
+              (item) => item.folderName !== data.tempData.folderName
+            ),
+            ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
+          ];
+          console.log('[ModalUtils] folderModal: direct deleteFolder newStructure', newStructure);
+          return {
+            ...prev,
+            structure: newStructure,
+            allSheets: prev.allSheets.map((sheet) =>
+              folderSheets.includes(sheet.sheetName)
+                ? { ...sheet, isModified: true, action: 'update' }
+                : sheet
+            ),
+          };
+        });
+      } else {
+        console.log('[ModalUtils] folderModal: No actions or deleteFolder action found.');
       }
       break;
     case 'widgetView':
@@ -598,7 +589,6 @@ export const handleModalClose = ({
   transportModal,
   cardsTemplateModal,
   sheetFolderModal,
-  folderOperationsModal,
   widgetSizeModal,
   widgetViewModal,
   widgetSetupModal,
@@ -606,7 +596,17 @@ export const handleModalClose = ({
   activeDashboard,
   folderModal,
 }) => {
-  if (activeModal?.type === 'folderOperations') {
+  if (activeModal?.type === 'folderModal') {
+    // Special handling for folderModal: if fromSave and tempData.action or tempData.actions, pass them to handleModalSave
+    if (options.fromSave) {
+      let modalData = activeModal.data || {};
+      // Prefer tempData from options if present (e.g. from deleteFolder)
+      if (options.tempData) {
+        modalData = { ...modalData, tempData: options.tempData };
+      }
+      handleModalSave({ modalType: 'folderModal', data: modalData });
+    }
+  } else if (activeModal?.type === 'folderOperations') {
     if (options.fromSave || options.fromDelete) {
       const modalData = {
         tempData: options.tempData || activeModal.data.tempData || {},
@@ -645,7 +645,6 @@ export const handleModalClose = ({
   transportModal?.close();
   cardsTemplateModal?.close();
   sheetFolderModal?.close();
-  folderOperationsModal?.close();
   widgetSizeModal?.close();
   widgetViewModal?.close();
   widgetSetupModal?.close();
@@ -754,26 +753,12 @@ export const renderModalContent = ({
           handleClose={handleModalClose}
         />
       );
-    case 'folderOperations':
+    case 'folderModal':
       return (
-        <FolderOperations
+        <FolderModal
           folderName={activeModal.data?.folderName}
           onSheetSelect={handleSheetChange}
           handleClose={handleModalClose}
-          tempData={activeModal.data?.tempData || {}}
-          setTempData={(newData) =>
-            setActiveModal((prev) =>
-              prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
-            )
-          }
-        />
-      );
-    case 'folderModal':
-      return (
-        <FolderOperations
-          folderName={activeModal.data?.folderName}
-          onSheetSelect={activeModal.data?.onSheetSelect}
-          handleClose={activeModal.data?.handleClose}
           tempData={activeModal.data?.tempData || {}}
           setTempData={(newData) =>
             setActiveModal((prev) =>
@@ -933,20 +918,6 @@ export const onOpenSheetFolderModal = ({
     data: { sheets, handleSheetSave, handleFolderSave },
   });
   sheetFolderModal?.open();
-};
-
-export const onOpenFolderOperationsModal = ({
-  folderName,
-  sheets,
-  setActiveModal,
-  folderOperationsModal,
-}) => {
-  if (!sheets) return;
-  setActiveModal({
-    type: 'folderOperations',
-    data: { folderName, tempData: {} },
-  });
-  folderOperationsModal?.open();
 };
 
 export const onOpenFolderModal = ({

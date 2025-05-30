@@ -185,11 +185,6 @@ const CreateSheetsAndFolders = ({
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
                 />
               </div>
-              <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Headers will be defined when creating cards for this sheet.
-                </div>
-              </div>
             </>
           )}
           {addType === "folder" && (
