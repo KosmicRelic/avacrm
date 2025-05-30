@@ -106,7 +106,7 @@ const fetchUserData = async ({
       try {
         const isBusinessUser = auth.currentUser?.uid === businessId;
         allowedSheetIds = await getAllowedSheetIds();
-        let sheetsPromise, structureDocPromise, cardTemplatesPromise;
+        let sheetsPromise, structureDocPromise;
         if (!isBusinessUser) {
           if (allowedSheetIds && allowedSheetIds.length > 0) {
             sheetsPromise = Promise.all(
@@ -124,11 +124,10 @@ const fetchUserData = async ({
           sheetsPromise = getDocs(collection(db, 'businesses', businessId, 'sheets'));
           structureDocPromise = getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
         }
-        cardTemplatesPromise = getDocs(collection(db, 'businesses', businessId, 'cardTemplates'));
-        const [sheetsResult, structureDoc, cardTemplatesSnapshot] = await Promise.all([
+        // PHASE 1: Fetch sheets and structure only
+        const [sheetsResult, structureDoc] = await Promise.all([
           sheetsPromise,
           structureDocPromise,
-          cardTemplatesPromise,
         ]);
 
         if (!isBusinessUser) {
@@ -157,13 +156,33 @@ const fetchUserData = async ({
         }
 
         setSheets && setSheets({ allSheets, structure: structureData });
-        setCardTemplates &&
-          setCardTemplates(
-            cardTemplatesSnapshot.docs.map((doc) => ({
-              docId: doc.id,
-              ...doc.data(),
-            }))
-          );
+        // PHASE 2: Defer cardTemplates, metrics, dashboards fetch to background
+        setTimeout(() => {
+          getDocs(collection(db, 'businesses', businessId, 'cardTemplates')).then((cardTemplatesSnapshot) => {
+            setCardTemplates && setCardTemplates(
+              cardTemplatesSnapshot.docs.map((doc) => ({
+                docId: doc.id,
+                ...doc.data(),
+              }))
+            );
+          });
+          getDocs(collection(db, 'businesses', businessId, 'metrics')).then((metricsSnapshot) => {
+            setMetrics && setMetrics(
+              metricsSnapshot.docs.map((doc) => ({
+                docId: doc.id,
+                ...doc.data(),
+              }))
+            );
+          });
+          getDocs(collection(db, 'businesses', businessId, 'dashboards')).then((dashboardsSnapshot) => {
+            setDashboards && setDashboards(
+              dashboardsSnapshot.docs.map((doc) => ({
+                docId: doc.id,
+                ...doc.data(),
+              }))
+            );
+          });
+        }, 0);
       } catch (error) {
         console.error('Error fetching sheets:', {
           code: error.code,
