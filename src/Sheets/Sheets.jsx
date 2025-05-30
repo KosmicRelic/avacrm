@@ -93,14 +93,11 @@ const Sheets = ({
 
   const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
   const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
-  // console.log('Active sheet cardTypeFilters:', cardTypeFilters);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
   const sheetCards = useMemo(() => {
     if (!activeSheet) return [];
-    // Log followUpDate values to inspect format
-    
     return cards
       .filter((card) => sheetCardTypes.includes(card.typeOfCards))
       .filter((card) => {
@@ -117,9 +114,6 @@ const Sheets = ({
           const header = headers.find((h) => h.key === field);
           const value = card[field];
           if (!filter || !header) {
-            if (!header) {
-              // console.warn('Header not found for cardTypeFilter', { field, cardType: card.typeOfCards, activeSheetName });
-            }
             return true;
           }
 
@@ -148,7 +142,7 @@ const Sheets = ({
               }
             case 'date':
               if (!filter.sortOrder) return true;
-              return true; // Sorting is handled in sortedRows, not filtering
+              return true;
             case 'dropdown':
               if (!filter.values || filter.values.length === 0) return true;
               return filter.values.includes(value);
@@ -169,7 +163,7 @@ const Sheets = ({
             default:
               return true;
           }
-       });
+        });
       });
   }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName, user.uid]);
 
@@ -179,9 +173,6 @@ const Sheets = ({
         const header = headers.find((h) => h.key === headerKey);
         const rowValue = row[headerKey];
         if (!filter || !header) {
-          if (!header) {
-            // console.warn('Header not found for global filter', { headerKey, activeSheetName });
-          }
           return true;
         }
 
@@ -210,7 +201,7 @@ const Sheets = ({
             }
           case 'date':
             if (!filter.sortOrder) return true;
-            return true; // Sorting is handled in sortedRows, not filtering
+            return true;
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(rowValue);
@@ -274,8 +265,6 @@ const Sheets = ({
   }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
   const sortedRows = useMemo(() => {
-    // console.log('Global Filters:', globalFilters);
-    // console.log('Card Type Filters:', cardTypeFilters);
     const sorted = [...filteredRows];
     const sortCriteria = [
       ...Object.entries(cardTypeFilters).flatMap(([type, filters]) =>
@@ -298,8 +287,6 @@ const Sheets = ({
         })),
     ];
 
-    // console.log('Sort Criteria:', sortCriteria);
-
     if (sortCriteria.length > 0) {
       sorted.sort((a, b) => {
         for (const { key, sortOrder, type, appliesToCardType } of sortCriteria) {
@@ -310,12 +297,9 @@ const Sheets = ({
             aValue = Number(aValue) || 0;
             bValue = Number(bValue) || 0;
           } else if (type === 'date') {
-            // Use robust conversion for all date types
             aValue = toMillis(aValue);
             bValue = toMillis(bValue);
-            // Handle invalid or NaN values
             if (isNaN(aValue)) {
-              // Place invalid dates at the end for ascending, start for descending
               aValue = sortOrder === 'ascending' ? Infinity : -Infinity;
             }
             if (isNaN(bValue)) {
@@ -338,12 +322,9 @@ const Sheets = ({
 
   const isBusinessUser = user && user.uid === businessId;
 
-  // Add a log before attempting to load cards
   useEffect(() => {
     if (activeSheet && Array.isArray(sheets.allSheets) && sheets.allSheets.length > 0) {
       // console.log('[Sheets][DEBUG] Attempting to load cards for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
-    } else {
-      // console.log('[Sheets][DEBUG] Not loading cards: activeSheet or sheets.allSheets not ready');
     }
   }, [activeSheet, sheets.allSheets]);
 
@@ -351,27 +332,19 @@ const Sheets = ({
     (sheetName) => {
       const urlSheetName = sheetName.replace(/ /g, "-");
       const newUrl = `/sheets/${urlSheetName}`;
-      // console.log('[Sheets.jsx][handleSheetClick] Clicked sheet:', sheetName, '| URL:', newUrl, '| Current activeSheetName:', activeSheetName, '| Current URL:', window.location.pathname);
       if (window.location.pathname !== newUrl) {
         window.history.pushState({}, '', newUrl);
-        // console.log('[Sheets.jsx][handleSheetClick] Pushed new URL:', newUrl);
       }
       if (sheetName !== activeSheetName) {
-        // console.log('[Sheets.jsx][handleSheetClick] setActiveSheetNameWithRef:', sheetName);
         setActiveSheetNameWithRef(sheetName);
-        // console.log('[Sheets.jsx][handleSheetClick] onSheetChange:', sheetName);
         onSheetChange(sheetName);
-      } else {
-        // console.log('[Sheets.jsx][handleSheetClick] Sheet already active, no state change.');
       }
     },
     [activeSheetName, onSheetChange, setActiveSheetNameWithRef]
   );
 
-  // Log when the effect that resets UI state runs, and what the previous and next activeSheetName are
   const prevActiveSheetNameRef = useRef();
   useEffect(() => {
-    // console.log('[Sheets.jsx][UI RESET EFFECT] Sheet changed from', prevActiveSheetNameRef.current, 'to', activeSheetName);
     setSpinnerVisible(false);
     setSpinnerFading(false);
     setIsEditorOpen(false);
@@ -380,10 +353,8 @@ const Sheets = ({
     setSelectedRowIds([]);
     setSearchQuery('');
     prevActiveSheetNameRef.current = activeSheetName;
-    // console.log('[Sheets.jsx][UI RESET EFFECT] UI state reset for new sheet.');
   }, [activeSheetName]);
 
-  // Log when activeSheetName changes due to context (from MainContext)
   useEffect(() => {
     // console.log('[Sheets.jsx][CONTEXT] activeSheetName from context changed:', activeSheetName);
   }, [activeSheetName]);
@@ -393,10 +364,8 @@ const Sheets = ({
       onOpenFolderModal(folderName, (sheetName) => {
         setActiveSheetNameWithRef(sheetName);
         onSheetChange(sheetName);
-        // Replace spaces with dashes for URL
         const urlSheetName = sheetName.replace(/ /g, "-");
         const newUrl = `/sheets/${urlSheetName}`;
-        // console.log('[Sheets.jsx] handleFolderClick: Navigating to', newUrl);
         window.history.pushState({}, '', newUrl);
       });
     },
@@ -405,10 +374,8 @@ const Sheets = ({
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
-  // Detect cardId from URL
   const cardIdFromUrl = params.cardId;
 
-  // When cardIdFromUrl is present, open the editor for that card
   useEffect(() => {
     if (cardIdFromUrl && cards.length > 0) {
       const card = cards.find((c) => c.docId === cardIdFromUrl);
@@ -419,20 +386,17 @@ const Sheets = ({
     }
   }, [cardIdFromUrl, cards]);
 
-  // When a card is opened in the editor, update the URL
   const handleRowClick = useCallback(
     (rowData) => {
       if (rowData.isAddNew) {
         setIsEditorOpen(true);
         setSelectedRow(null);
-        // Optionally update URL for new card
       } else {
         const fullCard = cards.find((card) => card.docId === rowData.docId) || rowData;
         setSelectedRow(fullCard);
         setIsEditorOpen(true);
         setIsClosing(false);
         onRowClick(fullCard);
-        // Update URL to include cardId
         if (fullCard?.docId) {
           const urlSheetName = activeSheetName.replace(/ /g, "-");
           navigate(`/sheets/${urlSheetName}/${fullCard.docId}`, { replace: false });
@@ -442,14 +406,12 @@ const Sheets = ({
     [onRowClick, cards, activeSheetName, navigate]
   );
 
-  // When editor closes, remove cardId from URL
   const handleEditorClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       setIsEditorOpen(false);
       setSelectedRow(null);
       setIsClosing(false);
-      // Remove cardId from URL
       const urlSheetName = activeSheetName.replace(/ /g, "-");
       navigate(`/sheets/${urlSheetName}`, { replace: true });
     }, 300);
@@ -513,9 +475,36 @@ const Sheets = ({
     setIsSelectMode(false);
   }, [selectedRowIds, setCards]);
 
+  // Ensure URL always matches the current active sheet
+  useEffect(() => {
+    if (activeSheetName) {
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      const expectedUrl = `/sheets/${urlSheetName}`;
+      if (!window.location.pathname.startsWith(expectedUrl)) {
+        window.history.replaceState({}, '', expectedUrl);
+      }
+    }
+  }, [activeSheetName]);
+
+  // Define loading UI
+  const LoadingUI = (
+    <div
+      className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
+      style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
+      <span>Loading sheet data...</span>
+    </div>
+  );
+
+  // Render loading UI if sheets are not loaded
+  if (!sheets.allSheets.length) {
+    return LoadingUI;
+  }
+
+  // Define TableContent (same as before)
   const TableContent = (
     <div className={styles.tableContent}>
-      {/* Only show controls if there is an active sheet */}
       {activeSheet && (
         <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={styles.buttonGroup}>
@@ -696,51 +685,6 @@ const Sheets = ({
       </div>
     </div>
   );
-
-  // Add logging for activeSheetName, activeSheet, and sheetId
-  useEffect(() => {
-    // console.log('[Sheets.jsx][STATE] activeSheetName:', activeSheetName);
-    // console.log('[Sheets.jsx][STATE] activeSheet:', activeSheet);
-    // console.log('[Sheets.jsx][STATE] sheetId:', sheetId);
-    // console.log('[Sheets.jsx][STATE] isLoading:', isLoading);
-    // console.log('[Sheets.jsx][STATE] cards.length:', cards.length);
-    // console.log('[Sheets.jsx][STATE] pathname:', window.location.pathname);
-  }, [activeSheetName, activeSheet, sheetId, isLoading, cards.length]);
-
-  // Reset spinner and editor state when switching sheets
-  useEffect(() => {
-    setSpinnerVisible(false);
-    setSpinnerFading(false);
-    setIsEditorOpen(false);
-    setSelectedRow(null);
-    setIsSelectMode(false);
-    setSelectedRowIds([]);
-    setSearchQuery('');
-    // Optionally log
-    // console.log('[Sheets.jsx] Sheet changed, reset UI state.');
-  }, [activeSheetName]);
-
-  // Show loading spinner if sheets are not loaded
-  if (!sheets.allSheets.length) {
-    return (
-      <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
-           style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
-        <span>Loading sheet data...</span>
-      </div>
-    );
-  }
-
-  // Ensure URL always matches the current active sheet
-  useEffect(() => {
-    if (activeSheetName) {
-      const urlSheetName = activeSheetName.replace(/ /g, "-");
-      const expectedUrl = `/sheets/${urlSheetName}`;
-      if (!window.location.pathname.startsWith(expectedUrl)) {
-        window.history.replaceState({}, '', expectedUrl);
-      }
-    }
-  }, [activeSheetName]);
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>

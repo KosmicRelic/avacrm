@@ -166,7 +166,8 @@ export const MainContextProvider = ({ children }) => {
                 setCardTemplates,
                 setMetrics,
                 setDashboards,
-                activeSheetName: sheetNameFromUrl || activeSheetName || 'Leads',
+                // Only set activeSheetName if present in URL or already set
+                activeSheetName: sheetNameFromUrl || activeSheetName || null,
                 updateSheets: true,
               })
             );
@@ -174,7 +175,7 @@ export const MainContextProvider = ({ children }) => {
             if (sheetNameFromUrl) {
               setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
             } else if (!activeSheetName) {
-              setActiveSheetName('Leads');
+              setActiveSheetName(null);
             }
           }
           if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {

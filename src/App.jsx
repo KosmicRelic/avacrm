@@ -540,7 +540,7 @@ function App() {
       )}
       <div className={styles.contentWrapper}>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/sheets" replace />} />
           <Route
             path="/dashboard"
             element={
