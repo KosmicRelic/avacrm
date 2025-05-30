@@ -327,7 +327,7 @@ export const MainContextProvider = ({ children }) => {
 
   useEffect(() => {
     // console.log('[MainContext] useEffect: sheet card fetch', { user, businessId, location: location.pathname, activeSheetName, sheets: sheets.allSheets, sheetCardsFetched });
-    if (user && businessId && location.pathname === '/sheets' && activeSheetName) {
+    if (user && businessId && location.pathname.startsWith('/sheets') && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
       if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
