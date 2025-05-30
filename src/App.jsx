@@ -681,38 +681,6 @@ function App() {
             {renderModalContent(modalUtilsProps)}
           </Modal>
         )}
-        {folderModal.isOpen && (
-          <Modal
-            onClose={(options) =>
-              handleModalClose({
-                options,
-                handleModalSave: (args) => handleModalSave({ ...args, ...modalUtilsProps }),
-                ...modalUtilsProps,
-              })
-            }
-            onSave={() =>
-              handleModalSave({
-                modalType: 'folderModal',
-                data: activeModal.data,
-                ...modalUtilsProps,
-              })
-            }
-            modalType="folderModal"
-            tempData={activeModal.data}
-          >
-            <FolderOperations
-              folderName={activeModal.data.folderName}
-              onSheetSelect={activeModal.data.onSheetSelect}
-              tempData={activeModal.data.tempData || {}}
-              setTempData={(newData) =>
-                setActiveModal((prev) =>
-                  prev ? { ...prev, data: { ...prev.data, tempData: newData } } : prev
-                )
-              }
-              handleClose={activeModal.data.handleClose}
-            />
-          </Modal>
-        )}
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}

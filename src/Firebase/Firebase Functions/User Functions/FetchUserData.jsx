@@ -230,7 +230,6 @@ const fetchUserData = async ({
 
     const activeSheet = allSheets.find((s) => s.sheetName === sheetNameToUse);
     if (!activeSheet) {
-      console.warn('Active sheet not found', { sheetNameToUse, allSheets });
       setCards && setCards([]);
       return () => {}; // For React Suspense compatibility
     }
