@@ -515,75 +515,78 @@ const Sheets = ({
 
   const TableContent = (
     <div className={styles.tableContent}>
-      <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <div className={styles.buttonGroup}>
-          {!isSelectMode && (
-            <button
-              className={`${styles.filterButton} ${
-                isDarkTheme ? styles.darkTheme : ''
-              } ${Object.keys(cardTypeFilters).length > 0 ? styles.active : ''}`}
-              onClick={onFilter}
-            >
-              <MdFilterAlt size={20} />
-            </button>
-          )}
-          {isSelectMode && isBusinessUser ? (
-            <>
+      {/* Only show controls if there is an active sheet */}
+      {activeSheet && (
+        <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <div className={styles.buttonGroup}>
+            {!isSelectMode && (
               <button
-                className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleSelectToggle}
+                className={`${styles.filterButton} ${
+                  isDarkTheme ? styles.darkTheme : ''
+                } ${Object.keys(cardTypeFilters).length > 0 ? styles.active : ''}`}
+                onClick={onFilter}
               >
-                Cancel
+                <MdFilterAlt size={20} />
               </button>
-              {selectedRowIds.length > 0 && (
-                <>
-                  <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={handleSelectAll}
-                  >
-                    {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
-                      ? 'Deselect All'
-                      : 'Select All'}
-                  </button>
-                  <button
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Are you sure you want to delete the selected cards? This action cannot be undone.'
-                        )
-                      ) {
-                        handleDeleteSelected();
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </>
-          ) : null}
-        </div>
-        <div className={styles.searchContainer}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search"
-            className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ''}`}
-          />
-          {searchQuery && (
-            <button className={styles.clearButton} onClick={clearSearch}>
-              <IoCloseCircle size={18} />
+            )}
+            {isSelectMode && isBusinessUser ? (
+              <>
+                <button
+                  className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={handleSelectToggle}
+                >
+                  Cancel
+                </button>
+                {selectedRowIds.length > 0 && (
+                  <>
+                    <button
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={handleSelectAll}
+                    >
+                      {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
+                        ? 'Deselect All'
+                        : 'Select All'}
+                    </button>
+                    <button
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            'Are you sure you want to delete the selected cards? This action cannot be undone.'
+                          )
+                        ) {
+                          handleDeleteSelected();
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </>
+            ) : null}
+          </div>
+          <div className={styles.searchContainer}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search"
+              className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ''}`}
+            />
+            {searchQuery && (
+              <button className={styles.clearButton} onClick={clearSearch}>
+                <IoCloseCircle size={18} />
+              </button>
+            )}
+          </div>
+          {isBusinessUser && (
+            <button className={styles.editHeaderButton} onClick={onEditSheet}>
+              Edit
             </button>
           )}
         </div>
-        {isBusinessUser && (
-          <button className={styles.editHeaderButton} onClick={onEditSheet}>
-            Edit
-          </button>
-        )}
-      </div>
+      )}
       <div
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
@@ -606,7 +609,10 @@ const Sheets = ({
             />
           </div>
         ) : !activeSheet ? (
-          <div className={styles.noResults}>Select a sheet</div>
+          <div className={styles.selectSheetMessage + (isDarkTheme ? ' ' + styles.darkTheme : '')}>
+            <div className={styles.selectSheetTitle}>Select a sheet</div>
+            <div className={styles.selectSheetSubtitle}>Tap a sheet tab to get started</div>
+          </div>
         ) : (
           <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <RowComponent
@@ -724,6 +730,17 @@ const Sheets = ({
       </div>
     );
   }
+
+  // Ensure URL always matches the current active sheet
+  useEffect(() => {
+    if (activeSheetName) {
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      const expectedUrl = `/sheets/${urlSheetName}`;
+      if (!window.location.pathname.startsWith(expectedUrl)) {
+        window.history.replaceState({}, '', expectedUrl);
+      }
+    }
+  }, [activeSheetName]);
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>

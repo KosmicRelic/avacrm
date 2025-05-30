@@ -29,6 +29,7 @@ import {
   onOpenSheetFolderModal,
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
+import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
 
 // Memoized ProtectedRoute to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
@@ -220,7 +221,7 @@ function App() {
   );
 
   const handleDeleteSheet = useCallback(
-    (sheetName) => {
+    async (sheetName) => {
       if (!sheets) return;
       const sheetToDelete = sheets.allSheets.find((sheet) => sheet.sheetName === sheetName);
       if (!sheetToDelete) return;
@@ -240,17 +241,11 @@ function App() {
           })
           .filter((item) => item !== null);
 
-        let newActiveSheet = updatedAllSheets[0]?.sheetName;
-        if (updatedStructure.length > 0) {
-          const firstItem = updatedStructure[0];
-          newActiveSheet = firstItem.sheetName || updatedStructure[0].sheets?.[0] || null;
-        }
-
         return {
           ...prev,
-          allSheets: updatedAllSheets.map((sheet, index) => ({
+          allSheets: updatedAllSheets.map((sheet) => ({
             ...sheet,
-            isActive: index === 0 && !newActiveSheet ? true : sheet.sheetName === newActiveSheet,
+            isActive: false, // No sheet is active after deletion
             isModified: sheet.sheetName === sheetName ? true : sheet.isModified,
             action: sheet.sheetName === sheetName ? 'remove' : sheet.action,
           })),
@@ -259,12 +254,25 @@ function App() {
         };
       });
 
+      if (sheetToDelete.docId && businessId) {
+        try {
+          await deleteSheetFromFirestore(businessId, sheetToDelete.docId);
+        } catch (e) {
+          // Optionally show error to user
+          console.error('Failed to delete sheet from Firestore:', e);
+        }
+      }
+
       if (activeSheetName === sheetName) {
-        setActiveSheetName(newActiveSheet || 'Leads');
-        handleSheetChange(newActiveSheet || 'Leads');
+        setActiveSheetName(null);
+        handleSheetChange(null);
+        // Update URL to /sheets
+        if (window.location.pathname !== '/sheets') {
+          window.history.replaceState({}, '', '/sheets');
+        }
       }
     },
-    [setSheets, sheets, activeSheetName, setActiveSheetName, handleSheetChange]
+    [setSheets, sheets, activeSheetName, setActiveSheetName, handleSheetChange, businessId]
   );
 
   const handleSheetSave = useCallback(

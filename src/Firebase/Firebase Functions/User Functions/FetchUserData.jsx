@@ -246,11 +246,11 @@ const fetchUserData = async ({
     // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
     try {
       if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
-        console.warn('No typeOfCardsToDisplay defined for active sheet', {
-          sheetName: sheetNameToUse,
-          sheetId,
-          activeSheet,
-        });
+        // console.warn('No typeOfCardsToDisplay defined for active sheet', {
+        //   sheetName: sheetNameToUse,
+        //   sheetId,
+        //   activeSheet,
+        // });
         setCards && setCards([]);
         return () => {}; // For React Suspense compatibility
       }
