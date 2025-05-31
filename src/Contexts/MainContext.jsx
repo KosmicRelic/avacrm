@@ -36,6 +36,7 @@ export const MainContextProvider = ({ children }) => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [bannerQueue, setBannerQueue] = useState([]);
   const [actions, setActions] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false); // New: loading state for Firestore data
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
@@ -86,6 +87,7 @@ export const MainContextProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    let isMounted = true; // New: track if component is mounted
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         let userPermissions = {
@@ -106,7 +108,7 @@ export const MainContextProvider = ({ children }) => {
             userType = userDoc.data().userType || 'business';
             userData = userDoc.data();
           }
-          setBusinessId(fetchedBusinessId);
+          if (isMounted) setBusinessId(fetchedBusinessId);
 
           // If not business user, fetch permissions from teamMembers
           if (firebaseUser.uid !== fetchedBusinessId) {
@@ -127,15 +129,21 @@ export const MainContextProvider = ({ children }) => {
           // fallback: treat as business user
           console.log('[MainContext] Error fetching user/teamMember doc', e);
         }
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          businessId: fetchedBusinessId,
-          userType,
-          permissions: userPermissions,
-          ...userData,
-        });
+        // Set user context and auth checked immediately for fast UI
+        if (isMounted) {
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            businessId: fetchedBusinessId,
+            userType,
+            permissions: userPermissions,
+            ...userData,
+          });
+          setUserAuthChecked(true);
+          setIsDataLoaded(true); // UI can render immediately
+        }
 
+        // Handle signup navigation immediately
         if (isSignup) {
           setIsSignup(false);
           if (userType === 'business') {
@@ -143,130 +151,137 @@ export const MainContextProvider = ({ children }) => {
           } else {
             navigate('/sheets');
           }
-          setUserAuthChecked(true);
           return;
         }
 
+        // Defer Firestore fetches to after UI is ready
         const currentRoute = location.pathname;
-        try {
-          const fetches = [];
-          // Always fetch full sheets structure if on /sheets or /sheets/:sheetName or /sheets/:sheetName/:cardId
-          if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
-            let sheetNameFromUrl = null;
-            let cardIdFromUrl = null;
-            // Support /sheets/:sheetName and /sheets/:sheetName/:cardId
-            const match = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
-            if (match) {
-              sheetNameFromUrl = decodeURIComponent(match[1]);
-              if (match[2]) {
-                cardIdFromUrl = decodeURIComponent(match[2]);
+        setDataLoading(true); // New: set loading true before fetch
+        (async () => {
+          try {
+            const fetches = [];
+            if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
+              let sheetNameFromUrl = null;
+              let cardIdFromUrl = null;
+              const match = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
+              if (match) {
+                sheetNameFromUrl = decodeURIComponent(match[1]);
+                if (match[2]) {
+                  cardIdFromUrl = decodeURIComponent(match[2]);
+                }
+              }
+              if (sheetNameFromUrl) {
+                fetches.push(
+                  fetchUserData({
+                    businessId: fetchedBusinessId,
+                    route: '/sheets',
+                    setSheets,
+                    setCards,
+                    setCardTemplates,
+                    setMetrics,
+                    setDashboards,
+                    activeSheetName: sheetNameFromUrl,
+                    updateSheets: true,
+                  })
+                );
+                setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
+              } else {
+                fetches.push(
+                  fetchUserData({
+                    businessId: fetchedBusinessId,
+                    route: '/sheets',
+                    setSheets,
+                    setCardTemplates,
+                    updateSheets: true,
+                  })
+                );
+                if (!activeSheetName) {
+                  setActiveSheetName(null);
+                }
               }
             }
-            if (sheetNameFromUrl) {
+            if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
               fetches.push(
                 fetchUserData({
                   businessId: fetchedBusinessId,
-                  route: '/sheets',
+                  route: '/dashboard',
                   setSheets,
                   setCards,
                   setCardTemplates,
                   setMetrics,
                   setDashboards,
-                  activeSheetName: sheetNameFromUrl,
-                  updateSheets: true,
+                  updateSheets: false,
                 })
               );
-              setActiveSheetName(normalizeSheetName(sheetNameFromUrl));
-            } else {
-              // Only fetch sheets structure, but also fetch cardTemplates
+            }
+            if (currentRoute === '/metrics' && !hasFetched.current.metrics) {
               fetches.push(
                 fetchUserData({
                   businessId: fetchedBusinessId,
-                  route: '/sheets',
+                  route: '/metrics',
                   setSheets,
-                  setCardTemplates, // <-- fetch cardTemplates even if no sheet is selected
-                  updateSheets: true,
+                  setCards,
+                  setCardTemplates,
+                  setMetrics,
+                  setDashboards,
+                  updateSheets: false,
                 })
               );
-              if (!activeSheetName) {
-                setActiveSheetName(null);
-              }
             }
-          }
-          if (currentRoute === '/dashboard' && !hasFetched.current.dashboard) {
-            fetches.push(
-              fetchUserData({
-                businessId: fetchedBusinessId,
-                route: '/dashboard',
-                setSheets,
-                setCards,
-                setCardTemplates,
-                setMetrics,
-                setDashboards,
-                updateSheets: false,
-              })
-            );
-          }
-          if (currentRoute === '/metrics' && !hasFetched.current.metrics) {
-            fetches.push(
-              fetchUserData({
-                businessId: fetchedBusinessId,
-                route: '/metrics',
-                setSheets,
-                setCards,
-                setCardTemplates,
-                setMetrics,
-                setDashboards,
-                updateSheets: false,
-              })
-            );
-          }
-          if (currentRoute === '/actions' && !hasFetched.current.actions) {
-            fetches.push(
-              fetchUserData({
-                businessId: fetchedBusinessId,
-                route: '/actions',
-                setActions,
-              })
-            );
-          }
-          await Promise.all(fetches);
+            if (currentRoute === '/actions' && !hasFetched.current.actions) {
+              fetches.push(
+                fetchUserData({
+                  businessId: fetchedBusinessId,
+                  route: '/actions',
+                  setActions,
+                })
+              );
+            }
+            await Promise.all(fetches);
 
-          if (currentRoute === '/sheets') hasFetched.current.sheets = true;
-          if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
-          if (currentRoute === '/metrics') hasFetched.current.metrics = true;
-          if (currentRoute === '/actions') hasFetched.current.actions = true;
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-        // setIsDataLoaded(true); // No longer needed here
+            if (currentRoute === '/sheets') hasFetched.current.sheets = true;
+            if (currentRoute === '/dashboard') hasFetched.current.dashboard = true;
+            if (currentRoute === '/metrics') hasFetched.current.metrics = true;
+            if (currentRoute === '/actions') hasFetched.current.actions = true;
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+          } finally {
+            if (isMounted) setDataLoading(false); // New: set loading false after fetch
+          }
+        })();
       } else {
-        setUser(null);
-        setBusinessId(null);
-        setSheets({ allSheets: [], structure: [], deletedSheetId: null });
-        setCards([]);
-        setCardTemplates([]);
-        setMetrics([]);
-        setDashboards([]);
-        setTeamMembers([]);
-        setActiveSheetName(null);
-        setPendingInvitations(0);
-        setBannerQueue([]);
-        processedTeamMembers.current.clear();
-        displayedMessages.current.clear();
-        hasFetched.current = { sheets: false, dashboard: false, metrics: false };
-        prevStates.current = {
-          sheets: { allSheets: [], structure: [], deletedSheetId: null },
-          cards: [],
-          cardTemplates: [],
-          metrics: [],
-          dashboards: [],
-        };
-        setIsDataLoaded(false);
+        if (isMounted) {
+          setUser(null);
+          setBusinessId(null);
+          setSheets({ allSheets: [], structure: [], deletedSheetId: null });
+          setCards([]);
+          setCardTemplates([]);
+          setMetrics([]);
+          setDashboards([]);
+          setTeamMembers([]);
+          setActiveSheetName(null);
+          setPendingInvitations(0);
+          setBannerQueue([]);
+          processedTeamMembers.current.clear();
+          displayedMessages.current.clear();
+          hasFetched.current = { sheets: false, dashboard: false, metrics: false };
+          prevStates.current = {
+            sheets: { allSheets: [], structure: [], deletedSheetId: null },
+            cards: [],
+            cardTemplates: [],
+            metrics: [],
+            dashboards: [],
+          };
+          setIsDataLoaded(false);
+          setUserAuthChecked(true);
+          setDataLoading(false); // New: reset loading
+        }
       }
-      setUserAuthChecked(true);
     });
-    return () => unsubscribeAuth();
+    return () => {
+      isMounted = false;
+      unsubscribeAuth();
+    };
   }, [navigate, isSignup, location.pathname]);
 
   useEffect(() => {
@@ -852,7 +867,8 @@ export const MainContextProvider = ({ children }) => {
     addBannerMessage,
     actions,
     setActions,
-  }), [sheets, cards, isDarkTheme, cardTemplates, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions]);
+    dataLoading, // New: expose loading state for Firestore data
+  }), [sheets, cards, isDarkTheme, cardTemplates, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
 
   // Debounce for sheet card fetches
   const debounceRef = useRef();
