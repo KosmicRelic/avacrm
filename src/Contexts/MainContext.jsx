@@ -902,11 +902,13 @@ export const MainContextProvider = ({ children }) => {
     }, 200); // 200ms debounce
     return () => clearTimeout(debounceRef.current);
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
+  
 
   useEffect(() => {
-    console.log(cards);
-  },[cards]);
-  
+    console.log(teamMembers);
+  }
+, [teamMembers]);
+
   return (
     <MainContext.Provider value={contextValue}>
       {children}

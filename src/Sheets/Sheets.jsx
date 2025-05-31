@@ -62,7 +62,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId } = useContext(MainContext);
+  const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId, teamMembers } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
@@ -486,6 +486,14 @@ const Sheets = ({
     }
   }, [activeSheetName]);
 
+  // Helper to get display name from uid
+  const getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
+
   // Define loading UI
   const LoadingUI = (
     <div
@@ -613,6 +621,7 @@ const Sheets = ({
               onSelect={handleSelectToggle}
               onAddRow={() => handleRowClick({ isAddNew: true })}
               style={{ display: activeSheet ? undefined : 'none' }}
+              getTeamMemberName={getTeamMemberName}
             />
             {finalRows.length > 0 ? (
               finalRows.map((rowData, rowIndex) => (
@@ -624,6 +633,7 @@ const Sheets = ({
                   isSelected={selectedRowIds.includes(rowData.docId)}
                   isSelectMode={isSelectMode}
                   onSelect={handleRowSelect}
+                  getTeamMemberName={getTeamMemberName}
                 />
               ))
             ) : (

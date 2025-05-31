@@ -39,7 +39,7 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, headers, isDarkTheme, cards, setCards } = useContext(MainContext);
+  const { sheets, cardTemplates, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfCards
@@ -65,6 +65,14 @@ const CardsEditor = ({
     const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
     return sheet?.typeOfCardsToDisplay || [];
   }, [selectedSheet, sheets]);
+
+  // Helper to get display name from uid
+  const getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
 
   const selectedSections = useMemo(() => {
     const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
@@ -503,13 +511,26 @@ const CardsEditor = ({
                         {section.fields.length > 0 ? (
                           section.fields.map((field) => (
                             <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                {field.name}
-                              </span>
-                              {field.type === 'dropdown' ? (
+                              <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
+                              {field.key === 'assignedTo' ? (
+                                <select
+                                  value={formData.assignedTo || ''}
+                                  onChange={e => handleInputChange('assignedTo', e.target.value, 'dropdown')}
+                                  className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  aria-label="Select team member"
+                                  disabled={isViewingHistory}
+                                >
+                                  <option value="">Unassigned</option>
+                                  {teamMembers.map(tm => (
+                                    <option key={tm.uid} value={tm.uid}>
+                                      {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : field.type === 'dropdown' ? (
                                 <select
                                   value={historicalFormData[field.key] || ''}
-                                  onChange={(e) => handleInputChange(field.key, e.target.value, field.type)}
+                                  onChange={e => handleInputChange(field.key, e.target.value, field.type)}
                                   className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                                   aria-label={`Select ${field.name}`}
                                   disabled={isViewingHistory}
@@ -524,18 +545,12 @@ const CardsEditor = ({
                               ) : (
                                 <input
                                   type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                                  value={
-                                    field.type === 'date'
-                                      ? formatDateForInput(historicalFormData[field.key])
-                                      : historicalFormData[field.key] || ''
-                                  }
-                                  onChange={(e) => handleInputChange(field.key, e.target.value, field.type)}
-                                  className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${
-                                    isViewingHistory ? styles.readOnly : ''
-                                  }`}
+                                  value={field.key === 'assignedTo' ? getTeamMemberName(formData.assignedTo) : (field.type === 'date' ? formatDateForInput(historicalFormData[field.key]) : historicalFormData[field.key] || '')}
+                                  onChange={e => handleInputChange(field.key, e.target.value, field.type)}
+                                  className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
-                                  readOnly={isViewingHistory}
+                                  readOnly={isViewingHistory || field.key === 'assignedTo'}
                                   disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
                                 />
                               )}

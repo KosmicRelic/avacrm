@@ -6,7 +6,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
-const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect }) => {
+const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme, user, businessId } = useContext(MainContext);
   const isBusinessUser = user && user.uid === businessId;
@@ -82,12 +82,14 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
       ) : (
         headers.map((header, i) => {
           const value = rowData[header.key];
-          const displayValue =
-            header.type === 'date'
-              ? formatFirestoreTimestamp(value) || ''
-              : value !== undefined
-              ? String(value)
-              : '';
+          let displayValue;
+          if (header.key === 'assignedTo' && typeof getTeamMemberName === 'function') {
+            displayValue = getTeamMemberName(value);
+          } else if (header.type === 'date') {
+            displayValue = formatFirestoreTimestamp(value) || '';
+          } else {
+            displayValue = value !== undefined ? String(value) : '';
+          }
           return (
             <div
               key={i}
@@ -120,6 +122,7 @@ RowComponent.propTypes = {
   onAddRow: PropTypes.func,
   isSelectMode: PropTypes.bool,
   onSelect: PropTypes.func,
+  getTeamMemberName: PropTypes.func,
 };
 
 RowComponent.defaultProps = {

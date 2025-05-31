@@ -23,11 +23,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       ...t,
       headers: t.headers.map((h) => ({
         ...h,
-        isUsed: h.key === "id" || h.key === "typeOfCards" ? true : h.isUsed ?? false,
+        isUsed: h.key === "id" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
       })),
       sections: t.sections.map((s) => ({
         ...s,
-        keys: s.keys.includes("id") || s.keys.includes("typeOfCards") ? s.keys : [...s.keys],
+        keys: s.keys.includes("id") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
       })),
       isModified: t.isModified || false,
       action: t.action || null,
@@ -110,8 +110,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     (index) => {
       if (selectedTemplateIndex === null) return;
       const header = currentCardTemplates[selectedTemplateIndex].headers[index];
-      if (header.key === "id" || header.key === "typeOfCards") {
-        alert("The 'ID' or 'Type of Cards' field cannot be deleted.");
+      if (header.key === "id" || header.key === "typeOfCards" || header.key === "assignedTo") {
+        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be deleted.");
         return;
       }
       const headerName = header.name;
@@ -149,9 +149,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
         return;
       }
-      const sectionContainsProtectedKey = section.keys.some((key) => key === "id" || key === "typeOfCards");
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "id" || key === "typeOfCards" || key === "assignedTo");
       if (sectionContainsProtectedKey) {
-        alert("This section cannot be deleted because it contains the 'ID' or 'Type of Cards' field.");
+        alert("This section cannot be deleted because it contains the 'ID', 'Type of Cards' or 'Assigned To' field.");
         return;
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
@@ -208,7 +208,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       return;
     }
     if (newHeaderSection === "Card Data") {
-      alert("The 'Card Data' section is reserved for 'ID' and 'Type of Cards' fields.");
+      alert("The 'Card Data' section is reserved for 'ID', 'Type of Cards' and 'Assigned To' fields.");
       return;
     }
 
@@ -265,10 +265,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       }
   
       const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
-      const isProtected = currentHeader.key === "id" || currentHeader.key === "typeOfCards";
+      const isProtected = currentHeader.key === "id" || currentHeader.key === "typeOfCards" || currentHeader.key === "assignedTo";
   
       if (isProtected && newHeaderSection !== "Card Data") {
-        alert("The 'ID' and 'Type of Cards' fields must remain in the 'Card Data' section.");
+        alert("The 'ID', 'Type of Cards' and 'Assigned To' fields must remain in the 'Card Data' section.");
         return;
       }
   
@@ -543,6 +543,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           section: "Card Data",
           isUsed: true,
         },
+        {
+          key: "assignedTo",
+          name: "Assigned To",
+          type: "text",
+          section: "Card Data",
+          isUsed: true,
+        },
       ],
       sections: [
         {
@@ -551,7 +558,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         },
         {
           name: "Card Data",
-          keys: ["id", "typeOfCards"],
+          keys: ["id", "typeOfCards", "assignedTo"],
         },
       ],
       isModified: true,
@@ -631,7 +638,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
-    if (key === "id" || key === "typeOfCards") {
+    if (key === "id" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -644,7 +651,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
-    if (key === "id" || key === "typeOfCards") {
+    if (key === "id" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -812,8 +819,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "id" || key === "typeOfCards") {
-        alert("The 'ID' or 'Type of Cards' field cannot be deselected from the section.");
+      if (key === "id" || key === "typeOfCards" || key === "assignedTo") {
+        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
       setCurrentCardTemplates((prev) => {
@@ -847,8 +854,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "id" || key === "typeOfCards") {
-        alert("The 'ID' or 'Type of Cards' field cannot be removed from the section.");
+      if (key === "id" || key === "typeOfCards" || key === "assignedTo") {
+        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
@@ -1114,7 +1121,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       type: "text",
                     };
                     const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
-                    const isProtected = header.key === "id" || header.key === "typeOfCards";
+                    const isProtected = header.key === "id" || header.key === "typeOfCards" || header.key === "assignedTo";
                     return (
                       <div
                         ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
@@ -1238,7 +1245,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                 className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Prevent focus/edit for id and typeOfCards */}
+                {/* Prevent focus/edit for id, typeOfCards and assignedTo */}
                 <input
                   type="text"
                   value={newHeaderName}
@@ -1246,16 +1253,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   onKeyPress={handleKeyPress}
                   placeholder="Field Name"
                   className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  disabled={
-                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
-                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards"
-                  }
-                  tabIndex={
-                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
-                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards"
-                      ? -1
-                      : 0
-                  }
+                  disabled={['id', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                  tabIndex={['id', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                 />
                 <select
                   value={newHeaderType}
@@ -1270,7 +1269,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   <option value="dropdown">Pop-up Menu</option>
                 </select>
                 {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "id" ||
-                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards" ? (
+                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards" ||
+                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "assignedTo" ? (
                   <select
                     value={newHeaderSection}
                     onChange={(e) => setNewHeaderSection(e.target.value)}
@@ -1341,7 +1341,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     {copiedHeaderId ? "Copied!" : "Copy Header ID"}
                   </button>
                   {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "id" &&
-                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" && (
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" &&
+                    currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
                       <button
                         onClick={() => deleteHeader(activeHeaderIndex)}
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}

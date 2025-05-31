@@ -838,6 +838,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         headers: [
           { key: 'typeOfCards', name: 'Type of Card', type: 'text', section: 'Contact Information', isUsed: true },
           { key: 'id', name: 'ID', type: 'number', section: 'Contact Information', isUsed: true },
+          { key: 'assignedTo', name: 'Assigned To', type: 'dropdown', section: 'Contact Information', isUsed: true },
           { key: 'name', name: 'Name', type: 'text', section: 'Contact Information', isUsed: true },
           { key: 'phone', name: 'Phone', type: 'text', section: 'Contact Information', isUsed: true },
           { key: 'email', name: 'Email', type: 'text', section: 'Contact Information', isUsed: true },
@@ -854,7 +855,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           { key: 'conversionValue', name: 'Conversion Value', type: 'currency', section: 'Lead Details', isUsed: true },
         ],
         sections: [
-          { name: 'Contact Information', keys: ['typeOfCards', 'id', 'name', 'phone', 'email'] },
+          { name: 'Contact Information', keys: ['typeOfCards', 'id', 'assignedTo', 'name', 'phone', 'email'] },
           { name: 'Lead Details', keys: ['leadStatus', 'leadSource', 'followUpDate', 'conversionValue'] },
         ],
       },
@@ -864,6 +865,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         headers: [
           { key: 'typeOfCards', name: 'Type of Card', type: 'text', section: 'Campaign Information', isUsed: true },
           { key: 'id', name: 'ID', type: 'number', section: 'Campaign Information', isUsed: true },
+          { key: 'assignedTo', name: 'Assigned To', type: 'dropdown', section: 'Campaign Information', isUsed: true },
           { key: 'campaignName', name: 'Campaign Name', type: 'text', section: 'Campaign Information', isUsed: true },
           { key: 'platform', name: 'Platform', type: 'text', section: 'Campaign Information', isUsed: true },
           { key: 'adSpend', name: 'Ad Spend', type: 'currency', section: 'Campaign Information', isUsed: true },
@@ -882,7 +884,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         sections: [
           {
             name: 'Campaign Information',
-            keys: ['typeOfCards', 'id', 'campaignName', 'platform', 'adSpend', 'leadsGenerated', 'costPerLead', 'startDate', 'status'],
+            keys: ['typeOfCards', 'id', 'assignedTo', 'campaignName', 'platform', 'adSpend', 'leadsGenerated', 'costPerLead', 'startDate', 'status'],
           },
         ],
       },
@@ -892,6 +894,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         headers: [
           { key: 'typeOfCards', name: 'Type Of Card', type: 'text', section: 'Partner Information', isUsed: true },
           { key: 'id', name: 'ID', type: 'number', section: 'Partner Information', isUsed: true },
+          { key: 'assignedTo', name: 'Assigned To', type: 'dropdown', section: 'Partner Information', isUsed: true },
           { key: 'businessName', name: 'Business Name', type: 'text', section: 'Partner Information', isUsed: true },
           { key: 'contact', name: 'Contact', type: 'text', section: 'Partner Information', isUsed: true },
           { key: 'negotiatedRate', name: 'Negotiated Rate', type: 'currency', section: 'Partner Information', isUsed: true },
@@ -905,7 +908,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           },
         ],
         sections: [
-          { name: 'Partner Information', keys: ['typeOfCards', 'id', 'businessName', 'contact', 'negotiatedRate', 'status'] },
+          { name: 'Partner Information', keys: ['typeOfCards', 'id', 'assignedTo', 'businessName', 'contact', 'negotiatedRate', 'status'] },
         ],
       },
       {
@@ -914,6 +917,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         headers: [
           { key: 'typeOfCards', name: 'Type of Card', type: 'text', section: 'Payment Information', isUsed: true },
           { key: 'id', name: 'ID', type: 'number', section: 'Payment Information', isUsed: true },
+          { key: 'assignedTo', name: 'Assigned To', type: 'dropdown', section: 'Payment Information', isUsed: true },
           { key: 'leadId', name: 'Lead ID', type: 'text', section: 'Payment Information', isUsed: true },
           { key: 'clientPayment', name: 'Client Payment', type: 'currency', section: 'Payment Information', isUsed: true },
           { key: 'partnerPayment', name: 'Partner Payment', type: 'currency', section: 'Payment Information', isUsed: true },
@@ -928,7 +932,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
           },
         ],
         sections: [
-          { name: 'Payment Information', keys: ['typeOfCards', 'id', 'leadId', 'clientPayment', 'partnerPayment', 'paymentDate', 'status'] },
+          { name: 'Payment Information', keys: ['typeOfCards', 'id', 'assignedTo', 'leadId', 'clientPayment', 'partnerPayment', 'paymentDate', 'status'] },
         ],
       },
     ];
@@ -939,192 +943,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
       batch.set(templateRef, template);
     });
 
-    // Metrics
-    const metrics = [
-      {
-        category: 'Financials',
-        metrics: [
-          { id: 'metric-revenue', name: 'Total Revenue', type: 'currency', value: '$81,500' },
-          { id: 'metric-net-profit', name: 'Net Profit', type: 'currency', value: '$37,500' },
-          {
-            id: 'metric-revenue-trend',
-            name: 'Revenue Trend',
-            type: 'line',
-            data: { labels: ['Jan', 'Feb', 'Mar', 'Apr'], values: [0, 15000, 30000, 81500] },
-          },
-          { id: 'metric-avg-client-payment', name: 'Avg Client Payment', type: 'currency', value: '$8,150' },
-        ],
-      },
-      {
-        category: 'Actions',
-        metrics: [
-          { id: 'metric-campaign-roi', name: 'Campaign ROI', type: 'multiplier', value: '6.79x' },
-          { id: 'metric-fb-leads', name: 'FB Ad Leads', type: 'text', value: '10 leads, $600/lead' },
-          { id: 'metric-google-leads', name: 'Google Ad Leads', type: 'text', value: '7 leads, $571.43/lead' },
-          { id: 'metric-linkedin-leads', name: 'LinkedIn Ad Leads', type: 'text', value: '3 leads, $666.67/lead' },
-          {
-            id: 'metric-ad-spend',
-            name: 'Ad Spend Distribution',
-            type: 'pie',
-            data: { labels: ['Facebook', 'Google', 'LinkedIn'], values: [6000, 4000, 2000] },
-          },
-          {
-            id: 'metric-campaign-performance',
-            name: 'Campaign Performance',
-            type: 'bar',
-            data: { labels: ['FB Q1', 'Google Q1', 'FB Q2', 'Google Q2', 'LinkedIn Q1', 'FB Jan'], values: [8, 6, 4, 3, 2, 2] },
-          },
-        ],
-      },
-      {
-        category: 'Leads',
-        metrics: [
-          { id: 'metric-conversion-rate', name: 'Conversion Rate', type: 'percentage', value: '50%' },
-          { id: 'metric-total-leads', name: 'Total Leads', type: 'number', value: '20' },
-          { id: 'metric-cost-per-lead', name: 'Cost Per Lead', type: 'currency', value: '$600' },
-          {
-            id: 'metric-lead-growth',
-            name: 'Lead Growth',
-            type: 'bar',
-            data: { labels: ['Q1', 'Q2'], values: [15, 5] },
-          },
-          { id: 'metric-fb-conversion', name: 'FB Conversion Rate', type: 'percentage', value: '60%' },
-          { id: 'metric-google-conversion', name: 'Google Conversion Rate', type: 'percentage', value: '42.86%' },
-          { id: 'metric-linkedin-conversion', name: 'LinkedIn Conversion Rate', type: 'percentage', value: '66.67%' },
-        ],
-      },
-    ];
-
-    functions.logger.info('Writing metrics');
-    metrics.forEach((category) => {
-      const metricRef = db.collection('businesses').doc(businessId).collection('metrics').doc(category.category);
-      batch.set(metricRef, category);
-    });
-
-    // Dashboards
-    const dashboards = [
-      {
-        id: 'dashboard-1',
-        dashboardWidgets: [
-          {
-            id: 'widget-leads',
-            size: 'small',
-            title: 'Leads',
-            metricId: 'metric-lead-growth',
-            position: { row: 0, col: 0 },
-            dashboardId: 'dashboard-1',
-          },
-          {
-            id: 'widget-revenue',
-            size: 'verySmall',
-            title: 'Financials',
-            metricId: 'metric-revenue',
-            position: { row: 0, col: 1 },
-            dashboardId: 'dashboard-1',
-          },
-          {
-            id: 'widget-profit',
-            size: 'verySmall',
-            title: 'Financials',
-            metricId: 'metric-net-profit',
-            position: { row: 1, col: 1 },
-            dashboardId: 'dashboard-1',
-          },
-          {
-            id: 'widget-trend',
-            size: 'medium',
-            title: 'Financials',
-            metricId: 'metric-revenue-trend',
-            position: { row: 2, col: 0 },
-            dashboardId: 'dashboard-1',
-          },
-          {
-            id: 'widget-avg-payment',
-            size: 'small',
-            title: 'Financials',
-            metricId: 'metric-avg-client-payment',
-            position: { row: 2, col: 1 },
-            dashboardId: 'dashboard-1',
-          },
-        ],
-      },
-      {
-        id: 'dashboard-2',
-        dashboardWidgets: [
-          {
-            id: 'widget-ad-spend',
-            size: 'large',
-            title: 'Actions',
-            metricId: 'metric-ad-spend',
-            position: { row: 0, col: 0 },
-            dashboardId: 'dashboard-2',
-          },
-          {
-            id: 'widget-campaign-performance',
-            size: 'medium',
-            title: 'Actions',
-            metricId: 'metric-campaign-performance',
-            position: { row: 1, col: 0 },
-            dashboardId: 'dashboard-2',
-          },
-          {
-            id: 'widget-roi',
-            size: 'small',
-            title: 'Actions',
-            metricId: 'metric-campaign-roi',
-            position: { row: 1, col: 1 },
-            dashboardId: 'dashboard-2',
-          },
-        ],
-      },
-      {
-        id: 'dashboard-3',
-        dashboardWidgets: [
-          {
-            id: 'widget-conversion-rate',
-            size: 'small',
-            title: 'Leads',
-            metricId: 'metric-conversion-rate',
-            position: { row: 0, col: 0 },
-            dashboardId: 'dashboard-3',
-          },
-          {
-            id: 'widget-fb-conversion',
-            size: 'small',
-            title: 'Leads',
-            metricId: 'metric-fb-conversion',
-            position: { row: 0, col: 1 },
-            dashboardId: 'dashboard-3',
-          },
-          {
-            id: 'widget-google-conversion',
-            size: 'small',
-            title: 'Leads',
-            metricId: 'metric-google-conversion',
-            position: { row: 1, col: 0 },
-            dashboardId: 'dashboard-3',
-          },
-          {
-            id: 'widget-linkedin-conversion',
-            dashboardId: 'dashboard-3',
-          },
-          {
-            id: 'widget-linkedin-conversion',
-            size: 'small',
-            title: 'Leads',
-            metricId: 'metric-linkedin-conversion',
-            position: { row: 1, col: 1 },
-            dashboardId: 'dashboard-3',
-          },
-        ],
-      },
-    ];
-
-    functions.logger.info('Writing dashboards');
-    dashboards.forEach((dashboard) => {
-      const dashboardRef = db.collection('businesses').doc(businessId).collection('dashboards').doc(dashboard.id);
-      batch.set(dashboardRef, dashboard);
-    });
+    // Metrics and Dashboards are not written to Firestore for new users
 
     functions.logger.info('Committing batch');
     await batch.commit();
