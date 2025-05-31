@@ -904,10 +904,10 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
   
 
-  useEffect(() => {
-    console.log(teamMembers);
-  }
-, [teamMembers]);
+//   useEffect(() => {
+//     console.log(teamMembers);
+//   }
+// , [teamMembers]);
 
   return (
     <MainContext.Provider value={contextValue}>

@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import useClickOutside from '../Hooks/UseClickOutside';
 
 const FilterModal = ({ headers, rows, tempData, setTempData }) => {
-  const { cardTemplates, isDarkTheme } = useContext(MainContext);
+  const { cardTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
@@ -215,6 +215,13 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     [filterValues, numberRangeMode]
   );
 
+  const getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
+
   useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
 
   return (
@@ -242,7 +249,20 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 ref={filterActionsRef}
                 onClick={(e) => e.stopPropagation()}
               >
-                {header.type === 'number' ? (
+                {header.key === 'assignedTo' ? (
+                  <select
+                    multiple
+                    value={filterValues[header.key]?.values || []}
+                    onChange={(e) => handleDropdownChange(header.key, e)}
+                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    {teamMembers.map((tm) => (
+                      <option key={tm.uid} value={tm.uid}>
+                        {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
+                      </option>
+                    ))}
+                  </select>
+                ) : header.type === 'number' ? (
                   numberRangeMode[header.key] ? (
                     <>
                       <input

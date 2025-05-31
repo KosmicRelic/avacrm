@@ -521,11 +521,18 @@ const CardsEditor = ({
                                   disabled={isViewingHistory}
                                 >
                                   <option value="">Unassigned</option>
-                                  {teamMembers.map(tm => (
-                                    <option key={tm.uid} value={tm.uid}>
-                                      {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
-                                    </option>
-                                  ))}
+                                  {isBusinessUser
+                                    ? teamMembers.map(tm => (
+                                        <option key={tm.uid} value={tm.uid}>
+                                          {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
+                                        </option>
+                                      ))
+                                    : user && (
+                                        <option key={user.uid} value={user.uid}>
+                                          {user.name && user.surname ? `${user.name} ${user.surname}` : user.email || user.uid}
+                                        </option>
+                                      )
+                                  }
                                 </select>
                               ) : field.type === 'dropdown' ? (
                                 <select
