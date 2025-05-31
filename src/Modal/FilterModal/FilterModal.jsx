@@ -256,11 +256,17 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                     onChange={(e) => handleDropdownChange(header.key, e)}
                     className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
-                    {teamMembers.map((tm) => (
-                      <option key={tm.uid} value={tm.uid}>
-                        {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
-                      </option>
-                    ))}
+                    {user && user.businessId === user.uid
+                      ? teamMembers.map((tm) => (
+                          <option key={tm.uid} value={tm.uid}>
+                            {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
+                          </option>
+                        ))
+                      : (
+                          <option key={user.uid} value={user.uid}>
+                            {user.name && user.surname ? `${user.name} ${user.surname}` : user.email || 'Me'}
+                          </option>
+                        )}
                   </select>
                 ) : header.type === 'number' ? (
                   numberRangeMode[header.key] ? (
