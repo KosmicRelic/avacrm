@@ -1,11 +1,10 @@
-import { useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
-import CardTypeFilter from './CardTypeFilter/CardTypeFilter';
 
 // Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
@@ -56,9 +55,6 @@ const EditSheetsModal = ({
     return uniqueHeaders;
   });
   const [pinnedStates, setPinnedStates] = useState({});
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchTargetIndex, setTouchTargetIndex] = useState(null);
   const [selectedCardTypes, setSelectedCardTypes] = useState(tempData.typeOfCardsToDisplay || []);
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
@@ -152,13 +148,8 @@ const EditSheetsModal = ({
           const end = filter.end || '';
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
           summaries.push(`${headerName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
-        } else if (header.type === 'date') {
-          const sortOrder = filter.sortOrder;
-          if (sortOrder === 'ascending' || sortOrder === 'descending') {
-            summaries.push(`${headerName}: Sorted ${sortOrder}`);
-          } else {
-            summaries.push(`${headerName}: None`);
-          }
+        } else if (header.type === 'date' && filter.sortOrder) {
+          summaries.push(`${headerName}: Sorted ${filter.sortOrder}`);
         } else if (header.type === 'dropdown' && filter.values?.length) {
           const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
           summaries.push(`${headerName}: ${filter.values.join(', ')}${sortOrder}`);
@@ -402,7 +393,7 @@ const EditSheetsModal = ({
       const filterTypeTitle = {
         text: 'Add Text Filter',
         number: 'Add Number Filter',
-        date: 'Add Date Sort',
+        date: 'Add Date Filter',
         user: 'Restrict by User',
         dropdown: 'Add Dropdown Filter',
       }[filterType] || 'Add Filter';
@@ -484,148 +475,6 @@ const EditSheetsModal = ({
     });
   }, []);
 
-  const handleDragStart = useCallback((e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    const element = headerRefs.current.get(index);
-    if (element) element.classList.add(styles.dragging);
-  }, []);
-
-  const handleTouchStart = useCallback((e, index) => {
-    if (e.target.classList.contains(styles.dragIcon)) {
-      e.preventDefault();
-      setDraggedIndex(index);
-      setTouchStartY(e.touches[0].clientY);
-      setTouchTargetIndex(index);
-      const element = headerRefs.current.get(index);
-      if (element) element.classList.add(styles.dragging);
-    }
-  }, []);
-
-  const handleDragOver = useCallback(
-    (e, index) => {
-      e.preventDefault();
-      if (draggedIndex === null || draggedIndex === index) return;
-
-      setCurrentHeaders((prev) => {
-        const newHeaders = [...prev];
-        const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-        newHeaders.splice(index, 0, draggedItem);
-        setDraggedIndex(index);
-        return newHeaders;
-      });
-    },
-    [draggedIndex]
-  );
-
-  const handleTouchMove = useCallback(
-    (e, index) => {
-      if (draggedIndex === null || touchStartY === null) return;
-      e.preventDefault();
-
-      const touchY = e.touches[0].clientY;
-      const itemHeight = 48;
-      const delta = Math.round((touchY - touchStartY) / itemHeight);
-
-      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
-      if (newIndex !== draggedIndex) {
-        setCurrentHeaders((prev) => {
-          const newHeaders = [...prev];
-          const [draggedItem] = newHeaders.splice(draggedIndex, 1);
-          newHeaders.splice(newIndex, 0, draggedItem);
-          setDraggedIndex(newIndex);
-          return newHeaders;
-        });
-      }
-    },
-    [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    const element = headerRefs.current.get(draggedIndex);
-    if (element) element.classList.remove(styles.dragging);
-    setDraggedIndex(null);
-  }, [draggedIndex]);
-
-  const handleTouchEnd = useCallback(() => {
-    const element = headerRefs.current.get(draggedIndex);
-    if (element) element.classList.remove(styles.dragging);
-    setDraggedIndex(null);
-    setTouchStartY(null);
-    setTouchTargetIndex(null);
-  }, [draggedIndex]);
-
-  const handleFilterDragStart = useCallback((e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    const element = filterRefs.current.get(index);
-    if (element) element.classList.add(styles.dragging);
-  }, []);
-
-  const handleFilterTouchStart = useCallback((e, index) => {
-    if (e.target.classList.contains(styles.dragIcon)) {
-      e.preventDefault();
-      setDraggedIndex(index);
-      setTouchStartY(e.touches[0].clientY);
-      setTouchTargetIndex(index);
-      const element = filterRefs.current.get(index);
-      if (element) element.classList.add(styles.dragging);
-    }
-  }, []);
-
-  const handleFilterDragOver = useCallback(
-    (e, index) => {
-      e.preventDefault();
-      if (draggedIndex === null || draggedIndex === index) return;
-
-      setFilterOrder((prev) => {
-        const newOrder = [...prev];
-        const [draggedItem] = newOrder.splice(draggedIndex, 1);
-        newOrder.splice(index, 0, draggedItem);
-        setDraggedIndex(index);
-        return newOrder;
-      });
-    },
-    [draggedIndex]
-  );
-
-  const handleFilterTouchMove = useCallback(
-    (e, index) => {
-      if (draggedIndex === null || touchStartY === null) return;
-      e.preventDefault();
-
-      const touchY = e.touches[0].clientY;
-      const itemHeight = 48;
-      const delta = Math.round((touchY - touchStartY) / itemHeight);
-
-      const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, filterOrder.length - 1));
-      if (newIndex !== draggedIndex) {
-        setFilterOrder((prev) => {
-          const newOrder = [...prev];
-          const [draggedItem] = newOrder.splice(draggedIndex, 1);
-          newOrder.splice(newIndex, 0, draggedItem);
-          setDraggedIndex(newIndex);
-          return newOrder;
-        });
-      }
-    },
-    [draggedIndex, touchStartY, touchTargetIndex, filterOrder.length]
-  );
-
-  const handleFilterDragEnd = useCallback(() => {
-    const element = filterRefs.current.get(draggedIndex);
-    if (element) element.classList.remove(styles.dragging);
-    setDraggedIndex(null);
-  }, [draggedIndex]);
-
-  const handleFilterTouchEnd = useCallback(() => {
-    const element = filterRefs.current.get(draggedIndex);
-    if (element) element.classList.remove(styles.dragging);
-    setDraggedIndex(null);
-    setTouchStartY(null);
-    setTouchTargetIndex(null);
-  }, [draggedIndex]);
-
   const togglePin = useCallback(
     (headerKey) => {
       setPinnedStates((prev) => ({
@@ -677,9 +526,7 @@ const EditSheetsModal = ({
 
   const handleFilterClick = useCallback(
     (typeOfCards) => {
-      if (!typeOfCards) {
-        return;
-      }
+      if (!typeOfCards) return;
       if (!tempData.cardTypeFilters?.[typeOfCards]) {
         setTempData({
           ...tempData,
@@ -830,82 +677,72 @@ const EditSheetsModal = ({
               </>
             )}
             {step === 2 && (
-              <div className={styles.buttonContainer}>
-                <button
-                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  type="button"
-                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
-                  onClick={() => {
-                    setNavigationDirection('forward');
-                    goToStep(3);
-                  }}
-                >
-                  Add column
-                </button>
-                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {currentHeaders.length === 0 && (
-                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No columns added yet.
-                    </div>
-                  )}
-                  {currentHeaders.map((header, index) => (
-                    <div
-                      ref={(el) => headerRefs.current.set(index, el)}
-                      key={header.key}
-                      className={`${styles.headerItem} ${draggedIndex === index ? styles.dragging : ''} ${
-                        isDarkTheme ? styles.darkTheme : ''
-                      }`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragEnd={handleDragEnd}
-                      onTouchStart={(e) => handleTouchStart(e, index)}
-                      onTouchMove={(e) => handleTouchMove(e, index)}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      <div className={styles.headerRow}>
-                        <div className={styles.headerLeft}>
-                          <button
-                            onClick={() => togglePin(header.key)}
-                            className={`${styles.actionButton} ${
-                              pinnedStates[header.key] ? styles.pinned : ''
-                            } ${isDarkTheme ? styles.darkTheme : ''}`}
-                          >
-                            <FaThumbtack />
-                          </button>
-                          {pinnedStates[header.key] && (
+              <>
+                <div className={styles.buttonContainer}>
+                  <button
+                    className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    type="button"
+                    style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
+                    onClick={() => {
+                      setNavigationDirection('forward');
+                      goToStep(3);
+                    }}
+                  >
+                    Add column
+                  </button>
+                  <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    {currentHeaders.length === 0 && (
+                      <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        No columns added yet.
+                      </div>
+                    )}
+                    {currentHeaders.map((header, index) => (
+                      <div
+                        ref={(el) => headerRefs.current.set(index, el)}
+                        key={header.key}
+                        className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        <div className={styles.headerRow}>
+                          <div className={styles.headerLeft}>
                             <button
-                              onClick={() => removeHeader(header.key)}
-                              className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              onClick={() => togglePin(header.key)}
+                              className={`${styles.actionButton} ${
+                                pinnedStates[header.key] ? styles.pinned : ''
+                              } ${isDarkTheme ? styles.darkTheme : ''}`}
                             >
-                              Remove
+                              <FaThumbtack />
                             </button>
-                          )}
-                          <span className={styles.headerName}>{header.name}</span>
-                        </div>
-                        <div className={styles.actions}>
-                          <button
-                            onClick={() => toggleHidden(index)}
-                            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          >
-                            {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
-                          </button>
-                          <button
-                            onClick={() => toggleVisible(index)}
-                            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          >
-                            {header.visible ? <FaEye /> : <FaEyeSlash />}
-                          </button>
-                          <div className={styles.buttonSpacer}></div>
-                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            ☰
-                          </span>
+                            {pinnedStates[header.key] && (
+                              <button
+                                onClick={() => removeHeader(header.key)}
+                                className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                Remove
+                              </button>
+                            )}
+                            <span className={styles.headerName}>{header.name}</span>
+                          </div>
+                          <div className={styles.actions}>
+                            <button
+                              onClick={() => toggleHidden(index)}
+                              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              {header.hidden ? <MdFilterAltOff /> : <MdFilterAlt />}
+                            </button>
+                            <button
+                              onClick={() => toggleVisible(index)}
+                              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            >
+                              {header.visible ? <FaEye /> : <FaEyeSlash />}
+                            </button>
+                            <div className={styles.buttonSpacer}></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
             {step === 3 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1049,197 +886,74 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 7 && (
-              <>
-                {selectedCardTypeForFilter ? (
-                  <div className={styles.sortByFiltersContainer}>
-                    <div className={styles.inputContainer}>
-                      <input
-                        type="number"
-                        value={cardsPerSearch}
-                        onChange={handleCardsPerSearchChange}
-                        placeholder="Enter cards fetch limit"
-                        className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        min="1"
-                        step="1"
-                        aria-label="Cards Fetch Limit"
-                      />
-                    </div>
-                    <div className={`${styles.buttonContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {filterOrder.map((fType, index) => {
-                        const filterSummaries = {
-                          user: () =>
-                            tempData.cardTypeFilters?.[selectedCardTypeForFilter]?.userFilter?.headerKey
-                              ? `${
-                                  cardTemplates
-                                    .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                    ?.headers.find(
-                                      (h) => h.key === tempData.cardTypeFilters[selectedCardTypeForFilter].userFilter.headerKey
-                                    )?.name || tempData.cardTypeFilters[selectedCardTypeForFilter].userFilter.headerKey
-                                } = Current User`
-                              : 'None',
-                          text: () =>
-                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
-                              .filter(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return header?.type === 'text' && key !== 'userFilter' && filter.value;
-                              })
-                              .map(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return `${header?.name || key}: ${filter.condition || 'equals'} ${filter.value}`;
-                              })
-                              .join('; ') || 'None',
-                          number: () =>
-                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
-                              .filter(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return header?.type === 'number' && (filter.start || filter.end || filter.value);
-                              })
-                              .map(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                if (filter.start || filter.end) {
-                                  return `${header?.name || key}: ${filter.start || ''}${
-                                    filter.start && filter.end ? ' – ' : ''
-                                  }${filter.end || ''}`;
-                                } else {
-                                  const order = filter.order || 'equals';
-                                  const orderText = { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[order];
-                                  return `${header?.name || key}: ${orderText} ${filter.value || ''}`;
-                                }
-                              })
-                              .join('; ') || 'None',
-                          date: () =>
-                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
-                              .filter(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return header?.type === 'date' && filter.sortOrder;
-                              })
-                              .map(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return `${header?.name || key}: Sorted ${filter.sortOrder}`;
-                              })
-                              .join('; ') || 'None',
-                          dropdown: () =>
-                            Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {})
-                              .filter(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return header?.type === 'dropdown' && filter.values?.length;
-                              })
-                              .map(([key, filter]) => {
-                                const header = cardTemplates
-                                  .find((t) => t.typeOfCards === selectedCardTypeForFilter)
-                                  ?.headers.find((h) => h.key === key);
-                                return `${header?.name || key}: ${filter.values.join(', ')}`;
-                              })
-                              .join('; ') || 'None',
-                        };
-
-                        const filterNames = {
-                          user: 'Restrict by User',
-                          text: 'Filter for Text',
-                          number: 'Filter for Numbers',
-                          date: 'Sort for Date',
-                          dropdown: 'Filter for Dropdown',
-                        };
-
-                        return (
-                          <div
-                            key={fType}
-                            ref={(el) => filterRefs.current.set(index, el)}
-                            className={`${styles.filterItemDraggable} ${draggedIndex === index ? styles.dragging : ''} ${
-                              isDarkTheme ? styles.darkTheme : ''
-                            }`}
-                            draggable
-                            onDragStart={(e) => handleFilterDragStart(e, index)}
-                            onDragOver={(e) => handleFilterDragOver(e, index)}
-                            onDragEnd={handleFilterDragEnd}
-                            onTouchStart={(e) => handleFilterTouchStart(e, index)}
-                            onTouchMove={(e) => handleFilterTouchMove(e, index)}
-                            onTouchEnd={handleFilterTouchEnd}
-                            onClick={() => handleAddFilterClick(selectedCardTypeForFilter, fType)}
-                            role="button"
-                            aria-label={filterNames[fType]}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                handleAddFilterClick(selectedCardTypeForFilter, fType);
-                              }
-                            }}
-                          >
-                            <div className={styles.filterRow}>
-                              <div className={styles.filterNameType}>
-                                <span className={styles.navName}>{filterNames[fType]}</span>
-                              </div>
-                              <div className={styles.primaryButtons}>
-                                <span className={styles.filterSummary}>{filterSummaries[fType]()}</span>
-                                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  ☰
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      <button
-                        onClick={() => {
-                          setTempData({
-                            ...tempData,
-                            cardTypeFilters: {
-                              ...tempData.cardTypeFilters,
-                              [selectedCardTypeForFilter]: {},
-                            },
-                            cardsPerSearch: null,
-                          });
-                          setCardsPerSearch('');
-                        }}
-                        className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        disabled={
-                          !Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {}).some(
-                            ([key, filter]) =>
-                              Object.keys(filter).length > 0 &&
-                              (key !== 'userFilter' ||
-                                (key === 'userFilter' && filter.headerKey)) &&
-                              !isFilterEmpty(filter)
-                          ) && !tempData.cardsPerSearch
-                        }
-                      >
-                        Reset All
-                      </button>
-                    </div>
+              selectedCardTypeForFilter ? (
+                <div className={styles.sortByFiltersContainer}>
+                  <div className={styles.inputContainer}>
+                    <input
+                      type="number"
+                      value={cardsPerSearch}
+                      onChange={handleCardsPerSearchChange}
+                      placeholder="Enter cards fetch limit"
+                      className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      min="1"
+                      step="1"
+                      aria-label="Cards Fetch Limit"
+                    />
                   </div>
-                ) : (
-                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    No card type selected for filtering
+                  <div className={`${styles.filterListSection}`}>
+                    <CardTypeFilterLikeFilterModal
+                      cardType={selectedCardTypeForFilter}
+                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                      tempData={tempData}
+                      setTempData={setTempData}
+                      isDarkTheme={isDarkTheme}
+                      showOnlyUserFilter={false}
+                      filterType={null}
+                    />
                   </div>
-                )}
-              </>
+                  <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <button
+                      onClick={() => {
+                        setTempData({
+                          ...tempData,
+                          cardTypeFilters: {
+                            ...tempData.cardTypeFilters,
+                            [selectedCardTypeForFilter]: {},
+                          },
+                          cardsPerSearch: null,
+                        });
+                        setCardsPerSearch('');
+                      }}
+                      className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      disabled={
+                        !Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {}).some(
+                          ([key, filter]) =>
+                            Object.keys(filter).length > 0 &&
+                            (key !== 'userFilter' || (key === 'userFilter' && filter.headerKey)) &&
+                            !isFilterEmpty(filter)
+                        ) && !tempData.cardsPerSearch
+                      }
+                    >
+                      Reset All
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  No card type selected for filtering
+                </div>
+              )
             )}
             {step === 8 && (
               <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {selectedCardTypeForFilter && (
-                  <CardTypeFilter
+                  <CardTypeFilterLikeFilterModal
                     cardType={selectedCardTypeForFilter}
-                    headers={
-                      cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []
-                    }
+                    headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
                     tempData={tempData}
                     setTempData={setTempData}
-                    showFilterSummary={false}
+                    isDarkTheme={isDarkTheme}
+                    showOnlyUserFilter={filterType === 'user'}
                     filterType={filterType}
                   />
                 )}
@@ -1291,6 +1005,414 @@ EditSheetsModal.defaultProps = {
   isEditMode: false,
   sheets: { allSheets: [] },
   handleClose: null,
+};
+
+function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempData, isDarkTheme, showOnlyUserFilter, filterType }) {
+  const { user } = useContext(MainContext);
+  const [numberRangeMode, setNumberRangeMode] = useState(() => {
+    const initial = {};
+    Object.entries(tempData.cardTypeFilters?.[cardType] || {}).forEach(([key, filter]) => {
+      if (filter.start || filter.end) initial[key] = true;
+    });
+    return initial;
+  });
+  const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const filterActionsRef = useRef(null);
+  const filterValues = tempData.cardTypeFilters?.[cardType] || {};
+
+  // Build visibleHeaders for the main filter list (exclude user fields)
+  const visibleHeaders = useMemo(() => {
+    let filteredHeaders = headers
+      .filter((header) => {
+        if (showOnlyUserFilter) {
+          // Only show user fields in the user filter dropdown
+          return header.key === 'assignedTo' || header.key === 'user' || header.key === 'createdBy';
+        }
+        // Exclude user fields from the main filter list
+        return !header.hidden && !['id', 'typeOfCards', 'assignedTo', 'user', 'createdBy'].includes(header.key);
+      })
+      .map((header) => ({
+        ...header,
+        name: header.name || header.key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+        type: header.type || 'text',
+        options: header.options || [],
+      }));
+
+    if (filterType && !showOnlyUserFilter) {
+      filteredHeaders = filteredHeaders.filter((header) => header.type === filterType);
+    }
+
+    return filteredHeaders;
+  }, [headers, showOnlyUserFilter, filterType]);
+
+  // Build userHeaders for the Restrict by User dropdown (always include user fields)
+  const userHeaders = useMemo(() =>
+    headers.filter(
+      (header) => ['assignedTo', 'user', 'createdBy'].includes(header.key)
+    ).map((header) => ({
+      ...header,
+      name: header.name || header.key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+    })),
+    [headers]
+  );
+
+  const applyFilters = useCallback(
+    (filters) => {
+      setTempData({
+        ...tempData,
+        cardTypeFilters: {
+          ...tempData.cardTypeFilters,
+          [cardType]: filters,
+        },
+      });
+    },
+    [setTempData, tempData, cardType]
+  );
+
+  const handleFilterChange = useCallback(
+    (headerKey, value, type = 'default') => {
+      const header = visibleHeaders.find((h) => h.key === headerKey);
+      let newValue = value;
+      if (header && header.type === 'text' && type === 'value') {
+        newValue = String(value);
+      }
+      const newFilter = { ...filterValues[headerKey], [type]: newValue };
+      if (type === 'start' || type === 'end' || type === 'value' || type === 'sortOrder') {
+        if (value === '') delete newFilter[type];
+      }
+      const updatedFilters = { ...filterValues, [headerKey]: newFilter };
+      applyFilters(updatedFilters);
+    },
+    [filterValues, applyFilters, visibleHeaders]
+  );
+
+  const handleUserFilterChange = useCallback(
+    (headerKey) => {
+      const newFilter = {
+        headerKey: headerKey || undefined,
+        condition: 'equals',
+        value: headerKey ? user?.uid : undefined,
+      };
+      const updatedFilters = { ...filterValues, userFilter: headerKey ? newFilter : {} };
+      applyFilters(updatedFilters);
+    },
+    [filterValues, applyFilters, user?.uid]
+  );
+
+  const handleDropdownChange = useCallback(
+    (headerKey, e) => {
+      const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
+      handleFilterChange(headerKey, selectedValues, 'values');
+    },
+    [handleFilterChange]
+  );
+
+  const toggleNumberRangeMode = useCallback(
+    (headerKey) => {
+      setNumberRangeMode((prev) => {
+        const newMode = !prev[headerKey];
+        const updatedFilters = {
+          ...filterValues,
+          [headerKey]: newMode
+            ? { start: filterValues[headerKey]?.start || '', end: filterValues[headerKey]?.end || '' }
+            : { value: filterValues[headerKey]?.value || '', order: 'equals' },
+        };
+        applyFilters(updatedFilters);
+        return { ...prev, [headerKey]: newMode };
+      });
+    },
+    [filterValues, applyFilters]
+  );
+
+  const clearFilter = useCallback(
+    (headerKey) => {
+      const updatedFilters = { ...filterValues, [headerKey]: {} };
+      applyFilters(updatedFilters);
+      setNumberRangeMode((prev) => ({ ...prev, [headerKey]: false }));
+    },
+    [filterValues, applyFilters]
+  );
+
+  const clearUserFilter = useCallback(() => {
+    const updatedFilters = { ...filterValues, userFilter: {} };
+    applyFilters(updatedFilters);
+  }, [filterValues, applyFilters]);
+
+  const handleReset = useCallback(() => {
+    let clearedFilters = { ...filterValues };
+    if (showOnlyUserFilter) {
+      clearedFilters = { ...filterValues, userFilter: {} };
+    } else if (filterType) {
+      Object.keys(clearedFilters).forEach((key) => {
+        if (key !== 'userFilter') {
+          const header = visibleHeaders.find((h) => h.key === key);
+          if (header && header.type === filterType) {
+            clearedFilters[key] = {};
+          }
+        }
+      });
+    } else {
+      clearedFilters = {};
+    }
+    applyFilters(clearedFilters);
+    setNumberRangeMode({});
+    setActiveFilterIndex(null);
+  }, [filterValues, applyFilters, filterType, visibleHeaders, showOnlyUserFilter]);
+
+  const isFilterEmpty = (filter) =>
+    Object.keys(filter).length === 0 ||
+    (!filter.start && !filter.end && !filter.value && !filter.values?.length && !filter.headerKey);
+
+  const getFilterSummary = useCallback(
+    (header) => {
+      const filter = filterValues[header.key] || {};
+      if (isFilterEmpty(filter)) return 'None';
+
+      switch (header.type) {
+        case 'number':
+          if (numberRangeMode[header.key]) {
+            const start = filter.start || '';
+            const end = filter.end || '';
+            return `${start}${start && end ? ' – ' : ''}${end}`.trim();
+          } else {
+            const order = filter.order || 'equals';
+            const value = filter.value || '';
+            const orderText = { equals: '=', greaterOrEqual: '≥', lessOrEqual: '≤', greater: '>', less: '<' }[order];
+            return `${orderText}${value ? ` ${value}` : ''}`.trim();
+          }
+        case 'date':
+          return 'Date Filter';
+        case 'dropdown':
+          const values = filter.values || [];
+          return values.length > 0 ? `${values.join(', ')}` : 'None';
+        case 'text':
+          const condition = filter.condition || 'equals';
+          const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
+          return value ? `${condition} "${value}"` : 'None';
+        default:
+          return filter.value !== undefined && filter.value !== null
+            ? `"${String(filter.value)}"`
+            : 'None';
+      }
+    },
+    [filterValues, numberRangeMode]
+  );
+
+  return (
+    <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {/* Always show Restrict by User filter at the top */}
+      <div
+        className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''} ${styles.singleHeader}`}
+        onClick={() => setActiveFilterIndex('user')}
+      >
+        <div className={styles.filterRow}>
+          <div className={styles.filterNameType}>
+            <span>Restrict by User</span>
+          </div>
+          <div className={styles.primaryButtons}>
+            <span className={styles.filterSummary}>
+              {filterValues.userFilter?.headerKey
+                ? `${
+                    userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
+                    filterValues.userFilter.headerKey
+                  } = Current User`
+                : 'None'}
+            </span>
+          </div>
+        </div>
+        {activeFilterIndex === 'user' && (
+          <div
+            className={`${styles.filterActions} ${styles.singleHeader} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <select
+              value={filterValues.userFilter?.headerKey || ''}
+              onChange={(e) => handleUserFilterChange(e.target.value || '')}
+              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              <option value="">No User Filter</option>
+              {userHeaders.map((header) => (
+                <option key={header.key} value={header.key}>
+                  {header.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={clearUserFilter}
+              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Then show all other header filters */}
+      {visibleHeaders.length === 0 ? (
+        <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          No {filterType || 'headers'} available
+        </div>
+      ) : (
+        visibleHeaders.map((header, index) => (
+          <div
+            key={header.key}
+            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={() => setActiveFilterIndex((prev) => (prev === index ? null : index))}
+          >
+            <div className={styles.filterRow}>
+              <div className={styles.filterNameType}>
+                <span>{header.name}</span>
+              </div>
+              <div className={styles.primaryButtons}>
+                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+              </div>
+            </div>
+            {activeFilterIndex === index && (
+              <div
+                className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                ref={filterActionsRef}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {header.type === 'number' ? (
+                  numberRangeMode[header.key] ? (
+                    <>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.start || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                        placeholder="From"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <span className={styles.separator}>–</span>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.end || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                        placeholder="To"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <button
+                        onClick={() => toggleNumberRangeMode(header.key)}
+                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        Value
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value={filterValues[header.key]?.order || 'equals'}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                        className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        <option value="equals">=</option>
+                        <option value="greater">{'>'}</option>
+                        <option value="less">{'<'}</option>
+                        <option value="greaterOrEqual">≥</option>
+                        <option value="lessOrEqual">≤</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={filterValues[header.key]?.value || ''}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                        placeholder="Value"
+                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      />
+                      <button
+                        onClick={() => toggleNumberRangeMode(header.key)}
+                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      >
+                        Range
+                      </button>
+                    </>
+                  )
+                ) : header.type === 'date' ? (
+                  <>
+                    <input
+                      type="date"
+                      value={filterValues[header.key]?.start || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    />
+                    <span className={styles.separator}>–</span>
+                    <input
+                      type="date"
+                      value={filterValues[header.key]?.end || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    />
+                  </>
+                ) : header.type === 'dropdown' ? (
+                  <select
+                    multiple
+                    value={filterValues[header.key]?.values || []}
+                    onChange={(e) => handleDropdownChange(header.key, e)}
+                    className={`${styles.filterMultiSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  >
+                    {header.options.map((option, idx) => (
+                      <option key={`${header.key}-option-${idx}`} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <select
+                      value={filterValues[header.key]?.condition || 'equals'}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
+                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      <option value="equals">Equals</option>
+                      <option value="contains">Contains</option>
+                      <option value="startsWith">Starts with</option>
+                      <option value="endsWith">Ends with</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={filterValues[header.key]?.value || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                      placeholder="Value"
+                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    />
+                  </>
+                )}
+                <button
+                  onClick={() => clearFilter(header.key)}
+                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+CardTypeFilterLikeFilterModal.propTypes = {
+  cardType: PropTypes.string.isRequired,
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      name: PropTypes.string,
+      type: PropTypes.string,
+      hidden: PropTypes.bool,
+      options: PropTypes.arrayOf(PropTypes.string),
+    })
+  ).isRequired,
+  tempData: PropTypes.shape({
+    cardTypeFilters: PropTypes.object,
+  }).isRequired,
+  setTempData: PropTypes.func.isRequired,
+  isDarkTheme: PropTypes.bool.isRequired,
+  showOnlyUserFilter: PropTypes.bool,
+  filterType: PropTypes.string,
+};
+
+CardTypeFilterLikeFilterModal.defaultProps = {
+  showOnlyUserFilter: false,
+  filterType: null,
 };
 
 export default EditSheetsModal;

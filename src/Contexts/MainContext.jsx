@@ -127,7 +127,7 @@ export const MainContextProvider = ({ children }) => {
           }
         } catch (e) {
           // fallback: treat as business user
-          console.log('[MainContext] Error fetching user/teamMember doc', e);
+          // console.log('[MainContext] Error fetching user/teamMember doc', e);
         }
         // Set user context and auth checked immediately for fast UI
         if (isMounted) {
@@ -318,19 +318,12 @@ export const MainContextProvider = ({ children }) => {
       return;
     }
 
-    console.log('[TeamMembers Listener] user:', user);
-    console.log('[TeamMembers Listener] businessId:', businessId);
-
     const setupListener = () => {
       const teamMembersRef = collection(db, 'businesses', businessId, 'teamMembers');
       const unsubscribe = onSnapshot(teamMembersRef, async (snapshot) => {
-        console.log('[TeamMembers Listener] Firestore snapshot:', snapshot.docs.map(doc => doc.data()));
         const members = snapshot.docs.map((doc) => ({ uid: doc.id, ...doc.data() }));
-        console.log('[TeamMembers Listener] Processed members:', members);
         setTeamMembers(members);
-        setTimeout(() => {
-          console.log('[TeamMembers Listener] teamMembers state after set:', members);
-        }, 100);
+        setTimeout(() => {}, 100);
 
         for (const change of snapshot.docChanges()) {
           if (change.type === 'added') {
@@ -365,7 +358,6 @@ export const MainContextProvider = ({ children }) => {
   }, [user, businessId]);
 
   useEffect(() => {
-    // console.log('[MainContext] useEffect: sheet card fetch', { user, businessId, location: location.pathname, activeSheetName, sheets: sheets.allSheets, sheetCardsFetched });
     if (user && businessId && location.pathname.startsWith('/sheets') && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
@@ -406,7 +398,6 @@ export const MainContextProvider = ({ children }) => {
       console.warn('[setActiveSheetNameWithRef] Received sheet name with "/":', name);
     }
     const normalized = normalizeSheetName(name);
-    // console.log('[MainContext] setActiveSheetNameWithRef', { input: name, normalized });
     lastSheetNameFromClickRef.current = normalized;
     setActiveSheetName(normalized);
   };
@@ -909,11 +900,6 @@ export const MainContextProvider = ({ children }) => {
     return () => clearTimeout(debounceRef.current);
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
   
-
-  useEffect(() => {
-    console.log(teamMembers);
-  }
-, [teamMembers]);
 
   return (
     <MainContext.Provider value={contextValue}>

@@ -266,31 +266,18 @@ const Sheets = ({
 
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];
-    const sortCriteria = [
-      ...Object.entries(cardTypeFilters).flatMap(([type, filters]) =>
-        Object.entries(filters)
-          .filter(([_, filter]) => filter.sortOrder)
-          .map(([field, filter]) => ({
-            key: field,
-            sortOrder: filter.sortOrder,
-            type: headers.find((h) => h.key === field)?.type || 'text',
-            appliesToCardType: type,
-          }))
-      ),
-      ...Object.entries(globalFilters)
-        .filter(([_, filter]) => filter.sortOrder)
-        .map(([field, filter]) => ({
-          key: field,
-          sortOrder: filter.sortOrder,
-          type: headers.find((h) => h.key === field)?.type || 'text',
-          appliesToCardType: null,
-        })),
-    ];
+    // Only use globalFilters (FilterModal) for client-side sorting
+    const sortCriteria = Object.entries(globalFilters)
+      .filter(([_, filter]) => filter.sortOrder)
+      .map(([field, filter]) => ({
+        key: field,
+        sortOrder: filter.sortOrder,
+        type: headers.find((h) => h.key === field)?.type || 'text',
+      }));
 
     if (sortCriteria.length > 0) {
       sorted.sort((a, b) => {
-        for (const { key, sortOrder, type, appliesToCardType } of sortCriteria) {
-          if (appliesToCardType && a.typeOfCards !== appliesToCardType) continue;
+        for (const { key, sortOrder, type } of sortCriteria) {
           let aValue = a[key];
           let bValue = b[key];
           if (type === 'number') {
@@ -316,7 +303,7 @@ const Sheets = ({
       });
     }
     return sorted;
-  }, [filteredRows, cardTypeFilters, globalFilters, headers, activeSheetName]);
+  }, [filteredRows, globalFilters, headers, activeSheetName]);
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
 

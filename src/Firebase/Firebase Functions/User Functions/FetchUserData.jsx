@@ -284,7 +284,7 @@ const fetchUserData = async ({
         const filters = cardTypeFilters[type] || {};
         const clientSideFilters = [];
 
-        // Apply other cardTypeFilters
+        // Remove all orderBy logic: only apply .where() for range/value filters
         Object.entries(filters).forEach(([field, filter]) => {
           if (field === 'userFilter') return; // Skip userFilter as it's handled above
           if (filter.start || filter.end) {

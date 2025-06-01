@@ -318,29 +318,19 @@ export const handleModalSave = async ({
       }
       break;
     case 'folderModal':
-      // LOG: Entered folderModal case
-      console.log('[ModalUtils] folderModal: data', data);
-      // DEBUG: Log tempData and actions
       if (data?.tempData) {
-        console.log('[ModalUtils] folderModal: tempData', data.tempData);
         if (data.tempData.actions) {
-          console.log('[ModalUtils] folderModal: tempData.actions', data.tempData.actions);
         } else {
-          console.log('[ModalUtils] folderModal: tempData.actions is missing or falsy');
         }
         if (data.tempData.action) {
-          console.log('[ModalUtils] folderModal: tempData.action', data.tempData.action);
         }
       } else {
-        console.log('[ModalUtils] folderModal: tempData is missing');
       }
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {
-          console.log('[ModalUtils] folderModal: setSheets prev', prev);
           let currentStructure = [...prev.structure];
           const modifiedSheets = new Set();
           data.tempData.actions.forEach((actionData, idx) => {
-            console.log(`[ModalUtils] folderModal: actionData[${idx}]`, actionData);
             if (
               actionData.action === 'removeSheets' &&
               actionData.selectedSheets &&
@@ -362,7 +352,6 @@ export const handleModalSave = async ({
               const newSheetsToAdd = removedSheets.filter(
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
-              console.log('[ModalUtils] folderModal: removeSheets', { folder, folderSheets, remainingSheets, removedSheets, existingSheetNames, newSheetsToAdd });
               currentStructure = [
                 ...currentStructure.filter(
                   (item) => item.folderName !== actionData.folderName
@@ -391,7 +380,6 @@ export const handleModalSave = async ({
                 );
                 newSheets.forEach((sheetName) => modifiedSheets.add(sheetName));
               }
-              console.log('[ModalUtils] folderModal: addSheets', { folder, existingSheets, newSheets, currentStructure });
             } else if (
               actionData.action === 'deleteFolder' &&
               actionData.folderName
@@ -407,7 +395,6 @@ export const handleModalSave = async ({
               const newSheetsToAdd = folderSheets.filter(
                 (sheetName) => !existingSheetNames.includes(sheetName)
               );
-              console.log('[ModalUtils] folderModal: deleteFolder', { folder, folderSheets, existingSheetNames, newSheetsToAdd });
               currentStructure = [
                 ...currentStructure.filter(
                   (item) => item.folderName !== actionData.folderName
@@ -434,7 +421,6 @@ export const handleModalSave = async ({
               })
               .filter(Boolean);
           const cleaned = cleanStructure(currentStructure);
-          console.log('[ModalUtils] folderModal: final structure', cleaned);
           return {
             ...prev,
             structure: cleaned,
@@ -447,7 +433,6 @@ export const handleModalSave = async ({
         });
       } else if (data?.tempData?.action === 'deleteFolder' && data.tempData.folderName) {
         setSheets((prev) => {
-          console.log('[ModalUtils] folderModal: direct deleteFolder', data.tempData);
           const folderSheets = prev.structure.find(
             (item) => item.folderName === data.tempData.folderName
           )?.sheets || [];
@@ -463,7 +448,6 @@ export const handleModalSave = async ({
             ),
             ...newSheetsToAdd.map((sheetName) => ({ sheetName })),
           ];
-          console.log('[ModalUtils] folderModal: direct deleteFolder newStructure', newStructure);
           return {
             ...prev,
             structure: newStructure,
@@ -475,7 +459,6 @@ export const handleModalSave = async ({
           };
         });
       } else {
-        console.log('[ModalUtils] folderModal: No actions or deleteFolder action found.');
       }
       break;
     case 'widgetView':
