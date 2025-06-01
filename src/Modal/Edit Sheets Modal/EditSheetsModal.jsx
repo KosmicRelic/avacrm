@@ -1028,8 +1028,8 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
           // Only show user fields in the user filter dropdown
           return header.key === 'assignedTo' || header.key === 'user' || header.key === 'createdBy';
         }
-        // Exclude user fields from the main filter list
-        return !header.hidden && !['id', 'typeOfCards', 'assignedTo', 'user', 'createdBy'].includes(header.key);
+        // Exclude user fields and only allow text or dropdown types in the main filter list
+        return !header.hidden && !['id', 'typeOfCards', 'assignedTo', 'user', 'createdBy'].includes(header.key) && (header.type === 'text' || header.type === 'dropdown');
       })
       .map((header) => ({
         ...header,

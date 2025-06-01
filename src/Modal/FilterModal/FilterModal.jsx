@@ -18,6 +18,8 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     }, [tempData.filterValues])
   );
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const [sortFor, setSortFor] = useState({ headerKey: '', order: '' });
+  const [showSortFor, setShowSortFor] = useState(false);
   const filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
 
@@ -224,9 +226,86 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
 
   useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
 
+  // Remove Apply button logic, update sortFor state and tempData on change
+  useEffect(() => {
+    if (!sortFor.headerKey || !sortFor.order) return;
+    // Clear sortOrder from all filters
+    const updatedFilters = { ...filterValues };
+    Object.keys(updatedFilters).forEach((key) => {
+      if (updatedFilters[key]) {
+        delete updatedFilters[key].sortOrder;
+      }
+    });
+    // Set sortOrder for selected header
+    if (!updatedFilters[sortFor.headerKey]) updatedFilters[sortFor.headerKey] = {};
+    updatedFilters[sortFor.headerKey].sortOrder = sortFor.order;
+    applyFilters(updatedFilters);
+    // eslint-disable-next-line
+  }, [sortFor.headerKey, sortFor.order]);
+
+  // Only allow sort for number and date headers
+  const sortableHeaders = useMemo(
+    () => visibleHeaders.filter(h => (h.type === 'number' || h.type === 'date' || h.type === undefined)),
+    [visibleHeaders]
+  );
+
   return (
     <>
       <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        {/* Sort For Button - styled and clickable as a whole */}
+        <div
+          className={`${styles.filterItem} ${styles.sortForRow} ${showSortFor ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={() => setShowSortFor((prev) => !prev)}
+          tabIndex={0}
+          role="button"
+          style={{ cursor: 'pointer' }}
+        >
+          <div className={styles.filterRow}>
+            <div className={styles.filterNameType}>
+              <span>Sort For</span>
+            </div>
+            <div className={styles.primaryButtons}>
+              <span className={styles.filterSummary}>
+                {(() => {
+                  if (!sortFor.headerKey || !sortFor.order) return 'None';
+                  const header = sortableHeaders.find(h => h.key === sortFor.headerKey);
+                  if (!header) return 'None';
+                  return `${header.name} (${sortFor.order === 'ascending' ? 'Asc' : 'Desc'})`;
+                })()}
+              </span>
+            </div>
+          </div>
+          {showSortFor && (
+            <div className={styles.sortForDropdowns} onClick={e => e.stopPropagation()}>
+              <select
+                value={sortFor.headerKey}
+                onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                <option value="">Select header...</option>
+                {sortableHeaders.map((header) => (
+                  <option key={header.key} value={header.key}>{header.name}</option>
+                ))}
+              </select>
+              <select
+                value={sortFor.order}
+                onChange={e => setSortFor(s => ({ ...s, order: e.target.value }))}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                <option value="">Sort order...</option>
+                <option value="ascending">Ascending</option>
+                <option value="descending">Descending</option>
+              </select>
+              <button
+                onClick={e => { e.stopPropagation(); setSortFor({ headerKey: '', order: '' }); }}
+                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                type="button"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
         {visibleHeaders.map((header, index) => (
           <div
             key={header.key}
@@ -292,15 +371,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       >
                         Value
                       </button>
-                      <select
-                        value={filterValues[header.key]?.sortOrder || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <option value="">Sort...</option>
-                        <option value="ascending">Ascending</option>
-                        <option value="descending">Descending</option>
-                      </select>
                     </>
                   ) : (
                     <>
@@ -328,27 +398,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       >
                         Range
                       </button>
-                      <select
-                        value={filterValues[header.key]?.sortOrder || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                        className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        <option value="">Sort...</option>
-                        <option value="ascending">Ascending</option>
-                        <option value="descending">Descending</option>
-                      </select>
                     </>
                   )
                 ) : header.type === 'date' ? (
-                  <select
-                    value={filterValues[header.key]?.sortOrder || ''}
-                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    <option value="">None</option>
-                    <option value="ascending">Ascending</option>
-                    <option value="descending">Descending</option>
-                  </select>
+                  // Remove sortOrder select for date
+                  null
                 ) : header.type === 'dropdown' ? (
                   <select
                     multiple
