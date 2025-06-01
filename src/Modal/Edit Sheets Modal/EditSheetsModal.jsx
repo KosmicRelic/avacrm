@@ -97,7 +97,7 @@ const EditSheetsModal = ({
         changed = true;
       }
       template.headers
-        .filter((h) => h.key && h.key !== 'id' && h.key !== 'typeOfCards')
+        .filter((h) => h.key)
         .forEach((header) => {
           if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
             updatedCardTypeFilters[typeOfCards][header.key] = {};
@@ -178,7 +178,7 @@ const EditSheetsModal = ({
       if (!template) return;
       if (!updatedCardTypeFilters[typeOfCards]) updatedCardTypeFilters[typeOfCards] = {};
       template.headers
-        .filter((h) => h.key && h.key !== 'id' && h.key !== 'typeOfCards')
+        .filter((h) => h.key)
         .forEach((header) => {
           if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
             updatedCardTypeFilters[typeOfCards][header.key] = {};
@@ -772,7 +772,7 @@ const EditSheetsModal = ({
                 {(() => {
                   const selectedTemplate = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
                   const templateHeaders = selectedTemplate?.headers
-                    .filter((header) => header.isUsed !== false && !['id', 'typeOfCards'].includes(header.key))
+                    .filter((header) => header.isUsed !== false)
                     .map((header) => ({
                       key: header.key,
                       name: header.name,
@@ -1029,7 +1029,7 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
           return header.key === 'assignedTo' || header.key === 'user' || header.key === 'createdBy';
         }
         // Exclude user fields and only allow text or dropdown types in the main filter list
-        return !header.hidden && !['id', 'typeOfCards', 'assignedTo', 'user', 'createdBy'].includes(header.key) && (header.type === 'text' || header.type === 'dropdown');
+        return !header.hidden && !['assignedTo', 'user', 'createdBy'].includes(header.key) && (header.type === 'text' || header.type === 'dropdown');
       })
       .map((header) => ({
         ...header,
