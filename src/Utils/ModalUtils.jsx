@@ -225,29 +225,44 @@ export const handleModalSave = async ({
         const updates = data.currentCardTemplates
           .map((newTemplate) => {
             const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
-            if (!oldTemplate || !newTemplate.isModified) return null;
+            // Allow new templates (action: 'add') even if oldTemplate is undefined
+            if ((!oldTemplate && newTemplate.action !== 'add') || !newTemplate.isModified) return null;
 
             const update = {
               docId: newTemplate.docId,
-              typeOfCards: oldTemplate.typeOfCards,
+              typeOfCards: newTemplate.typeOfCards,
             };
 
-            if (
+            if (newTemplate.action === 'add') {
+              // For new templates, send the full template
+              const { isModified, action, ...cleanTemplate } = newTemplate;
+              update.newTemplate = {
+                ...cleanTemplate,
+                headers: cleanTemplate.headers,
+                sections: cleanTemplate.sections,
+                name: cleanTemplate.name || cleanTemplate.typeOfCards,
+                typeOfCards: cleanTemplate.typeOfCards,
+              };
+              update.action = 'add';
+            } else if (
               newTemplate.action === 'update' &&
+              oldTemplate &&
               oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
               newTemplate.typeOfCards
             ) {
               update.newTypeOfCards = newTemplate.typeOfCards;
             }
 
-            const oldKeys = oldTemplate.headers.map((h) => h.key);
-            const newKeys = newTemplate.headers.map((h) => h.key);
-            const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
-            if (deletedKeys.length > 0) {
-              update.deletedKeys = deletedKeys;
+            if (oldTemplate) {
+              const oldKeys = oldTemplate.headers.map((h) => h.key);
+              const newKeys = newTemplate.headers.map((h) => h.key);
+              const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
+              if (deletedKeys.length > 0) {
+                update.deletedKeys = deletedKeys;
+              }
             }
 
-            if (newTemplate.action === 'add' || newTemplate.action === 'update') {
+            if (newTemplate.action === 'update') {
               const { isModified, action, ...cleanTemplate } = newTemplate;
               update.newTemplate = {
                 ...cleanTemplate,

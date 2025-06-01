@@ -19,7 +19,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const businessId = businessIdProp || businessIdContext;
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates).map((t) => ({
+    (tempData.currentCardTemplates || cardTemplates || []).map((t) => ({
       ...t,
       headers: t.headers.map((h) => ({
         ...h,

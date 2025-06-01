@@ -38,7 +38,7 @@ export default function BusinessSignUp() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/sheets');
     }
   }, [user, navigate]);
 
@@ -111,7 +111,7 @@ export default function BusinessSignUp() {
 
         await signInWithEmailAndPassword(auth, email.trim(), password);
 
-        setSignupSuccess(true);
+        navigate('/sheets');
       } catch (error) {
         setIsSubmitting(false);
         setSignupSuccess(false);
@@ -308,12 +308,6 @@ export default function BusinessSignUp() {
             </a>
           </footer>
         </>
-      )}
-
-      {signupSuccess && (
-        <p className={styles.successMessage}>
-          {t('businessSignUp.successMessage')}
-        </p>
       )}
     </div>
   );

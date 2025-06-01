@@ -48,7 +48,7 @@ export default function TeamMemberSignUp() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/sheets');
     }
   }, [user, navigate]);
 
@@ -161,7 +161,7 @@ export default function TeamMemberSignUp() {
         setTimeout(() => {
           setSignupSuccess(true);
           setIsSubmitting(false);
-          navigate('/dashboard');
+          navigate('/sheets');
         }, 1500); // Increased to 1.5s to ensure banner triggers
       } catch (error) {
         setIsSubmitting(false);
@@ -222,217 +222,209 @@ export default function TeamMemberSignUp() {
 
   return (
     <div className={styles.container}>
-      {!signupSuccess && (
-        <>
-          <h1
-            className={styles.logoText}
-            onClick={() => (!isSubmitting ? navigate('/') : null)}
+      <>
+        <h1
+          className={styles.logoText}
+          onClick={() => (!isSubmitting ? navigate('/') : null)}
+        >
+          AVA
+        </h1>
+        <header className={styles.header}>
+          <h2 className={styles.title}>{t('teamMemberSignUp.signup')}</h2>
+          <p className={styles.subText}>{getSubText()}</p>
+        </header>
+
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div
+            className={`${styles.inputContainer} ${nameError ? styles.error : ''}`}
           >
-            AVA
-          </h1>
-          <header className={styles.header}>
-            <h2 className={styles.title}>{t('teamMemberSignUp.signup')}</h2>
-            <p className={styles.subText}>{getSubText()}</p>
-          </header>
-
-          <form className={styles.form} onSubmit={handleSubmit}>
-            <div
-              className={`${styles.inputContainer} ${nameError ? styles.error : ''}`}
+            <label
+              className={`${styles.label} ${
+                nameFocused || name ? styles.focused : ''
+              } ${nameError ? styles.errorText : ''}`}
             >
-              <label
-                className={`${styles.label} ${
-                  nameFocused || name ? styles.focused : ''
-                } ${nameError ? styles.errorText : ''}`}
-              >
-                {t('teamMemberSignUp.name')}*
-              </label>
-              <input
-                type="text"
-                className={styles.inputField}
-                onFocus={() => setNameFocused(true)}
-                onBlur={() => setNameFocused(name !== '')}
-                value={name}
-                onChange={handleInputChange(setName, setNameError)}
-                disabled={isSubmitting}
-              />
-              {nameError && (
-                <p className={styles.errorText}>
-                  {t('teamMemberSignUp.error.invalidName')}
-                </p>
-              )}
-            </div>
-
-            <div
-              className={`${styles.inputContainer} ${surnameError ? styles.error : ''}`}
-            >
-              <label
-                className={`${styles.label} ${
-                  surnameFocused || surname ? styles.focused : ''
-                } ${surnameError ? styles.errorText : ''}`}
-              >
-                {t('teamMemberSignUp.surname')}*
-              </label>
-              <input
-                type="text"
-                className={styles.inputField}
-                onFocus={() => setSurnameFocused(true)}
-                onBlur={() => setSurnameFocused(surname !== '')}
-                value={surname}
-                onChange={handleInputChange(setSurname, setSurnameError)}
-                disabled={isSubmitting}
-              />
-              {surnameError && (
-                <p className={styles.errorText}>
-                  {t('teamMemberSignUp.error.invalidSurname')}
-                </p>
-              )}
-            </div>
-
-            <div
-              className={`${styles.inputContainer} ${emailError ? styles.error : ''}`}
-            >
-              <label
-                className={`${styles.label} ${
-                  emailFocused || email ? styles.focused : ''
-                } ${emailError ? styles.errorText : ''}`}
-              >
-                {t('teamMemberSignUp.email')}*
-              </label>
-              <input
-                type="email"
-                className={styles.inputField}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(email !== '')}
-                value={email}
-                onChange={handleInputChange(setEmail, setEmailError)}
-                disabled={isSubmitting}
-              />
-              {emailError && (
-                <p className={styles.errorText}>
-                  {t('teamMemberSignUp.error.invalidEmail')}
-                </p>
-              )}
-            </div>
-
-            <div
-              className={`${styles.inputContainer} ${passwordError ? styles.error : ''}`}
-            >
-              <label
-                className={`${styles.label} ${
-                  passwordFocused || password ? styles.focused : ''
-                } ${passwordError ? styles.errorText : ''}`}
-              >
-                {t('teamMemberSignUp.password')}*
-              </label>
-              <input
-                type={passwordVisible ? 'text' : 'password'}
-                className={styles.inputField}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(password !== '')}
-                value={password}
-                onChange={handleInputChange(setPassword, setPasswordError)}
-                disabled={isSubmitting}
-              />
-              <div className={styles.eyeIcons}>
-                <FaEye
-                  onClick={togglePasswordVisibility}
-                  style={{
-                    cursor: 'pointer',
-                    display: passwordVisible ? 'none' : 'block',
-                  }}
-                />
-                <FaEyeSlash
-                  onClick={togglePasswordVisibility}
-                  style={{
-                    cursor: 'pointer',
-                    display: passwordVisible ? 'block' : 'none',
-                  }}
-                />
-              </div>
-            </div>
-
-            {passwordRequirements.length > 0 && (
-              <ul className={styles.requirementsList}>
-                {passwordRequirements.map((requirement, index) => (
-                  <li key={index} className={styles.requirementsText}>
-                    {requirement}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div
-              className={`${styles.inputContainer} ${phoneError ? styles.error : ''}`}
-            >
-              <label
-                className={`${styles.label} ${
-                  phoneFocused || phone ? styles.focused : ''
-                } ${phoneError ? styles.errorText : ''}`}
-              >
-                {t('teamMemberSignUp.phone')}*
-              </label>
-              <input
-                type="tel"
-                className={styles.inputField}
-                onFocus={() => setPhoneFocused(true)}
-                onBlur={() => setPhoneFocused(phone !== '')}
-                value={phone}
-                onChange={handleInputChange(setPhone, setPhoneError)}
-                disabled={isSubmitting}
-              />
-              {phoneError && (
-                <p className={styles.errorText}>
-                  {t('teamMemberSignUp.error.invalidPhone')}
-                </p>
-              )}
-            </div>
-
-            {signupError && (
-              <p className={styles.errorText} style={{ textAlign: 'center' }}>
-                {signupError}
+              {t('teamMemberSignUp.name')}*
+            </label>
+            <input
+              type="text"
+              className={styles.inputField}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(name !== '')}
+              value={name}
+              onChange={handleInputChange(setName, setNameError)}
+              disabled={isSubmitting}
+            />
+            {nameError && (
+              <p className={styles.errorText}>
+                {t('teamMemberSignUp.error.invalidName')}
               </p>
             )}
+          </div>
 
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={
-                isSubmitting ||
-                !isValidEmail(email) ||
-                !password ||
-                passwordRequirements.length > 0 ||
-                !isValidPhone(phone) ||
-                !isValidName(name) ||
-                !isValidName(surname) ||
-                !invitationCode ||
-                invitationCodeError
-              }
+          <div
+            className={`${styles.inputContainer} ${surnameError ? styles.error : ''}`}
+          >
+            <label
+              className={`${styles.label} ${
+                surnameFocused || surname ? styles.focused : ''
+              } ${surnameError ? styles.errorText : ''}`}
             >
-              {isSubmitting ? (
-                <ImSpinner2 className={styles.spinner} />
-              ) : (
-                t('teamMemberSignUp.createAccount')
-              )}
-            </button>
-          </form>
+              {t('teamMemberSignUp.surname')}*
+            </label>
+            <input
+              type="text"
+              className={styles.inputField}
+              onFocus={() => setSurnameFocused(true)}
+              onBlur={() => setSurnameFocused(surname !== '')}
+              value={surname}
+              onChange={handleInputChange(setSurname, setSurnameError)}
+              disabled={isSubmitting}
+            />
+            {surnameError && (
+              <p className={styles.errorText}>
+                {t('teamMemberSignUp.error.invalidSurname')}
+              </p>
+            )}
+          </div>
 
-          <footer className={styles.footer}>
-            {t('teamMemberSignUp.alreadyHaveAccount')}{' '}
-            <a
-              onClick={() => (!isSubmitting ? navigate('/signin') : null)}
-              style={{ cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+          <div
+            className={`${styles.inputContainer} ${emailError ? styles.error : ''}`}
+          >
+            <label
+              className={`${styles.label} ${
+                emailFocused || email ? styles.focused : ''
+              } ${emailError ? styles.errorText : ''}`}
             >
-              {t('teamMemberSignUp.signin')}
-            </a>
-          </footer>
-        </>
-      )}
+              {t('teamMemberSignUp.email')}*
+            </label>
+            <input
+              type="email"
+              className={styles.inputField}
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(email !== '')}
+              value={email}
+              onChange={handleInputChange(setEmail, setEmailError)}
+              disabled={isSubmitting}
+            />
+            {emailError && (
+              <p className={styles.errorText}>
+                {t('teamMemberSignUp.error.invalidEmail')}
+              </p>
+            )}
+          </div>
 
-      {signupSuccess && (
-        <p className={styles.successMessage}>
-          {t('teamMemberSignUp.successMessage')}
-        </p>
-      )}
+          <div
+            className={`${styles.inputContainer} ${passwordError ? styles.error : ''}`}
+          >
+            <label
+              className={`${styles.label} ${
+                passwordFocused || password ? styles.focused : ''
+              } ${passwordError ? styles.errorText : ''}`}
+            >
+              {t('teamMemberSignUp.password')}*
+            </label>
+            <input
+              type={passwordVisible ? 'text' : 'password'}
+              className={styles.inputField}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(password !== '')}
+              value={password}
+              onChange={handleInputChange(setPassword, setPasswordError)}
+              disabled={isSubmitting}
+            />
+            <div className={styles.eyeIcons}>
+              <FaEye
+                onClick={togglePasswordVisibility}
+                style={{
+                  cursor: 'pointer',
+                  display: passwordVisible ? 'none' : 'block',
+                }}
+              />
+              <FaEyeSlash
+                onClick={togglePasswordVisibility}
+                style={{
+                  cursor: 'pointer',
+                  display: passwordVisible ? 'block' : 'none',
+                }}
+              />
+            </div>
+          </div>
+
+          {passwordRequirements.length > 0 && (
+            <ul className={styles.requirementsList}>
+              {passwordRequirements.map((requirement, index) => (
+                <li key={index} className={styles.requirementsText}>
+                  {requirement}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div
+            className={`${styles.inputContainer} ${phoneError ? styles.error : ''}`}
+          >
+            <label
+              className={`${styles.label} ${
+                phoneFocused || phone ? styles.focused : ''
+              } ${phoneError ? styles.errorText : ''}`}
+            >
+              {t('teamMemberSignUp.phone')}*
+            </label>
+            <input
+              type="tel"
+              className={styles.inputField}
+              onFocus={() => setPhoneFocused(true)}
+              onBlur={() => setPhoneFocused(phone !== '')}
+              value={phone}
+              onChange={handleInputChange(setPhone, setPhoneError)}
+              disabled={isSubmitting}
+            />
+            {phoneError && (
+              <p className={styles.errorText}>
+                {t('teamMemberSignUp.error.invalidPhone')}
+              </p>
+            )}
+          </div>
+
+          {signupError && (
+            <p className={styles.errorText} style={{ textAlign: 'center' }}>
+              {signupError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={
+              isSubmitting ||
+              !isValidEmail(email) ||
+              !password ||
+              passwordRequirements.length > 0 ||
+              !isValidPhone(phone) ||
+              !isValidName(name) ||
+              !isValidName(surname) ||
+              !invitationCode ||
+              invitationCodeError
+            }
+          >
+            {isSubmitting ? (
+              <ImSpinner2 className={styles.spinner} />
+            ) : (
+              t('teamMemberSignUp.createAccount')
+            )}
+          </button>
+        </form>
+
+        <footer className={styles.footer}>
+          {t('teamMemberSignUp.alreadyHaveAccount')}{' '}
+          <a
+            onClick={() => (!isSubmitting ? navigate('/signin') : null)}
+            style={{ cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+          >
+            {t('teamMemberSignUp.signin')}
+          </a>
+        </footer>
+      </>
     </div>
   );
 }
