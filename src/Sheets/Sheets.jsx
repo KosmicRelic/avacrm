@@ -610,8 +610,8 @@ const Sheets = ({
               style={{ display: activeSheet ? undefined : 'none' }}
               getTeamMemberName={getTeamMemberName}
             />
-            {finalRows.length > 0 ? (
-              finalRows.map((rowData, rowIndex) => (
+            {finalRows.filter(rowData => rowData.docId).length > 0 ? (
+              finalRows.filter(rowData => rowData.docId).map((rowData, rowIndex) => (
                 <RowComponent
                   key={rowData.docId || rowIndex}
                   rowData={rowData}

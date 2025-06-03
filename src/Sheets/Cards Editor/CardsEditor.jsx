@@ -2,7 +2,6 @@ import React, { useContext, useState, useCallback, useMemo, useEffect } from 're
 import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { v4 as uuidv4 } from 'uuid';
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
@@ -166,7 +165,7 @@ const CardsEditor = ({
       ...prev,
       sheetName: selectedSheet,
       typeOfCards: template.name,
-      docId: prev.docId || uuidv4(),
+      // docId: prev.docId || uuidv4(), // Remove uuidv4 for new cards
     }));
     setView('editor');
   }, [selectedSheet, selectedCardType, cardTemplates]);
@@ -220,7 +219,7 @@ const CardsEditor = ({
 
     let newRow = {
       ...formData,
-      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId || uuidv4(),
+      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId, // Don't generate uuidv4 for new cards
       sheetName: selectedSheet,
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
       history: formData.history || [],

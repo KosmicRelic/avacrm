@@ -176,10 +176,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setCards,
                     setCardTemplates,
-                    setMetrics,
-                    setDashboards,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
                   })
@@ -525,11 +522,20 @@ export const MainContextProvider = ({ children }) => {
           if (!isCardAccessible) {
             continue;
           }
-          const docRef = doc(stateConfig.cards.collectionPath(), card.docId);
+          let docRef;
+          if (card.action === 'add') {
+            docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
+          } else {
+            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
+          }
           if (card.action === 'remove') {
             batch.delete(docRef);
             hasChanges = true;
-          } else if (card.action === 'add' || card.action === 'update') {
+          } else if (card.action === 'add') {
+            const { isModified, action, docId, ...cardData } = card;
+            batch.set(docRef, cardData);
+            hasChanges = true;
+          } else if (card.action === 'update') {
             const { isModified, action, docId, ...cardData } = card;
             batch.set(docRef, cardData);
             hasChanges = true;
@@ -651,17 +657,24 @@ export const MainContextProvider = ({ children }) => {
         if (hasChanges) {
           await batch.commit();
 
-          setCards((prev) =>
-            prev
-              .filter((card) => !(card.isModified && card.action === 'remove'))
-              .map((card) => {
-                if (card.isModified) {
-                  const { isModified, action, ...cleanCard } = card;
-                  return cleanCard;
-                }
-                return card;
-              })
-          );
+          // After commit, fetch all cards to update local state with Firestore docIds
+          if (modifiedCards.some(card => card.action === 'add')) {
+            const cardsSnapshot = await getDocs(stateConfig.cards.collectionPath());
+            const firestoreCards = cardsSnapshot.docs.map(docSnap => ({ docId: docSnap.id, ...docSnap.data() }));
+            setCards(firestoreCards);
+          } else {
+            setCards((prev) =>
+              prev
+                .filter((card) => !(card.isModified && card.action === 'remove'))
+                .map((card) => {
+                  if (card.isModified) {
+                    const { isModified, action, ...cleanCard } = card;
+                    return cleanCard;
+                  }
+                  return card;
+                })
+            );
+          }
 
           if (isBusinessUser) {
             setDashboards((prev) =>
@@ -900,6 +913,11 @@ export const MainContextProvider = ({ children }) => {
     return () => clearTimeout(debounceRef.current);
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
   
+
+  useEffect(() => {
+    console.log(cards);
+  }
+, [cards]);
 
   return (
     <MainContext.Provider value={contextValue}>
