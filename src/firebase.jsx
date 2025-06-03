@@ -22,7 +22,7 @@ const functions = getFunctions(app, 'us-central1'); // Specify your region, e.g.
 
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
-    // console.log('Auth persistence set to local');
+    // Auth persistence set to local
   })
   .catch((error) => {
     console.error('Error setting auth persistence:', error);

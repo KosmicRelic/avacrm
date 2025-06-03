@@ -3,11 +3,6 @@ import { app } from '../../../firebase'; // Adjust path to your Firebase config
 
 export const updateCardTemplatesAndCardsFunction = async ({ businessId, updates }) => {
   try {
-    console.log('Sending to updateCardTemplatesAndCards:', {
-      businessId,
-      updates,
-    });
-
     const auth = getAuth(app);
     const token = await auth.currentUser?.getIdToken();
 
@@ -39,7 +34,6 @@ export const updateCardTemplatesAndCardsFunction = async ({ businessId, updates 
     }
 
     const result = await response.json();
-    console.log('updateCardTemplatesAndCards response:', result);
     return result;
   } catch (error) {
     console.error('updateCardTemplatesAndCards error:', {

@@ -312,9 +312,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   };
 
   const handleDrop = useCallback(({ dashboardId, row, col }) => {
-    console.log('[handleDrop] called', { dashboardId, row, col, draggedWidget, editMode, isInitialized });
     if (!draggedWidget || !editMode || !isInitialized) {
-      console.log('[handleDrop] Not dropping: missing draggedWidget, editMode, or not initialized');
       setDraggedWidget(null);
       return;
     }
@@ -638,7 +636,6 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   }, [draggedWidget, editMode, isInitialized, setDashboards, validateDashboardScore, cleanupEmptyDashboards, getValidPosition, canPlaceWidget, findFreePosition]);
 
   const handleDragStart = useCallback((e, widgetInfo) => {
-    console.log('[handleDragStart] called', { widgetInfo, editMode, isInitialized });
     if (!editMode) return;
     setDraggedWidget(widgetInfo);
     e.dataTransfer.setData('text/plain', JSON.stringify(widgetInfo));

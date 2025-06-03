@@ -12,17 +12,6 @@ export const BusinessSignUp = async ({
   surname, // new
 }) => {
   try {
-    // Log input data to verify
-    console.log('Sending to businessSignUp:', {
-      email,
-      password: password ? '[REDACTED]' : undefined, // Avoid logging password
-      businessName,
-      invitationCode,
-      userType,
-      name,
-      surname,
-    });
-
     const functions = getFunctions(app);
     const businessSignUp = httpsCallable(functions, 'businessSignUp');
     const result = await businessSignUp({
@@ -35,7 +24,6 @@ export const BusinessSignUp = async ({
       surname, // new
     });
 
-    console.log('businessSignUp response:', result.data);
     return result.data.userData;
   } catch (error) {
     // Log full error for debugging

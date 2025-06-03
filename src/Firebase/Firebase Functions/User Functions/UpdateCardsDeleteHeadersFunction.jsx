@@ -3,11 +3,6 @@ import { app } from '../../../firebase';
 
 export const UpdateCardsDeleteHeadersFunction = async ({ businessId, updates }) => {
   try {
-    console.log('Sending to updateCardsDeleteHeaders:', {
-      businessId,
-      updates,
-    });
-
     const auth = getAuth(app);
     const token = await auth.currentUser?.getIdToken();
 
@@ -39,7 +34,6 @@ export const UpdateCardsDeleteHeadersFunction = async ({ businessId, updates }) 
     }
 
     const result = await response.json();
-    console.log('updateCardsDeleteHeaders response:', result);
     return result;
   } catch (error) {
     console.error('UpdateCardsDeleteHeaders error:', {

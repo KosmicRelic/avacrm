@@ -430,7 +430,6 @@ function App() {
         data: {
           folderName,
           onSheetSelect: (sheetName) => {
-            console.log('Selected sheet:', sheetName);
             setActiveSheetName(sheetName);
             handleSheetChange(sheetName);
             setSheetCardsFetched((prev) => ({
