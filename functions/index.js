@@ -34,7 +34,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
     functions.logger.info('businessSignUp started', { rawData: data });
 
     // Destructure from data.data (Firebase wraps payload) or fallback to data or empty object
-    const { email, password, businessName, invitationCode, userType } = data.data || data || {};
+    const { email, password, businessName, invitationCode, userType, name, surname } = data.data || data || {};
 
     // Log destructured fields
     functions.logger.info('Destructured data', {
@@ -43,6 +43,8 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
       businessName,
       invitationCode,
       userType,
+      name,
+      surname,
     });
 
     // Check for missing fields with specific error message
@@ -78,6 +80,8 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
       businessName,
       userType,
       invitationCode,
+      name: name || '',
+      surname: surname || '',
       createdAt: new Date().toISOString(),
     };
     await db.collection('users').doc(user.uid).set(userData);
@@ -92,6 +96,8 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         name: businessName || 'Unnamed Business',
         createdAt: new Date(),
         ownerUid: user.uid,
+        name: name || '',
+        surname: surname || '',
       },
     });
 
@@ -772,7 +778,7 @@ exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/car
   const cardRef = snap.ref;
 
   // Only add id if not present
-  if (!data.id) {
+  if (!data.history) {
     // Use a real timestamp for each history entry
     const now = admin.firestore.Timestamp.now();
     const history = Object.keys(data)
@@ -784,7 +790,6 @@ exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/car
       }));
 
     await cardRef.update({
-      id: docId,
       history: history,
     });
   }

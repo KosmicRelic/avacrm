@@ -32,6 +32,13 @@ export default function BusinessSignUp() {
   const [invitationCodeFocused, setInvitationCodeFocused] = useState(false);
   const [invitationCodeError, setInvitationCodeError] = useState(false);
 
+  const [name, setName] = useState('');
+  const [nameFocused, setNameFocused] = useState(false);
+  const [nameError, setNameError] = useState(false);
+  const [surname, setSurname] = useState('');
+  const [surnameFocused, setSurnameFocused] = useState(false);
+  const [surnameError, setSurnameError] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupError, setSignupError] = useState('');
@@ -86,16 +93,20 @@ export default function BusinessSignUp() {
     e.preventDefault();
 
     const isBusinessNameValid = businessName.trim() !== '';
+    const isNameValid = name.trim() !== '';
+    const isSurnameValid = surname.trim() !== '';
     const isEmailValid = isValidEmail(email);
     const isPasswordValid = password && passwordRequirements.length === 0;
     const isInvitationCodeValid = invitationCode === '0000';
 
     setBusinessNameError(!isBusinessNameValid);
+    setNameError(!isNameValid);
+    setSurnameError(!isSurnameValid);
     setEmailError(!isEmailValid);
     setPasswordError(!isPasswordValid);
     setInvitationCodeError(!isInvitationCodeValid);
 
-    if (isBusinessNameValid && isEmailValid && isPasswordValid && isInvitationCodeValid) {
+    if (isBusinessNameValid && isNameValid && isSurnameValid && isEmailValid && isPasswordValid && isInvitationCodeValid) {
       try {
         setIsSubmitting(true);
         setSignupError('');
@@ -107,6 +118,8 @@ export default function BusinessSignUp() {
           businessName: businessName.trim(),
           invitationCode,
           userType: 'business',
+          name: name.trim(),
+          surname: surname.trim(),
         });
 
         await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -167,6 +180,37 @@ export default function BusinessSignUp() {
                   {t('businessSignUp.error.businessNameRequired')}
                 </p>
               )}
+            </div>
+
+            <div className={`${styles.inputContainer} ${nameError ? styles.error : ''}`}>
+              <label className={`${styles.label} ${(nameFocused || name) ? styles.focused : ''} ${nameError ? styles.errorText : ''}`}>
+                First Name*
+              </label>
+              <input
+                type="text"
+                className={styles.inputField}
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => setNameFocused(name !== '')}
+                value={name}
+                onChange={handleInputChange(setName, setNameError)}
+                disabled={isSubmitting}
+              />
+              {nameError && <p className={styles.errorText}>First name is required.</p>}
+            </div>
+            <div className={`${styles.inputContainer} ${surnameError ? styles.error : ''}`}>
+              <label className={`${styles.label} ${(surnameFocused || surname) ? styles.focused : ''} ${surnameError ? styles.errorText : ''}`}>
+                Last Name*
+              </label>
+              <input
+                type="text"
+                className={styles.inputField}
+                onFocus={() => setSurnameFocused(true)}
+                onBlur={() => setSurnameFocused(surname !== '')}
+                value={surname}
+                onChange={handleInputChange(setSurname, setSurnameError)}
+                disabled={isSubmitting}
+              />
+              {surnameError && <p className={styles.errorText}>Last name is required.</p>}
             </div>
 
             <div

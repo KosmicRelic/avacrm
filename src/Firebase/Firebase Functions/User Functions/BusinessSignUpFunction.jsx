@@ -8,6 +8,8 @@ export const BusinessSignUp = async ({
   businessName,
   invitationCode,
   userType,
+  name, // new
+  surname, // new
 }) => {
   try {
     // Log input data to verify
@@ -17,6 +19,8 @@ export const BusinessSignUp = async ({
       businessName,
       invitationCode,
       userType,
+      name,
+      surname,
     });
 
     const functions = getFunctions(app);
@@ -27,6 +31,8 @@ export const BusinessSignUp = async ({
       businessName,
       invitationCode,
       userType,
+      name, // new
+      surname, // new
     });
 
     console.log('businessSignUp response:', result.data);

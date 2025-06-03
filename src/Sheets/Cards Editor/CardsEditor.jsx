@@ -218,7 +218,7 @@ const CardsEditor = ({
       return;
     }
 
-    const newRow = {
+    let newRow = {
       ...formData,
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId || uuidv4(),
       sheetName: selectedSheet,
@@ -227,6 +227,14 @@ const CardsEditor = ({
       isModified: true,
       action: isEditing ? 'update' : 'add',
     };
+
+    // Remove fields that are null, undefined, or empty string (except required fields)
+    const requiredFields = ['docId', 'sheetName', 'typeOfCards', 'history', 'isModified', 'action'];
+    Object.keys(newRow).forEach((key) => {
+      if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
+        delete newRow[key];
+      }
+    });
 
     const newHistory = [];
     const timestamp = Timestamp.now(); // Use Firestore Timestamp for history
