@@ -38,8 +38,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [editMode, setEditMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [draggedSectionIndex, setDraggedSectionIndex] = useState(null);
+  const [draggedSectionOrderIndex, setDraggedSectionOrderIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchTargetIndex, setTouchTargetIndex] = useState(null);
+  const [sectionTouchStartY, setSectionTouchStartY] = useState(null);
+  const [sectionTouchTargetIndex, setSectionTouchTargetIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [activeHeaderIndex, setActiveHeaderIndex] = useState(null);
@@ -52,6 +55,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   const keyRefs = useRef(new Map());
+  const sectionRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
   const prevStepRef = useRef(currentStep);
@@ -742,6 +746,85 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     setTouchTargetIndex(null);
   }, [draggedIndex, draggedSectionIndex]);
 
+  // Section drag handlers
+  const handleSectionDragStart = useCallback((e, index) => {
+    setDraggedSectionOrderIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    const element = sectionRefs.current.get(index);
+    if (element) element.classList.add(styles.dragging);
+  }, [styles.dragging]);
+
+  const handleSectionTouchStart = useCallback((e, index) => {
+    if (e.target.classList.contains(styles.dragIcon)) {
+      e.preventDefault();
+      setDraggedSectionOrderIndex(index);
+      setSectionTouchStartY(e.touches[0].clientY);
+      setSectionTouchTargetIndex(index);
+      const element = sectionRefs.current.get(index);
+      if (element) element.classList.add(styles.dragging);
+    }
+  }, [styles.dragIcon]);
+
+  const handleSectionDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    if (draggedSectionOrderIndex === null || draggedSectionOrderIndex === index) return;
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev];
+      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      const newSections = [...currentTemplate.sections];
+      const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
+      newSections.splice(index, 0, draggedSection);
+      currentTemplate.sections = newSections;
+      newTemplates[selectedTemplateIndex] = {
+        ...currentTemplate,
+        isModified: true,
+        action: currentTemplate.action || 'update',
+      };
+      setDraggedSectionOrderIndex(index);
+      return newTemplates;
+    });
+  }, [draggedSectionOrderIndex, selectedTemplateIndex]);
+
+  const handleSectionTouchMove = useCallback((e, index) => {
+    if (draggedSectionOrderIndex === null || sectionTouchStartY === null) return;
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const itemHeight = 44;
+    const delta = Math.round((touchY - sectionTouchStartY) / itemHeight);
+    const newIndex = Math.max(0, Math.min(sectionTouchTargetIndex + delta, currentCardTemplates[selectedTemplateIndex].sections.length - 1));
+    if (newIndex !== draggedSectionOrderIndex) {
+      setCurrentCardTemplates((prev) => {
+        const newTemplates = [...prev];
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        const newSections = [...currentTemplate.sections];
+        const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
+        newSections.splice(newIndex, 0, draggedSection);
+        currentTemplate.sections = newSections;
+        newTemplates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || 'update',
+        };
+        setDraggedSectionOrderIndex(newIndex);
+        return newTemplates;
+      });
+    }
+  }, [draggedSectionOrderIndex, sectionTouchStartY, sectionTouchTargetIndex, selectedTemplateIndex, currentCardTemplates]);
+
+  const handleSectionDragEnd = useCallback(() => {
+    const element = sectionRefs.current.get(draggedSectionOrderIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedSectionOrderIndex(null);
+  }, [draggedSectionOrderIndex, styles.dragging]);
+
+  const handleSectionTouchEnd = useCallback(() => {
+    const element = sectionRefs.current.get(draggedSectionOrderIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedSectionOrderIndex(null);
+    setSectionTouchStartY(null);
+    setSectionTouchTargetIndex(null);
+  }, [draggedSectionOrderIndex, styles.dragging]);
+
   useEffect(() => {
     const cleanupDrag = () => draggedIndex !== null && handleDragEnd();
     const cleanupTouch = () => draggedIndex !== null && handleTouchEnd();
@@ -1024,7 +1107,30 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h3>
                     <div className={styles.templateList}>
                       {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
-                        <div className={`${styles.sectionItem} ${isDarkTheme ? styles.darkTheme : ""}`} key={index}>
+                        <div
+                          ref={(el) => sectionRefs.current.set(index, el)}
+                          key={index}
+                          className={`${styles.sectionItem} ${draggedSectionOrderIndex === index ? styles.dragging : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          draggable={editMode}
+                          onDragStart={editMode ? (e) => {
+                            // Always allow drag to start, but only show drag feedback if dragIcon is used
+                            if (e.target.classList.contains(styles.dragIcon)) {
+                              handleSectionDragStart(e, index);
+                            } else {
+                              handleSectionDragStart(e, index); // fallback: allow drag from row for mouse users
+                            }
+                          } : undefined}
+                          onDragOver={editMode ? (e) => handleSectionDragOver(e, index) : undefined}
+                          onDragEnd={editMode ? handleSectionDragEnd : undefined}
+                          onTouchStart={editMode ? (e) => {
+                            if (e.target.classList.contains(styles.dragIcon)) {
+                              handleSectionTouchStart(e, index);
+                            } // else: do nothing for touch if not dragIcon
+                          } : undefined}
+                          onTouchMove={editMode ? (e) => handleSectionTouchMove(e, index) : undefined}
+                          onTouchEnd={editMode ? handleSectionTouchEnd : undefined}
+                          style={{ cursor: editMode ? 'grab' : 'default' }}
+                        >
                           <button
                             className={`${styles.templateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                             onClick={() => !editMode && handleEditSection(index)}
@@ -1038,6 +1144,16 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                 <IoChevronForward
                                   className={`${styles.chevronIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
                                 />
+                              </span>
+                            )}
+                            {/* Drag icon for section drag (editMode only) */}
+                            {editMode && (
+                              <span
+                                className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                style={{ marginLeft: 8, fontSize: 18, cursor: 'grab' }}
+                                tabIndex={-1}
+                              >
+                                {'☰'}
                               </span>
                             )}
                           </button>

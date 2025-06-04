@@ -371,9 +371,10 @@
   font-size: 16px;
   color: #6e6e73;
   cursor: grab;
-  padding: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
   user-select: none;
-  transition: color 0.3s ease;
+  transition: color 0.2s;
 }
 
 .dragIcon.darkTheme {
@@ -382,6 +383,12 @@
 
 .dragIcon:active {
   cursor: grabbing;
+  color: #444;
+}
+
+.dragging {
+  background: #f0f0f5;
+  opacity: 0.7;
 }
 
 .buttonSpacer {

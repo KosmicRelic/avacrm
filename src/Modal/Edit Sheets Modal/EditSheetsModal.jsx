@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 
 // Utility function to convert various date formats to milliseconds
@@ -67,6 +67,8 @@ const EditSheetsModal = ({
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
+  const [draggedHeaderIndex, setDraggedHeaderIndex] = useState(null);
+  const [dragOverHeaderIndex, setDragOverHeaderIndex] = useState(null);
 
   // Ensure cardTypeFilters, cardsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
@@ -591,6 +593,74 @@ const EditSheetsModal = ({
     []
   );
 
+  // --- DRAG STATE (restore old logic) ---
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchTargetIndex, setTouchTargetIndex] = useState(null);
+
+  // --- DRAG HANDLERS (restore old logic) ---
+  const handleDragStart = useCallback((e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    const element = headerRefs.current.get(index);
+    if (element) element.classList.add(styles.dragging);
+  }, [styles.dragging]);
+
+  const handleTouchStart = useCallback((e, index) => {
+    if (e.target.classList.contains(styles.dragIcon)) {
+      e.preventDefault();
+      setDraggedIndex(index);
+      setTouchStartY(e.touches[0].clientY);
+      setTouchTargetIndex(index);
+      const element = headerRefs.current.get(index);
+      if (element) element.classList.add(styles.dragging);
+    }
+  }, [styles.dragIcon]);
+
+  const handleDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setCurrentHeaders((prev) => {
+      const newHeaders = [...prev];
+      const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+      newHeaders.splice(index, 0, draggedItem);
+      setDraggedIndex(index);
+      return newHeaders;
+    });
+  }, [draggedIndex, setCurrentHeaders]);
+
+  const handleTouchMove = useCallback((e, index) => {
+    if (draggedIndex === null || touchStartY === null) return;
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const itemHeight = 48;
+    const delta = Math.round((touchY - touchStartY) / itemHeight);
+    const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, currentHeaders.length - 1));
+    if (newIndex !== draggedIndex) {
+      setCurrentHeaders((prev) => {
+        const newHeaders = [...prev];
+        const [draggedItem] = newHeaders.splice(draggedIndex, 1);
+        newHeaders.splice(newIndex, 0, draggedItem);
+        setDraggedIndex(newIndex);
+        return newHeaders;
+      });
+    }
+  }, [draggedIndex, touchStartY, touchTargetIndex, currentHeaders.length, setCurrentHeaders]);
+
+  const handleDragEnd = useCallback(() => {
+    const element = headerRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+  }, [draggedIndex, styles.dragging]);
+
+  const handleTouchEnd = useCallback(() => {
+    const element = headerRefs.current.get(draggedIndex);
+    if (element) element.classList.remove(styles.dragging);
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchTargetIndex(null);
+  }, [draggedIndex, styles.dragging]);
+
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
@@ -677,38 +747,58 @@ const EditSheetsModal = ({
               </>
             )}
             {step === 2 && (
-              <>
-                <div className={styles.buttonContainer}>
-                  <button
-                    className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    type="button"
-                    style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
-                    onClick={() => {
-                      setNavigationDirection('forward');
-                      goToStep(3);
-                    }}
-                  >
-                    Add column
-                  </button>
-                  <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    {currentHeaders.length === 0 && (
-                      <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        No columns added yet.
-                      </div>
-                    )}
-                    {currentHeaders.map((header, index) => (
+              <div className={styles.buttonContainer}>
+                <button
+                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  type="button"
+                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
+                  onClick={() => {
+                    setNavigationDirection('forward');
+                    goToStep(3);
+                  }}
+                >
+                  Add column
+                </button>
+                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {currentHeaders.length === 0 && (
+                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No columns added yet.
+                    </div>
+                  )}
+                  {currentHeaders.map((header, index) => {
+                    // All headers are now draggable
+                    return (
                       <div
                         ref={(el) => headerRefs.current.set(index, el)}
                         key={header.key}
-                        className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        className={
+                          `${styles.headerItem} ${draggedIndex === index ? styles.dragging : ''} ${isDarkTheme ? styles.darkTheme : ''}`
+                        }
+                        draggable={true}
+                        onDragStart={(e) => {
+                          // Always allow drag to start, but only show drag feedback if dragIcon is used
+                          if (e.target.classList.contains(styles.dragIcon)) {
+                            handleDragStart(e, index);
+                          } else {
+                            handleDragStart(e, index); // fallback: allow drag from row for mouse users
+                          }
+                        }}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        onTouchStart={(e) => {
+                          if (e.target.classList.contains(styles.dragIcon)) {
+                            handleTouchStart(e, index);
+                          } // else: do nothing for touch if not dragIcon
+                        }}
+                        onTouchMove={(e) => handleTouchMove(e, index)}
+                        onTouchEnd={handleTouchEnd}
+                        style={{ cursor: 'default' }}
                       >
                         <div className={styles.headerRow}>
                           <div className={styles.headerLeft}>
                             <button
                               onClick={() => togglePin(header.key)}
-                              className={`${styles.actionButton} ${
-                                pinnedStates[header.key] ? styles.pinned : ''
-                              } ${isDarkTheme ? styles.darkTheme : ''}`}
+                              className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                             >
                               <FaThumbtack />
                             </button>
@@ -736,13 +826,20 @@ const EditSheetsModal = ({
                               {header.visible ? <FaEye /> : <FaEyeSlash />}
                             </button>
                             <div className={styles.buttonSpacer}></div>
+                            <span
+                              className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              style={{ pointerEvents: 'auto', opacity: 1 }}
+                              tabIndex={-1}
+                            >
+                              {'☰'}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              </>
+              </div>
             )}
             {step === 3 && (
               <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
