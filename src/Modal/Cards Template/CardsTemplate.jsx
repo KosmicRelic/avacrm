@@ -222,7 +222,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       type: newHeaderType,
       section: newHeaderSection,
       isUsed: true,
-      ...(newHeaderType === "dropdown" && { options: [...newHeaderOptions] }),
+      ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
     };
 
     setCurrentCardTemplates((prev) => {
@@ -278,35 +278,20 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-        const existingHeader = currentTemplate.headers[index];
-        const oldSection = existingHeader.section;
-  
-        currentTemplate.headers[index] = {
-          ...existingHeader,
+        const template = { ...newTemplates[selectedTemplateIndex] };
+        const headers = [...template.headers];
+        headers[index] = {
+          ...headers[index],
           name: newHeaderName.trim(),
           type: newHeaderType,
           section: newHeaderSection,
-          isUsed: isProtected ? true : true,
-          ...(newHeaderType === "dropdown" ? { options: [...newHeaderOptions] } : {}), // Omit options if not dropdown
+          ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
         };
-  
-        if (oldSection !== newHeaderSection) {
-          currentTemplate.sections = currentTemplate.sections.map((section) => {
-            if (section.name === oldSection) {
-              return { ...section, keys: section.keys.filter((k) => k !== existingHeader.key) };
-            }
-            if (section.name === newHeaderSection) {
-              return { ...section, keys: [...section.keys, existingHeader.key] };
-            }
-            return section;
-          });
-        }
-  
+        template.headers = headers;
         newTemplates[selectedTemplateIndex] = {
-          ...currentTemplate,
+          ...template,
           isModified: true,
-          action: currentTemplate.action || "update",
+          action: template.action || "update",
         };
         return newTemplates;
       });
@@ -1375,42 +1360,18 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   value={newHeaderType}
                   onChange={(e) => setNewHeaderType(e.target.value)}
                   className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  disabled
+                  // Only disable for protected fields
+                  disabled={['docId', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
                   <option value="date">Date</option>
                   <option value="currency">Currency</option>
-                  <option value="dropdown">Pop-up Menu</option>
+                  <option value="dropdown">Dropdown</option>
+                  <option value="multi-select">Multi-Select</option>
                 </select>
-                {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "docId" ||
-                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "typeOfCards" ||
-                currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key === "assignedTo" ? (
-                  <select
-                    value={newHeaderSection}
-                    onChange={(e) => setNewHeaderSection(e.target.value)}
-                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    disabled
-                  >
-                    <option value="Card Data">Card Data</option>
-                  </select>
-                ) : (
-                  <select
-                    value={newHeaderSection}
-                    onChange={(e) => setNewHeaderSection(e.target.value)}
-                    className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  >
-                    <option value="">Select Section</option>
-                    {currentCardTemplates[selectedTemplateIndex].sections
-                      .filter((section) => section.name !== "Card Data")
-                      .map((section, index) => (
-                        <option key={index} value={section.name}>
-                          {section.name}
-                        </option>
-                      ))}
-                  </select>
-                )}
-                {newHeaderType === "dropdown" && (
+                {/* Show options for dropdown and multi-select */}
+                {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
                   <div className={styles.optionsSection}>
                     <div className={styles.optionInputRow}>
                       <input
@@ -1492,7 +1453,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   <option value="number">Number</option>
                   <option value="date">Date</option>
                   <option value="currency">Currency</option>
-                  <option value="dropdown">Pop-up Menu</option>
+                  <option value="dropdown">Dropdown</option>
+                  <option value="multi-select">Multi-Select</option>
                 </select>
                 <select
                   value={newHeaderSection}
@@ -1508,7 +1470,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       </option>
                     ))}
                 </select>
-                {newHeaderType === "dropdown" && (
+                {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
                   <div className={styles.optionsSection}>
                     <div className={styles.optionInputRow}>
                       <input

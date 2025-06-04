@@ -257,6 +257,7 @@
   box-sizing: border-box;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   outline: none;
+  min-width: fit-content;
 }
 
 .fieldInput.darkTheme {
@@ -300,6 +301,8 @@
   box-sizing: border-box;
   appearance: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
 }
 
 .fieldSelect.darkTheme {
@@ -326,6 +329,120 @@
 
 .fieldSelect.cardTypeSelect.darkTheme {
   border-bottom: none;
+}
+
+.fieldSelect.disabled {
+  cursor: not-allowed;
+  background: rgba(243, 242, 248, 1);
+  opacity: 0.7;
+}
+
+.fieldSelect.darkTheme.disabled {
+  background: rgba(44, 44, 46, 0.9);
+  opacity: 0.7;
+}
+
+.multiSelectDropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  background: rgba(243, 242, 248, 1);
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.darkTheme .multiSelectDropdown {
+  background: #222;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.multiSelectDropdownList {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.multiSelectDropdownLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 16px;
+}
+
+.multiSelectDropdownCheckbox {
+  margin-right: 8px;
+}
+
+.multiSelectDropdownButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid #eee;
+  background: #fafafd;
+}
+
+.darkTheme .multiSelectDropdownButtons {
+  background: #222;
+}
+
+.multiSelectDropdownButton {
+  border-radius: 8px;
+  border: none;
+  background: #eee;
+  color: #222;
+  cursor: pointer;
+  padding: 6px 16px;
+}
+
+.darkTheme .multiSelectDropdownButton {
+  background: #444;
+  color: #fff;
+}
+
+.multiSelectDropdownButton.save {
+  background: #007aff;
+  color: #fff;
+}
+
+.darkTheme .multiSelectDropdownButton.save {
+  background: #0a84ff;
+}
+
+.multiSelectDropdownDisplay {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multiSelectDropdownChevron {
+  margin-left: 8px;
+  pointer-events: none;
+}
+
+.multiSelectDropdownPlaceholder {
+  color: #888;
+}
+
+.darkTheme .multiSelectDropdownPlaceholder {
+  color: #888;
+}
+
+.multiSelectDropdownWrapper {
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.multiSelectDropdownWrapper.disabled {
+  cursor: not-allowed;
 }
 
 .emptySection {
@@ -437,4 +554,16 @@
 
 .darkTheme .readOnly {
   background: #2c2c2e;
+}
+
+/* Remove AM/PM selector and extra space for 24-hour mode in react-time-picker */
+.customTimePicker .react-time-picker__inputGroup {
+  grid-template-columns: auto auto !important;
+}
+
+.customTimePicker .react-time-picker__wrapper {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
 }

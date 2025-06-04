@@ -1,8 +1,8 @@
-import React, { useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
+import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
 // Utility function to format field names
@@ -30,6 +30,24 @@ const formatDateForInput = (value) => {
   }
   return value || '';
 };
+
+// Helper to format time for <input type="time"> (always 24-hour format, never AM/PM)
+const formatTimeForInput = (value) => {
+  if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
+    const date = value.toDate ? value.toDate() : new Date(value.seconds * 1000);
+    // Always return 24-hour format HH:mm (never AM/PM)
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  return '';
+};
+
+// Helper to parse yyyy-mm-dd as local date (not UTC)
+function parseLocalDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
 const CardsEditor = ({
   onClose,
@@ -125,7 +143,7 @@ const CardsEditor = ({
       .map((seconds) => ({
         _seconds: seconds,
         _nanoseconds: 0,
-        date: formatFirestoreTimestamp({ _seconds: seconds, _nanoseconds: 0 }), // Use formatFirestoreTimestamp
+        date: formatFirestoreTimestamp({ _seconds: seconds, _nanoseconds: 0 }),
       }))
       .sort((a, b) => b._seconds - a._seconds);
   }, [formData.history]);
@@ -165,7 +183,6 @@ const CardsEditor = ({
       ...prev,
       sheetName: selectedSheet,
       typeOfCards: template.name,
-      // docId: prev.docId || uuidv4(), // Remove uuidv4 for new cards
     }));
     setView('editor');
   }, [selectedSheet, selectedCardType, cardTemplates]);
@@ -178,25 +195,65 @@ const CardsEditor = ({
   }, [onClose]);
 
   const handleInputChange = useCallback(
-    (key, value, fieldType) => {
+    (key, value, fieldType, extra) => {
       if (key === 'docId' || key === 'typeOfCards') {
         return;
       }
       if (!isViewingHistory) {
         let formattedValue = value;
-        if (fieldType === 'date' && value) {
-          // Convert date string (YYYY-MM-DD) to Firestore Timestamp
-          const date = new Date(value);
-          if (!isNaN(date.getTime())) {
-            formattedValue = Timestamp.fromDate(date);
+        if (fieldType === 'date') {
+          let prevDate = formData[key];
+          let dateObj;
+          if (extra && extra.type === 'time') {
+            // value is the new time string, keep the previous date part (from Firestore Timestamp only)
+            let baseDate;
+            if (prevDate && typeof prevDate === 'object' && (typeof prevDate.toDate === 'function' || 'seconds' in prevDate)) {
+              baseDate = prevDate.toDate ? prevDate.toDate() : new Date(prevDate.seconds * 1000);
+            } else {
+              // If no previous value, use today's date (local)
+              baseDate = new Date();
+            }
+            let [hours, minutes] = value.split(':');
+            hours = parseInt(hours, 10);
+            minutes = parseInt(minutes, 10);
+            if (!isNaN(hours) && !isNaN(minutes)) {
+              // Set hours/minutes directly on a local date
+              dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes, 0, 0);
+              formattedValue = Timestamp.fromDate(dateObj);
+            } else if (baseDate) {
+              dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+              formattedValue = Timestamp.fromDate(dateObj);
+            } else {
+              formattedValue = '';
+            }
+            setFormData((prev) => ({ ...prev, [key]: formattedValue }));
+            return;
+          } else if (extra && extra.type === 'date') {
+            // value is the new date string, keep the previous time part
+            let hours = 0, minutes = 0;
+            if (prevDate && typeof prevDate === 'object' && ('seconds' in prevDate || 'toDate' in prevDate)) {
+              const d = prevDate.toDate ? prevDate.toDate() : new Date(prevDate.seconds * 1000);
+              hours = d.getHours();
+              minutes = d.getMinutes();
+            }
+            // value is yyyy-mm-dd
+            const baseDate = parseLocalDate(value);
+            dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes, 0, 0);
+          } else if (value) {
+            // fallback, just date
+            const baseDate = parseLocalDate(value);
+            dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+          }
+          if (dateObj && !isNaN(dateObj.getTime())) {
+            formattedValue = Timestamp.fromDate(dateObj);
           } else {
-            formattedValue = ''; // Handle invalid date
+            formattedValue = '';
           }
         }
         setFormData((prev) => ({ ...prev, [key]: formattedValue }));
       }
     },
-    [isViewingHistory]
+    [isViewingHistory, formData]
   );
 
   const handleSave = useCallback(() => {
@@ -219,7 +276,7 @@ const CardsEditor = ({
 
     let newRow = {
       ...formData,
-      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId, // Don't generate uuidv4 for new cards
+      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
       sheetName: selectedSheet,
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
       history: formData.history || [],
@@ -227,7 +284,6 @@ const CardsEditor = ({
       action: isEditing ? 'update' : 'add',
     };
 
-    // Remove fields that are null, undefined, or empty string (except required fields)
     const requiredFields = ['docId', 'sheetName', 'typeOfCards', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
@@ -236,7 +292,7 @@ const CardsEditor = ({
     });
 
     const newHistory = [];
-    const timestamp = Timestamp.now(); // Use Firestore Timestamp for history
+    const timestamp = Timestamp.now();
 
     if (isViewingHistory && selectedHistoryDate) {
       const existingCard = cards.find((card) => card.docId === initialRowData.docId);
@@ -396,6 +452,141 @@ const CardsEditor = ({
     </div>
   );
 
+  const MultiSelectDropdown = ({ options, value, onChange, label, disabled, isDarkTheme }) => {
+    const [open, setOpen] = useState(false);
+    const [tempValue, setTempValue] = useState(Array.isArray(value) ? value : []);
+    const ref = useRef(null);
+    const dropdownRef = useRef(null);
+
+    // Always sync tempValue with value when opening
+    useEffect(() => {
+      if (open) {
+        setTempValue(Array.isArray(value) ? value : []);
+      }
+    }, [open, value]);
+
+    useEffect(() => {
+      if (!open) return;
+      const handleClickOutside = (event) => {
+        if (
+          ref.current && !ref.current.contains(event.target) &&
+          dropdownRef.current && !dropdownRef.current.contains(event.target)
+        ) {
+          setOpen(false);
+          setTempValue(Array.isArray(value) ? value : []); // Reset tempValue on close
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [open, value]);
+
+    const handleOptionToggle = (option) => {
+      let newValue = Array.isArray(tempValue) ? [...tempValue] : [];
+      if (newValue.includes(option)) {
+        newValue = newValue.filter((v) => v !== option);
+      } else {
+        newValue.push(option);
+      }
+      setTempValue(newValue);
+    };
+
+    const handleSave = (e) => {
+      e.stopPropagation();
+      // Sort tempValue according to the order in options
+      const ordered = options.filter(option => tempValue.includes(option));
+      onChange(ordered);
+      // Do not close dropdown here
+    };
+
+    const handleCancel = (e) => {
+      e.stopPropagation();
+      setTempValue(Array.isArray(value) ? value : []);
+      // Do not close dropdown here
+    };
+
+    const display = (Array.isArray(value) && value.length > 0)
+      ? value.join(', ')
+      : `Select ${label}`;
+
+    // Position dropdown below the field
+    const [dropdownStyle, setDropdownStyle] = useState({});
+    useEffect(() => {
+      if (open && ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setDropdownStyle({
+          top: rect.height + 4,
+        });
+      }
+    }, [open]);
+
+    return (
+      <div
+        ref={ref}
+        className={[
+          styles.fieldSelect,
+          styles.multiSelectDropdownWrapper,
+          isDarkTheme ? styles.darkTheme : '',
+          disabled ? styles.disabled : '',
+        ].join(' ')}
+        tabIndex={0}
+        onClick={() => {
+          if (!disabled && !open) setOpen(true);
+        }}
+      >
+        <span
+          className={[
+            styles.multiSelectDropdownDisplay,
+            (!value || value.length === 0) ? styles.multiSelectDropdownPlaceholder : '',
+          ].join(' ')}
+        >
+          {display}
+        </span>
+        <svg className={styles.multiSelectDropdownChevron} width="16" height="16" viewBox="0 0 16 16"></svg>
+        {open && !disabled && (
+          <div
+            ref={dropdownRef}
+            className={styles.multiSelectDropdown}
+            style={dropdownStyle}
+          >
+            <div className={styles.multiSelectDropdownList}>
+              {options.map((option) => (
+                <label
+                  key={option}
+                  className={styles.multiSelectDropdownLabel}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Array.isArray(tempValue) && tempValue.includes(option)}
+                    onChange={() => handleOptionToggle(option)}
+                    disabled={disabled}
+                    className={styles.multiSelectDropdownCheckbox}
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+            <div className={styles.multiSelectDropdownButtons}>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className={styles.multiSelectDropdownButton}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className={[styles.multiSelectDropdownButton, styles.save].join(' ')}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
@@ -553,10 +744,51 @@ const CardsEditor = ({
                                     </option>
                                   ))}
                                 </select>
+                              ) : field.type === 'multi-select' ? (
+                                <MultiSelectDropdown
+                                  options={field.options}
+                                  value={Array.isArray(historicalFormData[field.key]) ? historicalFormData[field.key] : []}
+                                  onChange={selected => handleInputChange(field.key, selected, field.type)}
+                                  label={field.name}
+                                  disabled={isViewingHistory}
+                                  isDarkTheme={isDarkTheme}
+                                />
+                              ) : field.type === 'date' ? (
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <input
+                                    type="date"
+                                    value={formatDateForInput(historicalFormData[field.key])}
+                                    onChange={e => handleInputChange(
+                                      field.key,
+                                      e.target.value,
+                                      field.type,
+                                      { type: 'date', timeValue: formatTimeForInput(historicalFormData[field.key]) }
+                                    )}
+                                    className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                    placeholder={`Enter ${field.name}`}
+                                    aria-label={`Enter ${field.name} date`}
+                                    readOnly={isViewingHistory}
+                                    disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                  />
+                                  <input
+                                    type="time"
+                                    value={formatTimeForInput(historicalFormData[field.key]) || ''}
+                                    onChange={e => handleInputChange(
+                                      field.key,
+                                      e.target.value,
+                                      field.type,
+                                      { type: 'time', dateValue: formatDateForInput(historicalFormData[field.key]) }
+                                    )}
+                                    className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                    aria-label={`Enter ${field.name} time`}
+                                    readOnly={isViewingHistory}
+                                    disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                  />
+                                </div>
                               ) : (
                                 <input
-                                  type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                                  value={field.key === 'assignedTo' ? getTeamMemberName(formData.assignedTo) : (field.type === 'date' ? formatDateForInput(historicalFormData[field.key]) : historicalFormData[field.key] || '')}
+                                  type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : 'text'}
+                                  value={historicalFormData[field.key] || ''}
                                   onChange={e => handleInputChange(field.key, e.target.value, field.type)}
                                   className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
                                   placeholder={`Enter ${field.name}`}
@@ -642,3 +874,6 @@ CardsEditor.defaultProps = {
 };
 
 export default CardsEditor;
+
+// .customTimePicker .react-time-picker__wrapper { border: none !important; box-shadow: none !important; background: transparent !important; }
+// .customTimePicker .react-time-picker__inputGroup { border: none !important; background: transparent !important; }
