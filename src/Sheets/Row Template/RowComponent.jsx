@@ -87,6 +87,8 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
             displayValue = getTeamMemberName(value);
           } else if (header.type === 'date') {
             displayValue = formatFirestoreTimestamp(value) || '';
+          } else if (header.type === 'multi-select' && Array.isArray(value)) {
+            displayValue = value.join(', ');
           } else {
             displayValue = value !== undefined ? String(value) : '';
           }

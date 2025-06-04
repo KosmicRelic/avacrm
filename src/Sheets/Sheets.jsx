@@ -11,6 +11,7 @@ import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 import { useParams, useNavigate } from 'react-router-dom';
+import { filterRowsLocally } from '../Modal/FilterModal/FilterModal';
 
 // Utility to decode dashes to spaces for sheet names from URL, and ignore cardId if present
 function decodeSheetName(name) {
@@ -257,12 +258,16 @@ const Sheets = ({
     }
   }, [sheets.structure, activeSheetName]);
 
+  // Replace filteredRows with filterRowsLocally to apply all filters
   const filteredRows = useMemo(() => {
+    // Apply globalFilters (from FilterModal) using filterRowsLocally
+    const globallyFiltered = filterRowsLocally(filteredWithGlobalFilters, globalFilters, visibleHeaders);
+    // Then apply search
     const query = searchQuery.toLowerCase();
-    return filteredWithGlobalFilters.filter((row) =>
+    return globallyFiltered.filter((row) =>
       visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
     );
-  }, [filteredWithGlobalFilters, searchQuery, visibleHeaders, activeSheetName]);
+  }, [filteredWithGlobalFilters, globalFilters, searchQuery, visibleHeaders, activeSheetName]);
 
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];

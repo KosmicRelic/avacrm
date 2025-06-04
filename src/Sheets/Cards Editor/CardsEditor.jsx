@@ -754,37 +754,41 @@ const CardsEditor = ({
                                   isDarkTheme={isDarkTheme}
                                 />
                               ) : field.type === 'date' ? (
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                  <input
-                                    type="date"
-                                    value={formatDateForInput(historicalFormData[field.key])}
-                                    onChange={e => handleInputChange(
-                                      field.key,
-                                      e.target.value,
-                                      field.type,
-                                      { type: 'date', timeValue: formatTimeForInput(historicalFormData[field.key]) }
-                                    )}
-                                    className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
-                                    placeholder={`Enter ${field.name}`}
-                                    aria-label={`Enter ${field.name} date`}
-                                    readOnly={isViewingHistory}
-                                    disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
-                                  />
-                                  <input
-                                    type="time"
-                                    value={formatTimeForInput(historicalFormData[field.key]) || ''}
-                                    onChange={e => handleInputChange(
-                                      field.key,
-                                      e.target.value,
-                                      field.type,
-                                      { type: 'time', dateValue: formatDateForInput(historicalFormData[field.key]) }
-                                    )}
-                                    className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                    aria-label={`Enter ${field.name} time`}
-                                    readOnly={isViewingHistory}
-                                    disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
-                                  />
-                                </div>
+                                <span className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                    <input
+                                      type="date"
+                                      value={formatDateForInput(historicalFormData[field.key])}
+                                      onChange={e => handleInputChange(
+                                        field.key,
+                                        e.target.value,
+                                        field.type,
+                                        { type: 'date', timeValue: formatTimeForInput(historicalFormData[field.key]) }
+                                      )}
+                                      className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                      style = {{backgroundColor: "transparent", padding: 0}}
+                                      placeholder={`Enter ${field.name}`}
+                                      aria-label={`Enter ${field.name} date`}
+                                      readOnly={isViewingHistory}
+                                      disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                    />
+                                    <input
+                                      type="time"
+                                      value={formatTimeForInput(historicalFormData[field.key]) || ''}
+                                      onChange={e => handleInputChange(
+                                        field.key,
+                                        e.target.value,
+                                        field.type,
+                                        { type: 'time', dateValue: formatDateForInput(historicalFormData[field.key]) }
+                                      )}
+                                      className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                      aria-label={`Enter ${field.name} time`}
+                                      style = {{backgroundColor: "transparent", padding: 0}}
+                                      readOnly={isViewingHistory}
+                                      disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                    />
+                                  </div>
+                                </span>
                               ) : (
                                 <input
                                   type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : 'text'}
