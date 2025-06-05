@@ -57,13 +57,26 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     () =>
       headers
         .filter((header) => !header.hidden)
-        .map((header) => ({
-          ...header,
-          name: header.name || formatHeaderName(header.key),
-          type: header.type || 'text',
-          options: header.options || [],
-        })),
-    [headers]
+        .map((header) => {
+          let mergedHeader = { ...header };
+          // If dropdown or multi-select, try to get options from cardTemplates
+          if ((header.type === 'dropdown' || header.type === 'multi-select') && cardTemplates) {
+            // Find the first template that has this header key
+            const templateHeader = cardTemplates
+              .flatMap(t => t.headers || [])
+              .find(h => h.key === header.key);
+            if (templateHeader && Array.isArray(templateHeader.options)) {
+              mergedHeader.options = templateHeader.options;
+            }
+          }
+          return {
+            ...mergedHeader,
+            name: mergedHeader.name || formatHeaderName(mergedHeader.key),
+            type: mergedHeader.type || 'text',
+            options: mergedHeader.options || [],
+          };
+        }),
+    [headers, cardTemplates]
   );
 
   const formatHeaderName = (key) => {
