@@ -267,15 +267,21 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         alert("Please select a section for the field.");
         return;
       }
-  
+
       const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
       const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfCards" || currentHeader.key === "assignedTo";
-  
+
       if (isProtected && newHeaderSection !== "Card Data") {
         alert("The 'ID', 'Type of Cards' and 'Assigned To' fields must remain in the 'Card Data' section.");
         return;
       }
-  
+
+      // Prevent changing type when editing an existing header
+      if (currentHeader.type !== newHeaderType) {
+        alert("You cannot change the type of a field after it has been created.");
+        return;
+      }
+
       setCurrentCardTemplates((prev) => {
         const newTemplates = [...prev];
         const template = { ...newTemplates[selectedTemplateIndex] };
@@ -283,11 +289,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         headers[index] = {
           ...headers[index],
           name: newHeaderName.trim(),
-          type: newHeaderType,
+          // type: newHeaderType, // Do not update type on edit
           section: newHeaderSection,
           ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
         };
-        template.headers = headers;
         newTemplates[selectedTemplateIndex] = {
           ...template,
           isModified: true,
@@ -1360,8 +1365,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   value={newHeaderType}
                   onChange={(e) => setNewHeaderType(e.target.value)}
                   className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  // Only disable for protected fields
-                  disabled={['docId', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                  disabled={activeHeaderIndex !== -1 && activeHeaderIndex !== null} // Disable type select if editing an existing header
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>

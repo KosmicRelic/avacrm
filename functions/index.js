@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const { Resend } = require('resend');
 const cors = require('cors');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { Timestamp } = require('firebase-admin/firestore');
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -793,4 +794,72 @@ exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/car
       history: history,
     });
   }
+});
+
+exports.createNewCard = functions.https.onRequest((req, res) => {
+  corsMiddleware(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      return res.status(204).send('');
+    }
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      let body;
+      if (req.get('Content-Type') === 'application/json') {
+        try {
+          body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        } catch (error) {
+          return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+      } else {
+        return res.status(400).json({ error: 'Content-Type must be application/json' });
+      }
+      const { businessId, cardData, fieldsToConvertToTimeStamps } = body || {};
+      if (!businessId || !cardData || typeof cardData !== 'object') {
+        return res.status(400).json({
+          error: `Missing or invalid required fields: ${!businessId ? 'businessId ' : ''}${!cardData ? 'cardData' : ''}`
+        });
+      }
+
+      // Check for required fields in cardData
+      if (!cardData.typeOfCards || !cardData.sheetName) {
+        return res.status(400).json({
+          error: 'Missing required cardData fields: typeOfCards and sheetName are required.'
+        });
+      }
+
+      // Convert specified fields to Firestore Timestamp if fieldsToConvertToTimeStamps is provided
+      if (Array.isArray(fieldsToConvertToTimeStamps)) {
+        fieldsToConvertToTimeStamps.forEach(key => {
+          if (cardData[key]) {
+            // Accept ISO string, JS timestamp, or {seconds, nanoseconds}
+            if (typeof cardData[key] === 'string' && !isNaN(Date.parse(cardData[key]))) {
+              cardData[key] = Timestamp.fromDate(new Date(cardData[key]));
+            } else if (
+              typeof cardData[key] === 'object' &&
+              typeof cardData[key].seconds === 'number' &&
+              typeof cardData[key].nanoseconds === 'number'
+            ) {
+              cardData[key] = new Timestamp(cardData[key].seconds, cardData[key].nanoseconds);
+            } else if (typeof cardData[key] === 'number') {
+              // If it's a JS timestamp (ms since epoch)
+              cardData[key] = Timestamp.fromDate(new Date(cardData[key]));
+            }
+          }
+        });
+      }
+
+      const cardsCollectionRef = admin.firestore().collection('businesses').doc(businessId).collection('cards');
+      const newCardRef = await cardsCollectionRef.add(cardData);
+      return res.status(200).json({
+        success: true,
+        message: 'Card created successfully',
+        cardId: newCardRef.id,
+      });
+    } catch (error) {
+      let errorMessage = error.message || 'Failed to create card';
+      return res.status(500).json({ error: errorMessage });
+    }
+  });
 });

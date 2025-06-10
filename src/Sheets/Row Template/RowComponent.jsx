@@ -85,8 +85,9 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           let displayValue;
           if (header.key === 'assignedTo' && typeof getTeamMemberName === 'function') {
             displayValue = getTeamMemberName(value);
-          } else if (header.type === 'date') {
-            displayValue = formatFirestoreTimestamp(value) || '';
+          } else if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
+            // Format any Firestore Timestamp or Timestamp-like object as dd/mm/yyyy
+            displayValue = formatFirestoreTimestamp(value);
           } else if (header.type === 'multi-select' && Array.isArray(value)) {
             displayValue = value.join(', ');
           } else {
