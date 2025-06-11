@@ -780,11 +780,22 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
 
 // Cloud Function: Add docId as id and create history array on new document creation
 exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/cards/{cardId}', async (event) => {
+  functions.logger.info('addIdAndHistoryOnCreate TRIGGERED', {
+    eventParams: event.params,
+    env: process.env,
+    resendApiKey: resend.apiKey || '[no apiKey property]',
+    resendType: typeof resend,
+    resendObject: resend,
+  });
   const snap = event.data;
-  if (!snap) return;
+  if (!snap) {
+    functions.logger.warn('No snapshot data in event');
+    return;
+  }
   const data = snap.data();
   const docId = event.params.cardId;
   const cardRef = snap.ref;
+  functions.logger.info('Card data at trigger', { docId, data });
 
   // Only add id if not present
   if (!data.history) {
@@ -858,16 +869,52 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
         });
       }
 
+      functions.logger.info('createNewCard payload', { cardData, fullBody: body });
+
       const cardsCollectionRef = admin.firestore().collection('businesses').doc(businessId).collection('cards');
       const newCardRef = await cardsCollectionRef.add(cardData);
+
+      // Support both top-level and nested emailsToNotify
+      const emailsToNotify = Array.isArray(body.emailsToNotify)
+        ? body.emailsToNotify
+        : (Array.isArray(body.data?.emailsToNotify) ? body.data.emailsToNotify : []);
+
+      if (emailsToNotify.length > 0) {
+        const sheetName = cardData.sheetName || 'unknown';
+        const docId = newCardRef.id;
+        const leadUrl = `https://www.apx.gr/sheets/${encodeURIComponent(sheetName)}/${docId}`;
+        for (const notifyEmail of emailsToNotify) {
+          try {
+            await resend.emails.send({
+              from: 'Booking Notifications <invitations@apx.gr>',
+              to: notifyEmail,
+              subject: 'New Lead!',
+              html: `<h1>New Lead!</h1><p>A new lead has been created.</p><p>View it here: <a href="${leadUrl}">${leadUrl}</a></p>`
+            });
+            functions.logger.info('Notification email sent', { notifyEmail });
+          } catch (emailError) {
+            functions.logger.error('Failed to send notification email', {
+              notifyEmail,
+              error: emailError.message,
+              stack: emailError.stack,
+            });
+          }
+        }
+      } else {
+        functions.logger.info('No emailsToNotify array or empty, skipping email logic', { emailsToNotify });
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Card created successfully',
         cardId: newCardRef.id,
       });
     } catch (error) {
-      let errorMessage = error.message || 'Failed to create card';
-      return res.status(500).json({ error: errorMessage });
+      functions.logger.error('createNewCard failed', {
+        error: error.message,
+        stack: error.stack,
+      });
+      return res.status(500).json({ error: `Failed to create new card: ${error.message}` });
     }
   });
 });
