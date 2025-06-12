@@ -778,43 +778,6 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
   }
 });
 
-// Cloud Function: Add docId as id and create history array on new document creation
-exports.addIdAndHistoryOnCreate = onDocumentCreated('businesses/{businessId}/cards/{cardId}', async (event) => {
-  functions.logger.info('addIdAndHistoryOnCreate TRIGGERED', {
-    eventParams: event.params,
-    env: process.env,
-    resendApiKey: resend.apiKey || '[no apiKey property]',
-    resendType: typeof resend,
-    resendObject: resend,
-  });
-  const snap = event.data;
-  if (!snap) {
-    functions.logger.warn('No snapshot data in event');
-    return;
-  }
-  const data = snap.data();
-  const docId = event.params.cardId;
-  const cardRef = snap.ref;
-  functions.logger.info('Card data at trigger', { docId, data });
-
-  // Only add id if not present
-  if (!data.history) {
-    // Use a real timestamp for each history entry
-    const now = admin.firestore.Timestamp.now();
-    const history = Object.keys(data)
-      .filter((key) => key !== 'id' && key !== 'history')
-      .map((key) => ({
-        field: key,
-        value: data[key],
-        timestamp: now,
-      }));
-
-    await cardRef.update({
-      history: history,
-    });
-  }
-});
-
 exports.createNewCard = functions.https.onRequest((req, res) => {
   corsAllOrigins(req, res, async () => {
     if (req.method === 'OPTIONS') {
@@ -868,6 +831,17 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
           }
         });
       }
+
+      // Create history from cardData fields (excluding 'id' and 'history')
+      const now = Timestamp.now();
+      const history = Object.keys(cardData)
+        .filter((key) => key !== 'id' && key !== 'history')
+        .map((key) => ({
+          field: key,
+          value: cardData[key],
+          timestamp: now,
+        }));
+      cardData.history = history;
 
       functions.logger.info('createNewCard payload', { cardData, fullBody: body });
 

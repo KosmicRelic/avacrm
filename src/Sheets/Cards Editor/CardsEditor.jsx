@@ -754,41 +754,82 @@ const CardsEditor = ({
                                   isDarkTheme={isDarkTheme}
                                 />
                               ) : field.type === 'date' ? (
-                                <span className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  <div style={{ display: 'flex', gap: 8 }}>
-                                    <input
-                                      type="date"
-                                      value={formatDateForInput(historicalFormData[field.key])}
-                                      onChange={e => handleInputChange(
-                                        field.key,
-                                        e.target.value,
-                                        field.type,
-                                        { type: 'date', timeValue: formatTimeForInput(historicalFormData[field.key]) }
+                                (() => {
+                                  const dateValue = formatDateForInput(historicalFormData[field.key]);
+                                  const timeValue = formatTimeForInput(historicalFormData[field.key]);
+                                  const isEmpty = !dateValue && !timeValue;
+                                  const [showInputs, setShowInputs] = React.useState(!isEmpty);
+                                  React.useEffect(() => {
+                                    if (isEmpty) setShowInputs(false);
+                                  }, [isEmpty]);
+                                  const handleSetNow = () => {
+                                    // Set current date and time as default
+                                    const now = new Date();
+                                    setFormData(prev => ({ ...prev, [field.key]: Timestamp.fromDate(now) }));
+                                    setShowInputs(true);
+                                  };
+                                  if (!showInputs && isEmpty && !isViewingHistory) {
+                                    return (
+                                      <span
+                                        className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${styles.dateTimePlaceholder}`}
+                                        style={{ cursor: 'pointer', color: '#888', minHeight: 36, display: 'flex', alignItems: 'center' }}
+                                        onClick={handleSetNow}
+                                      >
+                                        Enter A Date and Time
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <span className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <div style={{ display: 'flex', gap: 8 }}>
+                                        <input
+                                          type="date"
+                                          value={dateValue}
+                                          onChange={e => handleInputChange(
+                                            field.key,
+                                            e.target.value,
+                                            field.type,
+                                            { type: 'date', timeValue: timeValue }
+                                          )}
+                                          className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                          style={{ backgroundColor: 'transparent', padding: 0 }}
+                                          placeholder={`Enter ${field.name}`}
+                                          aria-label={`Enter ${field.name} date`}
+                                          readOnly={isViewingHistory}
+                                          disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                        />
+                                        <input
+                                          type="time"
+                                          value={timeValue || ''}
+                                          onChange={e => handleInputChange(
+                                            field.key,
+                                            e.target.value,
+                                            field.type,
+                                            { type: 'time', dateValue: dateValue }
+                                          )}
+                                          className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                          aria-label={`Enter ${field.name} time`}
+                                          style={{ backgroundColor: 'transparent', padding: 0 }}
+                                          readOnly={isViewingHistory}
+                                          disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                        />
+                                      </div>
+                                      {!isViewingHistory && (dateValue || timeValue) && (
+                                        <button
+                                          type="button"
+                                          aria-label="Clear date and time"
+                                          style={{ marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 18 }}
+                                          onClick={() => {
+                                            setFormData(prev => ({ ...prev, [field.key]: '' }));
+                                            setShowInputs(false);
+                                          }}
+                                        >
+                                          ×
+                                        </button>
                                       )}
-                                      className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
-                                      style = {{backgroundColor: "transparent", padding: 0}}
-                                      placeholder={`Enter ${field.name}`}
-                                      aria-label={`Enter ${field.name} date`}
-                                      readOnly={isViewingHistory}
-                                      disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
-                                    />
-                                    <input
-                                      type="time"
-                                      value={formatTimeForInput(historicalFormData[field.key]) || ''}
-                                      onChange={e => handleInputChange(
-                                        field.key,
-                                        e.target.value,
-                                        field.type,
-                                        { type: 'time', dateValue: formatDateForInput(historicalFormData[field.key]) }
-                                      )}
-                                      className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                      aria-label={`Enter ${field.name} time`}
-                                      style = {{backgroundColor: "transparent", padding: 0}}
-                                      readOnly={isViewingHistory}
-                                      disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
-                                    />
-                                  </div>
-                                </span>
+                                    </span>
+                                  );
+                                })()
                               ) : (
                                 <input
                                   type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : 'text'}
