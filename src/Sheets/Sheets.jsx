@@ -497,11 +497,6 @@ const Sheets = ({
     </div>
   );
 
-  // Render loading UI if sheets are not loaded
-  if (!sheets.allSheets.length) {
-    return LoadingUI;
-  }
-
   // Define TableContent (same as before)
   const TableContent = (
     <div className={styles.tableContent}>
