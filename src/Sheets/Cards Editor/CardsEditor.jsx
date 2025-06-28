@@ -70,23 +70,8 @@ const CardsEditor = ({
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
-  // Utility: check if user is business user
-  const isBusinessUser = user && user.businessId === user.uid;
-
-  const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
-  const cardTypeOptions = useMemo(() => {
-    if (!selectedSheet) return [];
-    const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-    return sheet?.typeOfCardsToDisplay || [];
-  }, [selectedSheet, sheets]);
-
-  // Helper to get display name from uid
-  const getTeamMemberName = (uid) => {
-    if (!uid) return '';
-    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
-    const member = teamMembers?.find((tm) => tm.uid === uid);
-    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
-  };
+  // --- FIX: Manage showInputs state for each date field at the top level ---
+  const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
     const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
@@ -135,6 +120,48 @@ const CardsEditor = ({
 
     return historicalData;
   }, [isViewingHistory, selectedHistoryDate, formData, selectedSections]);
+
+  // Top-level effect to keep showInputsMap in sync with date fields (must be after selectedSections/historicalFormData)
+  useEffect(() => {
+    if (!selectedSections) return;
+    const newShowInputsMap = { ...showInputsMap };
+    selectedSections.forEach(section => {
+      section.fields.forEach(field => {
+        if (field.type === 'date') {
+          const dateValue = formatDateForInput(historicalFormData[field.key]);
+          const timeValue = formatTimeForInput(historicalFormData[field.key]);
+          const isEmpty = !dateValue && !timeValue;
+          if (isEmpty && showInputsMap[field.key]) {
+            newShowInputsMap[field.key] = false;
+          } else if (!Object.prototype.hasOwnProperty.call(showInputsMap, field.key)) {
+            newShowInputsMap[field.key] = !isEmpty;
+          }
+        }
+      });
+    });
+    if (JSON.stringify(newShowInputsMap) !== JSON.stringify(showInputsMap)) {
+      setShowInputsMap(newShowInputsMap);
+    }
+    // eslint-disable-next-line
+  }, [selectedSections, historicalFormData]);
+
+  // Utility: check if user is business user
+  const isBusinessUser = user && user.businessId === user.uid;
+
+  const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
+  const cardTypeOptions = useMemo(() => {
+    if (!selectedSheet) return [];
+    const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
+    return sheet?.typeOfCardsToDisplay || [];
+  }, [selectedSheet, sheets]);
+
+  // Helper to get display name from uid
+  const getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
 
   const historyDates = useMemo(() => {
     if (!formData.history) return [];
@@ -758,15 +785,11 @@ const CardsEditor = ({
                                   const dateValue = formatDateForInput(historicalFormData[field.key]);
                                   const timeValue = formatTimeForInput(historicalFormData[field.key]);
                                   const isEmpty = !dateValue && !timeValue;
-                                  const [showInputs, setShowInputs] = React.useState(!isEmpty);
-                                  React.useEffect(() => {
-                                    if (isEmpty) setShowInputs(false);
-                                  }, [isEmpty]);
+                                  const showInputs = showInputsMap[field.key] ?? !isEmpty;
                                   const handleSetNow = () => {
-                                    // Set current date and time as default
                                     const now = new Date();
                                     setFormData(prev => ({ ...prev, [field.key]: Timestamp.fromDate(now) }));
-                                    setShowInputs(true);
+                                    setShowInputsMap(prev => ({ ...prev, [field.key]: true }));
                                   };
                                   if (!showInputs && isEmpty && !isViewingHistory) {
                                     return (
@@ -821,7 +844,7 @@ const CardsEditor = ({
                                           style={{ marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 18 }}
                                           onClick={() => {
                                             setFormData(prev => ({ ...prev, [field.key]: '' }));
-                                            setShowInputs(false);
+                                            setShowInputsMap(prev => ({ ...prev, [field.key]: false }));
                                           }}
                                         >
                                           ×
