@@ -51,7 +51,18 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     }
   }, [tempData, setTempData]);
 
+  // Initialize sortFor from existing filterValues
   const filterValues = tempData.filterValues || {};
+
+  useEffect(() => {
+    const existingSort = Object.entries(filterValues).find(([_, filter]) => filter.sortOrder);
+    if (existingSort) {
+      const [headerKey, filter] = existingSort;
+      setSortFor({ headerKey, order: filter.sortOrder });
+    } else {
+      setSortFor({ headerKey: '', order: '' });
+    }
+  }, [filterValues]);
 
   const visibleHeaders = useMemo(
     () =>
@@ -258,9 +269,9 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     // eslint-disable-next-line
   }, [sortFor.headerKey, sortFor.order]);
 
-  // Only allow sort for number and date headers
+  // Allow sort for all visible headers
   const sortableHeaders = useMemo(
-    () => visibleHeaders.filter(h => (h.type === 'number' || h.type === 'date' || h.type === undefined)),
+    () => visibleHeaders,
     [visibleHeaders]
   );
 
