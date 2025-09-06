@@ -21,6 +21,8 @@ export const MainContextProvider = ({ children }) => {
   const [userAuthChecked, setUserAuthChecked] = useState(false);
   const [sheets, setSheets] = useState({ allSheets: [], structure: [], deletedSheetId: null });
   const [cards, setCards] = useState([]);
+  // Cache cards per sheetId: { [sheetId]: cardsArray }
+  const [cardsCache, setCardsCache] = useState({});
   const [cardTemplates, setCardTemplates] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
@@ -358,14 +360,26 @@ export const MainContextProvider = ({ children }) => {
     if (user && businessId && location.pathname.startsWith('/sheets') && activeSheetName) {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
-      if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
+      if (!sheetId) return;
+      // If we have cached cards for this sheet, use them
+      if (cardsCache[sheetId]) {
+        setCards(cardsCache[sheetId]);
+        return;
+      }
+      // If already fetching or fetched, don't re-fetch
+      if (fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
+        // But if fetched, restore from cache (should always be present)
+        if (cardsCache[sheetId]) setCards(cardsCache[sheetId]);
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
         route: '/sheets',
-        setCards,
+        setCards: (fetchedCards) => {
+          setCards(fetchedCards);
+          setCardsCache((prev) => ({ ...prev, [sheetId]: fetchedCards }));
+        },
         setCardTemplates,
         setMetrics,
         setDashboards,
@@ -378,7 +392,7 @@ export const MainContextProvider = ({ children }) => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched, cardsCache]);
 
   // Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
   const normalizeSheetName = (name) => {
@@ -825,7 +839,15 @@ export const MainContextProvider = ({ children }) => {
         return;
       }
       setCards(newCards);
+      // Also update cache for current sheet if possible
+      const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
+      const sheetId = sheetObj?.docId;
+      if (sheetId) {
+        setCardsCache((prev) => ({ ...prev, [sheetId]: newCards }));
+      }
     },
+    cardsCache,
+    setCardsCache,
     isDarkTheme,
     setIsDarkTheme,
     themeRef,
