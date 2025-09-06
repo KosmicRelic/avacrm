@@ -361,15 +361,18 @@ export const MainContextProvider = ({ children }) => {
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
       if (!sheetId) return;
-      // If we have cached cards for this sheet, use them
-      if (cardsCache[sheetId]) {
-        setCards(cardsCache[sheetId]);
-        return;
-      }
       // If already fetching or fetched, don't re-fetch
       if (fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
-        // But if fetched, restore from cache (should always be present)
-        if (cardsCache[sheetId]) setCards(cardsCache[sheetId]);
+        // Only restore from cache if cards are not yet set for this sheet
+        if (!cards.length && cardsCache[sheetId]) {
+          setCards(cardsCache[sheetId]);
+        }
+        return;
+      }
+      // If we have cached cards for this sheet, use them instead of fetching
+      if (cardsCache[sheetId]) {
+        setCards(cardsCache[sheetId]);
+        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
@@ -392,7 +395,7 @@ export const MainContextProvider = ({ children }) => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched, cardsCache]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
 
   // Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
   const normalizeSheetName = (name) => {
@@ -514,6 +517,7 @@ export const MainContextProvider = ({ children }) => {
     };
 
     const processUpdates = async () => {
+      if (isBatchProcessing.current) return; // Prevent re-entrancy
       isBatchProcessing.current = true;
       const batch = writeBatch(db);
       let hasChanges = false;
@@ -530,6 +534,9 @@ export const MainContextProvider = ({ children }) => {
           )
         );
 
+        // Track added cards to assign docIds
+        const addedCardsMap = new Map();
+
         // Batch add for cards
         for (const card of modifiedCards) {
           const isCardAccessible = isBusinessUser || accessibleCardTypes.has(card.typeOfCards);
@@ -538,18 +545,18 @@ export const MainContextProvider = ({ children }) => {
           }
           let docRef;
           if (card.action === 'add') {
+            console.log("adding card");
             docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
-          } else {
-            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
-          }
-          if (card.action === 'remove') {
-            batch.delete(docRef);
-            hasChanges = true;
-          } else if (card.action === 'add') {
+            addedCardsMap.set(card, docRef.id); // Map original card to new Firestore ID
             const { isModified, action, docId, ...cardData } = card;
             batch.set(docRef, cardData);
             hasChanges = true;
+          } else if (card.action === 'remove') {
+            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
+            batch.delete(docRef);
+            hasChanges = true;
           } else if (card.action === 'update') {
+            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
             const { isModified, action, docId, ...cardData } = card;
             batch.set(docRef, cardData);
             hasChanges = true;
@@ -671,23 +678,27 @@ export const MainContextProvider = ({ children }) => {
         if (hasChanges) {
           await batch.commit();
 
-          // After commit, fetch all cards to update local state with Firestore docIds
-          if (modifiedCards.some(card => card.action === 'add')) {
-            const cardsSnapshot = await getDocs(stateConfig.cards.collectionPath());
-            const firestoreCards = cardsSnapshot.docs.map(docSnap => ({ docId: docSnap.id, ...docSnap.data() }));
-            setCards(firestoreCards);
-          } else {
-            setCards((prev) =>
-              prev
-                .filter((card) => !(card.isModified && card.action === 'remove'))
-                .map((card) => {
-                  if (card.isModified) {
-                    const { isModified, action, ...cleanCard } = card;
-                    return cleanCard;
-                  }
-                  return card;
-                })
-            );
+          // Update local state after commit
+          if (modifiedCards.length > 0) {
+            // Update cards state, ensuring isModified and action are cleared
+            const updatedCards = cards
+              .filter((card) => !(card.isModified && card.action === 'remove'))
+              .map((card) => {
+                if (card.isModified) {
+                  const newDocId = addedCardsMap.get(card) || card.docId;
+                  const { isModified, action, ...cleanCard } = card;
+                  return { ...cleanCard, docId: newDocId };
+                }
+                return card;
+              });
+            setCards(updatedCards);
+
+            // Update cardsCache for the current sheet
+            const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
+            const sheetId = sheetObj?.docId;
+            if (sheetId) {
+              setCardsCache((prev) => ({ ...prev, [sheetId]: updatedCards }));
+            }
           }
 
           if (isBusinessUser) {
@@ -934,12 +945,6 @@ export const MainContextProvider = ({ children }) => {
     }, 200); // 200ms debounce
     return () => clearTimeout(debounceRef.current);
   }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
-  
-
-//   useEffect(() => {
-//     console.log(cards);
-//   }
-// , [cards]);
 
   return (
     <MainContext.Provider value={contextValue}>
