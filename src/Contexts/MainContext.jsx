@@ -363,8 +363,8 @@ export const MainContextProvider = ({ children }) => {
       if (!sheetId) return;
       // If already fetching or fetched, don't re-fetch
       if (fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
-        // Only restore from cache if cards are not yet set for this sheet
-        if (!cards.length && cardsCache[sheetId]) {
+        // Restore from cache if available
+        if (cardsCache[sheetId]) {
           setCards(cardsCache[sheetId]);
         }
         return;
