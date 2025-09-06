@@ -304,14 +304,13 @@ const CardsEditor = ({
     let newRow = {
       ...formData,
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
-      sheetName: selectedSheet,
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
       history: formData.history || [],
       isModified: true,
       action: isEditing ? 'update' : 'add',
     };
 
-    const requiredFields = ['docId', 'sheetName', 'typeOfCards', 'history', 'isModified', 'action'];
+    const requiredFields = ['docId', 'typeOfCards', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];

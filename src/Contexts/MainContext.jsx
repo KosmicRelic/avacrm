@@ -548,7 +548,7 @@ export const MainContextProvider = ({ children }) => {
             console.log("adding card");
             docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
             addedCardsMap.set(card, docRef.id); // Map original card to new Firestore ID
-            const { isModified, action, docId, ...cardData } = card;
+            const { isModified, action, docId, sheetName, ...cardData } = card;
             batch.set(docRef, cardData);
             hasChanges = true;
           } else if (card.action === 'remove') {
@@ -557,7 +557,7 @@ export const MainContextProvider = ({ children }) => {
             hasChanges = true;
           } else if (card.action === 'update') {
             docRef = doc(stateConfig.cards.collectionPath(), card.docId);
-            const { isModified, action, docId, ...cardData } = card;
+            const { isModified, action, docId, sheetName, ...cardData } = card;
             batch.set(docRef, cardData);
             hasChanges = true;
           }

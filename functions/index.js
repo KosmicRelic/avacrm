@@ -805,9 +805,9 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
       }
 
       // Check for required fields in cardData
-      if (!cardData.typeOfCards || !cardData.sheetName) {
+      if (!cardData.typeOfCards) {
         return res.status(400).json({
-          error: 'Missing required cardData fields: typeOfCards and sheetName are required.'
+          error: 'Missing required cardData fields: typeOfCards is required.'
         });
       }
 
