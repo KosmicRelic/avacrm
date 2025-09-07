@@ -1,7 +1,9 @@
 /* Base styles for the modal */
 .sheetModal {
   background: transparent;
-  transition: background 0.3s ease;
+  border-radius: 16px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
 }
 
 .sheetModal.darkTheme {
@@ -60,53 +62,55 @@
 /* Sheet name input */
 .sheetNameInput {
   width: 100%;
-  padding: 15px 16px;
-  border: none;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
   color: #1d1d1f;
-  background: rgba(229, 229, 234, 0.5);
+  background: rgba(250, 250, 255, 0.95);
   box-sizing: border-box;
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+  transition: all 0.2s ease;
+  /* backdrop-filter: blur(10px); */
   margin-bottom: 20px;
   font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-size: 15px;
+  letter-spacing: -0.01em;
   text-align: center;
 }
 
 .sheetNameInput.darkTheme {
   color: #ffffff;
-  background: rgba(56, 56, 60, 0.6);
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .sheetNameInput:focus {
   outline: none;
-  background: rgba(229, 229, 234, 0.5);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  transform: scale(1.02);
 }
 
 .sheetNameInput.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(44, 44, 46, 1);
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
 }
 
 /* Button and navigation containers */
 .buttonContainer {
   margin-bottom: 16px;
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
+  background: transparent;
   transition: background 0.3s ease;
 }
 
-.buttonContainer.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
-}
-
 .navItem {
-  padding: 13.5px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
-  transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
+  transition: all 0.2s ease;
   cursor: pointer;
   user-select: none;
   display: flex;
@@ -116,25 +120,28 @@
 
 .navItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(56, 56, 60, 0.6);
+  background: rgba(44, 44, 46, 0.8);
 }
 
 .navItem:last-child {
   border-bottom: none;
 }
 
-.navItem:hover {
-  background: rgba(245, 245, 247, 0.9);
+.navItem:hover:not(.activeItem) {
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.navItem.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.8);
+.navItem.darkTheme:hover:not(.activeItem) {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .navName {
   font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-size: 15px;
+  letter-spacing: -0.01em;
   color: #1d1d1f;
   transition: color 0.3s ease;
   display: block;
@@ -147,9 +154,9 @@
 
 .filterSummary {
   flex: 0 0 auto;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   color: #6e6e73;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   transition: color 0.3s ease;
   text-align: right;
@@ -166,44 +173,53 @@
 /* Add header/card template buttons */
 .addHeaderButton {
   width: 100%;
-  padding: 13.5px 16px;
-  border: none;
-  background: rgba(229, 229, 234, 0.5);
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  background: rgba(0, 122, 255, 0.1);
   color: #007aff;
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.01em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 10px;
   margin-bottom: 12px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
+  /* backdrop-filter: blur(10px); */
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
 }
 
 .addHeaderButton.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
   color: #0a84ff;
+  background: rgba(10, 132, 255, 0.1);
+  border-color: rgba(10, 132, 255, 0.3);
 }
 
 .addHeaderButton:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(0, 122, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
 }
 
 .addHeaderButton.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.8);
+  background: rgba(10, 132, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
 }
 
 /* Prioritized headers list */
 .prioritizedHeadersList {
-  border-radius: 10px;
+  margin-bottom: 20px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: background 0.3s ease;
+  background: transparent;
+  /* backdrop-filter: blur(20px); */
+  /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); */
+  transition: all 0.3s ease;
 }
 
 .prioritizedHeadersList.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .noPrioritizedHeaders {
@@ -220,10 +236,10 @@
 }
 
 .headerItem {
-  padding: 6px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
-  transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
+  transition: all 0.2s ease;
   cursor: default;
   user-select: none;
   position: relative;
@@ -231,7 +247,7 @@
 
 .headerItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(56, 56, 60, 0.6);
+  background: rgba(44, 44, 46, 0.8);
 }
 
 .headerItem:last-child {
@@ -239,11 +255,14 @@
 }
 
 .headerItem:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .headerItem.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .headerItem.dragging {
@@ -398,8 +417,8 @@
 /* Draggable filter item */
 .filterItemDraggable {
   padding: 12.5px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
   transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease, border-bottom 0.3s ease;
   cursor: pointer;
   user-select: none;
@@ -419,7 +438,7 @@
 }
 
 .filterItemDraggable:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(245, 245, 247, 0.95);
 }
 
 .filterItemDraggable.darkTheme:hover {
@@ -450,25 +469,28 @@
 /* Card type list */
 .cardTypeList {
   margin-bottom: 20px;
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: background 0.3s ease;
+  background: transparent;
+  /* backdrop-filter: blur(20px); */
+  /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); */
+  transition: all 0.3s ease;
 }
 
 .cardTypeList.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
+  /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); */
 }
 
 .cardTypeItem {
-  padding: 12.5px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
-  font-size: 13px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
+  font-size: 15px;
   font-weight: 600;
   color: #1d1d1f;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   text-transform: capitalize;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
   user-select: none;
   display: flex;
@@ -478,7 +500,7 @@
 
 .cardTypeItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(56, 56, 60, 0.6);
+  background: rgba(44, 44, 46, 0.8);
   color: #ffffff;
 }
 
@@ -487,11 +509,14 @@
 }
 
 .cardTypeItem:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); */
 }
 
 .cardTypeItem.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); */
 }
 
 .cardTypeRow {
@@ -560,8 +585,8 @@
 
 .filterItem {
   padding: 12.5px 16px;
-  background: rgba(229, 229, 234, 0.5);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(240, 240, 245, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
@@ -575,7 +600,7 @@
 }
 
 .filterItem:hover:not(.activeItem) {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(245, 245, 247, 0.95);
 }
 
 .filterItem.darkTheme:hover:not(.activeItem) {
@@ -655,7 +680,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(243, 242, 248, 0.5);
+  background: rgba(250, 250, 255, 0.95);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
@@ -669,7 +694,7 @@
 
 .filterSelect {
   padding-right: 28px;
-  background: rgba(243, 242, 248, 0.5) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: rgba(250, 250, 255, 0.95) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
 }
 
 .filterSelect.darkTheme {
@@ -685,8 +710,8 @@
 .filterSelect:focus,
 .filterSelectNoChevron:focus {
   outline: none;
-  background: rgba(243, 242, 248, 0.5);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(250, 250, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .filterInput.darkTheme:focus,
@@ -703,19 +728,21 @@
 }
 
 .filterInput[type="number"] {
+  -webkit-appearance: none;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .filterMultiSelect {
   width: 100%;
   height: 100px;
   padding: 8px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(243, 242, 248, 0.5);
+  background: rgba(250, 250, 255, 0.95);
   box-sizing: border-box;
   transition: all 0.2s ease, border 0.3s ease, color 0.3s ease, background 0.3s ease;
 }
@@ -729,7 +756,7 @@
 .filterMultiSelect:focus {
   outline: none;
   border-color: #007aff;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
 }
 
 .filterMultiSelect.darkTheme:focus {
@@ -872,7 +899,7 @@
   border: none;
   border-radius: 12px;
   color: #1d1d1f;
-  background: rgba(229, 229, 234, 0.5);
+  background: rgba(240, 240, 245, 0.95);
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
   font-weight: 600;
@@ -888,13 +915,11 @@
 
 .fetchLimitInput:focus {
   outline: none;
-  background: rgba(229, 229, 234, 0.5);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .fetchLimitInput.darkTheme:focus {
-  background: rgba(72, 72, 74, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fetchLimitInput::-webkit-inner-spin-button,
@@ -904,7 +929,9 @@
 }
 
 .fetchLimitInput[type="number"] {
+  -webkit-appearance: none;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .inputContainer {
@@ -938,8 +965,8 @@
 /* Prioritized header items */
 .prioritizedHeaderItem {
   padding: 12.5px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
   font-size: 13px;
   font-weight: 600;
   color: #1d1d1f;
@@ -964,7 +991,7 @@
 }
 
 .prioritizedHeaderItem:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(245, 245, 247, 0.95);
 }
 
 .prioritizedHeaderItem.darkTheme:hover {
@@ -992,8 +1019,8 @@
   display: flex;
   align-items: center;
   padding: 8px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(229, 229, 234, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(240, 240, 245, 0.95);
   transition: background 0.2s, border-bottom 0.3s;
   cursor: pointer;
   user-select: none;
@@ -1033,7 +1060,7 @@
 
 .dropdownPrioritizeItem:hover,
 .dropdownPrioritizeCheckButton:hover {
-  background: rgba(245, 245, 247, 0.9);
+  background: rgba(245, 245, 247, 0.95);
 }
 
 .dropdownPrioritizeItem.darkTheme:hover,
@@ -1125,7 +1152,7 @@
   font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(243, 242, 248, 0.5) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: rgba(250, 250, 255, 0.95) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
   box-sizing: border-box;
   transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
   -webkit-appearance: none;
@@ -1139,8 +1166,8 @@
 
 .headerSelectContainer select:focus {
   outline: none;
-  background: rgba(243, 242, 248, 0.5);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(250, 250, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .headerSelectContainer select.darkTheme:focus {
