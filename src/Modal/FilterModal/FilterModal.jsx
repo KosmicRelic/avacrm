@@ -22,6 +22,10 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const [showSortFor, setShowSortFor] = useState(false);
   const hasInitialized = useRef(false);
 
+  const toggleFilter = useCallback((index) => {
+    setActiveFilterIndex((prev) => (prev === index ? null : index));
+  }, []);
+
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
@@ -177,10 +181,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     [filterValues, applyFilters]
   );
 
-  const toggleFilter = useCallback((index) => {
-    setActiveFilterIndex((prev) => (prev === index ? null : index));
-  }, []);
-
   const clearFilter = useCallback(
     (headerKey) => {
       const updatedFilters = { ...filterValues, [headerKey]: {} };
@@ -278,12 +278,8 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         {/* Sort For Button - styled and clickable as a whole */}
         <div
           className={`${styles.filterItem} ${styles.sortForRow} ${showSortFor ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={() => setShowSortFor((prev) => !prev)}
-          tabIndex={0}
-          role="button"
-          style={{ cursor: 'pointer' }}
         >
-          <div className={styles.filterRow}>
+          <div className={styles.filterRow} onClick={() => setShowSortFor((prev) => !prev)}>
             <div className={styles.filterNameType}>
               <FaSort
                 style={{
@@ -328,8 +324,18 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 <option value="descending">Descending</option>
               </select>
               <button
-                onClick={() => setSortFor({ headerKey: '', order: '' })}
-                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => {
+                  // Clear sortOrder from all filters
+                  const updatedFilters = { ...filterValues };
+                  Object.keys(updatedFilters).forEach((key) => {
+                    if (updatedFilters[key]) {
+                      delete updatedFilters[key].sortOrder;
+                    }
+                  });
+                  applyFilters(updatedFilters);
+                  setSortFor({ headerKey: '', order: '' });
+                }}
+                className={`${styles.clearButton} ${(sortFor.headerKey && sortFor.order) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                 type="button"
               >
                 <FaTimes style={{ marginRight: '6px' }} />
@@ -344,9 +350,8 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
               isDarkTheme ? styles.darkTheme : ''
             }`}
-            onClick={() => toggleFilter(index)}
           >
-            <div className={styles.filterRow}>
+            <div className={styles.filterRow} onClick={() => toggleFilter(index)}>
               <div className={styles.filterNameType}>
                 <FaFilter
                   style={{
@@ -366,6 +371,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             {activeFilterIndex === index && (
               <div
                 className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={(e) => e.stopPropagation()}
               >
                 {header.key === 'assignedTo' ? (
                   <select

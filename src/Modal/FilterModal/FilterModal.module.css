@@ -2,14 +2,14 @@
   margin-bottom: 20px;
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.8);
+  background: transparent;
   backdrop-filter: blur(20px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
 .filterList.darkTheme {
-  background: rgba(28, 28, 30, 0.8);
+  background: transparent;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -306,13 +306,13 @@
   display: flex;
   justify-content: center;
   padding: 20px;
-  background: rgba(249, 249, 249, 0.8);
+  background: transparent;
   border-radius: 0 0 16px 16px;
   backdrop-filter: blur(20px);
 }
 
 .footer.darkTheme {
-  background: rgba(28, 28, 30, 0.8);
+  background: transparent;
 }
 
 .sortForRow {
