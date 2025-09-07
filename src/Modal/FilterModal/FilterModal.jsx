@@ -303,11 +303,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             </div>
           </div>
           {showSortFor && (
-            <div className={styles.sortForDropdowns}>
+            <div className={`${styles.sortForDropdowns} ${isDarkTheme ? styles.darkTheme : ''}`}>
               <select
                 value={sortFor.headerKey}
                 onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
-                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.filterSelect} ${styles.filterSelectFirst} ${isDarkTheme ? styles.darkTheme : ''}`}
               >
                 <option value="">Select header...</option>
                 {sortableHeaders.map((header) => (
@@ -317,7 +317,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
               <select
                 value={sortFor.order}
                 onChange={e => setSortFor(s => ({ ...s, order: e.target.value }))}
-                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.filterSelect} ${styles.filterSelectMiddle} ${isDarkTheme ? styles.darkTheme : ''}`}
               >
                 <option value="">Sort order...</option>
                 <option value="ascending">Ascending</option>
@@ -335,7 +335,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   applyFilters(updatedFilters);
                   setSortFor({ headerKey: '', order: '' });
                 }}
-                className={`${styles.clearButton} ${(sortFor.headerKey && sortFor.order) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.clearButton} ${styles.clearButtonLast} ${(sortFor.headerKey && sortFor.order) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                 type="button"
               >
                 <FaTimes style={{ marginRight: '6px' }} />

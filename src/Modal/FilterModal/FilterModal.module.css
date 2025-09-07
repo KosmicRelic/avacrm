@@ -155,6 +155,43 @@
   appearance: none;
 }
 
+.filterSelectFirst {
+  border-radius: 10px 10px 0 0 !important;
+  border-bottom: none !important;
+}
+
+.filterSelectFirst.darkTheme {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.filterSelectLast {
+  border-radius: 0 0 10px 10px !important;
+  border-top: none !important;
+}
+
+.filterSelectLast.darkTheme {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.clearButtonLast {
+  border-radius: 0 0 10px 10px !important;
+  border-top: none !important;
+}
+
+.clearButtonLast.darkTheme {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.filterSelectMiddle {
+  border-radius: 0 !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.filterSelectMiddle.darkTheme {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
 .filterInput:focus,
 .filterSelect:focus,
 .filterSelectNoChevron:focus {
@@ -345,6 +382,11 @@
   animation: slideDown 0.2s ease-out;
 }
 
+.sortForDropdowns.darkTheme {
+  background: rgba(44, 44, 46, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -369,6 +411,12 @@
   backdrop-filter: blur(10px);
 }
 
+.clearButton.darkTheme {
+  color: #8e8e93;
+  background: rgba(142, 142, 147, 0.1);
+  border-color: rgba(142, 142, 147, 0.3);
+}
+
 .clearButtonActive {
   background: rgba(255, 69, 58, 0.1);
   border-color: rgba(255, 69, 58, 0.3);
@@ -379,12 +427,6 @@
   background: rgba(255, 69, 58, 0.2);
   border-color: rgba(255, 69, 58, 0.4);
   color: #ff453a;
-}
-
-.clearButton.darkTheme {
-  color: #8e8e93;
-  background: rgba(142, 142, 147, 0.1);
-  border-color: rgba(142, 142, 147, 0.3);
 }
 
 .clearButton:hover {
