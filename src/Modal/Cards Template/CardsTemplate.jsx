@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useEffect, useRef, use } from "react";
+import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
@@ -142,7 +142,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         goBack();
       }
     },
-    [selectedTemplateIndex, goBack]
+    [selectedTemplateIndex, goBack, currentCardTemplates]
   );
 
   const handleDeleteSection = useCallback(
@@ -179,7 +179,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         goBack();
       }
     },
-    [selectedTemplateIndex, goBack]
+    [selectedTemplateIndex, goBack, currentCardTemplates]
   );
 
   // Validate header name
@@ -286,6 +286,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         const newTemplates = [...prev];
         const template = { ...newTemplates[selectedTemplateIndex] };
         const headers = [...template.headers];
+        const sections = template.sections.map((s) => ({ ...s, keys: [...s.keys] })); // Deep copy sections
         headers[index] = {
           ...headers[index],
           name: newHeaderName.trim(),
@@ -293,8 +294,25 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           section: newHeaderSection,
           ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
         };
+
+        // Update sections' keys if section changed
+        if (currentHeader.section !== newHeaderSection) {
+          sections.forEach((section) => {
+            if (section.name === currentHeader.section) {
+              section.keys = section.keys.filter((key) => key !== currentHeader.key);
+            }
+            if (section.name === newHeaderSection) {
+              if (!section.keys.includes(currentHeader.key)) {
+                section.keys = [...section.keys, currentHeader.key];
+              }
+            }
+          });
+        }
+
         newTemplates[selectedTemplateIndex] = {
           ...template,
+          headers,
+          sections,
           isModified: true,
           action: template.action || "update",
         };
@@ -305,7 +323,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNavigationDirection("backward");
       goBack();
     },
-    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack]
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack, currentCardTemplates]
   );
 
   // Save header (add or update)
@@ -587,7 +605,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       };
       return newTemplates;
     });
-  }, [selectedTemplateIndex]);
+  }, [selectedTemplateIndex, currentCardTemplates]);
   
   // Update section name
   const updateSectionName = useCallback(
@@ -625,7 +643,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         return newTemplates;
       });
     },
-    [selectedTemplateIndex]
+    [selectedTemplateIndex, currentCardTemplates]
   );
 
   // Drag-and-drop handlers
@@ -682,7 +700,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       });
       setTimeout(() => setDraggedIndex(index), 0);
     },
-    [draggedIndex, draggedSectionIndex, selectedTemplateIndex]
+    [draggedIndex, draggedSectionIndex, selectedTemplateIndex, currentCardTemplates]
   );
 
   const handleTouchMove = useCallback(

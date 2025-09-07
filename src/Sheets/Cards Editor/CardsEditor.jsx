@@ -498,13 +498,15 @@ const CardsEditor = ({
           ref.current && !ref.current.contains(event.target) &&
           dropdownRef.current && !dropdownRef.current.contains(event.target)
         ) {
+          // Save the current tempValue as the new value
+          const ordered = options.filter(option => tempValue.includes(option));
+          onChange(ordered);
           setOpen(false);
-          setTempValue(Array.isArray(value) ? value : []); // Reset tempValue on close
         }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [open, value]);
+    }, [open, tempValue, options, onChange]);
 
     const handleOptionToggle = (option) => {
       let newValue = Array.isArray(tempValue) ? [...tempValue] : [];
@@ -521,17 +523,17 @@ const CardsEditor = ({
       // Sort tempValue according to the order in options
       const ordered = options.filter(option => tempValue.includes(option));
       onChange(ordered);
-      // Do not close dropdown here
+      setOpen(false);
     };
 
     const handleCancel = (e) => {
       e.stopPropagation();
       setTempValue(Array.isArray(value) ? value : []);
-      // Do not close dropdown here
+      setOpen(false);
     };
 
-    const display = (Array.isArray(value) && value.length > 0)
-      ? value.join(', ')
+    const display = (Array.isArray((open ? tempValue : value)) && (open ? tempValue : value).length > 0)
+      ? (open ? tempValue : value).join(', ')
       : `Select ${label}`;
 
     // Position dropdown below the field
