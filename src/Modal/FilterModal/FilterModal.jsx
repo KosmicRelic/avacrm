@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './FilterModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import useClickOutside from '../Hooks/UseClickOutside';
+import { FaSort, FaFilter, FaChevronDown, FaChevronRight, FaTimes } from 'react-icons/fa';
 
 const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const { cardTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
@@ -20,7 +20,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const [sortFor, setSortFor] = useState({ headerKey: '', order: '' });
   const [showSortFor, setShowSortFor] = useState(false);
-  const filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -250,8 +249,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
   };
 
-  useClickOutside(filterActionsRef, activeFilterIndex !== null, () => setActiveFilterIndex(null));
-
   // Remove Apply button logic, update sortFor state and tempData on change
   useEffect(() => {
     if (!sortFor.headerKey || !sortFor.order) return;
@@ -288,6 +285,13 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         >
           <div className={styles.filterRow}>
             <div className={styles.filterNameType}>
+              <FaSort
+                style={{
+                  marginRight: '8px',
+                  opacity: 0.7,
+                  color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f')
+                }}
+              />
               <span>Sort For</span>
             </div>
             <div className={styles.primaryButtons}>
@@ -299,10 +303,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   return `${header.name} (${sortFor.order === 'ascending' ? 'Asc' : 'Desc'})`;
                 })()}
               </span>
+              {showSortFor ? <FaChevronDown style={{ opacity: 0.6, color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} /> : <FaChevronRight style={{ opacity: 0.6, color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} />}
             </div>
           </div>
           {showSortFor && (
-            <div className={styles.sortForDropdowns} onClick={e => e.stopPropagation()}>
+            <div className={styles.sortForDropdowns}>
               <select
                 value={sortFor.headerKey}
                 onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
@@ -323,10 +328,11 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 <option value="descending">Descending</option>
               </select>
               <button
-                onClick={e => { e.stopPropagation(); setSortFor({ headerKey: '', order: '' }); }}
+                onClick={() => setSortFor({ headerKey: '', order: '' })}
                 className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 type="button"
               >
+                <FaTimes style={{ marginRight: '6px' }} />
                 Clear
               </button>
             </div>
@@ -342,17 +348,24 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
           >
             <div className={styles.filterRow}>
               <div className={styles.filterNameType}>
+                <FaFilter
+                  style={{
+                    marginRight: '8px',
+                    opacity: 0.6,
+                    fontSize: '14px',
+                    color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f')
+                  }}
+                />
                 <span>{header.name}</span>
               </div>
               <div className={styles.primaryButtons}>
                 <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+                {activeFilterIndex === index ? <FaChevronDown style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} /> : <FaChevronRight style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} />}
               </div>
             </div>
             {activeFilterIndex === index && (
               <div
                 className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-                ref={filterActionsRef}
-                onClick={(e) => e.stopPropagation()}
               >
                 {header.key === 'assignedTo' ? (
                   <select
@@ -479,8 +492,9 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 )}
                 <button
                   onClick={() => clearFilter(header.key)}
-                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  className={`${styles.clearButton} ${!isFilterEmpty(filterValues[header.key] || {}) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
                 >
+                  <FaTimes style={{ marginRight: '6px' }} />
                   Clear
                 </button>
               </div>
@@ -493,6 +507,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
           onClick={handleReset}
           className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
         >
+          <FaTimes style={{ marginRight: '8px' }} />
           Reset All
         </button>
       </div>
