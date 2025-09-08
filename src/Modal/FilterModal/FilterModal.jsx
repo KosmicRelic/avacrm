@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './FilterModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaSort, FaFilter, FaChevronDown, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { IoMdArrowDropdown, IoMdFunnel, IoMdOptions } from 'react-icons/io';
 
 const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const { cardTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
@@ -273,57 +273,52 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   );
 
   return (
-    <>
-      <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        {/* Sort For Button - styled and clickable as a whole */}
-        <div
-          className={`${styles.filterItem} ${styles.sortForRow} ${showSortFor ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={() => setShowSortFor((prev) => !prev)}
-        >
-          <div className={styles.filterRow}>
-            <div 
-              className={styles.filterNameType}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowSortFor((prev) => !prev);
-              }}
-            >
-              <FaSort
-                style={{
-                  marginRight: '8px',
-                  opacity: 0.7,
-                  color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f')
-                }}
-              />
-              <span>Sort For</span>
+    <div className={`${styles.filterContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {/* Sort For Section */}
+      <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort & Filter</h2>
+        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          Configure sorting and filtering options for your data
+        </p>
+      </div>
+
+      {/* Sort For Card */}
+      <div
+        className={`${styles.configCard} ${showSortFor ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+        onClick={() => setShowSortFor((prev) => !prev)}
+      >
+        <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setShowSortFor((prev) => !prev); }}>
+          <div className={styles.cardContent}>
+            <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort By</div>
+            <div className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {(() => {
+                if (!sortFor.headerKey || !sortFor.order) return 'Choose how to sort your data';
+                const header = sortableHeaders.find(h => h.key === sortFor.headerKey);
+                if (!header) return 'Choose how to sort your data';
+                return `${header.name} (${sortFor.order === 'ascending' ? 'Ascending' : 'Descending'})`;
+              })()}
             </div>
-            <div 
-              className={styles.primaryButtons}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowSortFor((prev) => !prev);
-              }}
-            >
-              <span className={styles.filterSummary}>
-                {(() => {
-                  if (!sortFor.headerKey || !sortFor.order) return 'None';
-                  const header = sortableHeaders.find(h => h.key === sortFor.headerKey);
-                  if (!header) return 'None';
-                  return `${header.name} (${sortFor.order === 'ascending' ? 'Asc' : 'Desc'})`;
-                })()}
-              </span>
-              {showSortFor ? <FaChevronDown style={{ opacity: 0.6, color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} /> : <FaChevronRight style={{ opacity: 0.6, color: (sortFor.headerKey && sortFor.order) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} />}
+            <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {(sortFor.headerKey && sortFor.order) ? 'Active' : 'None'}
             </div>
           </div>
-          {showSortFor && (
-            <div className={`${styles.sortForDropdowns} ${isDarkTheme ? styles.darkTheme : ''}`}
-                 onClick={(e) => e.stopPropagation()}>
+          <div className={`${styles.cardArrow} ${showSortFor ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <IoMdArrowDropdown />
+          </div>
+        </div>
+        {showSortFor && (
+          <>
+            <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+            <div
+              className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
               <select
                 value={sortFor.headerKey}
                 onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
-                className={`${styles.filterSelect} ${styles.filterSelectFirst} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
               >
-                <option value="">Select header...</option>
+                <option value="">Select field...</option>
                 {sortableHeaders.map((header) => (
                   <option key={header.key} value={header.key}>{header.name}</option>
                 ))}
@@ -331,220 +326,208 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
               <select
                 value={sortFor.order}
                 onChange={e => setSortFor(s => ({ ...s, order: e.target.value }))}
-                className={`${styles.filterSelect} ${styles.filterSelectMiddle} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
               >
                 <option value="">Sort order...</option>
                 <option value="ascending">Ascending</option>
                 <option value="descending">Descending</option>
               </select>
-              <button
-                onClick={() => {
-                  // Clear sortOrder from all filters
-                  const updatedFilters = { ...filterValues };
-                  Object.keys(updatedFilters).forEach((key) => {
-                    if (updatedFilters[key]) {
-                      delete updatedFilters[key].sortOrder;
-                    }
-                  });
-                  applyFilters(updatedFilters);
-                  setSortFor({ headerKey: '', order: '' });
-                }}
-                className={`${styles.clearButton} ${styles.clearButtonLast} ${(sortFor.headerKey && sortFor.order) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                type="button"
-              >
-                <FaTimes style={{ marginRight: '6px' }} />
-                Clear
-              </button>
+              {(sortFor.headerKey && sortFor.order) && (
+                <button
+                  onClick={() => {
+                    const updatedFilters = { ...filterValues };
+                    Object.keys(updatedFilters).forEach((key) => {
+                      if (updatedFilters[key]) {
+                        delete updatedFilters[key].sortOrder;
+                      }
+                    });
+                    applyFilters(updatedFilters);
+                    setSortFor({ headerKey: '', order: '' });
+                  }}
+                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                >
+                  Clear Sort
+                </button>
+              )}
             </div>
-          )}
+          </>
+        )}
+      </div>
+
+      {/* Filter Cards */}
+      <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h2>
+        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          Set up filters to narrow down your data
+        </p>
+      </div>
+
+      {visibleHeaders.length === 0 ? (
+        <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          No filterable fields available
         </div>
-        {visibleHeaders.map((header, index) => (
+      ) : (
+        visibleHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
-              isDarkTheme ? styles.darkTheme : ''
-            }`}
-            onClick={() => toggleFilter(index)}
+            className={`${styles.configCard} ${activeFilterIndex === index ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
           >
-            <div className={styles.filterRow}>
-              <div 
-                className={styles.filterNameType}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFilter(index);
-                }}
-              >
-                <FaFilter
-                  style={{
-                    marginRight: '8px',
-                    opacity: 0.6,
-                    fontSize: '14px',
-                    color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f')
-                  }}
-                />
-                <span>{header.name}</span>
+            <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
+              <div className={styles.cardContent}>
+                <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
+                <div className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {header.type === 'text' && 'Filter by text content'}
+                  {header.type === 'number' && 'Filter by numeric values'}
+                  {header.type === 'date' && 'Filter by date ranges'}
+                  {header.type === 'dropdown' && 'Filter by selected options'}
+                  {header.type === 'multi-select' && 'Filter by multiple selections'}
+                </div>
+                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
+                </div>
               </div>
-              <div 
-                className={styles.primaryButtons}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFilter(index);
-                }}
-              >
-                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
-                {activeFilterIndex === index ? <FaChevronDown style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} /> : <FaChevronRight style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} />}
+              <div className={`${styles.cardArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <IoMdArrowDropdown />
               </div>
             </div>
             {activeFilterIndex === index && (
-              <div
-                className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {header.key === 'assignedTo' ? (
-                  <select
-                    multiple
-                    value={filterValues[header.key]?.values || []}
-                    onChange={(e) => handleDropdownChange(header.key, e)}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    {user && user.businessId === user.uid
-                      ? teamMembers.map((tm) => (
-                          <option key={tm.uid} value={tm.uid}>
-                            {tm.name && tm.surname ? `${tm.name} ${tm.surname}` : tm.email || tm.uid}
-                          </option>
-                        ))
-                      : (
-                          <option key={user.uid} value={user.uid}>
-                            {user.name && user.surname ? `${user.name} ${user.surname}` : user.email || 'Me'}
-                          </option>
-                        )}
-                  </select>
-                ) : header.type === 'number' ? (
-                  numberRangeMode[header.key] ? (
-                    <>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.start || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                        placeholder="From"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      />
-                      <span className={styles.separator}>–</span>
-                      <input
-                        type="number"
-                        value={filterValues[header.key]?.end || ''}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                        placeholder="To"
-                        className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Value
-                      </button>
-                    </>
+              <>
+                <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                <div
+                  className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {header.type === 'number' ? (
+                    numberRangeMode[header.key] ? (
+                      <>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.start || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                          placeholder="From"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <span className={`${styles.separator} ${isDarkTheme ? styles.darkTheme : ''}`}>–</span>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.end || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                          placeholder="To"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <button
+                          onClick={() => toggleNumberRangeMode(header.key)}
+                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          Value
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <select
+                          value={filterValues[header.key]?.order || 'equals'}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                          className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          <option value="equals">=</option>
+                          <option value="greaterOrEqual">≥</option>
+                          <option value="lessOrEqual">≤</option>
+                          <option value="greater">&gt;</option>
+                          <option value="less">&lt;</option>
+                        </select>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.value || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                          placeholder="Value"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <button
+                          onClick={() => toggleNumberRangeMode(header.key)}
+                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          Range
+                        </button>
+                      </>
+                    )
+                  ) : header.type === 'date' ? (
+                    <select
+                      value={filterValues[header.key]?.sortOrder || ''}
+                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      <option value="">No date filter</option>
+                      <option value="newest">Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                    </select>
+                  ) : header.type === 'dropdown' ? (
+                    <select
+                      multiple
+                      value={filterValues[header.key]?.values || []}
+                      onChange={(e) => {
+                        const values = Array.from(e.target.selectedOptions, option => option.value);
+                        handleFilterChange(header.key, values, 'values');
+                      }}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      {header.options?.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : header.type === 'multi-select' ? (
+                    <select
+                      multiple
+                      value={filterValues[header.key]?.values || []}
+                      onChange={(e) => {
+                        const values = Array.from(e.target.selectedOptions, option => option.value);
+                        handleFilterChange(header.key, values, 'values');
+                      }}
+                      className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      {header.options?.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
                   ) : (
                     <>
                       <select
-                        value={filterValues[header.key]?.order || 'equals'}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                        value={filterValues[header.key]?.condition || 'equals'}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
                         className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
                       >
-                        <option value="equals">=</option>
-                        <option value="greater">{'>'}</option>
-                        <option value="less">{'<'}</option>
-                        <option value="greaterOrEqual">≥</option>
-                        <option value="lessOrEqual">≤</option>
+                        <option value="equals">Equals</option>
+                        <option value="contains">Contains</option>
+                        <option value="startsWith">Starts with</option>
+                        <option value="endsWith">Ends with</option>
                       </select>
                       <input
-                        type="number"
+                        type="text"
                         value={filterValues[header.key]?.value || ''}
                         onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                        placeholder="Value"
+                        placeholder="Filter value"
                         className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                       />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Range
-                      </button>
                     </>
-                  )
-                ) : header.type === 'date' ? (
-                  // Remove sortOrder select for date
-                  null
-                ) : header.type === 'dropdown' || header.type === 'multi-select' ? (
-                  <select
-                    multiple
-                    value={filterValues[header.key]?.values || []}
-                    onChange={(e) => handleDropdownChange(header.key, e)}
-                    className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    {(
-                      header.options && header.options.length > 0
-                        ? header.options
-                        : Array.from(
-                            new Set(
-                              rows
-                                .map(row => {
-                                  const val = row[header.key];
-                                  return Array.isArray(val) ? val : [val];
-                                })
-                                .flat()
-                                .filter(v => v !== undefined && v !== null && v !== '')
-                            )
-                          )
-                    ).map((option, idx) => (
-                      <option key={`${header.key}-option-${idx}`} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <>
-                    <select
-                      value={filterValues[header.key]?.condition || 'equals'}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
-                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  )}
+                  {getFilterSummary(header) !== 'None' && (
+                    <button
+                      onClick={() => {
+                        const newFilters = { ...filterValues };
+                        delete newFilters[header.key];
+                        applyFilters(newFilters);
+                      }}
+                      className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                     >
-                      <option value="equals">Equals</option>
-                      <option value="contains">Contains</option>
-                      <option value="startsWith">Starts with</option>
-                      <option value="endsWith">Ends with</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={filterValues[header.key]?.value || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                      placeholder="Value"
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                  </>
-                )}
-                <button
-                  onClick={() => clearFilter(header.key)}
-                  className={`${styles.clearButton} ${!isFilterEmpty(filterValues[header.key] || {}) ? styles.clearButtonActive : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                >
-                  <FaTimes style={{ marginRight: '6px' }} />
-                  Clear
-                </button>
-              </div>
+                      Clear Filter
+                    </button>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        ))}
-      </div>
-      <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <button
-          onClick={handleReset}
-          className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-        >
-          <FaTimes style={{ marginRight: '8px' }} />
-          Reset All
-        </button>
-      </div>
-    </>
+        ))
+      )}
+    </div>
   );
 };
 

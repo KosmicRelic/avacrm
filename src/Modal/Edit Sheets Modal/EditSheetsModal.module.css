@@ -61,20 +61,20 @@
 /* Sheet name input */
 .sheetNameInput {
   width: 100%;
-  padding: 18px 24px;
+  padding: 16px 20px;
   border: 1px solid rgba(0, 0, 0, 0.16);
-  border-radius: 14px;
+  border-radius: 12px;
   color: #1d1d1f;
   background: rgba(255, 255, 255, 0.95);
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   font-weight: 500;
   font-size: 17px;
   letter-spacing: -0.014em;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
@@ -98,14 +98,14 @@
   outline: none;
   border-color: #007aff;
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2), 0 4px 16px rgba(0, 122, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15), 0 2px 8px rgba(0, 122, 255, 0.08);
   transform: scale(1.005);
 }
 
 .sheetNameInput.darkTheme:focus {
   background: rgba(44, 44, 46, 1);
   border-color: #0a84ff;
-  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.3), 0 4px 16px rgba(10, 132, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2), 0 2px 8px rgba(10, 132, 255, 0.12);
 }
 
 /* Sections */
@@ -121,7 +121,7 @@
   font-size: 28px;
   font-weight: 700;
   color: #1d1d1f;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   letter-spacing: -0.022em;
   line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -136,12 +136,12 @@
 @media (max-width: 768px) {
   .sectionTitle {
     font-size: 24px;
-    margin: 0 0 10px 0;
+    margin: 0 0 6px 0;
   }
   
   .sectionDescription {
     font-size: 16px;
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
   }
   
   .cardTitle {
@@ -150,14 +150,14 @@
   
   .sheetNameInput {
     font-size: 16px;
-    padding: 16px 20px;
+    padding: 14px 18px;
   }
 }
 
 .sectionDescription {
   font-size: 17px;
   color: #86868b;
-  margin: 0 0 24px 0;
+  margin: 0 0 20px 0;
   line-height: 1.4;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -172,8 +172,8 @@
 .configGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 /* Configuration Cards */
@@ -181,19 +181,19 @@
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
-  padding: 20px;
-  cursor: pointer;
+  padding: 0;
+  cursor: default;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  min-height: 100px;
   backdrop-filter: blur(20px);
 }
 
 .configCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   background: rgba(255, 255, 255, 0.9);
 }
 
@@ -205,33 +205,35 @@
 
 .configCard.darkTheme:hover {
   background: rgba(44, 44, 46, 0.9);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .activeCard {
   border-color: #007aff;
-  background: rgba(0, 122, 255, 0.05);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2), 0 4px 16px rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.15), 0 2px 8px rgba(0, 122, 255, 0.08);
+  z-index: 10;
 }
 
 .activeCard.darkTheme {
   border-color: #0a84ff;
-  background: rgba(10, 132, 255, 0.1);
-  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3), 0 4px 16px rgba(10, 132, 255, 0.2);
+  background: rgba(10, 132, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.2), 0 2px 8px rgba(10, 132, 255, 0.12);
 }
 
 /* Card Icon */
 .cardIcon {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+  margin: 16px 20px 0 20px;
 }
 
 .cardIcon.darkTheme {
@@ -239,30 +241,102 @@
   box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
 }
 
+/* Card Header - clickable area with arrow */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  cursor: pointer;
+  padding: 16px 20px 12px 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+}
+
+.cardHeader:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.cardHeader.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 /* Card Content */
 .cardContent {
   flex: 1;
-  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px 16px 20px;
+}
+
+/* Card Arrow */
+.cardArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #6e6e73;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(0deg);
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.cardArrow.darkTheme {
+  color: #8e8e93;
+}
+
+.cardArrow.expanded {
+  transform: rotate(180deg);
+  color: #007aff;
+}
+
+.cardArrow.darkTheme.expanded {
+  color: #0a84ff;
+}
+
+.cardArrow:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+}
+
+.cardArrow.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+/* Card Divider */
+.cardDivider {
+  height: 0.5px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 0 20px;
+  border: none;
+}
+
+.cardDivider.darkTheme {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .cardTitle {
   font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
   letter-spacing: -0.018em;
   line-height: 1.2;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
 }
 
 .cardTitle.darkTheme {
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 .cardDescription {
   font-size: 15px;
   color: #86868b;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   line-height: 1.4;
   font-weight: 400;
   letter-spacing: -0.008em;
@@ -276,15 +350,16 @@
 .cardBadge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 4px 8px;
   background: rgba(0, 122, 255, 0.12);
   color: #007aff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   border-radius: 6px;
   letter-spacing: -0.006em;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   backdrop-filter: blur(10px);
+  align-self: flex-start;
 }
 
 .cardBadge.darkTheme {
@@ -515,8 +590,8 @@
   transition: color 0.3s ease;
 }
 
-.headerItem.darkTheme .headerName {
-  color: #ffffff;
+.headerName.darkTheme {
+  color: #ffffff !important;
 }
 
 .actions {
@@ -748,7 +823,7 @@
   text-transform: capitalize;
 }
 
-.cardTypeList.darkTheme .cardTypeName {
+.cardTypeName.darkTheme {
   color: #ffffff;
 }
 
@@ -759,6 +834,10 @@
 }
 
 .customCheckbox.darkTheme .checked {
+  color: #0a84ff;
+}
+
+.checked.darkTheme {
   color: #0a84ff;
 }
 
@@ -777,14 +856,60 @@
 
 /* Filter list */
 .filterList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
   margin-bottom: 20px;
-  border-radius: 10px;
-  overflow: hidden;
   transition: background 0.3s ease;
 }
 
 .filterList.darkTheme {
   background: rgba(56, 56, 60, 0.6);
+}
+
+/* User filter card - spans full width */
+.userFilterCard {
+  grid-column: 1 / -1;
+}
+
+/* Grid span for messages */
+.gridSpan {
+  grid-column: 1 / -1;
+}
+
+/* Responsive grid for filter cards */
+@media (min-width: 768px) {
+  .filterList {
+    grid-template-columns: 1fr; /* Keep single column on desktop like mobile */
+    gap: 20px;
+  }
+  
+  .configCard {
+    min-height: 140px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .filterList {
+    grid-template-columns: 1fr; /* Keep single column on larger desktop */
+    gap: 24px;
+  }
+  
+  .configCard {
+    min-height: 150px;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  .filterList {
+    gap: 12px;
+  }
+  
+  .configCard {
+    min-height: 100px;
+    padding: 16px;
+  }
 }
 
 /* Filter list section */
@@ -873,15 +998,16 @@
 .filterActions {
   margin-top: 12px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .cardActions {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .cardActions.darkTheme {
@@ -995,7 +1121,10 @@
 
 .separator {
   color: #6e6e73;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  margin: 4px 0;
   transition: color 0.3s ease;
 }
 
@@ -1240,7 +1369,6 @@
 .prioritizedHeaderItem {
   padding: 14px 18px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.8);
   font-size: 14px;
   font-weight: 600;
   color: #1d1d1f;

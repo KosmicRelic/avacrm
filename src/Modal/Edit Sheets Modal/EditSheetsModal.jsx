@@ -5,7 +5,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
-import { IoMdList, IoMdOptions, IoMdFunnel } from 'react-icons/io';
+import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
 
 // Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
@@ -868,7 +868,7 @@ const EditSheetsModal = ({
                                 Remove
                               </button>
                             )}
-                            <span className={styles.headerName}>{header.name}</span>
+                            <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</span>
                           </div>
                           <div className={styles.actions}>
                             <button
@@ -916,7 +916,7 @@ const EditSheetsModal = ({
                         onClick={() => handleTemplateClick(template.typeOfCards)}
                       >
                         <div className={styles.cardTypeRow}>
-                          <span className={styles.cardTypeName}>
+                          <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
                           </span>
                         </div>
@@ -955,12 +955,12 @@ const EditSheetsModal = ({
                           <div className={styles.cardTypeRow}>
                             <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               {currentHeaders.some((h) => h.key === header.key) ? (
-                                <FaRegCheckCircle size={18} className={styles.checked} />
+                                <FaRegCheckCircle size={18} className={`${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`} />
                               ) : (
                                 <FaRegCircle size={18} />
                               )}
                             </span>
-                            <span className={styles.cardTypeName}>
+                            <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
                             </span>
                           </div>
@@ -997,7 +997,7 @@ const EditSheetsModal = ({
                           }
                         }}
                       >
-                        <span className={styles.headerName}>
+                        <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           {template?.name
                             ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
                             : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
@@ -1035,7 +1035,7 @@ const EditSheetsModal = ({
                               <FaRegCircle size={18} />
                             )}
                           </span>
-                          <span className={styles.cardTypeName}>
+                          <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
                           </span>
                         </div>
@@ -1054,7 +1054,7 @@ const EditSheetsModal = ({
                   {/* Cards per search - moved to top and made more prominent */}
                   <div className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <div className={styles.cardContent}>
-                      <div className={styles.cardTitle}>Cards per Search</div>
+                      <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Cards per Search</div>
                       <div className={styles.cardDescription}>Limit the number of cards displayed per search to improve performance</div>
                       <div className={styles.inputContainer}>
                         <input
@@ -1375,54 +1375,63 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
 
   return (
     <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      {/* Always show Restrict by User filter at the top */}
+      {/* Always show Restrict by User filter at the top - spans full width */}
       <div
-        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+        className={`${styles.configCard} ${styles.userFilterCard} ${isDarkTheme ? styles.darkTheme : ''}`}
         onClick={() => setActiveFilterIndex('user')}
       >
-        <div className={styles.cardContent}>
-          <div className={styles.cardTitle}>Restrict by User</div>
-          <div className={styles.cardDescription}>
-            {filterValues.userFilter?.headerKey
-              ? `${
-                  userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
-                  filterValues.userFilter.headerKey
-                } = Current User`
-              : 'Filter cards by user assignment'}
+        <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === 'user' ? null : 'user'); }}>
+          <div className={styles.cardContent}>
+            <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Restrict by User</div>
+            <div className={styles.cardDescription}>
+              {filterValues.userFilter?.headerKey
+                ? `${
+                    userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
+                    filterValues.userFilter.headerKey
+                  } = Current User`
+                : 'Filter cards by user assignment'}
+            </div>
+            <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              {filterValues.userFilter?.headerKey ? 'Active' : 'None'}
+            </div>
           </div>
-          <div className={styles.cardBadge}>
-            {filterValues.userFilter?.headerKey ? 'Active' : 'None'}
+          <div className={`${styles.cardArrow} ${activeFilterIndex === 'user' ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <IoMdArrowDropdown />
           </div>
         </div>
         {activeFilterIndex === 'user' && (
-          <div
-            className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <select
-              value={filterValues.userFilter?.headerKey || ''}
-              onChange={(e) => handleUserFilterChange(e.target.value || '')}
-              className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+          <>
+            <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+            <div
+              className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={(e) => e.stopPropagation()}
             >
-              <option value="">No User Filter</option>
-              {userHeaders.map((header) => (
-                <option key={header.key} value={header.key}>
-                  {header.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={clearUserFilter}
-              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            >
-              Clear
-            </button>
-          </div>
+              <select
+                value={filterValues.userFilter?.headerKey || ''}
+                onChange={(e) => handleUserFilterChange(e.target.value || '')}
+                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                <option value="">No User Filter</option>
+                {userHeaders.map((header) => (
+                  <option key={header.key} value={header.key}>
+                    {header.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={clearUserFilter}
+                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              >
+                Clear
+              </button>
+            </div>
+          </>
         )}
       </div>
-      {/* Then show all other header filters */}
+      
+      {/* Then show all other header filters in the grid */}
       {visibleHeaders.length === 0 ? (
-        <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={`${styles.noCards} ${styles.gridSpan} ${isDarkTheme ? styles.darkTheme : ''}`}>
           No {filterType || 'headers'} available
         </div>
       ) : (
@@ -1430,136 +1439,143 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
           <div
             key={header.key}
             className={`${styles.configCard} ${activeFilterIndex === index ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={() => setActiveFilterIndex((prev) => (prev === index ? null : index))}
           >
-            <div className={styles.cardContent}>
-              <div className={styles.cardTitle}>{header.name}</div>
-              <div className={styles.cardDescription}>
-                {header.type === 'text' && 'Filter by text content'}
-                {header.type === 'number' && 'Filter by numeric values'}
-                {header.type === 'date' && 'Filter by date ranges'}
-                {header.type === 'dropdown' && 'Filter by selected options'}
+            <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
+              <div className={styles.cardContent}>
+                <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
+                <div className={styles.cardDescription}>
+                  {header.type === 'text' && 'Filter by text content'}
+                  {header.type === 'number' && 'Filter by numeric values'}
+                  {header.type === 'date' && 'Filter by date ranges'}
+                  {header.type === 'dropdown' && 'Filter by selected options'}
+                </div>
+                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
+                </div>
               </div>
-              <div className={styles.cardBadge}>
-                {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
+              <div className={`${styles.cardArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <IoMdArrowDropdown />
               </div>
             </div>
             {activeFilterIndex === index && (
-              <div
-                className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
-                ref={filterActionsRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {header.type === 'number' ? (
-                  numberRangeMode[header.key] ? (
+              <>
+                <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                <div
+                  className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  ref={filterActionsRef}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {header.type === 'number' ? (
+                    numberRangeMode[header.key] ? (
+                      <>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.start || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                          placeholder="From"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <span className={`${styles.separator} ${isDarkTheme ? styles.darkTheme : ''}`}>–</span>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.end || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                          placeholder="To"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <button
+                          onClick={() => toggleNumberRangeMode(header.key)}
+                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          Value
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <select
+                          value={filterValues[header.key]?.order || 'equals'}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                          className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          <option value="equals">=</option>
+                          <option value="greater">{'>'}</option>
+                          <option value="less">{'<'}</option>
+                          <option value="greaterOrEqual">≥</option>
+                          <option value="lessOrEqual">≤</option>
+                        </select>
+                        <input
+                          type="number"
+                          value={filterValues[header.key]?.value || ''}
+                          onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                          placeholder="Value"
+                          className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        />
+                        <button
+                          onClick={() => toggleNumberRangeMode(header.key)}
+                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          Range
+                        </button>
+                      </>
+                    )
+                  ) : header.type === 'date' ? (
                     <>
                       <input
-                        type="number"
+                        type="date"
                         value={filterValues[header.key]?.start || ''}
                         onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                        placeholder="From"
                         className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                       />
                       <span className={styles.separator}>–</span>
                       <input
-                        type="number"
+                        type="date"
                         value={filterValues[header.key]?.end || ''}
                         onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                        placeholder="To"
                         className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                       />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Value
-                      </button>
                     </>
+                  ) : header.type === 'dropdown' ? (
+                    <select
+                      multiple
+                      value={filterValues[header.key]?.values || []}
+                      onChange={(e) => handleDropdownChange(header.key, e)}
+                      className={`${styles.filterMultiSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      {header.options.map((option, idx) => (
+                        <option key={`${header.key}-option-${idx}`} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <>
                       <select
-                        value={filterValues[header.key]?.order || 'equals'}
-                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                        value={filterValues[header.key]?.condition || 'equals'}
+                        onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
                         className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
                       >
-                        <option value="equals">=</option>
-                        <option value="greater">{'>'}</option>
-                        <option value="less">{'<'}</option>
-                        <option value="greaterOrEqual">≥</option>
-                        <option value="lessOrEqual">≤</option>
+                        <option value="equals">Equals</option>
+                        <option value="contains">Contains</option>
+                        <option value="startsWith">Starts with</option>
+                        <option value="endsWith">Ends with</option>
                       </select>
                       <input
-                        type="number"
+                        type="text"
                         value={filterValues[header.key]?.value || ''}
                         onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
                         placeholder="Value"
                         className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                       />
-                      <button
-                        onClick={() => toggleNumberRangeMode(header.key)}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      >
-                        Range
-                      </button>
                     </>
-                  )
-                ) : header.type === 'date' ? (
-                  <>
-                    <input
-                      type="date"
-                      value={filterValues[header.key]?.start || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                    <span className={styles.separator}>–</span>
-                    <input
-                      type="date"
-                      value={filterValues[header.key]?.end || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                  </>
-                ) : header.type === 'dropdown' ? (
-                  <select
-                    multiple
-                    value={filterValues[header.key]?.values || []}
-                    onChange={(e) => handleDropdownChange(header.key, e)}
-                    className={`${styles.filterMultiSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  )}
+                  <button
+                    onClick={() => clearFilter(header.key)}
+                    className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                   >
-                    {header.options.map((option, idx) => (
-                      <option key={`${header.key}-option-${idx}`} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <>
-                    <select
-                      value={filterValues[header.key]?.condition || 'equals'}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
-                      className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      <option value="equals">Equals</option>
-                      <option value="contains">Contains</option>
-                      <option value="startsWith">Starts with</option>
-                      <option value="endsWith">Ends with</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={filterValues[header.key]?.value || ''}
-                      onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
-                      placeholder="Value"
-                      className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    />
-                  </>
-                )}
-                <button
-                  onClick={() => clearFilter(header.key)}
-                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                >
-                  Clear
-                </button>
-              </div>
+                    Clear
+                  </button>
+                </div>
+              </>
             )}
           </div>
         ))
