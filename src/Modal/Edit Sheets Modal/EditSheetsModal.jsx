@@ -5,6 +5,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
+import { IoMdList, IoMdOptions, IoMdFunnel } from 'react-icons/io';
 
 // Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
@@ -367,9 +368,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: 'Select Card Templates',
-        backButtonTitle: 'Filters',
+        backButtonTitle: step1Title,
         backButton: {
-          label: `< Filters`,
+          label: `< ${step1Title}`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -383,9 +384,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: `Filters for ${cardTypeName}`,
-        backButtonTitle: 'Filters',
+        backButtonTitle: 'Select Card Templates',
         backButton: {
-          label: `< Filters`,
+          label: `< Select Card Templates`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -678,54 +679,109 @@ const EditSheetsModal = ({
           >
             {step === 1 && (
               <>
-                <input
-                  type="text"
-                  value={sheetName}
-                  onChange={handleSheetNameChange}
-                  placeholder={isEditMode ? 'Rename sheet' : 'Sheet Name'}
-                  className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  disabled={sheetId === 'primarySheet'}
-                />
-                <div className={styles.buttonContainer}>
-                  <div
-                    onClick={() => {
-                      setNavigationDirection('forward');
-                      goToStep(2);
-                    }}
-                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    role="button"
-                    aria-label="Manage Headers"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                <div className={styles.section}>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sheet Details</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Give your sheet a name and choose what to manage.</p>
+                  <input
+                    type="text"
+                    value={sheetName}
+                    onChange={handleSheetNameChange}
+                    placeholder={isEditMode ? 'Rename sheet' : 'Sheet Name'}
+                    className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    disabled={sheetId === 'primarySheet'}
+                  />
+                </div>
+                <div className={styles.section}>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose What to Configure</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up the data types, columns, and filters for your sheet.</p>
+                  <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div
+                      onClick={() => {
+                        setNavigationDirection('forward');
+                        goToStep(6);
+                      }}
+                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      role="button"
+                      aria-label="Select Card Templates"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setNavigationDirection('forward');
+                          goToStep(6);
+                        }
+                      }}
+                    >
+                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <IoMdOptions size={28} />
+                      </div>
+                      <div className={styles.cardContent}>
+                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Data Types</h3>
+                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which card templates to include</p>
+                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {selectedCardTypes.length} selected
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      onClick={() => {
                         setNavigationDirection('forward');
                         goToStep(2);
-                      }
-                    }}
-                  >
-                    <span className={styles.navName}>Headers</span>
-                  </div>
-                  <div
-                    onClick={() => {
-                      setNavigationDirection('forward');
-                      goToStep(5);
-                    }}
-                    className={`${styles.navItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    role="button"
-                    aria-label="Manage Filters"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                      }}
+                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      role="button"
+                      aria-label="Manage Headers"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setNavigationDirection('forward');
+                          goToStep(2);
+                        }
+                      }}
+                    >
+                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <IoMdList size={28} />
+                      </div>
+                      <div className={styles.cardContent}>
+                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns</h3>
+                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up and organize your data columns</p>
+                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {currentHeaders.length} configured
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      onClick={() => {
                         setNavigationDirection('forward');
                         goToStep(5);
-                      }
-                    }}
-                  >
-                    <span className={styles.navName}>Filters</span>
+                      }}
+                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      role="button"
+                      aria-label="Manage Filters"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setNavigationDirection('forward');
+                          goToStep(5);
+                        }
+                      }}
+                    >
+                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <IoMdFunnel size={28} />
+                      </div>
+                      <div className={styles.cardContent}>
+                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h3>
+                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Filter and refine your data display</p>
+                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          Configure
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {isEditMode && sheetId !== 'primarySheet' && (
-                  <div className={styles.deleteButtonContainer}>
+                  <div className={styles.section}>
+                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Danger Zone</h2>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Permanently delete this sheet and all its data.</p>
                     <button
                       onClick={() => {
                         if (
@@ -747,7 +803,9 @@ const EditSheetsModal = ({
               </>
             )}
             {step === 2 && (
-              <div className={styles.buttonContainer}>
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Manage Your Columns</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Add columns to your sheet. Drag to reorder, pin important ones, and toggle visibility.</p>
                 <button
                   className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                   type="button"
@@ -762,7 +820,7 @@ const EditSheetsModal = ({
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentHeaders.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No columns added yet.
+                      No columns added yet. Tap "Add column" to get started.
                     </div>
                   )}
                   {currentHeaders.map((header, index) => {
@@ -842,84 +900,85 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 3 && (
-              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {cardTemplates.length === 0 ? (
-                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    No templates available
-                  </div>
-                ) : (
-                  cardTemplates.map((template) => (
-                    <div
-                      key={template.typeOfCards}
-                      className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => handleTemplateClick(template.typeOfCards)}
-                    >
-                      <div className={styles.cardTypeRow}>
-                        <span className={styles.cardTypeName}>
-                          {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-            {step === 4 && (
-              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {(() => {
-                  const selectedTemplate = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
-                  const templateHeaders = selectedTemplate?.headers
-                    .filter((header) => header.isUsed !== false)
-                    .map((header) => ({
-                      key: header.key,
-                      name: header.name,
-                      type: header.type,
-                      options: header.options || [],
-                    })) || [];
-                  return templateHeaders.length === 0 ? (
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose a Template</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select a card template to add columns from. Templates define the structure of your data.</p>
+                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {cardTemplates.length === 0 ? (
                     <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No headers available
+                      No templates available. Create templates first in the main app.
                     </div>
                   ) : (
-                    templateHeaders.map((header) => (
+                    cardTemplates.map((template) => (
                       <div
-                        key={header.key}
+                        key={template.typeOfCards}
                         className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleHeaderSelection(header)}
+                        onClick={() => handleTemplateClick(template.typeOfCards)}
                       >
                         <div className={styles.cardTypeRow}>
-                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {currentHeaders.some((h) => h.key === header.key) ? (
-                              <FaRegCheckCircle size={18} className={styles.checked} />
-                            ) : (
-                              <FaRegCircle size={18} />
-                            )}
-                          </span>
                           <span className={styles.cardTypeName}>
-                            {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
                           </span>
                         </div>
                       </div>
                     ))
-                  );
-                })()}
+                  )}
+                </div>
+              </div>
+            )}
+            {step === 4 && (
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Pick Your Columns</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which columns from this template to include in your sheet. You can reorder them later.</p>
+                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {(() => {
+                    const selectedTemplate = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
+                    const templateHeaders = selectedTemplate?.headers
+                      .filter((header) => header.isUsed !== false)
+                      .map((header) => ({
+                        key: header.key,
+                        name: header.name,
+                        type: header.type,
+                        options: header.options || [],
+                      })) || [];
+                    return templateHeaders.length === 0 ? (
+                      <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        No headers available for this template.
+                      </div>
+                    ) : (
+                      templateHeaders.map((header) => (
+                        <div
+                          key={header.key}
+                          className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          onClick={() => toggleHeaderSelection(header)}
+                        >
+                          <div className={styles.cardTypeRow}>
+                            <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              {currentHeaders.some((h) => h.key === header.key) ? (
+                                <FaRegCheckCircle size={18} className={styles.checked} />
+                              ) : (
+                                <FaRegCircle size={18} />
+                              )}
+                            </span>
+                            <span className={styles.cardTypeName}>
+                              {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    );
+                  })()}
+                </div>
               </div>
             )}
             {step === 5 && (
-              <div className={styles.buttonContainer}>
-                <button
-                  onClick={handleAddCardTemplateClick}
-                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  type="button"
-                  aria-label="Add Card Template"
-                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
-                >
-                  Add card template
-                </button>
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure Data Filters</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected card templates. To add or remove templates, go back to the Card Templates section.</p>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {selectedCardTypes.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No card templates selected.
+                      No card templates selected. Go back to Card Templates to add some first.
                     </div>
                   )}
                   {selectedCardTypes.map((typeOfCards) => {
@@ -953,50 +1012,65 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 6 && (
-              <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {cardTemplates.length === 0 ? (
-                  <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    No card templates available
-                  </div>
-                ) : (
-                  cardTemplates.map((template) => (
-                    <div
-                      key={template.typeOfCards}
-                      className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => toggleCardTypeSelection(template.typeOfCards)}
-                    >
-                      <div className={styles.cardTypeRow}>
-                        <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {selectedCardTypes.includes(template.typeOfCards) ? (
-                            <FaRegCheckCircle size={18} className={styles.checked} />
-                          ) : (
-                            <FaRegCircle size={18} />
-                          )}
-                        </span>
-                        <span className={styles.cardTypeName}>
-                          {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
-                        </span>
-                      </div>
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which card types to include in this sheet. Selected templates will be available for filtering and display.</p>
+                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {cardTemplates.length === 0 ? (
+                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No templates available. Create templates first in the main app.
                     </div>
-                  ))
-                )}
+                  ) : (
+                    cardTemplates.map((template) => (
+                      <div
+                        key={template.typeOfCards}
+                        className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => toggleCardTypeSelection(template.typeOfCards)}
+                      >
+                        <div className={styles.cardTypeRow}>
+                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {selectedCardTypes.includes(template.typeOfCards) ? (
+                              <FaRegCheckCircle size={18} className={styles.checked} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
+                          </span>
+                          <span className={styles.cardTypeName}>
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
             {step === 7 && (
               selectedCardTypeForFilter ? (
-                <div className={styles.sortByFiltersContainer}>
-                  <div className={styles.inputContainer}>
-                    <input
-                      type="number"
-                      value={cardsPerSearch}
-                      onChange={handleCardsPerSearchChange}
-                      placeholder="Enter cards fetch limit"
-                      className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      min="1"
-                      step="1"
-                      aria-label="Cards Fetch Limit"
-                    />
+                <div className={styles.section}>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Set Up Filters</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up filters to narrow down the data shown in this sheet. You can filter by text, numbers, dates, and more.</p>
+                  
+                  {/* Cards per search - moved to top and made more prominent */}
+                  <div className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.cardTitle}>Cards per Search</div>
+                      <div className={styles.cardDescription}>Limit the number of cards displayed per search to improve performance</div>
+                      <div className={styles.inputContainer}>
+                        <input
+                          type="number"
+                          value={cardsPerSearch}
+                          onChange={handleCardsPerSearchChange}
+                          placeholder="Enter limit (optional)"
+                          className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          min="1"
+                          step="1"
+                          aria-label="Cards Fetch Limit"
+                        />
+                      </div>
+                    </div>
                   </div>
+                  
                   <div className={`${styles.filterListSection}`}>
                     <CardTypeFilterLikeFilterModal
                       cardType={selectedCardTypeForFilter}
@@ -1042,18 +1116,22 @@ const EditSheetsModal = ({
               )
             )}
             {step === 8 && (
-              <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {selectedCardTypeForFilter && (
-                  <CardTypeFilterLikeFilterModal
-                    cardType={selectedCardTypeForFilter}
-                    headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
-                    tempData={tempData}
-                    setTempData={setTempData}
-                    isDarkTheme={isDarkTheme}
-                    showOnlyUserFilter={filterType === 'user'}
-                    filterType={filterType}
-                  />
-                )}
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Customize Filter</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure a specific filter for this card type. Choose the field and set your criteria.</p>
+                <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {selectedCardTypeForFilter && (
+                    <CardTypeFilterLikeFilterModal
+                      cardType={selectedCardTypeForFilter}
+                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                      tempData={tempData}
+                      setTempData={setTempData}
+                      isDarkTheme={isDarkTheme}
+                      showOnlyUserFilter={filterType === 'user'}
+                      filterType={filterType}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1299,27 +1377,26 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
     <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {/* Always show Restrict by User filter at the top */}
       <div
-        className={`${styles.filterItem} ${isDarkTheme ? styles.darkTheme : ''} ${styles.singleHeader}`}
+        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
         onClick={() => setActiveFilterIndex('user')}
       >
-        <div className={styles.filterRow}>
-          <div className={styles.filterNameType}>
-            <span>Restrict by User</span>
+        <div className={styles.cardContent}>
+          <div className={styles.cardTitle}>Restrict by User</div>
+          <div className={styles.cardDescription}>
+            {filterValues.userFilter?.headerKey
+              ? `${
+                  userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
+                  filterValues.userFilter.headerKey
+                } = Current User`
+              : 'Filter cards by user assignment'}
           </div>
-          <div className={styles.primaryButtons}>
-            <span className={styles.filterSummary}>
-              {filterValues.userFilter?.headerKey
-                ? `${
-                    userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
-                    filterValues.userFilter.headerKey
-                  } = Current User`
-                : 'None'}
-            </span>
+          <div className={styles.cardBadge}>
+            {filterValues.userFilter?.headerKey ? 'Active' : 'None'}
           </div>
         </div>
         {activeFilterIndex === 'user' && (
           <div
-            className={`${styles.filterActions} ${styles.singleHeader} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
             <select
@@ -1352,20 +1429,24 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
         visibleHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.configCard} ${activeFilterIndex === index ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={() => setActiveFilterIndex((prev) => (prev === index ? null : index))}
           >
-            <div className={styles.filterRow}>
-              <div className={styles.filterNameType}>
-                <span>{header.name}</span>
+            <div className={styles.cardContent}>
+              <div className={styles.cardTitle}>{header.name}</div>
+              <div className={styles.cardDescription}>
+                {header.type === 'text' && 'Filter by text content'}
+                {header.type === 'number' && 'Filter by numeric values'}
+                {header.type === 'date' && 'Filter by date ranges'}
+                {header.type === 'dropdown' && 'Filter by selected options'}
               </div>
-              <div className={styles.primaryButtons}>
-                <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
+              <div className={styles.cardBadge}>
+                {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
               </div>
             </div>
             {activeFilterIndex === index && (
               <div
-                className={`${styles.filterActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
                 ref={filterActionsRef}
                 onClick={(e) => e.stopPropagation()}
               >
