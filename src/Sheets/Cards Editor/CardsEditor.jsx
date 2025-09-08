@@ -26,7 +26,7 @@ const formatFieldName = (key) => {
 const formatDateForInput = (value) => {
   if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
     const date = value.toDate ? value.toDate() : new Date(value.seconds * 1000);
-    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+    return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD in local timezone
   }
   return value || '';
 };

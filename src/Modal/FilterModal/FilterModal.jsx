@@ -278,9 +278,16 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         {/* Sort For Button - styled and clickable as a whole */}
         <div
           className={`${styles.filterItem} ${styles.sortForRow} ${showSortFor ? styles.activeItem : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={() => setShowSortFor((prev) => !prev)}
         >
-          <div className={styles.filterRow} onClick={() => setShowSortFor((prev) => !prev)}>
-            <div className={styles.filterNameType}>
+          <div className={styles.filterRow}>
+            <div 
+              className={styles.filterNameType}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSortFor((prev) => !prev);
+              }}
+            >
               <FaSort
                 style={{
                   marginRight: '8px',
@@ -290,7 +297,13 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
               />
               <span>Sort For</span>
             </div>
-            <div className={styles.primaryButtons}>
+            <div 
+              className={styles.primaryButtons}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSortFor((prev) => !prev);
+              }}
+            >
               <span className={styles.filterSummary}>
                 {(() => {
                   if (!sortFor.headerKey || !sortFor.order) return 'None';
@@ -350,9 +363,16 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             className={`${styles.filterItem} ${activeFilterIndex === index ? styles.activeItem : ''} ${
               isDarkTheme ? styles.darkTheme : ''
             }`}
+            onClick={() => toggleFilter(index)}
           >
-            <div className={styles.filterRow} onClick={() => toggleFilter(index)}>
-              <div className={styles.filterNameType}>
+            <div className={styles.filterRow}>
+              <div 
+                className={styles.filterNameType}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFilter(index);
+                }}
+              >
                 <FaFilter
                   style={{
                     marginRight: '8px',
@@ -363,7 +383,13 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 />
                 <span>{header.name}</span>
               </div>
-              <div className={styles.primaryButtons}>
+              <div 
+                className={styles.primaryButtons}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFilter(index);
+                }}
+              >
                 <span className={styles.filterSummary}>{getFilterSummary(header)}</span>
                 {activeFilterIndex === index ? <FaChevronDown style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} /> : <FaChevronRight style={{ opacity: 0.6, color: !isFilterEmpty(filterValues[header.key] || {}) ? '#007aff' : (isDarkTheme ? '#ffffff' : '#1d1d1f') }} />}
               </div>
