@@ -395,6 +395,7 @@
   background: linear-gradient(135deg, rgba(0, 122, 255, 0.02), transparent);
   border-radius: 12px;
   pointer-events: none;
+  z-index: -1;
 }
 
 .sortForRow:hover {
@@ -412,6 +413,7 @@
 
 .sortForRow.darkTheme::before {
   background: linear-gradient(135deg, rgba(10, 132, 255, 0.05), transparent);
+  z-index: -1;
 }
 
 .sortForRow.darkTheme:hover {

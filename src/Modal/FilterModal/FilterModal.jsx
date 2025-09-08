@@ -316,7 +316,8 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             </div>
           </div>
           {showSortFor && (
-            <div className={`${styles.sortForDropdowns} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <div className={`${styles.sortForDropdowns} ${isDarkTheme ? styles.darkTheme : ''}`}
+                 onClick={(e) => e.stopPropagation()}>
               <select
                 value={sortFor.headerKey}
                 onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
