@@ -1,67 +1,82 @@
 .bodyRow {
   display: flex;
-  background: rgba(245, 245, 247, 0.9);
-  border-radius: 12px;
-  transition: all 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   min-width: 100%;
   width: max-content;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
   margin: 8px 0px;
   cursor: pointer;
-  animation: rowAppear 0.3s ease-out forwards;
+  animation: rowAppear 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   position: relative;
   left: 1em;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .bodyRow.darkTheme {
-  background: rgb(44, 44, 46);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background: rgba(44, 44, 46, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .bodyRow:hover {
-  background: rgba(245, 245, 247, 0.9);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px) scale(1.01);
+  border-color: rgba(0, 122, 255, 0.08);
 }
 
 .bodyRow.darkTheme:hover {
-  background: rgb(58, 58, 60);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  transform: translateY(-1px);
+  background: rgba(58, 58, 60, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15);
+  border-color: rgba(10, 132, 255, 0.12);
 }
 
 .addNewRow {
-  background: rgba(0, 122, 255, 0.1);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.15) 100%);
   color: #007aff;
   font-weight: 600;
+  border: 2px solid rgba(0, 122, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.08);
 }
 
 .addNewRow.darkTheme {
-  background: rgba(10, 132, 255, 0.2);
-  color: #0A84FF;
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(10, 132, 255, 0.2) 100%);
+  color: #0a84ff;
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.12);
 }
 
 .addNewRow:hover {
-  background: rgba(0, 122, 255, 0.2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.25) 100%);
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15), 0 8px 32px rgba(0, 122, 255, 0.08);
+  transform: translateY(-2px) scale(1.01);
 }
 
 .addNewRow.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.3);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.25) 0%, rgba(10, 132, 255, 0.3) 100%);
+  border-color: rgba(10, 132, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.2), 0 8px 32px rgba(10, 132, 255, 0.12);
 }
 
 .bodyCell {
-  padding: 14px 12px;
+  padding: 16px 14px;
   width: 150px;
   text-align: center;
-  font-size: 13px;
-  font-weight: 550;
+  font-size: 14px;
+  font-weight: 500;
   color: #1d1d1f;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.3s ease, width 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.008em;
+  line-height: 1.2;
 }
 
 .bodyCell.darkTheme {
@@ -71,7 +86,7 @@
 
 .bodyCell.selectMode {
   width: 18px;
-  padding: 12px;
+  padding: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,14 +107,14 @@
 .selectButton {
   border: none;
   cursor: pointer;
-  transition: transform 0.1s ease, color 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #007aff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 500;
   background: transparent;
-  border-radius: 10px;
-  padding: 0;
+  border-radius: 12px;
+  padding: 4px 8px;
   text-align: center;
   width: 100%;
 }
@@ -109,19 +124,30 @@
 }
 
 .selectButton:hover {
+  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.05);
+  color: #007aff;
+}
+
+.selectButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.15);
+  color: #0a84ff;
 }
 
 .addCell {
   width: 150px;
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #007aff;
-  transition: color 0.3s ease, transform 0.1s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.008em;
+  padding: 4px 8px;
+  border-radius: 12px;
 }
 
 .addCell.darkTheme {
@@ -129,89 +155,105 @@
 }
 
 .addCell:hover {
+  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.05);
+  color: #007aff;
 }
 
 .addCell.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.15);
   color: #0a84ff;
 }
 
 .selectIcon {
-  color: #6e6e73;
+  color: #86868b;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.1s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 6px;
+  border-radius: 8px;
 }
 
 .selectIcon.darkTheme {
-  color: #6e6e73;
+  color: #98989d;
 }
 
 .selectIcon:hover {
   color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
   transform: scale(1.1);
 }
 
 .selectIcon.darkTheme:hover {
   color: #0a84ff;
+  background: rgba(10, 132, 255, 0.15);
 }
 
 .selectIcon.selected {
   color: #007aff;
+  background: rgba(0, 122, 255, 0.15);
 }
 
 .selectIcon.darkTheme.selected {
   color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .selectedRow {
-  background: rgba(0, 122, 255, 0.25);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 122, 255, 0.5);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.12), 0 8px 32px rgba(0, 122, 255, 0.06);
+  border: 2px solid rgba(0, 122, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .selectedRow.darkTheme {
-  background: rgba(10, 132, 255, 0.35);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(10, 132, 255, 0.7);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.18) 100%);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.08);
+  border: 2px solid rgba(10, 132, 255, 0.3);
 }
 
 .selectedRow:hover {
-  background: rgba(0, 122, 255, 0.35);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(0, 122, 255, 0.18) 100%);
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.18), 0 12px 40px rgba(0, 122, 255, 0.1);
+  border-color: rgba(0, 122, 255, 0.3);
 }
 
 .selectedRow.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.45);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18) 0%, rgba(10, 132, 255, 0.24) 100%);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.2), 0 12px 40px rgba(10, 132, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.4);
 }
 
 @media (max-width: 1024px) {
   .bodyCell {
     width: 120px;
-    font-size: 13px;
-    font-weight: 550;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 12px;
   }
 
   .bodyCell.selectMode {
     width: 18px;
-    padding: 12px;
+    padding: 14px;
   }
 
   .selectCell.selectMode {
     width: 18px;
-    padding: 12px;
+    padding: 14px;
   }
 
   .addCell {
     width: 120px;
+    font-size: 14px;
   }
 }
 
 @keyframes rowAppear {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
