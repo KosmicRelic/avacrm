@@ -2,26 +2,28 @@
   position: fixed;
   top: 0;
   width: 100%;
-  background: rgba(243, 242, 248, 0.7);
-  backdrop-filter: blur(4px);
+  background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   z-index: 1000;
-  padding: 0 16px;
+  padding: 0 20px;
   box-sizing: border-box;
   overflow: visible;
-  transition: background 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .headerContainer.darkTheme {
-  background: rgba(0, 0, 0, 0.7);
+  background: transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .headerTop {
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
   width: 100%;
-  height: 56px;
+  height: 60px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .logoContainer {
@@ -33,14 +35,15 @@
 
 .avaTitle {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
-  background: linear-gradient(to right, #1E3A8A, #3B82F6, #8B5CF6, #9333EA);
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: 0.4em;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .themeContainer {
@@ -49,20 +52,55 @@
 
 .themeButton {
   color: #000000;
-  background: none;
-  border: none;
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
   cursor: pointer;
-  transition: color 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.themeButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.themeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.themeButton:hover::before {
+  left: 100%;
+}
+
+.themeButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .themeButton.darkTheme {
   color: #0a84ff;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.themeButton:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
+.themeButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .themeDropdown {
@@ -131,20 +169,55 @@
 
 .menuButton {
   color: #000000;
-  background: none;
-  border: none;
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
   cursor: pointer;
-  transition: color 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.menuButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.menuButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.menuButton:hover::before {
+  left: 100%;
+}
+
+.menuButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .menuButton.darkTheme {
   color: #007AFF;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.menuButton:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
+.menuButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .menuDropdown {
@@ -184,21 +257,63 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 16px;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   color: #6e6e73;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease, color 0.3s ease, background 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: fit-content;
   box-sizing: border-box;
   white-space: nowrap;
   position: relative;
   height: 36px;
   line-height: 1;
+  overflow: hidden;
+}
+
+.navButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.navButton:hover::before {
+  left: 100%;
+}
+
+.navButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.navButton.darkTheme {
+  color: #8e8e93;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.navButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .navButton.darkTheme {
@@ -212,71 +327,126 @@
 
 .activeDashboard {
   color: #5856d6;
-  background: rgba(88, 86, 214, 0.12);
+  background: rgba(88, 86, 214, 0.15);
+  border-color: rgba(88, 86, 214, 0.3);
+  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.2);
 }
 
 .activeDashboard.darkTheme {
   color: #5856d6;
-  background: rgba(88, 86, 214, 0.2);
+  background: rgba(88, 86, 214, 0.25);
+  border-color: rgba(88, 86, 214, 0.4);
+  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
 }
 
 .activeSheets {
   color: #007aff;
-  background: rgba(0, 122, 255, 0.12);
+  background: rgba(0, 122, 255, 0.15);
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
 }
 
 .activeSheets.darkTheme {
   color: #007aff;
-  background: rgba(0, 122, 255, 0.2);
+  background: rgba(0, 122, 255, 0.25);
+  border-color: rgba(0, 122, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
 }
 
 .activeFinancials {
   color: #34c759;
-  background: rgba(52, 199, 89, 0.12);
+  background: rgba(52, 199, 89, 0.15);
+  border-color: rgba(52, 199, 89, 0.3);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
 }
 
 .activeFinancials.darkTheme {
   color: #34c759;
-  background: rgba(52, 199, 89, 0.2);
+  background: rgba(52, 199, 89, 0.25);
+  border-color: rgba(52, 199, 89, 0.4);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
 }
 
 .activeActions {
   color: #FF2D55;
-  background: rgba(255, 45, 85, 0.12);
+  background: rgba(255, 45, 85, 0.15);
+  border-color: rgba(255, 45, 85, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 45, 85, 0.2);
 }
 
 .activeActions.darkTheme {
   color: #FF2D55;
-  background: rgba(255, 45, 85, 0.2);
+  background: rgba(255, 45, 85, 0.25);
+  border-color: rgba(255, 45, 85, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 45, 85, 0.3);
 }
 
 .activeMetrics {
   color: #AF52DE;
-  background: rgba(175, 82, 222, 0.12);
+  background: rgba(175, 82, 222, 0.15);
+  border-color: rgba(175, 82, 222, 0.3);
+  box-shadow: 0 4px 12px rgba(175, 82, 222, 0.2);
 }
 
 .activeMetrics.darkTheme {
   color: #AF52DE;
-  background: rgba(175, 82, 222, 0.2);
+  background: rgba(175, 82, 222, 0.25);
+  border-color: rgba(175, 82, 222, 0.4);
+  box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3);
 }
 
 .profileButton {
   color: #007aff;
-  background: none;
-  border: none;
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease, color 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.profileButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.profileButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.profileButton:hover::before {
+  left: 100%;
+}
+
+.profileButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .profileButton.darkTheme {
   color: #0a84ff;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.profileButton:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
+.profileButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 @keyframes slideDown {
@@ -316,15 +486,18 @@
     height: auto;
   }
   .navButton:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   }
   .navButton.darkTheme:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 }
 
 @media (min-width: 1024px) {
- Old Guard {
   .headerContainer {
     height: 64px;
     display: flex;
@@ -340,11 +513,15 @@
     margin-right: 20px;
   }
   .navButton:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     color: #1d1d1f;
   }
   .navButton.darkTheme:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
     color: #ffffff;
   }
   .menuButton,
@@ -373,8 +550,6 @@
 .menuButton {
   padding-right: 10px;
   border-radius: 12px;
-}
-
 }
 
 @media (max-width: 1024px) {
