@@ -124,7 +124,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+    dragItemRef.current = e.target.closest(`.${styles.configCard}`);
     e.dataTransfer.effectAllowed = "move";
     dragItemRef.current?.classList.add(styles.dragging);
   }, []);
@@ -158,7 +158,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
-      dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+      dragItemRef.current = e.target.closest(`.${styles.configCard}`);
       dragItemRef.current?.classList.add(styles.dragging);
     }
   }, []);
@@ -169,7 +169,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       e.preventDefault();
 
       const touchY = e.touches[0].clientY;
-      const itemHeight = 48;
+      const itemHeight = 64;
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
       const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedItems.length - 1));
@@ -208,7 +208,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
 
   const handleFolderSheetDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+    dragItemRef.current = e.target.closest(`.${styles.configCard}`);
     e.dataTransfer.effectAllowed = "move";
     dragItemRef.current?.classList.add(styles.dragging);
   }, []);
@@ -243,7 +243,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
-      dragItemRef.current = e.target.closest(`.${styles.sheetItem}`);
+      dragItemRef.current = e.target.closest(`.${styles.configCard}`);
       dragItemRef.current?.classList.add(styles.dragging);
     }
   }, []);
@@ -254,7 +254,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       e.preventDefault();
 
       const touchY = e.touches[0].clientY;
-      const itemHeight = 48;
+      const itemHeight = 64;
       const delta = Math.round((touchY - touchStartY) / itemHeight);
 
       const newIndex = Math.max(0, Math.min(touchTargetIndex + delta, orderedFolderSheets.length - 1));
@@ -314,9 +314,9 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                   >
                     <div className={styles.cardIcon}>
                       {item.folderName ? (
-                        <FaFolder size={20} />
+                        <FaFolder size={16} />
                       ) : (
-                        <BiSolidSpreadsheet size={20} />
+                        <BiSolidSpreadsheet size={16} />
                       )}
                     </div>
                     <div className={styles.cardContent}>
@@ -338,9 +338,9 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                       onClick={item.folderName ? () => handleFolderClick(item.folderName) : undefined}
                     >
                       {item.folderName ? (
-                        <IoChevronForward size={16} />
+                        <IoChevronForward size={12} />
                       ) : (
-                        <FaGripVertical size={14} />
+                        <FaGripVertical size={10} />
                       )}
                     </div>
                   </div>
@@ -369,7 +369,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                       onDragOver={(e) => handleFolderSheetDragOver(e, index)}
                     >
                       <div className={styles.cardIcon}>
-                        <BiSolidSpreadsheet size={20} />
+                        <BiSolidSpreadsheet size={16} />
                       </div>
                       <div className={styles.cardContent}>
                         <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -388,7 +388,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                         onTouchMove={handleFolderSheetTouchMove}
                         onTouchEnd={handleFolderSheetTouchEnd}
                       >
-                        <FaGripVertical size={14} />
+                        <FaGripVertical size={10} />
                       </div>
                     </div>
                   ))

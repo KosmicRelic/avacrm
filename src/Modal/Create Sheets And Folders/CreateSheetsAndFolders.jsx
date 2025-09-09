@@ -146,16 +146,6 @@ const CreateSheetsAndFolders = ({
       <div className={`${styles.scrollContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {error && <div className={`${styles.error} ${isDarkTheme ? styles.darkTheme : ""}`}>{error}</div>}
 
-        {/* Section Title */}
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            Create New Content
-          </h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            Choose what you'd like to create and configure the details below.
-          </p>
-        </div>
-
         {/* Toggle Container */}
         <div className={`${styles.toggleContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <div
@@ -164,7 +154,8 @@ const CreateSheetsAndFolders = ({
             }`}
             onClick={() => setAddType("sheet")}
           >
-            Sheets
+            <FaFileAlt size={16} />
+            New Sheet
           </div>
           <div
             className={`${styles.tabButton} ${addType === "folder" ? styles.activeTab : ""} ${
@@ -172,20 +163,14 @@ const CreateSheetsAndFolders = ({
             }`}
             onClick={() => setAddType("folder")}
           >
-            Folders
+            <FaFolder size={16} />
+            New Folder
           </div>
         </div>
 
         <div className={`${styles.contentContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {addType === "sheet" && (
             <div className={styles.section}>
-              <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                New Sheet
-              </h3>
-              <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                Create a new sheet to organize your data and metrics.
-              </p>
-
               <div className={styles.inputWrapper}>
                 <input
                   key="sheet-input"
@@ -216,13 +201,6 @@ const CreateSheetsAndFolders = ({
           {addType === "folder" && (
             <>
               <div className={styles.section}>
-                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  New Folder
-                </h3>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Create a folder to organize multiple sheets together.
-                </p>
-
                 <div className={styles.inputWrapper}>
                   <input
                     key="folder-input"
@@ -249,59 +227,35 @@ const CreateSheetsAndFolders = ({
                 </div>
               </div>
 
-              <div className={styles.section}>
-                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Select Sheets
-                </h3>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  Choose which sheets to include in this folder.
-                </p>
+              {availableSheets.length > 0 && (
+                <div className={styles.section}>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search sheets to add..."
+                      className={`${styles.searchBar} ${styles.small} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                  </div>
 
-                <div className={styles.inputWrapper}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search Sheets"
-                    className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  />
-                </div>
-
-                <div className={styles.configGrid}>
-                  {availableSheets.length > 0 ? (
-                    availableSheets.map((sheetName) => (
+                  <div className={`${styles.sheetSelection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    {availableSheets.map((sheetName) => (
                       <div
                         key={`sheet-${sheetName}`}
-                        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        className={`${styles.sheetOption} ${selectedSheets.includes(sheetName) ? styles.selected : ""} ${isDarkTheme ? styles.darkTheme : ""}`}
                         onClick={() => toggleSheetSelection(sheetName)}
                       >
-                        <div className={styles.cardIcon}>
-                          <FaFileAlt size={20} />
-                        </div>
-                        <div className={styles.cardContent}>
-                          <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {sheetName}
-                          </h4>
-                          <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            Sheet available for organization
-                          </p>
-                        </div>
-                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {selectedSheets.includes(sheetName) ? (
-                            <FaRegCheckCircle size={20} />
-                          ) : (
-                            <FaRegCircle size={20} />
-                          )}
-                        </div>
+                        <FaFileAlt size={14} />
+                        <span className={styles.sheetName}>{sheetName}</span>
+                        {selectedSheets.includes(sheetName) && (
+                          <FaRegCheckCircle size={14} className={styles.checkIcon} />
+                        )}
                       </div>
-                    ))
-                  ) : (
-                    <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      No sheets available to add.
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>

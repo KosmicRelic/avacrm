@@ -4,7 +4,7 @@ import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
-import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
+import { MdFilterAlt, MdFilterAltOff, MdDragIndicator } from 'react-icons/md';
 import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
 import { IoChevronForward } from 'react-icons/io5';
 
@@ -885,13 +885,11 @@ const EditSheetsModal = ({
                               {header.visible ? <FaEye /> : <FaEyeSlash />}
                             </button>
                             <div className={styles.buttonSpacer}></div>
-                            <span
+                            <MdDragIndicator
+                              size={16}
                               className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ''}`}
                               style={{ pointerEvents: 'auto', opacity: 1 }}
-                              tabIndex={-1}
-                            >
-                              {'☰'}
-                            </span>
+                            />
                           </div>
                         </div>
                       </div>

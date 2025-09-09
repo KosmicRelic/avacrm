@@ -32,7 +32,7 @@
 }
 
 .tableContainer.darkTheme {
-  background: rgba(28, 28, 30, 0.8);
+  background: rgba(44, 44, 46, 0.9);
   border-color: rgba(255, 255, 255, 0.06);
 }
 
@@ -572,7 +572,6 @@
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius: 0 0 24px 24px;
 }
 
 .tableWrapper.darkTheme {
