@@ -4,7 +4,7 @@ import styles from "./ReOrderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { IoArrowBack, IoChevronForward } from "react-icons/io5";
-import { FaFolder } from "react-icons/fa";
+import { FaFolder, FaGripVertical } from "react-icons/fa";
 import { BiSolidSpreadsheet } from "react-icons/bi";
 
 const ReOrderModal = ({ sheets, tempData, setTempData }) => {
@@ -283,11 +283,9 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
   }, []);
 
   return (
-    <div
-      className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""} ${
-        navigationDirection ? styles[navigationDirection] : ""
-      }`}
-    >
+    <div className={`${styles.sheetList} ${isDarkTheme ? styles.darkTheme : ""} ${
+      navigationDirection ? styles[navigationDirection] : ""
+    }`}>
       {[1, 2].map((step) => (
         <div
           key={step}
@@ -296,65 +294,93 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
           }`}
           style={{ display: step !== currentStep ? "none" : "block" }}
         >
-          {step === 1 &&
-            orderedItems.map((item, index) => (
-              <div
-                key={item.id}
-                className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
-                  isDarkTheme ? styles.darkTheme : ""
-                }`}
-                onDragOver={(e) => handleDragOver(e, index)}
-              >
-                <div
-                  className={`${styles.sheetRow} ${item.folderName ? styles.folderRow : ""}`}
-                  onClick={() => item.folderName && handleFolderClick(item.folderName)}
-                >
-                  <span className={styles.sheetName}>
-                    {item.folderName ? (
-                      <>
-                        <FaFolder className={styles.folderIcon} />
-                        {item.displayName}
-                        <IoChevronForward className={styles.folderChevron} />
-                      </>
-                    ) : (
-                      <>
-                        <BiSolidSpreadsheet className={styles.folderIcon} />
-                        {item.displayName}
-                      </>
-                    )}
-                  </span>
-                  <span
-                    className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragEnd={handleDragEnd}
-                    onTouchStart={(e) => handleTouchStart(e, index)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    ☰
-                  </span>
-                </div>
-              </div>
-            ))}
-          {step === 2 && selectedFolder && (
-            <div className={styles.folderSheetsContainer}>
-              {orderedFolderSheets.length > 0 ? (
-                orderedFolderSheets.map((sheet, index) => (
+          {step === 1 && (
+            <div className={styles.section}>
+              <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Reorder Sheets & Folders
+              </h2>
+              <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Drag and drop to reorder your sheets and folders. Tap folders to reorder their contents.
+              </p>
+
+              <div className={styles.configGrid}>
+                {orderedItems.map((item, index) => (
                   <div
-                    key={sheet.sheetName || `sheet-${index}`}
-                    className={`${styles.sheetItem} ${draggedIndex === index ? styles.dragging : ""} ${
+                    key={item.id}
+                    className={`${styles.configCard} ${draggedIndex === index ? styles.dragging : ""} ${
                       isDarkTheme ? styles.darkTheme : ""
                     }`}
-                    onDragOver={(e) => handleFolderSheetDragOver(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
                   >
-                    <div className={styles.sheetRow}>
-                      <span className={styles.sheetName}>
-                        <BiSolidSpreadsheet className={styles.folderIcon} />
-                        {sheet.displayName || sheet.sheetName}
-                      </span>
-                      <span
-                        className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    <div className={styles.cardIcon}>
+                      {item.folderName ? (
+                        <FaFolder size={20} />
+                      ) : (
+                        <BiSolidSpreadsheet size={20} />
+                      )}
+                    </div>
+                    <div className={styles.cardContent}>
+                      <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        {item.displayName}
+                      </h4>
+                      <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        {item.folderName ? "Contains multiple sheets" : "Individual sheet"}
+                      </p>
+                    </div>
+                    <div
+                      className={`${styles.dragHandle} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onClick={item.folderName ? () => handleFolderClick(item.folderName) : undefined}
+                    >
+                      {item.folderName ? (
+                        <IoChevronForward size={16} />
+                      ) : (
+                        <FaGripVertical size={14} />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && selectedFolder && (
+            <div className={styles.section}>
+              <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Reorder {selectedFolder}
+              </h2>
+              <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Drag and drop to reorder the sheets within this folder.
+              </p>
+
+              <div className={styles.configGrid}>
+                {orderedFolderSheets.length > 0 ? (
+                  orderedFolderSheets.map((sheet, index) => (
+                    <div
+                      key={sheet.sheetName || `sheet-${index}`}
+                      className={`${styles.configCard} ${draggedIndex === index ? styles.dragging : ""} ${
+                        isDarkTheme ? styles.darkTheme : ""
+                      }`}
+                      onDragOver={(e) => handleFolderSheetDragOver(e, index)}
+                    >
+                      <div className={styles.cardIcon}>
+                        <BiSolidSpreadsheet size={20} />
+                      </div>
+                      <div className={styles.cardContent}>
+                        <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          {sheet.displayName || sheet.sheetName}
+                        </h4>
+                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          Sheet in {selectedFolder}
+                        </p>
+                      </div>
+                      <div
+                        className={`${styles.dragHandle} ${isDarkTheme ? styles.darkTheme : ""}`}
                         draggable
                         onDragStart={(e) => handleFolderSheetDragStart(e, index)}
                         onDragEnd={handleFolderSheetDragEnd}
@@ -362,14 +388,16 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                         onTouchMove={handleFolderSheetTouchMove}
                         onTouchEnd={handleFolderSheetTouchEnd}
                       >
-                        ☰
-                      </span>
+                        <FaGripVertical size={14} />
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className={`${styles.emptyMessage} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    No sheets in this folder
                   </div>
-                ))
-              ) : (
-                <div className={styles.emptyMessage}>No sheets in this folder</div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>

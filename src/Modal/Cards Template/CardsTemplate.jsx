@@ -76,7 +76,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setTempData({ currentCardTemplates, deletedHeaderKeys });
       lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [currentCardTemplates, deletedHeaderKeys, setTempData]);
 
   // Reset header form

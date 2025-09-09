@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import styles from "./FolderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
+import { FaRegCircle, FaRegCheckCircle, FaFolder, FaFileAlt, FaPlus, FaTrash, FaArrowLeft } from "react-icons/fa";
 
 const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleClose }) => {
   const { sheets, isDarkTheme, setActiveSheetName: setActiveSheetNameWithRef } = useContext(MainContext);
@@ -229,23 +229,9 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
         showDoneButton: false,
         allowClose: false,
         showBackButton: true,
-        backButtonTitle: folderName,
-        backButton: {
-          label: folderName,
-          onClick: () => {
-            setSelectedSheets([]);
-            setTempData({ actions: tempData?.actions || [] });
-            setNavigationDirection("backward");
-            goBack();
-          },
-        },
         title: "Add Sheets",
         leftButton: null,
-        rightButton: {
-          label: "Add",
-          onClick: handleAddSheets,
-          isActive: selectedSheets.length > 0,
-        },
+        rightButton: null,
       };
     }
     setModalConfig(config);
@@ -279,103 +265,149 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
             style={{ display: step !== currentStep ? "none" : "block" }}
           >
             {step === 1 && (
-              <div className={styles.sheetList}>
+              <div className={styles.section}>
+                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaFileAlt />
+                  Sheets in Folder
+                </h3>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  {displayedSheets.length === 0
+                    ? "This folder is empty. Add sheets to organize your data."
+                    : `${displayedSheets.length} sheet${displayedSheets.length !== 1 ? 's' : ''} in this folder.`
+                  }
+                </p>
+
                 {displayedSheets.length === 0 ? (
                   <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    No sheets in this folder
+                    <div className={styles.emptyStateIcon}>
+                      <FaFileAlt />
+                    </div>
+                    <p className={styles.emptyStateText}>No sheets in this folder</p>
                   </div>
                 ) : (
-                  displayedSheets.map((sheetName, index) => (
-                    <div
-                      key={`${sheetName}-${index}`}
-                      className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""} ${
-                        index === 0 ? styles.firstSheet : ""
-                      } ${index === displayedSheets.length - 1 ? styles.lastSheet : ""}`}
-                      onClick={() => handleSheetClick(sheetName)}
-                    >
-                      <div className={styles.sheetRow}>
-                        {isEditMode && (
-                          selectedSheets.includes(sheetName) ? (
-                            <FaRegCheckCircle
-                              className={`${styles.customCheckbox} ${styles.checked} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
-                          ) : (
-                            <FaRegCircle
-                              className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              size={18}
-                            />
-                          )
-                        )}
-                        <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {sheetName}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-                {!isEditMode && (
-                  <div className={styles.buttonContainer}>
-                    {availableSheets.length > 0 && (
-                      <button
-                        onClick={() => {
-                          setNavigationDirection("forward");
-                          goToStep(2);
-                        }}
-                        className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  <div className={styles.sheetList}>
+                    {displayedSheets.map((sheetName, index) => (
+                      <div
+                        key={`${sheetName}-${index}`}
+                        className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""} ${
+                          index === displayedSheets.length - 1 ? styles.lastSheet : ""
+                        }`}
+                        onClick={() => handleSheetClick(sheetName)}
                       >
-                        Add Sheets
-                      </button>
-                    )}
+                        <div className={styles.sheetRow}>
+                          {isEditMode && (
+                            <div className={`${styles.selectionCircle} ${isDarkTheme ? styles.darkTheme : ""} ${
+                              selectedSheets.includes(sheetName) ? styles.selected : ""
+                            }`}>
+                              {selectedSheets.includes(sheetName) && (
+                                <span className={styles.checkmark}>✓</span>
+                              )}
+                            </div>
+                          )}
+                          <div className={`${styles.sheetIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <FaFileAlt />
+                          </div>
+                          <div className={styles.sheetInfo}>
+                            <div className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {sheetName}
+                            </div>
+                            <div className={`${styles.sheetMeta} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              Sheet • {folderName}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {!isEditMode && availableSheets.length > 0 && (
+                  <div className={styles.buttonContainer}>
+                    <button
+                      onClick={() => {
+                        setNavigationDirection("forward");
+                        goToStep(2);
+                      }}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <FaPlus />
+                      Add Sheets
+                    </button>
+                  </div>
+                )}
+
                 {isEditMode && (
                   <button
                     onClick={handleDeleteFolder}
                     className={`${styles.deleteLink} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
+                    <FaTrash />
                     Delete Folder
                   </button>
                 )}
               </div>
             )}
+
             {step === 2 && (
-              <div className={styles.sheetList}>
+              <div className={styles.section}>
+                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaPlus />
+                  Available Sheets
+                </h3>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  Select sheets to add to the "{folderName}" folder.
+                </p>
+
                 {availableSheets.length === 0 ? (
                   <div className={`${styles.noSheets} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    No sheets available to add
+                    <div className={styles.emptyStateIcon}>
+                      <FaFileAlt />
+                    </div>
+                    <p className={styles.emptyStateText}>No sheets available to add</p>
                   </div>
                 ) : (
-                  availableSheets.map((sheetName, index) => (
-                    <div
-                      key={`${sheetName}-${index}`}
-                      className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => handleSheetClick(sheetName)}
-                    >
-                      <div className={styles.sheetRow}>
-                        <span className={styles.selectionCircle}>
-                          {selectedSheets.includes(sheetName) ? (
-                            <FaRegCheckCircle
-                              className={`${styles.customCheckbox} ${styles.checked} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
-                          ) : (
-                            <FaRegCircle
-                              className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              size={18}
-                            />
-                          )}
-                        </span>
-                        <span className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {sheetName}
-                        </span>
+                  <div className={styles.sheetList}>
+                    {availableSheets.map((sheetName, index) => (
+                      <div
+                        key={`${sheetName}-${index}`}
+                        className={`${styles.sheetItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => handleSheetClick(sheetName)}
+                      >
+                        <div className={styles.sheetRow}>
+                          <div className={`${styles.selectionCircle} ${isDarkTheme ? styles.darkTheme : ""} ${
+                            selectedSheets.includes(sheetName) ? styles.selected : ""
+                          }`}>
+                            {selectedSheets.includes(sheetName) && (
+                              <span className={styles.checkmark}>✓</span>
+                            )}
+                          </div>
+                          <div className={`${styles.sheetIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <FaFileAlt />
+                          </div>
+                          <div className={styles.sheetInfo}>
+                            <div className={`${styles.sheetName} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {sheetName}
+                            </div>
+                            <div className={`${styles.sheetMeta} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              Available to add
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
+                )}
+
+                {selectedSheets.length > 0 && (
+                  <div className={styles.buttonContainer}>
+                    <button
+                      onClick={handleAddSheets}
+                      className={`${styles.actionButton} ${styles.primary} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <FaPlus />
+                      Add {selectedSheets.length} Sheet{selectedSheets.length !== 1 ? 's' : ''}
+                    </button>
+                  </div>
                 )}
               </div>
             )}

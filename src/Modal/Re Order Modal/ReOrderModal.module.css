@@ -1,16 +1,20 @@
+/* Updated ReOrderModal.module.css to match CardsTemplate design */
+
 .sheetList {
-  margin: 16px 0;
-  border-radius: 12px;
+  margin: 20px;
+  border-radius: 16px;
   overflow: hidden;
-  background: rgba(229, 229, 234, 0.5);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
-  transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .sheetList.darkTheme {
-  background: rgba(56, 56, 60, 0.6);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  background: rgba(28, 28, 30, 0.6);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
 .sheetList.forward {
@@ -24,43 +28,261 @@
 .view {
   width: 100%;
   box-sizing: border-box;
+  padding: 20px;
 }
 
-.view.hidden {
-  display: none;
+/* Section styles */
+.section {
+  margin-bottom: 32px;
 }
 
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sectionTitle.darkTheme {
+  background: linear-gradient(135deg, #ffffff 0%, #f2f2f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.sectionDescription {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: -0.016em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  opacity: 0.9;
+  padding: 0 4px;
+}
+
+.sectionDescription.darkTheme {
+  color: #98989d;
+  opacity: 0.85;
+}
+
+/* Configuration Grid */
+.configGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Configuration Cards - updated to match CardsTemplate */
+.configCard {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  min-height: 80px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.configCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.configCard:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.configCard.darkTheme {
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.configCard.darkTheme::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.configCard.darkTheme:hover {
+  background: rgba(44, 44, 46, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Card Icon */
+.cardIcon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  margin: 16px 20px 0 20px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.cardIcon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.3), rgba(88, 86, 214, 0.3), rgba(255, 45, 85, 0.3));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.configCard:hover .cardIcon::after {
+  opacity: 1;
+}
+
+.cardIcon.darkTheme {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 50%, #ff453a 100%);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Card Content */
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px 16px 20px;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+}
+
+.cardTitle.darkTheme {
+  color: #ffffff !important;
+}
+
+.cardDescription {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: -0.008em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.cardDescription.darkTheme {
+  color: #98989d;
+}
+
+/* Drag Handle */
+.dragHandle {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #6e6e73;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 2;
+  cursor: grab;
+}
+
+.dragHandle.darkTheme {
+  color: #8e8e93;
+  background: rgba(44, 44, 46, 0.8);
+}
+
+.dragHandle:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.dragHandle.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+  transform: translateY(-50%) scale(1.05);
+}
+
+/* Legacy styles for backward compatibility */
 .sheetItem {
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: transparent;
-  transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease;
-  cursor: default;
-  user-select: none;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
 }
 
 .sheetItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(58, 58, 60, 0.6);
-}
-
-.sheetItem:first-child {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-}
-
-.sheetItem:last-child {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-  border-bottom: none;
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .sheetItem:hover {
-  background: rgba(0, 0, 0, 0.02);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .sheetItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(44, 44, 46, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .sheetItem.dragging {
@@ -75,133 +297,152 @@
   background: rgba(10, 132, 255, 0.25);
 }
 
-.sheetSubList {
-  margin-left: 24px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: background 0.3s ease;
-}
-
-.sheetSubList.darkTheme {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.sheetSubItem {
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease, opacity 0.2s ease, background 0.2s ease;
-}
-
-.sheetSubItem.darkTheme {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sheetSubItem:last-child {
-  border-bottom: none;
-}
-
-.sheetSubItem:hover {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.sheetSubItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.sheetSubItem.dragging {
-  background: rgba(0, 122, 255, 0.15);
-  opacity: 0.85;
-  transform: scale(1.01);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-
-.sheetSubItem.darkTheme.dragging {
-  background: rgba(10, 132, 255, 0.25);
-}
-
 .sheetRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 44px;
+  padding: 16px 20px;
+  height: auto;
+  min-height: 60px;
 }
 
 .sheetName {
   flex: 1;
-  font-weight: 500;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 18px;
   letter-spacing: -0.01em;
-  color: #000;
+  color: #1d1d1f;
   transition: color 0.3s ease;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .sheetList.darkTheme .sheetName {
-  color: #fff;
-}
-
-.folderToggle {
-  width: 24px;
-  font-size: 12px;
-  color: #666;
-  cursor: pointer;
-  transition: color 0.3s ease, transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sheetList.darkTheme .folderToggle {
-  color: #aaa;
-}
-
-.folderToggle:hover {
-  color: #007aff;
-}
-
-.sheetList.darkTheme .folderToggle:hover {
-  color: #0a84ff;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  color: #ffffff;
 }
 
 .dragIcon {
   font-size: 18px;
   color: #8e8e93;
   cursor: grab;
-  padding: 4px;
+  padding: 8px;
   user-select: none;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .dragIcon.darkTheme {
   color: #6e6e73;
+  background: rgba(44, 44, 46, 0.8);
 }
 
 .dragIcon:active {
   cursor: grabbing;
   color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  transform: scale(1.05);
 }
 
 .dragIcon.darkTheme:active {
   color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
 }
 
-.removeIcon {
+.folderChevron {
   font-size: 16px;
-  color: #ff3b30;
-  cursor: pointer;
-  padding: 4px;
-  user-select: none;
-  transition: color 0.3s ease, transform 0.2s ease;
+  color: #8e8e93;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  margin-right: 12px;
+}
+
+.sheetList.darkTheme .folderChevron {
+  color: #6e6e73;
+}
+
+.folderChevron:hover {
+  color: #007aff;
+  transform: scale(1.1);
+}
+
+.sheetList.darkTheme .folderChevron:hover {
+  color: #0a84ff;
+}
+
+.folderIcon {
+  font-size: 20px;
+  color: #6e6e73;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.sheetList.darkTheme .folderIcon {
+  color: #ffffff;
+}
+
+.folderRow:hover .folderIcon,
+.folderRow:hover .sheetName,
+.folderRow:hover .folderChevron {
+  color: #007aff;
+}
+
+.sheetList.darkTheme .folderRow:hover .folderIcon,
+.sheetList.darkTheme .folderRow:hover .sheetName,
+.sheetList.darkTheme .folderRow:hover .folderChevron {
+  color: #0a84ff;
+}
+
+.folderSheetsContainer {
+  margin-top: 16px;
+}
+
+.emptyMessage {
+  padding: 32px 20px;
+  text-align: center;
+  color: #86868b;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.emptyMessage.darkTheme {
+  color: #98989d;
+  background: rgba(44, 44, 46, 0.6);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .removeIcon.darkTheme {

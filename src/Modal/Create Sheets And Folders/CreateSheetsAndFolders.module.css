@@ -1,189 +1,398 @@
-/* Manager wrapper - ensure full height */
+/* Updated CreateSheetsAndFolders.module.css to match CardsTemplate design */
+
 .managerWrapper {
   background: transparent;
-  box-sizing: border-box;
   width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .managerWrapper.darkTheme {
   background: transparent;
 }
 
-/* Scrollable container - remove scrolling, make full height */
 .scrollContainer {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Take remaining space */
-  padding-top: 0;
+  flex: 1;
+  padding: 20px;
   box-sizing: border-box;
   width: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .scrollContainer.darkTheme {
-  background: transparent;
+  background: rgba(28, 28, 30, 0.6);
 }
 
-/* Toggle container - fixed height */
+/* Section styles */
+.section {
+  margin-bottom: 32px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sectionTitle.darkTheme {
+  background: linear-gradient(135deg, #ffffff 0%, #f2f2f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.sectionDescription {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: -0.016em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  opacity: 0.9;
+  padding: 0 4px;
+}
+
+.sectionDescription.darkTheme {
+  color: #98989d;
+  opacity: 0.85;
+}
+
+/* Toggle container - updated to match CardsTemplate */
 .toggleContainer {
   display: flex;
   width: 100%;
-  height: 44px; /* Fixed height */
+  height: 44px;
   margin: 0 auto 20px auto;
-  background: rgba(255, 255, 255);
+  background: rgba(245, 245, 247, 0.9);
   border-radius: 12px;
   position: relative;
   z-index: 10;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 2px;
 }
 
 .toggleContainer.darkTheme {
-  background: rgba(42, 42, 43, 0.6); /* Dark mode: gray */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background: rgba(58, 58, 60, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-.toggleButton {
+.tabButton {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1d1d1f; /* Light mode text */
+  color: #6e6e73;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  z-index: 12; /* Above toggleBackground */
-  transition: color 0.3s ease;
-  height: 100%; /* Ensure button fills container height */
+  z-index: 12;
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
+  height: 100%;
   line-height: 36px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  border-radius: 10px;
+  margin: 2px;
 }
 
-.toggleButton.darkTheme {
-  color: #ffffff; /* Dark mode text */
+.tabButton.darkTheme {
+  color: rgb(235, 235, 245);
 }
 
-.toggleButton.activeToggle {
-  color: #007aff; /* Highlight active toggle */
+.tabButton.activeTab {
+  color: #007aff;
+  font-weight: 600;
+  background: rgba(0, 122, 255, 0.1);
 }
 
-.toggleButton.activeToggle.darkTheme {
+.tabButton.activeTab.darkTheme {
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.tabButton:hover {
+  background: rgba(229, 229, 234, 0.9);
+}
+
+.tabButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
   color: #0a84ff;
 }
 
-.toggleBackground {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  width: calc(50% - 2px); /* Match button width minus padding */
-  background: rgba(229, 229, 234, 0.5);
-  border-radius: 10px;
-  transition: left 0.3s ease;
-  z-index: 11; /* Below toggleButton */
-}
-
-.toggleBackground.darkTheme {
-  background: rgba(56, 56, 60, 0.6); /* Dark mode selected */
-}
-
-.sheetActive {
-  left: 4px; /* Align with left padding */
-}
-
-.folderActive {
-  left: calc(50% - 2px); /* Adjusted to center under right button */
-}
-
-/* Content container - ensure it grows to fit */
+/* Content container */
 .contentContainer {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1; /* Allow it to take remaining space */
+  flex: 1;
+  padding: 0 16px;
 }
 
-.contentContainer.darkTheme {
-  /* No additional dark theme styles needed */
-}
-
-/* Input field */
-.inputField {
+/* Input field - updated to match CardsTemplate */
+.searchBar {
   width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px; /* Match icon height */
-  color: #1d1d1f; /* Light mode text */
-  background: rgb(229, 229, 234, 0.6);
+  padding: 16px 20px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.8);
   box-sizing: border-box;
-  transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
-}
-
-.inputField.darkTheme {
-  color: #ffffff; /* Dark mode text */
-  background: rgb(58, 58, 60, 0.6); /* Dark mode: gray */
-}
-
-.inputField:focus {
-  outline: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.inputField.darkTheme:focus {
-  background: rgba(44, 44, 46, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Header section title */
-.headerSectionTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d1d1f; /* Light mode text */
-  padding: 8px 0; /* Vertical padding for spacing */
-  margin: 0; /* Reset default margins */
-  text-align: center;
-}
-
-.headerSectionTitle.darkTheme {
-  color: #ffffff; /* Dark mode text */
-}
-
-/* Header list */
-.headerList {
-  border-radius: 12px; /* Match item border-radius for overflow */
-  background: transparent;
-  overflow: hidden; /* Ensure rounded corners are visible */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.searchBar.darkTheme {
+  color: #ffffff;
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.searchBar:focus {
+  outline: none;
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15), 0 4px 12px rgba(0, 122, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+}
+
+.searchBar.darkTheme:focus {
+  background: rgba(44, 44, 46, 1);
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2), 0 4px 12px rgba(10, 132, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Configuration Grid */
+.configGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Configuration Cards - updated to match CardsTemplate */
+.configCard {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  min-height: 100px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.configCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.configCard:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.configCard.darkTheme {
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.configCard.darkTheme::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.configCard.darkTheme:hover {
+  background: rgba(44, 44, 46, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Card Icon */
+.cardIcon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  margin: 16px 20px 0 20px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.cardIcon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.3), rgba(88, 86, 214, 0.3), rgba(255, 45, 85, 0.3));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.configCard:hover .cardIcon::after {
+  opacity: 1;
+}
+
+.cardIcon.darkTheme {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 50%, #ff453a 100%);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Card Content */
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px 16px 20px;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+}
+
+.cardTitle.darkTheme {
+  color: #ffffff !important;
+}
+
+.cardDescription {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: -0.008em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.cardDescription.darkTheme {
+  color: #98989d;
+}
+
+/* Card Arrow Styles */
+.cardArrow {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #6e6e73;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 2;
+}
+
+.cardArrow.darkTheme {
+  color: #8e8e93;
+  background: rgba(44, 44, 46, 0.8);
+}
+
+.cardArrow:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.cardArrow.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+/* Header list - updated to match CardsTemplate bodyContainer */
+.headerList {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .headerList.darkTheme {
-  background: transparent;
+  background: rgba(28, 28, 30, 0.6);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .headerItem {
-  padding: 9px 16px;
-  background: rgb(229, 229, 234, 0.6);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Light mode border */
-  transition: background 0.2s ease;
+  padding: 12px 16px;
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease, background 0.3s ease, color 0.3s ease;
   cursor: pointer;
-  min-height: 25px; /* Consistent height */
+  min-height: 44px;
   display: flex;
   align-items: center;
 }
 
 .headerItem.darkTheme {
-  background: rgb(58, 58, 60, 0.6); /* Dark mode: gray */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Dark mode border */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .headerItem.selected {
-  background: rgba(0, 122, 255, 0.1); /* Light mode: subtle blue */
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .headerItem.selected.darkTheme {
-  background: rgba(10, 132, 255, 0.2); /* Dark mode: subtle blue */
+  background: rgba(10, 132, 255, 0.2);
 }
 
 .headerItem:first-child {
@@ -198,18 +407,18 @@
 }
 
 .headerItem:hover {
-  background: rgba(0, 0, 0, 0.05); /* Light mode hover */
+  background: rgba(229, 229, 234, 0.9);
 }
 
 .headerItem.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.1); /* Dark mode hover */
+  background: rgba(72, 72, 74, 0.9);
 }
 
 .headerRow {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 20px; /* Match icon */
+  min-height: 20px;
 }
 
 .headerNameType {
@@ -221,78 +430,189 @@
 
 .headerNameType span {
   flex: 0 0 auto;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   letter-spacing: 0.02em;
-  color: #1d1d1f; /* Light mode default */
-  transition: color 0.3s ease; /* Smooth theme transition */
+  color: #1d1d1f;
+  transition: color 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
 }
 
 .headerNameType.darkTheme span {
-  color: #ffffff; /* Dark mode override */
+  color: #f2f2f7;
 }
 
 .headerType {
-  color: #6e6e73; /* Light mode */
+  color: #6e6e73;
   font-size: 14px;
-  line-height: 20px; /* Match icon */
+  line-height: 20px;
   transition: color 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
 }
 
 .headerType.darkTheme {
-  color: #8e8e93; /* Dark mode */
+  color: #aeaeb2;
 }
 
 .customCheckbox {
-  color: #6e6e73; /* Light mode: matches RowComponent selectIcon */
-  cursor: pointer;
-  transition: color 0.2s ease, transform 0.1s ease;
-  margin-right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  color: #007aff;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(0, 122, 255, 0.06);
+  border: 2px solid rgba(0, 122, 255, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 122, 255, 0.1);
 }
 
 .customCheckbox.darkTheme {
-  color: #8e8e93; /* Dark mode: matches RowComponent selectIcon.darkTheme */
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.08);
+  border-color: rgba(10, 132, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(10, 132, 255, 0.15);
 }
 
 .customCheckbox:hover {
-  color: #007aff; /* Light mode hover: matches RowComponent selectIcon:hover */
-  transform: scale(1.1); /* Matches RowComponent selectIcon:hover */
+  transform: scale(1.15);
+  background: rgba(0, 122, 255, 0.12);
+  border-color: rgba(0, 122, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
 }
 
 .customCheckbox.darkTheme:hover {
-  color: #0a84ff; /* Dark mode hover: matches RowComponent selectIcon.darkTheme:hover */
+  background: rgba(10, 132, 255, 0.15);
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.25);
 }
 
 .customCheckbox.checked {
-  color: #007aff; /* Light mode selected: matches RowComponent selectIcon.selected */
+  color: #ffffff;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-color: #007aff;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 .customCheckbox.checked.darkTheme {
-  color: #0a84ff; /* Dark mode selected: matches RowComponent selectIcon.darkTheme.selected */
+  color: #ffffff;
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  border-color: #0a84ff;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* No items message */
 .noItems {
-  padding: 13px 16px;
-  color: #6e6e73; /* Light mode */
-  font-size: 14px;
-  line-height: 20px;
+  padding: 20px 16px;
+  color: #6e6e73;
+  font-size: 15px;
+  font-weight: 400;
   text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .noItems.darkTheme {
-  color: #8e8e93; /* Dark mode */
+  color: #aeaeb2;
 }
 
 /* Error message */
 .error {
-  color: #ff3b30; /* Red for errors */
+  color: #ff3b30;
   font-size: 14px;
-  padding: 8px 16px;
+  padding: 12px 16px;
   text-align: center;
+  background: rgba(255, 59, 48, 0.1);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
 }
 
 .error.darkTheme {
-  color: #ff453a; /* Slightly lighter red for dark mode */
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.2);
+}
+
+/* Input wrapper */
+.inputWrapper {
+  margin-bottom: 8px;
+}
+
+/* Button wrapper */
+.buttonWrapper {
+  margin-top: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Create button - matching CardsTemplate design */
+.createButton {
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 16px 24px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  min-width: 140px;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.createButton:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+}
+
+.createButton:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.createButton.darkTheme {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.createButton.darkTheme:hover {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.createButton:disabled {
+  background: rgba(142, 142, 147, 0.5);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.createButton:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(142, 142, 147, 0.5);
+}
+
+.createButton.darkTheme:disabled {
+  background: rgba(142, 142, 147, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.createButton.darkTheme:disabled:hover {
+  background: rgba(142, 142, 147, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }

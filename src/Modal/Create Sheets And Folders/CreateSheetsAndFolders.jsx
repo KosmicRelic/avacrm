@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import styles from "./CreateSheetsAndFolders.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaRegCircle, FaRegCheckCircle } from "react-icons/fa";
+import { FaRegCircle, FaRegCheckCircle, FaFileAlt, FaFolder, FaPlus, FaSearch } from "react-icons/fa";
 
 const CreateSheetsAndFolders = ({
   tempData,
@@ -99,22 +99,21 @@ const CreateSheetsAndFolders = ({
         showBackButton: false,
         title: "Create Sheets & Folders",
         backButtonTitle: "",
-        leftButton: {
-          label: "Create",
-          onClick: () => {
-            const { addType, handleSheetSaveClick, handleFolderSaveClick } = handlersRef.current;
-            if (addType === "sheet") {
-              handleSheetSaveClick();
-            } else {
-              handleFolderSaveClick();
-            }
-          },
-        },
         onBackdropClick: handleClose,
       });
       hasInitialized.current = true;
     }
   }, [setModalConfig, registerModalSteps, handleClose]);
+
+  // Update modal config to ensure Done button is shown
+  useEffect(() => {
+    setModalConfig((prev) => ({
+      ...prev,
+      showDoneButton: true,
+      showBackButton: false,
+      rightButton: null,
+    }));
+  }, [setModalConfig]);
 
   const handleToggleType = useCallback(() => {
     setAddType((prev) => (prev === "sheet" ? "folder" : "sheet"));
@@ -145,10 +144,22 @@ const CreateSheetsAndFolders = ({
   return (
     <div className={`${styles.managerWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={`${styles.scrollContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={`${styles.error} ${isDarkTheme ? styles.darkTheme : ""}`}>{error}</div>}
+
+        {/* Section Title */}
+        <div className={styles.section}>
+          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            Create New Content
+          </h2>
+          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            Choose what you'd like to create and configure the details below.
+          </p>
+        </div>
+
+        {/* Toggle Container */}
         <div className={`${styles.toggleContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <div
-            className={`${styles.toggleButton} ${addType === "sheet" ? styles.activeToggle : ""} ${
+            className={`${styles.tabButton} ${addType === "sheet" ? styles.activeTab : ""} ${
               isDarkTheme ? styles.darkTheme : ""
             }`}
             onClick={() => setAddType("sheet")}
@@ -156,22 +167,25 @@ const CreateSheetsAndFolders = ({
             Sheets
           </div>
           <div
-            className={`${styles.toggleButton} ${addType === "folder" ? styles.activeToggle : ""} ${
+            className={`${styles.tabButton} ${addType === "folder" ? styles.activeTab : ""} ${
               isDarkTheme ? styles.darkTheme : ""
             }`}
             onClick={() => setAddType("folder")}
           >
             Folders
           </div>
-          <div
-            className={`${styles.toggleBackground} ${
-              addType === "sheet" ? styles.sheetActive : styles.folderActive
-            } ${isDarkTheme ? styles.darkTheme : ""}`}
-          ></div>
         </div>
+
         <div className={`${styles.contentContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
           {addType === "sheet" && (
-            <>
+            <div className={styles.section}>
+              <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                New Sheet
+              </h3>
+              <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                Create a new sheet to organize your data and metrics.
+              </p>
+
               <div className={styles.inputWrapper}>
                 <input
                   key="sheet-input"
@@ -182,71 +196,111 @@ const CreateSheetsAndFolders = ({
                     setError("");
                   }}
                   placeholder="Enter Sheet Name"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
                 />
               </div>
-            </>
+
+              <div className={styles.buttonWrapper}>
+                <button
+                  className={`${styles.createButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  onClick={handleSheetSaveClick}
+                  disabled={!newSheetName.trim()}
+                >
+                  <FaPlus size={16} />
+                  Create Sheet
+                </button>
+              </div>
+            </div>
           )}
+
           {addType === "folder" && (
             <>
-              <div className={styles.inputWrapper}>
-                <input
-                  key="folder-input"
-                  type="text"
-                  value={newFolderName}
-                  onChange={(e) => {
-                    setNewFolderName(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="Enter Folder Name"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
+              <div className={styles.section}>
+                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  New Folder
+                </h3>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  Create a folder to organize multiple sheets together.
+                </p>
+
+                <div className={styles.inputWrapper}>
+                  <input
+                    key="folder-input"
+                    type="text"
+                    value={newFolderName}
+                    onChange={(e) => {
+                      setNewFolderName(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="Enter Folder Name"
+                    className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                </div>
+
+                <div className={styles.buttonWrapper}>
+                  <button
+                    className={`${styles.createButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={handleFolderSaveClick}
+                    disabled={!newFolderName.trim()}
+                  >
+                    <FaPlus size={16} />
+                    Create Folder
+                  </button>
+                </div>
               </div>
-              <div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Sheets"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  style={{ marginBottom: "16px" }}
-                />
-              </div>
-              <div className={`${styles.headerList} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                {availableSheets.length > 0 ? (
-                  availableSheets.map((sheetName) => (
-                    <div
-                      key={`sheet-${sheetName}`}
-                      className={`${styles.headerItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      onClick={() => toggleSheetSelection(sheetName)}
-                    >
-                      <div className={styles.headerRow}>
-                        <div className={`${styles.headerNameType} ${isDarkTheme ? styles.darkTheme : ""}`}>
+
+              <div className={styles.section}>
+                <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  Select Sheets
+                </h3>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  Choose which sheets to include in this folder.
+                </p>
+
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search Sheets"
+                    className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  />
+                </div>
+
+                <div className={styles.configGrid}>
+                  {availableSheets.length > 0 ? (
+                    availableSheets.map((sheetName) => (
+                      <div
+                        key={`sheet-${sheetName}`}
+                        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        onClick={() => toggleSheetSelection(sheetName)}
+                      >
+                        <div className={styles.cardIcon}>
+                          <FaFileAlt size={20} />
+                        </div>
+                        <div className={styles.cardContent}>
+                          <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {sheetName}
+                          </h4>
+                          <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            Sheet available for organization
+                          </p>
+                        </div>
+                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {selectedSheets.includes(sheetName) ? (
-                            <FaRegCheckCircle
-                              className={`${styles.customCheckbox} ${styles.checked} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
+                            <FaRegCheckCircle size={20} />
                           ) : (
-                            <FaRegCircle
-                              className={`${styles.customCheckbox} ${
-                                isDarkTheme ? styles.darkTheme : ""
-                              }`}
-                              size={18}
-                            />
+                            <FaRegCircle size={20} />
                           )}
-                          <span>{sheetName}</span>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      No sheets available to add.
                     </div>
-                  ))
-                ) : (
-                  <div className={`${styles.noItems} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    No sheets available to add.
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </>
           )}
