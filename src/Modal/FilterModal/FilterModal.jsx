@@ -297,9 +297,9 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                 if (!header) return 'Choose how to sort your data';
                 return `${header.name} (${sortFor.order === 'ascending' ? 'Ascending' : 'Descending'})`;
               })()}
-            </div>
-            <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {(sortFor.headerKey && sortFor.order) ? 'Active' : 'None'}
+              <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {(sortFor.headerKey && sortFor.order) ? 'Active' : 'None'}
+              </div>
             </div>
           </div>
           <div className={`${styles.cardArrow} ${showSortFor ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -345,6 +345,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                     setSortFor({ headerKey: '', order: '' });
                   }}
                   className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  disabled={!(sortFor.headerKey && sortFor.order)}
                 >
                   Clear Sort
                 </button>
@@ -381,9 +382,9 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                   {header.type === 'date' && 'Filter by date ranges'}
                   {header.type === 'dropdown' && 'Filter by selected options'}
                   {header.type === 'multi-select' && 'Filter by multiple selections'}
-                </div>
-                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
+                  <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
+                  </div>
                 </div>
               </div>
               <div className={`${styles.cardArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -407,7 +408,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                           placeholder="From"
                           className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                         />
-                        <span className={`${styles.separator} ${isDarkTheme ? styles.darkTheme : ''}`}>–</span>
                         <input
                           type="number"
                           value={filterValues[header.key]?.end || ''}
@@ -509,24 +509,34 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
                       />
                     </>
                   )}
-                  {getFilterSummary(header) !== 'None' && (
-                    <button
-                      onClick={() => {
-                        const newFilters = { ...filterValues };
-                        delete newFilters[header.key];
-                        applyFilters(newFilters);
-                      }}
-                      className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    >
-                      Clear Filter
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      const newFilters = { ...filterValues };
+                      delete newFilters[header.key];
+                      applyFilters(newFilters);
+                    }}
+                    className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    disabled={isFilterEmpty(filterValues[header.key] || {})}
+                  >
+                    Clear Filter
+                  </button>
                 </div>
               </>
             )}
           </div>
         ))
       )}
+
+      {/* Reset All Filters Button */}
+      <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <button
+          onClick={handleReset}
+          className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          disabled={Object.keys(filterValues).length === 0 || Object.values(filterValues).every(filter => isFilterEmpty(filter))}
+        >
+          Reset All Filters
+        </button>
+      </div>
     </div>
   );
 };

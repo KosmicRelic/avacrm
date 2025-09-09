@@ -1434,12 +1434,15 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
                   </option>
                 ))}
               </select>
-              <button
-                onClick={clearUserFilter}
-                className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              >
-                Clear
-              </button>
+              {filterValues.userFilter?.headerKey && (
+                <button
+                  onClick={clearUserFilter}
+                  className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  disabled={!filterValues.userFilter?.headerKey}
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </>
         )}
@@ -1584,12 +1587,15 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
                       />
                     </>
                   )}
-                  <button
-                    onClick={() => clearFilter(header.key)}
-                    className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  >
-                    Clear
-                  </button>
+                  {!isFilterEmpty(filterValues[header.key] || {}) && (
+                    <button
+                      onClick={() => clearFilter(header.key)}
+                      className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      disabled={isFilterEmpty(filterValues[header.key] || {})}
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </>
             )}

@@ -67,19 +67,19 @@
 /* Sheet name input */
 .sheetNameInput {
   width: 100%;
-  padding: 16px 20px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 18px 20px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
   color: #1d1d1f;
-  background: rgba(250, 250, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   margin-bottom: 24px;
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: -0.014em;
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: -0.016em;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
@@ -88,11 +88,12 @@
 .sheetNameInput::placeholder {
   color: #8e8e93;
   font-weight: 400;
+  opacity: 0.8;
 }
 
 .sheetNameInput.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.9);
+  background: rgba(28, 28, 32, 0.9);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -112,7 +113,7 @@
 .sheetNameInput.darkTheme:focus {
   background: rgba(44, 44, 46, 1);
   border-color: #0a84ff;
-  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Sections */
@@ -683,47 +684,76 @@
 }
 
 .actionButton {
-  background: none;
-  border: none;
-  padding: 6px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.15) 100%);
+  border: 2px solid rgba(0, 122, 255, 0.2);
+  color: #007aff;
+  width: 80px;
+  height: 40px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
-  color: #6e6e73;
-  border-radius: 8px;
-  transition: all 0.2s ease, color 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .actionButton.darkTheme {
-  color: #8e8e93;
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(10, 132, 255, 0.2) 100%);
+  border-color: rgba(10, 132, 255, 0.3);
+  color: #0a84ff;
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.15);
 }
 
 .actionButton:hover {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-color: #007aff;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .actionButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2);
-  color: #0a84ff;
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  border-color: #0a84ff;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.actionButton:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .actionButton.pinned {
-  color: #007aff;
-  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-color: #007aff;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .actionButton.darkTheme.pinned {
-  color: #0a84ff;
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  border-color: #0a84ff;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .actionButton.pinned:hover {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-color: #007aff;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .actionButton.darkTheme.pinned:hover {
-  background: rgba(10, 132, 255, 0.2);
-  color: #0a84ff;
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  border-color: #0a84ff;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .removeTextButton {
@@ -1159,36 +1189,44 @@
 .filterSelectNoChevron {
   width: auto;
   flex: 1;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.16);
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 400;
+  padding: 18px 20px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 500;
   color: #1d1d1f;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-appearance: none;
+  appearance: none;
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  letter-spacing: -0.008em;
+  letter-spacing: -0.016em;
 }
 
 .filterInput.darkTheme,
 .filterSelect.darkTheme,
 .filterSelectNoChevron.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.95);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(28, 28, 32, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .filterSelect {
-  padding-right: 28px;
-  background: rgba(255, 255, 255, 0.95) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  padding-right: 20px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
   backdrop-filter: blur(20px);
 }
 
 .filterSelect.darkTheme {
-  background: rgba(44, 44, 46, 0.95) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: rgba(28, 28, 32, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  backdrop-filter: blur(20px);
 }
 
 .filterSelectNoChevron {
@@ -1202,7 +1240,8 @@
   outline: none;
   border-color: #007aff;
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12), 0 8px 32px rgba(0, 122, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px) scale(1.01);
 }
 
 .filterInput.darkTheme:focus,
@@ -1210,7 +1249,7 @@
 .filterSelectNoChevron.darkTheme:focus {
   background: rgba(44, 44, 46, 1);
   border-color: #0a84ff;
-  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .filterInput[type="number"]::-webkit-inner-spin-button,
@@ -1228,24 +1267,27 @@
 .filterMultiSelect {
   width: 100%;
   height: 120px;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.16);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 400;
+  padding: 18px 20px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 500;
   color: #1d1d1f;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  letter-spacing: -0.008em;
+  letter-spacing: -0.016em;
 }
 
 .filterMultiSelect.darkTheme {
-  border-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.95);
+  background: rgba(28, 28, 32, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .filterMultiSelect:focus {
@@ -1308,53 +1350,125 @@
 }
 
 .resetButton {
-  background: none;
-  border: none;
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.1) 0%, rgba(255, 69, 58, 0.15) 100%);
+  border: 2px solid rgba(255, 69, 58, 0.2);
   color: #ff453a;
   font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
+  font-weight: 600;
+  padding: 10px 16px;
   cursor: pointer;
-  border-radius: 12px;
-  transition: all 0.2s ease, color 0.3s ease;
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.1);
+  flex-shrink: 0;
+  min-width: 80px;
 }
 
 .resetButton.darkTheme {
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.15) 0%, rgba(255, 69, 58, 0.2) 100%);
+  border-color: rgba(255, 69, 58, 0.3);
   color: #ff453a;
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.15);
 }
 
-.resetButton:hover {
-  background: rgba(255, 69, 58, 0.1);
+.resetButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.resetButton.darkTheme:hover {
-  background: rgba(255, 69, 58, 0.2);
+.resetButton.darkTheme:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.resetButton:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.resetButton:disabled {
+  background: linear-gradient(135deg, rgba(142, 142, 147, 0.1) 0%, rgba(142, 142, 147, 0.15) 100%);
+  border-color: rgba(142, 142, 147, 0.2);
+  color: #8e8e93;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.resetButton.darkTheme:disabled {
+  background: linear-gradient(135deg, rgba(142, 142, 147, 0.15) 0%, rgba(142, 142, 147, 0.2) 100%);
+  border-color: rgba(142, 142, 147, 0.3);
+  color: #8e8e93;
 }
 
 .clearButton {
-  background: none;
-  border: none;
-  color: #007aff;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.1) 0%, rgba(255, 69, 58, 0.15) 100%);
+  border: 2px solid rgba(255, 69, 58, 0.2);
+  color: #ff453a;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
   cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  letter-spacing: -0.008em;
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.1);
+  flex-shrink: 0;
+  min-width: 60px;
 }
 
 .clearButton.darkTheme {
-  color: #0a84ff;
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.15) 0%, rgba(255, 69, 58, 0.2) 100%);
+  border-color: rgba(255, 69, 58, 0.3);
+  color: #ff453a;
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.15);
 }
 
-.clearButton:hover {
-  background: rgba(0, 122, 255, 0.1);
+.clearButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.clearButton.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.2);
+.clearButton.darkTheme:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.clearButton:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.clearButton:disabled {
+  background: linear-gradient(135deg, rgba(142, 142, 147, 0.1) 0%, rgba(142, 142, 147, 0.15) 100%);
+  border-color: rgba(142, 142, 147, 0.2);
+  color: #8e8e93;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.clearButton.darkTheme:disabled {
+  background: linear-gradient(135deg, rgba(142, 142, 147, 0.15) 0%, rgba(142, 142, 147, 0.2) 100%);
+  border-color: rgba(142, 142, 147, 0.3);
+  color: #8e8e93;
 }
 
 .footer {
@@ -1411,32 +1525,34 @@
 /* Cards fetch limit input - Apple style */
 .fetchLimitInput {
   width: 100%;
-  padding: 18px 24px;
-  border: 1px solid rgba(0, 0, 0, 0.16);
-  border-radius: 14px;
+  padding: 18px 20px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
   color: #1d1d1f;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   font-weight: 500;
-  font-size: 17px;
-  letter-spacing: -0.014em;
+  font-size: 16px;
+  letter-spacing: -0.016em;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
 .fetchLimitInput::placeholder {
-  color: #86868b;
+  color: #8e8e93;
   font-weight: 400;
+  opacity: 0.8;
 }
 
 .fetchLimitInput.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.95);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  background: rgba(28, 28, 32, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .fetchLimitInput.darkTheme::placeholder {
@@ -1447,14 +1563,14 @@
   outline: none;
   border-color: #007aff;
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2), 0 4px 16px rgba(0, 122, 255, 0.1);
-  transform: scale(1.005);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12), 0 8px 32px rgba(0, 122, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px) scale(1.01);
 }
 
 .fetchLimitInput.darkTheme:focus {
   background: rgba(44, 44, 46, 1);
   border-color: #0a84ff;
-  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.3), 0 4px 16px rgba(10, 132, 255, 0.2);
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .fetchLimitInput::-webkit-inner-spin-button,
