@@ -6,6 +6,7 @@ import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff } from 'react-icons/md';
 import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
+import { IoChevronForward } from 'react-icons/io5';
 
 // Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
@@ -908,17 +909,26 @@ const EditSheetsModal = ({
                     <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
+                  ) : cardTemplates.filter((template) => selectedCardTypes.includes(template.typeOfCards)).length === 0 ? (
+                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No card types selected. Go back to "Data Types" to select templates first.
+                    </div>
                   ) : (
-                    cardTemplates.map((template) => (
+                    cardTemplates
+                      .filter((template) => selectedCardTypes.includes(template.typeOfCards))
+                      .map((template) => (
                       <div
                         key={template.typeOfCards}
                         className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                         onClick={() => handleTemplateClick(template.typeOfCards)}
                       >
-                        <div className={styles.cardTypeRow}>
+                        <div className={styles.templateRow}>
                           <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
                           </span>
+                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <IoChevronForward size={16} />
+                          </div>
                         </div>
                       </div>
                     ))
@@ -963,6 +973,9 @@ const EditSheetsModal = ({
                             <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
                             </span>
+                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              <IoChevronForward size={16} />
+                            </div>
                           </div>
                         </div>
                       ))
@@ -1005,6 +1018,9 @@ const EditSheetsModal = ({
                         <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           {getFilterSummary(typeOfCards)}
                         </span>
+                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoChevronForward size={16} />
+                        </div>
                       </div>
                     );
                   })}

@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaInfoCircle, FaDownload, FaTrash } from "react-icons/fa";
+import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup } from "react-icons/fa";
 import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { MdDragIndicator } from "react-icons/md";
@@ -471,18 +471,34 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setModalConfig({
         showTitle: true,
         showDoneButton: false,
-        showBackButton: true,
+        showBackButton: !editMode,
         backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
-        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
+        backButton: editMode ? null : { label: currentCardTemplates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
         title: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-        leftButton: null,
-        rightButton: {
-          label: "Add Field",
-          onClick: () => handleCreateHeader(),
-          isActive: true,
-          isRemove: false,
-          color: "blue",
-        },
+        leftButton: editMode
+          ? {
+              label: "Cancel",
+              onClick: () => setEditMode(false),
+              isActive: true,
+              isRemove: false,
+              color: "blue",
+            }
+          : null,
+        rightButton: editMode
+          ? {
+              label: "Done",
+              onClick: () => setEditMode(false),
+              isActive: true,
+              isRemove: false,
+              color: "blue",
+            }
+          : {
+              label: "Edit",
+              onClick: () => setEditMode(true),
+              isActive: true,
+              isRemove: false,
+              color: "blue",
+            },
       });
     } else if (currentStep === 4) {
       setModalConfig({
@@ -1231,98 +1247,75 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Organize your card data into logical sections.</p>
-                      <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
-                          <div
-                            key={index}
-                            ref={(el) => sectionRefs.current.set(index, el)}
-                            className={`${styles.configCard} ${draggedSectionOrderIndex === index ? styles.dragging : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            draggable={editMode}
-                            onDragStart={editMode ? (e) => {
-                              // Always allow drag to start, but only show drag feedback if dragIcon is used
-                              if (e.target.classList.contains(styles.dragIcon)) {
-                                handleSectionDragStart(e, index);
-                              } else {
-                                handleSectionDragStart(e, index); // fallback: allow drag from row for mouse users
-                              }
-                            } : undefined}
-                            onDragOver={editMode ? (e) => handleSectionDragOver(e, index) : undefined}
-                            onDragEnd={editMode ? handleSectionDragEnd : undefined}
-                            onTouchStart={editMode ? (e) => {
-                              if (e.target.classList.contains(styles.dragIcon)) {
-                                handleSectionTouchStart(e, index);
-                              } // else: do nothing for touch if not dragIcon
-                            } : undefined}
-                            onTouchMove={editMode ? (e) => handleSectionTouchMove(e, index) : undefined}
-                            onTouchEnd={editMode ? handleSectionTouchEnd : undefined}
-                            style={{ cursor: editMode ? 'grab' : 'pointer' }}
-                            onClick={() => !editMode && handleEditSection(index)}
-                            role="button"
-                            aria-label={`Edit ${section.name} section`}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if ((e.key === "Enter" || e.key === " ") && !editMode) {
-                                handleEditSection(index);
-                              }
-                            }}
-                          >
-                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <FaRegCircle size={24} />
-                            </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                {section.name === "Card Data" ? "Core system fields" : "Custom section"}
-                              </p>
-                              <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                {section.keys?.length || 0} fields
-                              </div>
-                            </div>
-                            {!editMode && (
-                              <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                <IoChevronForward size={16} />
-                              </div>
-                            )}
-                            {editMode && (
-                              <div className={`${styles.sectionActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  <MdDragIndicator size={16} />
-                                </span>
-                              </div>
+                        <div
+                          ref={(el) => sectionRefs.current.set(index, el)}
+                          key={index}
+                          className={`${styles.configCard} ${
+                            draggedSectionOrderIndex === index ? styles.dragging : ""
+                          } ${isDarkTheme ? styles.darkTheme : ""}`}
+                          draggable={editMode}
+                          onDragStart={editMode ? (e) => handleSectionDragStart(e, index) : undefined}
+                          onDragOver={editMode ? (e) => handleSectionDragOver(e, index) : undefined}
+                          onDragEnd={editMode ? handleSectionDragEnd : undefined}
+                          onTouchStart={editMode ? (e) => handleSectionTouchStart(e, index) : undefined}
+                          onTouchMove={editMode ? (e) => handleSectionTouchMove(e, index) : undefined}
+                          onTouchEnd={editMode ? handleSectionTouchEnd : undefined}
+                          onClick={() => !editMode && handleEditSection(index)}
+                          role="button"
+                          aria-label={`Edit ${section.name} section`}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if ((e.key === "Enter" || e.key === " ") && !editMode) {
+                              handleEditSection(index);
+                            }
+                          }}
+                        >
+                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {section.name === "Card Data" ? (
+                              <FaDatabase size={24} />
+                            ) : (
+                              <FaLayerGroup size={24} />
                             )}
                           </div>
-                        ))}
+                          <div className={styles.cardContent}>
+                            <div className={styles.headerRow}>
+                              <div className={styles.headerMain}>
+                                <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
+                              </div>
+                              {!editMode && (
+                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  <IoChevronForward size={16} />
+                                </div>
+                              )}
+                            </div>
+                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {section.name === "Card Data" ? "Core system fields" : "Custom section"} • {section.keys?.length || 0} fields
+                            </p>
+                          </div>
+                          {editMode && (
+                            <div className={styles.sectionActions}>
+                              <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <MdDragIndicator size={16} />
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                       </div>
                     </div>
                     {editMode && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Danger Zone</h2>
                         <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Permanently delete this template and all its data.</p>
-                        <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <div
-                            onClick={handleDeleteTemplate}
-                            className={`${styles.configCard} ${styles.dangerCard} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            role="button"
-                            aria-label="Delete Template"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                handleDeleteTemplate();
-                              }
-                            }}
-                          >
-                            <div className={`${styles.cardIcon} ${styles.dangerIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <FaTrash size={24} />
-                            </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${styles.dangerText} ${isDarkTheme ? styles.darkTheme : ""}`}>Delete Template</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Permanently remove this template</p>
-                            </div>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <IoChevronForward size={16} />
-                            </div>
-                          </div>
-                        </div>
+                        <button
+                          onClick={handleDeleteTemplate}
+                          className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          aria-label="Delete Template"
+                        >
+                          Delete Template
+                        </button>
                       </div>
                     )}
                   </>
@@ -1364,23 +1357,44 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                     placeholder="Section Name"
-                    disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
+                    disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data" || !editMode}
                   />
                 </div>
-                <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Fields</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select and organize the fields for this section.</p>
-                  <div className={styles.searchContainer}>
-                    <FaSearch className={styles.searchIcon} />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search fields by name, type, or section"
-                      className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    />
-                  </div>
+                {!editMode && (
                   <div className={styles.section}>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Actions</h3>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage fields in this section.</p>
+                    <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div
+                        onClick={() => handleCreateHeader()}
+                        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        role="button"
+                        aria-label="Add New Field"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            handleCreateHeader();
+                          }
+                        }}
+                      >
+                        <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <FaPlus size={24} />
+                        </div>
+                        <div className={styles.cardContent}>
+                          <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Field</h3>
+                          <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for this section</p>
+                        </div>
+                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <IoChevronForward size={16} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className={styles.section}>
+                  <div className={styles.section}>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Fields in Section</h3>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>These fields are currently included in this section.</p>
                     {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
                       const header = currentCardTemplates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
                         key,
@@ -1396,33 +1410,22 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                           className={`${styles.keyItem} ${
                             draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
                           } ${isDarkTheme ? styles.darkTheme : ""}`}
-                          draggable={!isProtected}
-                          onDragStart={(e) => !editMode && handleDragStart(e, currentSectionIndex, index)}
-                          onDragOver={(e) => !editMode && handleDragOver(e, currentSectionIndex, index)}
-                          onDragEnd={() => !editMode && handleDragEnd()}
-                          onTouchStart={(e) => !editMode && handleTouchStart(e, currentSectionIndex, index)}
-                          onTouchMove={(e) => !editMode && handleTouchMove(e, currentSectionIndex, index)}
-                          onTouchEnd={() => !editMode && handleTouchEnd()}
+                          draggable={editMode && !isProtected}
+                          onDragStart={(e) => editMode && handleDragStart(e, currentSectionIndex, index)}
+                          onDragOver={(e) => editMode && handleDragOver(e, currentSectionIndex, index)}
+                          onDragEnd={() => editMode && handleDragEnd()}
+                          onTouchStart={(e) => editMode && handleTouchStart(e, currentSectionIndex, index)}
+                          onTouchMove={(e) => editMode && handleTouchMove(e, currentSectionIndex, index)}
+                          onTouchEnd={() => editMode && handleTouchEnd()}
                           onClick={(e) => {
                             const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
                             if (isCheckboxClick) {
                               !editMode && toggleKeySelection(currentSectionIndex, header.key);
-                            } else if (!editMode && headerIndex !== -1) {
+                            } else if (headerIndex !== -1) {
                               handleEditHeader(headerIndex);
                             }
                           }}
                         >
-                          {editMode && !isProtected && (
-                            <button
-                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteKey(currentSectionIndex, header.key);
-                              }}
-                            >
-                              <BsDashCircle />
-                            </button>
-                          )}
                           <div className={styles.headerContent}>
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
@@ -1437,79 +1440,15 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                 </span>
                                 <span className={styles.headerName}>{header.name}</span>
                               </div>
-                              {!editMode && (
+                              {editMode ? (
                                 <div className={styles.headerActions}>
-                                  {/* Hide info icon for id and typeOfCards */}
-                                  {!isProtected && (
-                                    <button
-                                      className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        headerIndex !== -1 && handleEditHeader(headerIndex);
-                                      }}
-                                    >
-                                      <FaInfoCircle />
-                                    </button>
-                                  )}
                                   <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                     {isProtected ? "" : <MdDragIndicator size={16} />}
                                   </span>
                                 </div>
-                              )}
-                            </div>
-                            <div className={styles.headerMeta}>
-                              <span className={styles.headerType}>{header.type}</span>
-                              {header.section && <span className={styles.headerSection}>{header.section}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {filteredHeaders().map((header) => {
-                      const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex(
-                        (h) => h.key === header.key
-                      );
-                      return (
-                        <div
-                          key={header.key}
-                          className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          onClick={(e) => {
-                            const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
-                            if (isCheckboxClick) {
-                              !editMode && toggleKeySelection(currentSectionIndex, header.key);
-                            } else if (!editMode && headerIndex !== -1) {
-                              handleEditHeader(headerIndex);
-                            }
-                          }}
-                        >
-                          <div className={styles.headerContent}>
-                            <div className={styles.headerRow}>
-                              <div className={styles.headerMain}>
-                                <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
-                                    header.key
-                                  ) ? (
-                                    <FaRegCheckCircle size={18} className={styles.checked} />
-                                  ) : (
-                                    <FaRegCircle size={18} />
-                                  )}
-                                </span>
-                                <span className={styles.headerName}>{header.name}</span>
-                              </div>
-                              {!editMode && (
-                                <div className={styles.headerActions}>
-                                  <button
-                                    className={`${styles.infoButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      headerIndex !== -1 && handleEditHeader(headerIndex);
-                                    }}
-                                  >
-                                    <FaInfoCircle />
-                                  </button>
-                                  <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                    <MdDragIndicator size={16} />
-                                  </span>
+                              ) : (
+                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  <IoChevronForward size={16} />
                                 </div>
                               )}
                             </div>
@@ -1522,13 +1461,75 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       );
                     })}
                   </div>
-                  <button
-                    className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    onClick={() => handleDeleteSection(currentSectionIndex)}
-                    disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
-                  >
-                    Delete Section
-                  </button>
+                  
+                  <div className={styles.section}>
+                    <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Available Fields</h3>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Search and select additional fields to add to this section.</p>
+                    <div className={styles.searchContainer}>
+                      <FaSearch className={styles.searchIcon} />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search fields by name, type, or section"
+                        className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                    </div>
+                    {filteredHeaders().map((header) => {
+                      const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex(
+                        (h) => h.key === header.key
+                      );
+                      return (
+                        <div
+                          key={header.key}
+                          className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          onClick={(e) => {
+                            const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
+                            if (isCheckboxClick) {
+                              toggleKeySelection(currentSectionIndex, header.key);
+                            } else if (headerIndex !== -1) {
+                              handleEditHeader(headerIndex);
+                            }
+                          }}
+                        >
+                          <div className={styles.headerContent}>
+                            <div className={styles.headerRow}>
+                              <div className={styles.headerMain}>
+                                <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                                    header.key
+                                  ) ? (
+                                    <FaRegCheckCircle size={18} className={styles.checked} />
+                                  ) : (
+                                    <FaRegCircle size={18} />
+                                  )}
+                                </span>
+                                <span className={styles.headerName}>{header.name}</span>
+                              </div>
+                              {!editMode && (
+                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  <IoChevronForward size={16} />
+                                </div>
+                              )}
+                            </div>
+                            <div className={styles.headerMeta}>
+                              <span className={styles.headerType}>{header.type}</span>
+                              {header.section && <span className={styles.headerSection}>{header.section}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {editMode && (
+                    <button
+                      className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={() => handleDeleteSection(currentSectionIndex)}
+                      disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
+                    >
+                      Delete Section
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -1556,23 +1557,31 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       disabled={['docId', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
                       tabIndex={['docId', 'typeOfCards', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                     />
-                    <select
-                      value={newHeaderType}
-                      onChange={(e) => setNewHeaderType(e.target.value)}
-                      className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      disabled={activeHeaderIndex !== -1 && activeHeaderIndex !== null} // Disable type select if editing an existing header
-                    >
-                      <option value="text">Text</option>
-                      <option value="number">Number</option>
-                      <option value="date">Date</option>
-                      <option value="currency">Currency</option>
-                      <option value="dropdown">Dropdown</option>
-                      <option value="multi-select">Multi-Select</option>
-                    </select>
+                    <div className={styles.fieldContainer}>
+                      <select
+                        value={newHeaderType}
+                        onChange={(e) => setNewHeaderType(e.target.value)}
+                        className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        disabled={activeHeaderIndex !== -1 && activeHeaderIndex !== null} // Disable type select if editing an existing header
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="currency">Currency</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="multi-select">Multi-Select</option>
+                      </select>
+                      {activeHeaderIndex !== -1 && activeHeaderIndex !== null && (
+                        <div className={`${styles.lockedIndicator} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <span className={styles.lockIcon}>🔒</span>
+                          <span className={styles.lockText}>Field type cannot be changed after creation</span>
+                        </div>
+                      )}
+                    </div>
                     {/* Show options for dropdown and multi-select */}
                     {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
-                      <div className={styles.optionsSection}>
-                        <div className={styles.optionInputRow}>
+                      <div className={`${styles.optionsSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div className={`${styles.optionInputRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <input
                             type="text"
                             value={newOption}
@@ -1588,7 +1597,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             +
                           </button>
                         </div>
-                        <div className={styles.optionsList}>
+                        <div className={`${styles.optionsList} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {newHeaderOptions.map((option) => (
                             <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <span>{option}</span>
@@ -1676,8 +1685,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         ))}
                     </select>
                     {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
-                      <div className={styles.optionsSection}>
-                        <div className={styles.optionInputRow}>
+                      <div className={`${styles.optionsSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div className={`${styles.optionInputRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <input
                             type="text"
                             value={newOption}
@@ -1693,7 +1702,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             +
                           </button>
                         </div>
-                        <div className={styles.optionsList}>
+                        <div className={`${styles.optionsList} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {newHeaderOptions.map((option) => (
                             <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <span>{option}</span>
