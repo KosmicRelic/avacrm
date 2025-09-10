@@ -734,7 +734,26 @@ const CardsEditor = ({
                         {section.fields.length > 0 ? (
                           section.fields.map((field) => (
                             <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
+                              <div className={styles.fieldHeader}>
+                                <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
+                                {field.type === 'date' && (() => {
+                                  const dateValue = formatDateForInput(historicalFormData[field.key]);
+                                  const timeValue = formatTimeForInput(historicalFormData[field.key]);
+                                  return (!isViewingHistory && (dateValue || timeValue)) ? (
+                                    <button
+                                      type="button"
+                                      aria-label="Clear date and time"
+                                      className={styles.clearButton}
+                                      onClick={() => {
+                                        setFormData(prev => ({ ...prev, [field.key]: '' }));
+                                        setShowInputsMap(prev => ({ ...prev, [field.key]: false }));
+                                      }}
+                                    >
+                                      Clear
+                                    </button>
+                                  ) : null;
+                                })()}
+                              </div>
                               {field.key === 'assignedTo' ? (
                                 <select
                                   value={formData.assignedTo || ''}
@@ -804,8 +823,8 @@ const CardsEditor = ({
                                     );
                                   }
                                   return (
-                                    <span className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                      <div style={{ display: 'flex', gap: 8 }}>
+                                    <div className={styles.dateTimeWrapper}>
+                                      <div className={`${styles.dateTimeContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                                         <input
                                           type="date"
                                           value={dateValue}
@@ -815,8 +834,7 @@ const CardsEditor = ({
                                             field.type,
                                             { type: 'date', timeValue: timeValue }
                                           )}
-                                          className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
-                                          style={{ backgroundColor: 'transparent', padding: 0 }}
+                                          className={`${styles.fieldInput} ${styles.dateInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
                                           placeholder={`Enter ${field.name}`}
                                           aria-label={`Enter ${field.name} date`}
                                           readOnly={isViewingHistory}
@@ -831,27 +849,13 @@ const CardsEditor = ({
                                             field.type,
                                             { type: 'time', dateValue: dateValue }
                                           )}
-                                          className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                          className={`${styles.fieldInput} ${styles.timeInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                                           aria-label={`Enter ${field.name} time`}
-                                          style={{ backgroundColor: 'transparent', padding: 0 }}
                                           readOnly={isViewingHistory}
                                           disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
                                         />
                                       </div>
-                                      {!isViewingHistory && (dateValue || timeValue) && (
-                                        <button
-                                          type="button"
-                                          aria-label="Clear date and time"
-                                          style={{ marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 18 }}
-                                          onClick={() => {
-                                            setFormData(prev => ({ ...prev, [field.key]: '' }));
-                                            setShowInputsMap(prev => ({ ...prev, [field.key]: false }));
-                                          }}
-                                        >
-                                          ×
-                                        </button>
-                                      )}
-                                    </span>
+                                    </div>
                                   );
                                 })()
                               ) : (

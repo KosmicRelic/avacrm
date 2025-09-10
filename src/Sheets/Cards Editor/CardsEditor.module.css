@@ -223,7 +223,7 @@
 /* Section Button */
 .sectionButton {
   width: 100%;
-  padding: 16px 20px;
+  padding: 20px 20px;
   margin-bottom: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
@@ -295,8 +295,8 @@
   display: none;
   margin-top: 12px;
   padding: 16px 20px;
-  background: rgba(242, 242, 247, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: transparent;
+  /* border: 1px solid rgba(0, 0, 0, 0.04); */
   border-radius: 12px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -311,18 +311,13 @@
   animation: slideDown 0.3s ease-out;
 }
 
-.sectionContent.darkTheme {
-  background: rgba(44, 44, 46, 0.8);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
 /* Field Item */
 .fieldItem {
   display: flex;
   flex-direction: column;
   padding: 18px 20px;
   margin-bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(242, 242, 247, 0.8);
   border: 2px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -340,7 +335,7 @@
 }
 
 .fieldItem.darkTheme {
-  background: rgba(28, 28, 32, 0.9);
+  background: rgba(20, 20, 22, 0.6);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -373,6 +368,14 @@
   color: #0a84ff;
 }
 
+/* Field Header - Contains label and clear button in same row */
+.fieldHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 /* Field Input */
 .fieldInput {
   width: 100%;
@@ -400,6 +403,84 @@
   background: rgba(44, 44, 46, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Date and Time Input Styles */
+.dateInput,
+.timeInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.dateInput {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  margin-right: -1px;
+}
+
+.timeInput {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  margin-left: -1px;
+}
+
+.dateTimeWrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.dateTimeContainer {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.clearButton {
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.1) 0%, rgba(255, 69, 58, 0.15) 100%);
+  border: 2px solid rgba(255, 69, 58, 0.2);
+  color: #ff453a;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.1);
+  flex-shrink: 0;
+  min-width: 32px;
+  height: 32px;
+  gap: 4px;
+}
+
+.clearButton:hover {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.clearButton.darkTheme {
+  background: linear-gradient(135deg, rgba(255, 69, 58, 0.15) 0%, rgba(255, 69, 58, 0.2) 100%);
+  border-color: rgba(255, 69, 58, 0.3);
+  color: #ff453a;
+  box-shadow: 0 1px 4px rgba(255, 69, 58, 0.15);
+}
+
+.clearButton.darkTheme:hover {
+  background: linear-gradient(135deg, #ff453a 0%, #d83a34 100%);
+  border-color: #ff453a;
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .fieldInput.darkTheme::placeholder,
@@ -832,7 +913,7 @@
   }
 
   .sectionButton {
-    padding: 10px 12px;
+    padding: 20px 12px;
   }
 
   .sectionButton.darkTheme {
@@ -850,6 +931,18 @@
   .fieldInput,
   .fieldSelect {
     padding: 10px 12px;
+  }
+
+  .dateInput,
+  .timeInput {
+    padding: 10px 8px;
+  }
+
+  .clearButton {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+    padding: 0 4px;
   }
 
   .emptySection {
