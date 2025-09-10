@@ -218,7 +218,6 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  overflow: hidden; /* Prevent overflow from child elements */
 }
 
 /* Section Button */
@@ -243,7 +242,6 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  overflow: hidden; /* Prevent content overflow */
 }
 
 .sectionButton.darkTheme {
@@ -275,10 +273,6 @@
   pointer-events: none;
   font-weight: 600;
   color: #1d1d1f;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: calc(100% - 40px); /* Leave space for chevron */
 }
 
 .sectionTitle.darkTheme {
