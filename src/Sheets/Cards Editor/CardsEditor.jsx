@@ -707,7 +707,7 @@ const CardsEditor = ({
                         aria-expanded={openSections.includes(section.name)}
                         aria-controls={`section-content-${index}`}
                       >
-                        <span className={styles.sectionTitle}>{section.name}</span>
+                        <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
                         <svg
                           className={styles.chevron}
                           width="12"

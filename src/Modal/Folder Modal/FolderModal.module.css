@@ -263,18 +263,23 @@
 
 .actionButton.darkTheme {
   background: rgba(44, 44, 46, 0.8);
-  color: #0a84ff;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .actionButton:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  border: 1px solid rgba(0, 122, 255, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
 }
 
 .actionButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
 }
 
 .actionButton.primary {
@@ -710,16 +715,23 @@
 
 .actionButton.darkTheme {
   background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .actionButton:hover {
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .actionButton.darkTheme:hover {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  color: #ffffff;
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
 }
 
 .deleteLink {
