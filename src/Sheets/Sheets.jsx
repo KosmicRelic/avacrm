@@ -581,7 +581,7 @@ const Sheets = ({
               </button>
             )}
           </div>
-          {isBusinessUser && (
+          {isBusinessUser && !isSelectMode && (
             <button className={styles.editHeaderButton} onClick={onEditSheet}>
               Edit
             </button>
