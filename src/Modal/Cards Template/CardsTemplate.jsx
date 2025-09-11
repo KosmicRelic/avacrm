@@ -10,8 +10,7 @@ import { MdDragIndicator } from "react-icons/md";
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 import { db } from '../../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { exportArrayToCsv } from '../../Utils/exportArrayToCsv';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
@@ -20,19 +19,31 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const businessId = businessIdProp || businessIdContext;
 
   const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates || []).map((t) => ({
-      ...t,
-      headers: t.headers.map((h) => ({
-        ...h,
-        isUsed: h.key === "docId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
-      })),
-      sections: t.sections.map((s) => ({
-        ...s,
-        keys: s.keys.includes("docId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
-      })),
-      isModified: t.isModified || false,
-      action: t.action || null,
-    }))
+    (tempData.currentCardTemplates || cardTemplates || []).map((t) => {
+      // Remove duplicate headers based on key
+      const seenKeys = new Set();
+      const uniqueHeaders = t.headers?.filter(header => {
+        if (seenKeys.has(header.key)) {
+          return false;
+        }
+        seenKeys.add(header.key);
+        return true;
+      }) || [];
+
+      return {
+        ...t,
+        headers: uniqueHeaders.map((h) => ({
+          ...h,
+          isUsed: h.key === "docId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+        })),
+        sections: t.sections.map((s) => ({
+          ...s,
+          keys: s.keys.includes("docId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+        })),
+        isModified: t.isModified || false,
+        action: t.action || null,
+      };
+    })
   );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
@@ -1001,7 +1012,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const usedKeys = currentCardTemplates[selectedTemplateIndex]?.sections
       .flatMap((section) => section.keys) || [];
 
-    return (
+    const filtered = (
       currentCardTemplates[selectedTemplateIndex]?.headers?.filter(
         (header) =>
           !usedKeys.includes(header.key) &&
@@ -1010,6 +1021,16 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           )
       ) || []
     );
+
+    // Remove any potential duplicates based on key
+    const seenKeys = new Set();
+    return filtered.filter(header => {
+      if (seenKeys.has(header.key)) {
+        return false;
+      }
+      seenKeys.add(header.key);
+      return true;
+    });
   }, [currentCardTemplates, selectedTemplateIndex, currentSectionIndex, searchQuery]);
 
   // Delete template
@@ -1074,17 +1095,145 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const cardsRef = collection(db, 'businesses', businessId, 'cards');
       const q = query(cardsRef, where('typeOfCards', '==', typeOfCards));
       const snapshot = await getDocs(q);
-      const cards = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })); // changed id to docId
-      if (!cards.length) {
+      const rawCards = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })); // changed id to docId
+      if (!rawCards.length) {
         alert('No cards found for this template.');
         return;
       }
-      exportArrayToCsv(`${typeOfCards}_cards_export.csv`, cards);
+
+      // Get headers from template
+      const headers = template.headers.filter(h => h.isUsed);
+
+      // Prepare CSV headers and data mapping
+      const csvHeaders = [];
+      const dataMapping = [];
+
+      headers.forEach(header => {
+        const { key, name, type } = header;
+        if (type === 'date') {
+          csvHeaders.push(name);
+          dataMapping.push({ key, type, hasTime: false });
+          // Check if any card has time in this date field
+          const hasTime = rawCards.some(card => {
+            const value = card[key];
+            if (value && typeof value.toDate === 'function') {
+              const date = value.toDate();
+              return date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0;
+            }
+            return false;
+          });
+          if (hasTime) {
+            csvHeaders.push(`${name} Time`);
+            dataMapping[dataMapping.length - 1].hasTime = true;
+          }
+        } else {
+          csvHeaders.push(name);
+          dataMapping.push({ key, type });
+        }
+      });
+
+      // Prepare CSV rows
+      const csvRows = rawCards.map(card => {
+        const row = [];
+        dataMapping.forEach(({ key, type, hasTime }) => {
+          let value = card[key];
+          if (value === null || value === undefined) {
+            row.push('');
+            if (hasTime) row.push('');
+            return;
+          }
+
+          if (type === 'date') {
+            if (typeof value.toDate === 'function') {
+              const date = value.toDate();
+              // Use ISO date format for better spreadsheet compatibility
+              const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+              row.push(dateStr);
+              if (hasTime) {
+                const timeStr = date.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                });
+                row.push(timeStr);
+              }
+            } else if (value instanceof Date) {
+              // Use ISO date format for better spreadsheet compatibility
+              const dateStr = value.toISOString().split('T')[0]; // YYYY-MM-DD format
+              row.push(dateStr);
+              if (hasTime) {
+                const timeStr = value.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                });
+                row.push(timeStr);
+              }
+            } else {
+              row.push(String(value));
+              if (hasTime) row.push('');
+            }
+          } else if (type === 'currency') {
+            if (typeof value === 'number') {
+              row.push(value.toFixed(2));
+            } else {
+              row.push(String(value));
+            }
+          } else if (type === 'number') {
+            if (typeof value === 'number') {
+              row.push(value.toString());
+            } else {
+              row.push(String(value));
+            }
+          } else if (type === 'dropdown' || type === 'multi-select') {
+            if (Array.isArray(value)) {
+              row.push(value.join('; '));
+            } else {
+              row.push(String(value));
+            }
+          } else {
+            // text or other
+            row.push(String(value));
+          }
+        });
+        return row;
+      });
+
+      // Create CSV content
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => 
+          row.map(cell => {
+            // Only quote if necessary (contains comma, quote, or newline)
+            if (cell.includes(',') || cell.includes('"') || cell.includes('\n') || cell.includes('\r')) {
+              return `"${cell.replace(/"/g, '""')}"`;
+            }
+            return cell;
+          }).join(',')
+        )
+      ].join('\r\n');
+
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${typeOfCards}_cards_export.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
     } catch (err) {
       console.error('Export error:', err);
       alert('Failed to export cards.');
     }
   }, [selectedTemplateIndex, currentCardTemplates, businessId]);
+
+
+
+
+
 
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -1141,7 +1290,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         .filter((template) => template.action !== "remove")
                         .map((template, index) => (
                           <div
-                            key={index}
+                            key={template.name || `template-${index}`}
                             onClick={() => handleOpenEditor(template)}
                             className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
                             role="button"
@@ -1241,6 +1390,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               <IoChevronForward size={16} />
                             </div>
                           </div>
+
                         </div>
                       </div>
                     )}
@@ -1250,8 +1400,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
                         <div
-                          ref={(el) => sectionRefs.current.set(index, el)}
-                          key={index}
+                          ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
+                          key={section.name || `section-${index}`}
                           className={`${styles.configCard} ${
                             draggedSectionOrderIndex === index ? styles.dragging : ""
                           } ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -1406,7 +1556,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       return (
                         <div
                           ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
-                          key={index}
+                          key={`${currentSectionIndex}-${index}`}
                           className={`${styles.keyItem} ${
                             draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
                           } ${isDarkTheme ? styles.darkTheme : ""}`}

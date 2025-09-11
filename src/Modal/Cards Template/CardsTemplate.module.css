@@ -1501,6 +1501,32 @@
   -webkit-backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
+  outline: none;
+  transform-origin: center;
+}
+
+.configCard::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(0, 122, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+  pointer-events: none;
+}
+
+.configCard:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+.configCard:focus-visible {
+  outline: 2px solid #007aff;
+  outline-offset: 2px;
 }
 
 .configCard::before {
@@ -1511,12 +1537,25 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.configCard:hover::before,
+.configCard:focus-visible::before {
+  opacity: 1;
 }
 
 .configCard:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 16px 64px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.configCard:active {
+  transform: translateY(-2px) scale(1.01);
+  transition: all 0.1s ease;
 }
 
 .configCard.darkTheme {
@@ -1525,63 +1564,140 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+.configCard.darkTheme::after {
+  background: rgba(10, 132, 255, 0.15);
+}
+
+.configCard.darkTheme:focus-visible {
+  outline-color: #0a84ff;
+}
+
 .configCard.darkTheme::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 .configCard.darkTheme:hover {
-  background: rgba(44, 44, 46, 0.9);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(44, 44, 46, 0.95);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 16px 64px rgba(0, 0, 0, 0.3);
+  border-color: rgba(10, 132, 255, 0.3);
 }
 
 .activeCard {
   border-color: #007aff;
-  background: rgba(0, 122, 255, 0.04);
-  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.15), 0 2px 8px rgba(0, 122, 255, 0.08);
+  background: rgba(0, 122, 255, 0.06);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15), 0 4px 16px rgba(0, 122, 255, 0.12);
   z-index: 10;
+  animation: activePulse 2s ease-in-out infinite;
+}
+
+.activeCard .cardIcon {
+  background: linear-gradient(135deg, #007aff 0%, #34c759 50%, #ff9500 100%);
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.activeCard .cardTitle {
+  color: #007aff;
 }
 
 .activeCard.darkTheme {
   border-color: #0a84ff;
-  background: rgba(10, 132, 255, 0.06);
-  box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.2), 0 2px 8px rgba(10, 132, 255, 0.12);
+  background: rgba(10, 132, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2), 0 4px 16px rgba(10, 132, 255, 0.15);
+}
+
+.activeCard.darkTheme .cardIcon {
+  background: linear-gradient(135deg, #0a84ff 0%, #30d158 50%, #ff9f0a 100%);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.activeCard.darkTheme .cardTitle {
+  color: #0a84ff !important;
+}
+
+@keyframes activePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15), 0 4px 16px rgba(0, 122, 255, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25), 0 6px 20px rgba(0, 122, 255, 0.18);
+  }
+}
+
+.activeCard.darkTheme {
+  animation: activePulseDark 2s ease-in-out infinite;
+}
+
+@keyframes activePulseDark {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2), 0 4px 16px rgba(10, 132, 255, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3), 0 6px 20px rgba(10, 132, 255, 0.22);
+  }
 }
 
 /* Card Icon */
 .cardIcon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   margin: 16px 20px 0 20px;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.cardIcon::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.3), rgba(88, 86, 214, 0.3), rgba(255, 45, 85, 0.3));
+  z-index: -1;
+  opacity: 0;
+  transition: all 0.4s ease;
+  filter: blur(1px);
 }
 
 .cardIcon::after {
   content: '';
   position: absolute;
   inset: -2px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.3), rgba(88, 86, 214, 0.3), rgba(255, 45, 85, 0.3));
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.4), rgba(88, 86, 214, 0.4), rgba(255, 45, 85, 0.4));
   z-index: -1;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
+}
+
+.configCard:hover .cardIcon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 6px 24px rgba(0, 122, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.configCard:hover .cardIcon::before {
+  opacity: 0.8;
+  filter: blur(2px);
 }
 
 .configCard:hover .cardIcon::after {
   opacity: 1;
 }
 
+.configCard:active .cardIcon {
+  transform: scale(1.05) rotate(2deg);
+}
+
 .cardIcon.darkTheme {
   background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 50%, #ff453a 100%);
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Card Content */
@@ -1594,31 +1710,49 @@
 }
 
 .cardTitle {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #1d1d1f;
-  margin: 0 0 4px 0;
-  letter-spacing: -0.018em;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.022em;
   line-height: 1.2;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  transition: color 0.3s ease;
+}
+
+.configCard:hover .cardTitle {
+  color: #007aff;
 }
 
 .cardTitle.darkTheme {
   color: #ffffff !important;
 }
 
+.configCard.darkTheme:hover .cardTitle {
+  color: #0a84ff !important;
+}
+
 .cardDescription {
-  font-size: 15px;
+  font-size: 14px;
   color: #86868b;
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
   font-weight: 400;
-  letter-spacing: -0.008em;
+  letter-spacing: -0.016em;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  transition: color 0.3s ease;
+}
+
+.configCard:hover .cardDescription {
+  color: #636366;
 }
 
 .cardDescription.darkTheme {
   color: #98989d;
+}
+
+.configCard.darkTheme:hover .cardDescription {
+  color: #c7c7cc;
 }
 
 .cardBadge {
@@ -1738,29 +1872,55 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   color: #6e6e73;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 2;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.cardArrow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.configCard:hover .cardArrow {
+  background: rgba(0, 122, 255, 0.15);
+  color: #007aff;
+  transform: translateY(-50%) translateX(2px) scale(1.1);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.configCard:hover .cardArrow::before {
+  opacity: 1;
+}
+
+.configCard:active .cardArrow {
+  transform: translateY(-50%) translateX(1px) scale(1.05);
 }
 
 .cardArrow.darkTheme {
   color: #8e8e93;
   background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.cardArrow:hover {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
-  transform: translateY(-50%) scale(1.1);
+.cardArrow.darkTheme::before {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.15), rgba(94, 92, 230, 0.15));
 }
 
 .cardArrow.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
+  border-color: rgba(10, 132, 255, 0.3);
 }
