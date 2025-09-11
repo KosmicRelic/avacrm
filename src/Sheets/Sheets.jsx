@@ -231,14 +231,31 @@ const Sheets = ({
   const sheetTabsRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
+
+  const isMobile = windowWidth <= 1024;
+
+  // Animation trigger for opening and closing (both mobile and desktop)
+  useEffect(() => {
+    if (isEditorOpen && !isClosing) {
+      // Opening animation - use setTimeout to ensure DOM is ready
+      const timer = setTimeout(() => setShouldAnimateIn(true), 0);
+      return () => clearTimeout(timer);
+    } else if (isClosing) {
+      // Closing animation - keep animate-in class during closing
+      setShouldAnimateIn(true);
+    } else if (!isEditorOpen) {
+      // Reset animation state when fully closed
+      setShouldAnimateIn(false);
+    }
+  }, [isEditorOpen, isClosing]);
 
   const visibleHeaders = useMemo(() => headers.filter((header) => header.visible), [headers]);
-  const isMobile = windowWidth <= 1024;
 
   const folderSheets = useMemo(() => {
     const folderItems = sheets.structure.filter((item) => item.folderName);
@@ -690,7 +707,7 @@ const Sheets = ({
         {isMobile && isEditorOpen && (
           <div
             className={`${styles.cardDetailsMobile} ${
-              !isClosing ? styles.cardOpen : styles.cardClosed
+              shouldAnimateIn && !isClosing ? styles.cardOpen : isClosing ? styles.cardClosed : ''
             }`}
           >
             <CardsEditor
@@ -704,9 +721,10 @@ const Sheets = ({
           </div>
         )}
       </div>
-      {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          {isEditorOpen ? (
+      {isEditorOpen && !isMobile && (
+        <>
+          <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
+          <div className={`${styles.cardDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? styles['animate-in'] : isClosing ? styles['animate-out'] : ''}`}>
             <CardsEditor
               key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
@@ -715,12 +733,8 @@ const Sheets = ({
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
             />
-          ) : (
-            <div className={styles.placeholder}>
-              <p>Select a row to show its data</p>
-            </div>
-          )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

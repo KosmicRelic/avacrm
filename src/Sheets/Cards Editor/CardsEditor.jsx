@@ -731,29 +731,30 @@ const CardsEditor = ({
                           openSections.includes(section.name) ? styles.expanded : ''
                         }`}
                       >
-                        {section.fields.length > 0 ? (
-                          section.fields.map((field) => (
-                            <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              <div className={styles.fieldHeader}>
-                                <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
-                                {field.type === 'date' && (() => {
-                                  const dateValue = formatDateForInput(historicalFormData[field.key]);
-                                  const timeValue = formatTimeForInput(historicalFormData[field.key]);
-                                  return (!isViewingHistory && (dateValue || timeValue)) ? (
-                                    <button
-                                      type="button"
-                                      aria-label="Clear date and time"
-                                      className={styles.clearButton}
-                                      onClick={() => {
-                                        setFormData(prev => ({ ...prev, [field.key]: '' }));
-                                        setShowInputsMap(prev => ({ ...prev, [field.key]: false }));
-                                      }}
-                                    >
-                                      Clear
-                                    </button>
-                                  ) : null;
-                                })()}
-                              </div>
+                        <div className={styles.fieldGrid}>
+                          {section.fields.length > 0 ? (
+                            section.fields.map((field) => (
+                              <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                <div className={styles.fieldHeader}>
+                                  <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
+                                  {field.type === 'date' && (() => {
+                                    const dateValue = formatDateForInput(historicalFormData[field.key]);
+                                    const timeValue = formatTimeForInput(historicalFormData[field.key]);
+                                    return (!isViewingHistory && (dateValue || timeValue)) ? (
+                                      <button
+                                        type="button"
+                                        aria-label="Clear date and time"
+                                        className={styles.clearButton}
+                                        onClick={() => {
+                                          setFormData(prev => ({ ...prev, [field.key]: '' }));
+                                          setShowInputsMap(prev => ({ ...prev, [field.key]: false }));
+                                        }}
+                                      >
+                                        Clear
+                                      </button>
+                                    ) : null;
+                                  })()}
+                                </div>
                               {field.key === 'assignedTo' ? (
                                 <select
                                   value={formData.assignedTo || ''}
@@ -877,6 +878,7 @@ const CardsEditor = ({
                             No fields defined for this section.
                           </p>
                         )}
+                        </div>
                       </div>
                     </div>
                   ))
