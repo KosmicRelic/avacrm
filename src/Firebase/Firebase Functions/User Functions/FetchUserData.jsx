@@ -109,25 +109,100 @@ const fetchUserData = async ({
         const unsubscribeFunctions = [];
 
         if (!isBusinessUser) {
-          // For team members, we still need to handle individual sheet access
+          // For team members, set up real-time listeners for their allowed sheets
           if (allowedSheetIds && allowedSheetIds.length > 0) {
-            const teamMemberSheets = [];
-            for (const sheetId of allowedSheetIds) {
-              try {
-                const docSnap = await getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId));
-                if (docSnap.exists()) {
-                  teamMemberSheets.push({
-                    docId: docSnap.id,
-                    ...docSnap.data(),
-                  });
+            let currentTeamMemberSheets = [];
+            let currentAllowedSheetIds = allowedSheetIds;
+            
+            // First, set up a listener for the team member's permissions document
+            // This ensures they get updates when their permissions change
+            const teamMemberPermissionsUnsubscribe = onSnapshot(
+              doc(db, 'businesses', businessId, 'teamMembers', auth.currentUser.uid),
+              (teamMemberDoc) => {
+                if (teamMemberDoc.exists()) {
+                  const newAllowedSheetIds = teamMemberDoc.data().permissions?.sheets?.allowedSheetIds || [];
+                  // If permissions changed, we need to refetch sheets
+                  if (JSON.stringify(newAllowedSheetIds) !== JSON.stringify(currentAllowedSheetIds)) {
+                    currentAllowedSheetIds = newAllowedSheetIds;
+                    // The sheets listener will automatically update with the new permissions
+                  }
+                } else {
+                  // Team member document was deleted - clear all sheets
+                  setSheets && setSheets({ allSheets: [], structure: [] });
                 }
-              } catch (error) {
-                console.error('Error fetching team member sheet:', sheetId, error);
+              },
+              (error) => {
+                console.error('Error in team member permissions listener:', error);
               }
-            }
-            allSheets = teamMemberSheets;
-            structureData = deriveStructureFromSheets(allSheets);
-            setSheets && setSheets({ allSheets, structure: structureData });
+            );
+            
+            // Set up real-time listener for sheets collection (filtered to allowed sheets)
+            const sheetsUnsubscribe = onSnapshot(
+              collection(db, 'businesses', businessId, 'sheets'),
+              (sheetsSnapshot) => {
+                // Filter to only allowed sheets for this team member
+                currentTeamMemberSheets = sheetsSnapshot.docs
+                  .filter(doc => currentAllowedSheetIds.includes(doc.id))
+                  .map(doc => ({
+                    docId: doc.id,
+                    ...doc.data(),
+                  }));
+
+                const structureData = deriveStructureFromSheets(currentTeamMemberSheets);
+                
+                // Update sheets in state
+                setSheets && setSheets({
+                  allSheets: currentTeamMemberSheets,
+                  structure: structureData
+                });
+              },
+              (error) => {
+                console.error('Error in team member sheets real-time listener:', error);
+                setSheets && setSheets({ allSheets: [], structure: [] });
+              }
+            );
+
+            // Also listen to structure changes (team members should see folder organization)
+            const structureUnsubscribe = onSnapshot(
+              doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'),
+              (structureDoc) => {
+                let newStructureData = [];
+                if (structureDoc.exists()) {
+                  const structure = structureDoc.data().structure;
+                  // Filter structure to only include allowed sheets
+                  newStructureData = Array.isArray(structure) && structure.length > 0
+                    ? structure.filter(item => {
+                        if (item.sheetName) {
+                          // Single sheet - check if allowed
+                          const sheet = currentTeamMemberSheets.find(s => s.sheetName === item.sheetName);
+                          return !!sheet;
+                        } else if (item.folderName && item.sheets) {
+                          // Folder - filter to only allowed sheets
+                          const allowedSheetsInFolder = item.sheets.filter(sheetName => 
+                            currentTeamMemberSheets.some(s => s.sheetName === sheetName)
+                          );
+                          return allowedSheetsInFolder.length > 0 ? 
+                            { ...item, sheets: allowedSheetsInFolder } : null;
+                        }
+                        return false;
+                      }).filter(Boolean)
+                    : deriveStructureFromSheets(currentTeamMemberSheets);
+                } else {
+                  newStructureData = deriveStructureFromSheets(currentTeamMemberSheets);
+                }
+
+                // Update structure in state
+                setSheets && setSheets((prevSheets) => ({
+                  ...prevSheets,
+                  structure: newStructureData,
+                }));
+              },
+              (error) => {
+                console.error('Error in team member structure real-time listener:', error);
+              }
+            );
+
+            unsubscribeFunctions.push(teamMemberPermissionsUnsubscribe, sheetsUnsubscribe, structureUnsubscribe);
           } else {
             setSheets && setSheets({ allSheets: [], structure: [] });
           }

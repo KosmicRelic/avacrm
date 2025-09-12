@@ -126,6 +126,38 @@ export const MainContextProvider = ({ children }) => {
                 financials: perms?.financials?.role || 'none',
               };
               userType = 'team_member';
+              
+              // Set up real-time listener for team member permissions
+              // This ensures the user object updates when permissions change
+              const teamMemberUnsubscribe = onSnapshot(
+                doc(db, 'businesses', fetchedBusinessId, 'teamMembers', firebaseUser.uid),
+                (updatedTeamMemberDoc) => {
+                  if (updatedTeamMemberDoc.exists() && isMounted) {
+                    const updatedPerms = updatedTeamMemberDoc.data().permissions;
+                    const updatedUserPermissions = {
+                      dashboard: updatedPerms?.dashboard?.role || 'none',
+                      metrics: updatedPerms?.metrics?.role || 'none',
+                      sheets: updatedPerms?.sheets || { role: 'none', allowedSheetIds: [] },
+                      actions: updatedPerms?.actions?.role || 'none',
+                      financials: updatedPerms?.financials?.role || 'none',
+                    };
+                    
+                    // Update user object with new permissions
+                    setUser(prevUser => ({
+                      ...prevUser,
+                      permissions: updatedUserPermissions,
+                    }));
+                  }
+                },
+                (error) => {
+                  console.error('Error in team member permissions listener:', error);
+                }
+              );
+              
+              // Store the unsubscribe function for cleanup
+              if (isMounted) {
+                setUnsubscribeFunctions(prev => [...prev, teamMemberUnsubscribe]);
+              }
             }
           }
         } catch (e) {
