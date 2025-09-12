@@ -39,6 +39,7 @@ export const MainContextProvider = ({ children }) => {
   const [bannerQueue, setBannerQueue] = useState([]);
   const [actions, setActions] = useState([]);
   const [dataLoading, setDataLoading] = useState(false); // New: loading state for Firestore data
+  const [unsubscribeFunctions, setUnsubscribeFunctions] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
@@ -283,6 +284,32 @@ export const MainContextProvider = ({ children }) => {
     };
   }, [navigate, isSignup, location.pathname]);
 
+  // Cleanup unsubscribe functions when component unmounts
+  useEffect(() => {
+    return () => {
+      unsubscribeFunctions.forEach(unsub => {
+        if (typeof unsub === 'function') {
+          unsub();
+        }
+      });
+    };
+  }, []); // Only run on unmount
+
+  // Cleanup when businessId changes
+  useEffect(() => {
+    if (businessId) {
+      // Clear previous unsubscribe functions when business changes
+      setUnsubscribeFunctions(prev => {
+        prev.forEach(unsub => {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        });
+        return [];
+      });
+    }
+  }, [businessId]);
+
   useEffect(() => {
     if (!user || !user.uid) return;
 
@@ -388,9 +415,13 @@ export const MainContextProvider = ({ children }) => {
         setDashboards,
         activeSheetName,
         updateSheets: false,
-      }).then(() => {
+      }).then((unsubscribe) => {
         setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
+        // Store the unsubscribe function
+        if (typeof unsubscribe === 'function') {
+          setUnsubscribeFunctions(prev => [...prev, unsubscribe]);
+        }
       }).catch(() => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
@@ -444,16 +475,29 @@ export const MainContextProvider = ({ children }) => {
 
     const currentSheet = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const currentCardTypeFilters = currentSheet?.cardTypeFilters || {};
-    const prevCardTypeFilters = prevStates.current.sheets.allSheets.find(
+    const currentTypeOfCardsToDisplay = currentSheet?.typeOfCardsToDisplay || [];
+    
+    const prevSheet = prevStates.current.sheets.allSheets.find(
       (s) => s.sheetName === activeSheetName
-    )?.cardTypeFilters || {};
+    );
+    const prevCardTypeFilters = prevSheet?.cardTypeFilters || {};
+    const prevTypeOfCardsToDisplay = prevSheet?.typeOfCardsToDisplay || [];
 
-    if (JSON.stringify(currentCardTypeFilters) !== JSON.stringify(prevCardTypeFilters)) {
+    const cardTypeFiltersChanged = JSON.stringify(currentCardTypeFilters) !== JSON.stringify(prevCardTypeFilters);
+    const typeOfCardsToDisplayChanged = JSON.stringify(currentTypeOfCardsToDisplay) !== JSON.stringify(prevTypeOfCardsToDisplay);
+
+    if (cardTypeFiltersChanged || typeOfCardsToDisplayChanged) {
       if (currentSheet?.docId) {
         setSheetCardsFetched((prev) => {
           const newFetched = { ...prev };
           delete newFetched[currentSheet.docId];
           return newFetched;
+        });
+        // Also clear the cards cache for this sheet to force a fresh fetch
+        setCardsCache((prev) => {
+          const newCache = { ...prev };
+          delete newCache[currentSheet.docId];
+          return newCache;
         });
       }
     }
@@ -936,9 +980,13 @@ export const MainContextProvider = ({ children }) => {
         setDashboards,
         activeSheetName,
         updateSheets: false,
-      }).then(() => {
+      }).then((unsubscribe) => {
         setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
+        // Store the unsubscribe function
+        if (typeof unsubscribe === 'function') {
+          setUnsubscribeFunctions(prev => [...prev, unsubscribe]);
+        }
       }).catch(() => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });

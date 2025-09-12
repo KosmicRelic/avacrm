@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "devhost": "npm run dev -- --host",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -33,6 +34,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.5.2",
     "react-swipeable": "^7.0.2",
+    "react-window": "^2.1.0",
+    "react-window-infinite-loader": "^1.0.10",
     "resend": "^4.5.2",
     "uuid": "^11.1.0"
   },

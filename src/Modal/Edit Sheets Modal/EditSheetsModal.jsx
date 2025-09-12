@@ -222,10 +222,17 @@ const EditSheetsModal = ({
       cardsPerSearch,
       filterOrder,
     });
+    
+    // Clear cache when sheet name changes or when typeOfCardsToDisplay changes
+    const typeOfCardsChanged = JSON.stringify(selectedCardTypes) !== JSON.stringify(tempData.typeOfCardsToDisplay);
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
       clearFetchedSheets();
+    } else if (typeOfCardsChanged) {
+      // Clear cache for current sheet when card types change
+      clearFetchedSheets(sheetId);
     }
+    
     handleClose({ fromSave: true });
   }, [
     sheetName,

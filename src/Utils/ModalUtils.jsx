@@ -661,6 +661,7 @@ export const renderModalContent = ({
   handleFolderSave,
   setSheets,
   businessId,
+  clearFetchedSheets,
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
@@ -686,7 +687,7 @@ export const renderModalContent = ({
           onDeleteSheet={handleDeleteSheet}
           handleClose={handleModalClose}
           setActiveSheetName={handleSheetChange}
-          clearFetchedSheets={() => {}}
+          clearFetchedSheets={clearFetchedSheets}
         />
       );
     case 'filter':
@@ -811,6 +812,7 @@ export const onEditSheet = ({
   activeSheetName,
   resolvedHeaders,
   activeSheet,
+  clearFetchedSheets,
 }) => {
   if (!sheets) return;
   setIsSheetModalEditMode(true);

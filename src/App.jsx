@@ -95,6 +95,7 @@ function App() {
     setActiveSheetName,
     sheetCardsFetched,
     setSheetCardsFetched,
+    setCardsCache,
   } = useContext(MainContext);
 
   const location = useLocation();
@@ -502,6 +503,25 @@ function App() {
     businessId,
     cards,
     setCards,
+    clearFetchedSheets: (sheetId) => {
+      if (sheetId) {
+        // Clear cache for specific sheet
+        setSheetCardsFetched((prev) => {
+          const newFetched = { ...prev };
+          delete newFetched[sheetId];
+          return newFetched;
+        });
+        setCardsCache((prev) => {
+          const newCache = { ...prev };
+          delete newCache[sheetId];
+          return newCache;
+        });
+      } else {
+        // Clear all caches if no specific sheet ID
+        setSheetCardsFetched({});
+        setCardsCache({});
+      }
+    },
   };
 
   // Show header and main content immediately, even if data is not yet loaded

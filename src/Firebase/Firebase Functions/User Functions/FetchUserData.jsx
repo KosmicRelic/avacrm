@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, getDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
 
 // Module-level cache to track fetched sheets and current businessId
@@ -106,56 +106,83 @@ const fetchUserData = async ({
       try {
         const isBusinessUser = auth.currentUser?.uid === businessId;
         allowedSheetIds = await getAllowedSheetIds();
-        let sheetsPromise, structureDocPromise;
+        const unsubscribeFunctions = [];
+
         if (!isBusinessUser) {
+          // For team members, we still need to handle individual sheet access
           if (allowedSheetIds && allowedSheetIds.length > 0) {
-            sheetsPromise = Promise.all(
-              allowedSheetIds.map((sheetId) => {
-                return getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId)).then((docSnap) => {
-                  return docSnap;
-                });
-              })
-            );
-          } else {
-            sheetsPromise = Promise.resolve([]);
-          }
-          structureDocPromise = Promise.resolve(null);
-        } else {
-          sheetsPromise = getDocs(collection(db, 'businesses', businessId, 'sheets'));
-          structureDocPromise = getDoc(doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'));
-        }
-        // PHASE 1: Fetch sheets and structure only
-        const [sheetsResult, structureDoc] = await Promise.all([
-          sheetsPromise,
-          structureDocPromise,
-        ]);
-
-        if (!isBusinessUser) {
-          // Team member
-          allSheets = sheetsResult
-            .filter((doc) => doc && doc.exists())
-            .map((doc) => ({
-              docId: doc.id,
-              ...doc.data(),
-            }));
-          structureData = deriveStructureFromSheets(allSheets);
-        } else {
-          // Business user
-          allSheets = sheetsResult.docs.map((doc) => ({
-            docId: doc.id,
-            ...doc.data(),
-          }));
-          if (structureDoc && structureDoc.exists()) {
-            const structure = structureDoc.data().structure;
-            structureData = Array.isArray(structure) && structure.length > 0
-              ? structure
-              : deriveStructureFromSheets(allSheets);
-          } else {
+            const teamMemberSheets = [];
+            for (const sheetId of allowedSheetIds) {
+              try {
+                const docSnap = await getDoc(doc(db, 'businesses', businessId, 'sheets', sheetId));
+                if (docSnap.exists()) {
+                  teamMemberSheets.push({
+                    docId: docSnap.id,
+                    ...docSnap.data(),
+                  });
+                }
+              } catch (error) {
+                console.error('Error fetching team member sheet:', sheetId, error);
+              }
+            }
+            allSheets = teamMemberSheets;
             structureData = deriveStructureFromSheets(allSheets);
+            setSheets && setSheets({ allSheets, structure: structureData });
+          } else {
+            setSheets && setSheets({ allSheets: [], structure: [] });
           }
-        }
+        } else {
+          // For business users, set up real-time listeners
+          let currentAllSheets = [];
+          
+          // Real-time listener for sheets collection
+          const sheetsUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'sheets'),
+            (sheetsSnapshot) => {
+              currentAllSheets = sheetsSnapshot.docs.map((doc) => ({
+                docId: doc.id,
+                ...doc.data(),
+              }));
 
-        setSheets && setSheets({ allSheets, structure: structureData });
+              // Update sheets in state
+              setSheets && setSheets((prevSheets) => ({
+                ...prevSheets,
+                allSheets: currentAllSheets,
+              }));
+            },
+            (error) => {
+              console.error('Error in sheets real-time listener:', error);
+              setSheets && setSheets({ allSheets: [], structure: [] });
+            }
+          );
+
+          // Real-time listener for sheets structure document
+          const structureUnsubscribe = onSnapshot(
+            doc(db, 'businesses', businessId, 'sheetsStructure', 'structure'),
+            (structureDoc) => {
+              let newStructureData = [];
+              if (structureDoc.exists()) {
+                const structure = structureDoc.data().structure;
+                newStructureData = Array.isArray(structure) && structure.length > 0
+                  ? structure
+                  : deriveStructureFromSheets(currentAllSheets);
+              } else {
+                newStructureData = deriveStructureFromSheets(currentAllSheets);
+              }
+
+              // Update structure in state
+              setSheets && setSheets((prevSheets) => ({
+                ...prevSheets,
+                structure: newStructureData,
+              }));
+            },
+            (error) => {
+              console.error('Error in structure real-time listener:', error);
+            }
+          );
+
+          unsubscribeFunctions.push(sheetsUnsubscribe, structureUnsubscribe);
+        }
         // PHASE 2: Defer cardTemplates, metrics, dashboards fetch to background
         setTimeout(() => {
           getDocs(collection(db, 'businesses', businessId, 'cardTemplates')).then((cardTemplatesSnapshot) => {
@@ -183,6 +210,15 @@ const fetchUserData = async ({
             );
           });
         }, 0);
+
+        // Return combined unsubscribe function for sheet structure listeners
+        return () => {
+          unsubscribeFunctions.forEach(unsub => {
+            if (typeof unsub === 'function') {
+              unsub();
+            }
+          });
+        };
       } catch (error) {
         console.error('Error fetching sheets:', {
           code: error.code,
@@ -194,7 +230,15 @@ const fetchUserData = async ({
         });
         setSheets && setSheets({ allSheets: [], structure: [] });
         setCards && setCards([]);
-        return () => {}; // For React Suspense compatibility
+        
+        // Return combined unsubscribe function for any listeners that were set up
+        return () => {
+          unsubscribeFunctions.forEach(unsub => {
+            if (typeof unsub === 'function') {
+              unsub();
+            }
+          });
+        };
       }
     } else {
       try {
@@ -253,14 +297,16 @@ const fetchUserData = async ({
       fetchedSheets.set(sheetId, new Map());
     }
 
-    // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters
+    // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters with real-time updates
     try {
       if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
         setCards && setCards([]);
-        return () => {}; // For React Suspense compatibility
+        return () => {}; // Return empty unsubscribe function
       }
 
-      const filteredCards = [];
+      const unsubscribeFunctions = [];
+      const cardsByType = new Map(); // Store cards by type locally
+
       for (const type of typeOfCardsToDisplay) {
         // Invalidate cache if cardTypeFilters have changed
         const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
@@ -323,42 +369,91 @@ const fetchUserData = async ({
           }
         });
 
-        const snapshot = await getDocs(cardQuery);
-        let newCards = snapshot.docs.map((doc) => ({
-          docId: doc.id,
-          ...doc.data(),
-        }));
+        // Set up real-time listener for this card type with optimized delta processing
+        const unsubscribe = onSnapshot(cardQuery, (snapshot) => {
+          // Process only the changes (more efficient than rebuilding everything)
+          snapshot.docChanges().forEach((change) => {
+            let cardData = {
+              docId: change.doc.id,
+              ...change.doc.data(),
+            };
 
-        // Apply client-side filtering for text conditions not supported by Firestore
-        if (clientSideFilters.length > 0) {
-          newCards = newCards.filter((card) => {
-            return clientSideFilters.every(({ field, filter }) => {
-              const cardValue = String(card[field] || '').toLowerCase();
-              const filterValue = filter.value?.toLowerCase() || '';
-              switch (filter.condition) {
-                case 'contains':
-                  return cardValue.includes(filterValue);
-                case 'startsWith':
-                  return cardValue.startsWith(filterValue);
-                case 'endsWith':
-                  return cardValue.endsWith(filterValue);
-                default:
-                  return true;
+            // Apply client-side filtering to this specific card
+            let passesFilter = true;
+            if (clientSideFilters.length > 0) {
+              passesFilter = clientSideFilters.every(({ field, filter }) => {
+                const cardValue = String(cardData[field] || '').toLowerCase();
+                const filterValue = filter.value?.toLowerCase() || '';
+                switch (filter.condition) {
+                  case 'contains':
+                    return cardValue.includes(filterValue);
+                  case 'startsWith':
+                    return cardValue.startsWith(filterValue);
+                  case 'endsWith':
+                    return cardValue.endsWith(filterValue);
+                  default:
+                    return true;
+                }
+              });
+            }
+
+            // Get current cards for this type
+            const currentCards = cardsByType.get(type) || [];
+
+            if (change.type === 'added' && passesFilter) {
+              // Add new card
+              cardsByType.set(type, [...currentCards, cardData]);
+            } else if (change.type === 'modified') {
+              // Update existing card
+              const updatedCards = currentCards.map(card => 
+                card.docId === cardData.docId ? (passesFilter ? cardData : null) : card
+              ).filter(Boolean);
+              
+              // If card now passes filter but wasn't in list, add it
+              if (passesFilter && !currentCards.some(card => card.docId === cardData.docId)) {
+                updatedCards.push(cardData);
               }
-            });
+              
+              cardsByType.set(type, updatedCards);
+            } else if (change.type === 'removed') {
+              // Remove card
+              const filteredCards = currentCards.filter(card => card.docId !== cardData.docId);
+              cardsByType.set(type, filteredCards);
+            }
           });
-        }
 
-        filteredCards.push(...newCards);
+          // Only update state if there were actual changes
+          if (snapshot.docChanges().length > 0 && setCards) {
+            const allRealTimeCards = [];
+            for (const cardType of typeOfCardsToDisplay) {
+              const cardsForType = cardsByType.get(cardType) || [];
+              allRealTimeCards.push(...cardsForType);
+            }
+            
+            // Check if setCards is a wrapper function or direct state setter
+            if (setCards.length === 1) {
+              // It's a wrapper function that expects the full cards array
+              setCards(allRealTimeCards);
+            } else {
+              // It's a state setter function
+              setCards(() => allRealTimeCards);
+            }
+          }
+        });
+
+        unsubscribeFunctions.push(unsubscribe);
       }
 
-      // Merge with previously fetched cards for other sheets
-      setCards &&
-        setCards((prevCards) => {
-          const existingCardIds = new Set(prevCards.map((card) => card.docId));
-          const newCards = filteredCards.filter((card) => !existingCardIds.has(card.docId));
-          return [...prevCards, ...newCards];
-        });
+      // Return combined unsubscribe function
+      return () => {
+        unsubscribeFunctions.forEach(unsub => unsub());
+        // Clean up the temporary real-time cards storage
+        if (window.realTimeCards) {
+          for (const type of typeOfCardsToDisplay) {
+            window.realTimeCards.delete(type);
+          }
+        }
+      };
     } catch (error) {
       console.error('Error fetching cards:', {
         code: error.code,
@@ -372,6 +467,7 @@ const fetchUserData = async ({
         timestamp: new Date().toISOString(),
       });
       setCards && setCards([]);
+      return () => {}; // Return empty unsubscribe function
     }
   } else if (route === '/dashboard' || route === '/metrics') {
     // Parallelize dashboard and metrics fetches
