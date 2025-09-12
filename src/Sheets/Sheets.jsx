@@ -97,12 +97,19 @@ const Sheets = ({
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
+  // Optimize card type filtering with Set lookup (O(1) instead of O(n))
+  const sheetCardTypesSet = useMemo(() => new Set(sheetCardTypes), [sheetCardTypes]);
+
   const sheetCards = useMemo(() => {
     if (!activeSheet) return [];
-    return cards
-      .filter((card) => sheetCardTypes.includes(card.typeOfCards))
-      .filter((card) => {
-        const filters = cardTypeFilters[card.typeOfCards] || {};
+    
+    // Pre-filter by card types first (usually eliminates most cards quickly)
+    // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
+    const relevantCards = cards.filter((card) => sheetCardTypesSet.has(card.typeOfCards));
+    
+    // Then apply card type filters (only on relevant cards)
+    return relevantCards.filter((card) => {
+      const filters = cardTypeFilters[card.typeOfCards] || {};
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
             if (filter.headerKey && filter.condition === 'equals') {
@@ -166,7 +173,7 @@ const Sheets = ({
           }
         });
       });
-  }, [cards, sheetCardTypes, cardTypeFilters, headers, activeSheet, activeSheetName, user.uid]);
+  }, [cards, sheetCardTypesSet, cardTypeFilters, headers, user.uid]);
 
   const filteredWithGlobalFilters = useMemo(() => {
     return sheetCards.filter((row) =>
@@ -225,7 +232,7 @@ const Sheets = ({
         }
       })
     );
-  }, [sheetCards, globalFilters, headers, activeSheetName]);
+  }, [sheetCards, globalFilters, headers]); // Removed activeSheetName since it doesn't directly affect the filtering logic
 
   const scrollContainerRef = useRef(null);
   const sheetTabsRef = useRef(null);

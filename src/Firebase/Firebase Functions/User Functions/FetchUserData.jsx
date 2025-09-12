@@ -369,76 +369,91 @@ const fetchUserData = async ({
           }
         });
 
-        // Set up real-time listener for this card type with optimized delta processing
+        // Set up real-time listener with BATCHED updates for massive scale
+        let updateBatch = [];
+        let batchTimeout = null;
+        
         const unsubscribe = onSnapshot(cardQuery, (snapshot) => {
-          // Process only the changes (more efficient than rebuilding everything)
+          // Collect all changes in a batch instead of processing immediately
           snapshot.docChanges().forEach((change) => {
-            let cardData = {
-              docId: change.doc.id,
-              ...change.doc.data(),
-            };
-
-            // Apply client-side filtering to this specific card
-            let passesFilter = true;
-            if (clientSideFilters.length > 0) {
-              passesFilter = clientSideFilters.every(({ field, filter }) => {
-                const cardValue = String(cardData[field] || '').toLowerCase();
-                const filterValue = filter.value?.toLowerCase() || '';
-                switch (filter.condition) {
-                  case 'contains':
-                    return cardValue.includes(filterValue);
-                  case 'startsWith':
-                    return cardValue.startsWith(filterValue);
-                  case 'endsWith':
-                    return cardValue.endsWith(filterValue);
-                  default:
-                    return true;
-                }
-              });
-            }
-
-            // Get current cards for this type
-            const currentCards = cardsByType.get(type) || [];
-
-            if (change.type === 'added' && passesFilter) {
-              // Add new card
-              cardsByType.set(type, [...currentCards, cardData]);
-            } else if (change.type === 'modified') {
-              // Update existing card
-              const updatedCards = currentCards.map(card => 
-                card.docId === cardData.docId ? (passesFilter ? cardData : null) : card
-              ).filter(Boolean);
-              
-              // If card now passes filter but wasn't in list, add it
-              if (passesFilter && !currentCards.some(card => card.docId === cardData.docId)) {
-                updatedCards.push(cardData);
-              }
-              
-              cardsByType.set(type, updatedCards);
-            } else if (change.type === 'removed') {
-              // Remove card
-              const filteredCards = currentCards.filter(card => card.docId !== cardData.docId);
-              cardsByType.set(type, filteredCards);
-            }
+            updateBatch.push({ change, type, clientSideFilters });
           });
 
-          // Only update state if there were actual changes
-          if (snapshot.docChanges().length > 0 && setCards) {
-            const allRealTimeCards = [];
-            for (const cardType of typeOfCardsToDisplay) {
-              const cardsForType = cardsByType.get(cardType) || [];
-              allRealTimeCards.push(...cardsForType);
-            }
-            
-            // Check if setCards is a wrapper function or direct state setter
-            if (setCards.length === 1) {
-              // It's a wrapper function that expects the full cards array
+          // Debounce updates to handle rapid changes efficiently
+          clearTimeout(batchTimeout);
+          batchTimeout = setTimeout(() => {
+            if (updateBatch.length === 0) return;
+
+            // Process entire batch at once (much more efficient)
+            let hasAnyChanges = false;
+
+            updateBatch.forEach(({ change, type: batchType, clientSideFilters: filters }) => {
+              let cardData = {
+                docId: change.doc.id,
+                ...change.doc.data(),
+              };
+
+              // Apply client-side filtering
+              let passesFilter = true;
+              if (filters.length > 0) {
+                passesFilter = filters.every(({ field, filter }) => {
+                  const cardValue = String(cardData[field] || '').toLowerCase();
+                  const filterValue = filter.value?.toLowerCase() || '';
+                  switch (filter.condition) {
+                    case 'contains': return cardValue.includes(filterValue);
+                    case 'startsWith': return cardValue.startsWith(filterValue);
+                    case 'endsWith': return cardValue.endsWith(filterValue);
+                    default: return true;
+                  }
+                });
+              }
+
+              // Get current cards for this type (use array for O(1) operations)
+              let currentCards = cardsByType.get(batchType) || [];
+
+              if (change.type === 'added' && passesFilter) {
+                // Direct push instead of spread (much faster)
+                currentCards.push(cardData);
+                hasAnyChanges = true;
+              } else if (change.type === 'modified') {
+                // Find and update in place (O(n) but unavoidable)
+                const index = currentCards.findIndex(card => card.docId === cardData.docId);
+                if (passesFilter) {
+                  if (index >= 0) {
+                    currentCards[index] = cardData; // In-place update
+                  } else {
+                    currentCards.push(cardData); // Add if not found
+                  }
+                  hasAnyChanges = true;
+                } else if (index >= 0) {
+                  currentCards.splice(index, 1); // Remove if doesn't pass filter
+                  hasAnyChanges = true;
+                }
+              } else if (change.type === 'removed') {
+                const index = currentCards.findIndex(card => card.docId === cardData.docId);
+                if (index >= 0) {
+                  currentCards.splice(index, 1);
+                  hasAnyChanges = true;
+                }
+              }
+
+              cardsByType.set(batchType, currentCards);
+            });
+
+            // Single state update for entire batch (MASSIVE performance gain)
+            if (hasAnyChanges && setCards) {
+              const allRealTimeCards = [];
+              for (const cardType of typeOfCardsToDisplay) {
+                const cardsForType = cardsByType.get(cardType) || [];
+                allRealTimeCards.push(...cardsForType);
+              }
+              
               setCards(allRealTimeCards);
-            } else {
-              // It's a state setter function
-              setCards(() => allRealTimeCards);
             }
-          }
+
+            // Clear batch for next round
+            updateBatch = [];
+          }, 16); // 60fps batching - smooth but not overwhelming
         });
 
         unsubscribeFunctions.push(unsubscribe);
