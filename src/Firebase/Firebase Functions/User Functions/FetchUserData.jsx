@@ -260,30 +260,59 @@ const fetchUserData = async ({
         }
         // PHASE 2: Defer cardTemplates, metrics, dashboards fetch to background
         setTimeout(() => {
-          getDocs(collection(db, 'businesses', businessId, 'cardTemplates')).then((cardTemplatesSnapshot) => {
-            setCardTemplates && setCardTemplates(
-              cardTemplatesSnapshot.docs.map((doc) => ({
-                docId: doc.id,
-                ...doc.data(),
-              }))
-            );
-          });
-          getDocs(collection(db, 'businesses', businessId, 'metrics')).then((metricsSnapshot) => {
-            setMetrics && setMetrics(
-              metricsSnapshot.docs.map((doc) => ({
-                docId: doc.id,
-                ...doc.data(),
-              }))
-            );
-          });
-          getDocs(collection(db, 'businesses', businessId, 'dashboards')).then((dashboardsSnapshot) => {
-            setDashboards && setDashboards(
-              dashboardsSnapshot.docs.map((doc) => ({
-                docId: doc.id,
-                ...doc.data(),
-              }))
-            );
-          });
+          // Set up real-time listener for card templates
+          const cardTemplatesUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'cardTemplates'),
+            (cardTemplatesSnapshot) => {
+              setCardTemplates && setCardTemplates(
+                cardTemplatesSnapshot.docs.map((doc) => ({
+                  docId: doc.id,
+                  ...doc.data(),
+                }))
+              );
+            },
+            (error) => {
+              console.error('Error in card templates real-time listener:', error);
+            }
+          );
+          
+          // Store the unsubscribe function
+          unsubscribeFunctions.push(cardTemplatesUnsubscribe);
+          
+          // Set up real-time listener for metrics
+          const metricsUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'metrics'),
+            (metricsSnapshot) => {
+              setMetrics && setMetrics(
+                metricsSnapshot.docs.map((doc) => ({
+                  docId: doc.id,
+                  ...doc.data(),
+                }))
+              );
+            },
+            (error) => {
+              console.error('Error in metrics real-time listener:', error);
+            }
+          );
+          
+          // Set up real-time listener for dashboards
+          const dashboardsUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'dashboards'),
+            (dashboardsSnapshot) => {
+              setDashboards && setDashboards(
+                dashboardsSnapshot.docs.map((doc) => ({
+                  docId: doc.id,
+                  ...doc.data(),
+                }))
+              );
+            },
+            (error) => {
+              console.error('Error in dashboards real-time listener:', error);
+            }
+          );
+          
+          // Store the unsubscribe functions
+          unsubscribeFunctions.push(metricsUnsubscribe, dashboardsUnsubscribe);
         }, 0);
 
         // Return combined unsubscribe function for sheet structure listeners
