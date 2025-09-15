@@ -4,6 +4,7 @@ import styles from './CardsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
+import { getFormattedHistory, formatHistoryEntry, getCardCreator, getLastModifier } from '../../Utils/assignedToUtils';
 
 // Utility function to format field names
 const formatFieldName = (key) => {
@@ -334,6 +335,7 @@ const CardsEditor = ({
             field: key,
             value: historicalFormData[key] || '',
             timestamp,
+            modifiedBy: user?.uid,
           });
         }
       });
@@ -356,6 +358,7 @@ const CardsEditor = ({
               field: key,
               value: formData[key] || '',
               timestamp,
+              modifiedBy: user?.uid,
             });
           }
         });
@@ -375,6 +378,7 @@ const CardsEditor = ({
             field: key,
             value: formData[key],
             timestamp,
+            modifiedBy: user?.uid,
           });
         }
       });
@@ -447,36 +451,97 @@ const CardsEditor = ({
     setFormData(initialRowData || {});
   }, [initialRowData]);
 
-  const HistoryModal = () => (
-    <div className={`${styles.historyModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={styles.historyModalContent}>
-        <h2>Select History Date</h2>
-        {historyDates.length > 0 ? (
-          <ul className={styles.historyList}>
-            {historyDates.map((historyDate) => (
-              <li
-                key={historyDate._seconds}
-                className={styles.historyItem}
-                onClick={() => handleHistoryDateSelect(historyDate)}
-              >
-                {historyDate.date}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No history entries available.</p>
-        )}
-        <div className={styles.historyModalButtons}>
-          <button
-            className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleCancelHistory}
-          >
-            Cancel
-          </button>
+  const HistoryModal = () => {
+    const formattedHistory = getFormattedHistory(formData, user, teamMembers);
+    const cardCreator = getCardCreator(formData, user, teamMembers);
+    const lastModifier = getLastModifier(formData, user, teamMembers);
+    
+    return (
+      <div className={`${styles.historyModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={styles.historyModalContent}>
+          <h2>Card History</h2>
+          
+          {/* Card Summary */}
+          <div className={`${styles.historySummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <div className={styles.historyInfo}>
+              <strong>Created by:</strong> {cardCreator.name}
+              {cardCreator.timestamp && (
+                <span className={styles.historyTimestamp}>
+                  {' '}on {formatFirestoreTimestamp(cardCreator.timestamp)}
+                </span>
+              )}
+            </div>
+            {lastModifier.timestamp && (
+              <div className={styles.historyInfo}>
+                <strong>Last modified by:</strong> {lastModifier.name}
+                <span className={styles.historyTimestamp}>
+                  {' '}on {formatFirestoreTimestamp(lastModifier.timestamp)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* History Timeline */}
+          {formattedHistory.length > 0 ? (
+            <div className={styles.historyTimeline}>
+              <h3>Change History</h3>
+              <ul className={styles.historyList}>
+                {formattedHistory.map((entry, index) => (
+                  <li
+                    key={`${entry.timestamp?._seconds || index}-${entry.field}`}
+                    className={`${styles.historyItem} ${styles.detailedHistoryItem}`}
+                  >
+                    <div className={styles.historyEntry}>
+                      <div className={styles.historyEntryMain}>
+                        <span className={styles.historyField}>
+                          {formatFieldName(entry.field)}
+                        </span>
+                        <span className={styles.historyValue}>
+                          "{entry.value || '(empty)'}"
+                        </span>
+                      </div>
+                      <div className={styles.historyEntryMeta}>
+                        <span className={styles.historyUser}>
+                          {getTeamMemberName(entry.modifiedBy)}
+                        </span>
+                        <span className={styles.historyTimestamp}>
+                          {formatFirestoreTimestamp(entry.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Allow viewing card state at this point in time */}
+                    <button
+                      className={`${styles.viewAtTimeButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => handleHistoryDateSelect({
+                        _seconds: entry.timestamp._seconds,
+                        _nanoseconds: entry.timestamp._nanoseconds,
+                        date: formatFirestoreTimestamp(entry.timestamp)
+                      })}
+                      title="View card as it was at this time"
+                    >
+                      View
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p>No history entries available.</p>
+          )}
+
+          <div className={styles.historyModalButtons}>
+            <button
+              className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleCancelHistory}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const MultiSelectDropdown = ({ options, value, onChange, label, disabled, isDarkTheme }) => {
     const [open, setOpen] = useState(false);
@@ -887,6 +952,54 @@ const CardsEditor = ({
                     No sections defined for this card type.
                   </p>
                 )}
+                
+                {/* Card Info Section for existing cards */}
+                {isEditing && formData.history && formData.history.length > 0 && (
+                  <div className={`${styles.cardInfoSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.cardInfoHeader}>
+                      <h3>Card Information</h3>
+                    </div>
+                    <div className={styles.cardInfoContent}>
+                      {(() => {
+                        const creator = getCardCreator(formData, user, teamMembers);
+                        const lastModifier = getLastModifier(formData, user, teamMembers);
+                        return (
+                          <>
+                            <div className={styles.cardInfoItem}>
+                              <span className={styles.cardInfoLabel}>Created by:</span>
+                              <span className={styles.cardInfoValue}>
+                                {creator.name}
+                                {creator.timestamp && (
+                                  <span className={styles.cardInfoTimestamp}>
+                                    {' '}on {formatFirestoreTimestamp(creator.timestamp)}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            {lastModifier.timestamp && creator.timestamp !== lastModifier.timestamp && (
+                              <div className={styles.cardInfoItem}>
+                                <span className={styles.cardInfoLabel}>Last modified by:</span>
+                                <span className={styles.cardInfoValue}>
+                                  {lastModifier.name}
+                                  <span className={styles.cardInfoTimestamp}>
+                                    {' '}on {formatFirestoreTimestamp(lastModifier.timestamp)}
+                                  </span>
+                                </span>
+                              </div>
+                            )}
+                            <div className={styles.cardInfoItem}>
+                              <span className={styles.cardInfoLabel}>Total changes:</span>
+                              <span className={styles.cardInfoValue}>
+                                {formData.history.length} modification{formData.history.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
                 {isEditing && (
                   <div className={styles.deleteButtonWrapper}>
                     {isBusinessUser && (
