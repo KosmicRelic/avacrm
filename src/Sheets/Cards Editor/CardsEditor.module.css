@@ -1119,3 +1119,144 @@
     padding: 6px 10px;
   }
 }
+
+/* Pipeline Section Styles */
+.pipelineSection {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(247, 247, 247, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pipelineSection.darkTheme {
+  background: rgba(28, 28, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pipelineSection .sectionHeader h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.pipelineSection.darkTheme .sectionHeader h3 {
+  color: #ffffff;
+}
+
+.pipelineSection .sectionHeader p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #6e6e73;
+}
+
+.pipelineSection.darkTheme .sectionHeader p {
+  color: #98989d;
+}
+
+.pipelineList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pipelineCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.pipelineCard.darkTheme {
+  background: #1c1c1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pipelineCard:hover {
+  border-color: #007aff;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+}
+
+.pipelineCard.darkTheme:hover {
+  border-color: #0a84ff;
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.2);
+}
+
+.pipelineInfo h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.pipelineInfo.darkTheme h4 {
+  color: #ffffff;
+}
+
+.pipelineInfo p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #6e6e73;
+}
+
+.pipelineInfo.darkTheme p {
+  color: #98989d;
+}
+
+.mappingPreview {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mappingItem {
+  font-size: 12px;
+  padding: 2px 6px;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  border-radius: 4px;
+}
+
+.mappingItem.darkTheme {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+.mappingMore {
+  font-size: 12px;
+  color: #6e6e73;
+  font-style: italic;
+}
+
+.mappingMore.darkTheme {
+  color: #98989d;
+}
+
+.pipelineButton {
+  padding: 8px 16px;
+  background: #007aff;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pipelineButton:hover {
+  background: #0056cc;
+}
+
+.pipelineButton.darkTheme {
+  background: #0a84ff;
+}
+
+.pipelineButton.darkTheme:hover {
+  background: #0056cc;
+}

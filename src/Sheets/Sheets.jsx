@@ -452,6 +452,21 @@ const Sheets = ({
     [onCardSave, setCards]
   );
 
+  const handleOpenNewCard = useCallback(
+    (newCardData) => {
+      // Add the new card to the cards array
+      setCards((prev) => [...prev, newCardData]);
+      
+      // Save the card to Firestore
+      onCardSave(newCardData);
+      
+      // Open the new card in the editor immediately
+      setSelectedRow(newCardData);
+      setIsEditorOpen(true);
+    },
+    [onCardSave, setCards]
+  );
+
   const handleSelectToggle = useCallback(() => {
     setIsSelectMode((prev) => !prev);
     if (isSelectMode) setSelectedRowIds([]);
@@ -721,6 +736,7 @@ const Sheets = ({
               key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
+              onOpenNewCard={handleOpenNewCard}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
@@ -736,6 +752,7 @@ const Sheets = ({
               key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
+              onOpenNewCard={handleOpenNewCard}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}

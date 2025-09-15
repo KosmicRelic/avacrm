@@ -7,6 +7,7 @@ import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, F
 import { IoChevronForward } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { MdDragIndicator } from "react-icons/md";
+import { CgArrowsExchangeAlt } from "react-icons/cg";
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 import { db } from '../../firebase';
@@ -34,11 +35,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         ...t,
         headers: uniqueHeaders.map((h) => ({
           ...h,
-          isUsed: h.key === "docId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+          isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
         })),
         sections: t.sections.map((s) => ({
           ...s,
-          keys: s.keys.includes("docId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+          keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
         })),
         isModified: t.isModified || false,
         action: t.action || null,
@@ -66,6 +67,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
+  
+  // Pipeline configuration state
+  const [selectedTargetTemplate, setSelectedTargetTemplate] = useState("");
+  const [fieldMappings, setFieldMappings] = useState([]);
+  const [pipelineName, setPipelineName] = useState("");
+  
   const keyRefs = useRef(new Map());
   const sectionRefs = useRef(new Map());
   const hasInitialized = useRef(false);
@@ -101,7 +108,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    if (currentStep === 5 || currentStep === 4) {
+    if (currentStep === 6) {
+      setSelectedTargetTemplate("");
+      setPipelineName("");
+      setFieldMappings([]);
+      goBack();
+    } else if (currentStep === 5 || currentStep === 4) {
       setActiveHeaderIndex(null);
       resetHeaderForm();
       goBack();
@@ -126,8 +138,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     (index) => {
       if (selectedTemplateIndex === null) return;
       const header = currentCardTemplates[selectedTemplateIndex].headers[index];
-      if (header.key === "docId" || header.key === "typeOfCards" || header.key === "assignedTo") {
-        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be deleted.");
+      if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfCards" || header.key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deleted.");
         return;
       }
       const headerName = header.name;
@@ -165,9 +177,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
         return;
       }
-      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "typeOfCards" || key === "assignedTo");
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo");
       if (sectionContainsProtectedKey) {
-        alert("This section cannot be deleted because it contains the 'ID', 'Type of Cards' or 'Assigned To' field.");
+        alert("This section cannot be deleted because it contains the 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field.");
         return;
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
@@ -374,6 +386,87 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     [saveHeader, newHeaderType, newOption, addOption]
   );
 
+  // Save pipeline configuration
+  const savePipeline = useCallback(() => {
+    if (!selectedTargetTemplate || !pipelineName.trim() || fieldMappings.length === 0) {
+      alert("Please fill in all pipeline configuration fields.");
+      return;
+    }
+
+    setCurrentCardTemplates((prev) => {
+      const newTemplates = [...prev];
+      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      
+      // Add or update pipelines array
+      if (!currentTemplate.pipelines) {
+        currentTemplate.pipelines = [];
+      }
+      
+      const newPipeline = {
+        id: `pipeline_${Date.now()}`,
+        name: pipelineName.trim(),
+        targetTemplate: selectedTargetTemplate,
+        fieldMappings: [...fieldMappings],
+        createdAt: new Date().toISOString()
+      };
+      
+      currentTemplate.pipelines.push(newPipeline);
+      currentTemplate.isModified = true;
+      currentTemplate.action = currentTemplate.action || "update";
+      
+      newTemplates[selectedTemplateIndex] = currentTemplate;
+      return newTemplates;
+    });
+
+    // Reset pipeline form
+    setSelectedTargetTemplate("");
+    setPipelineName("");
+    setFieldMappings([]);
+    alert("Pipeline saved successfully!");
+    goBack();
+  }, [selectedTargetTemplate, pipelineName, fieldMappings, selectedTemplateIndex, goBack]);
+
+  // Add field mapping
+  const addFieldMapping = useCallback(() => {
+    setFieldMappings(prev => [...prev, { source: "", target: "" }]);
+  }, []);
+
+  // Update field mapping
+  const updateFieldMapping = useCallback((index, field, value) => {
+    setFieldMappings(prev => {
+      const newMappings = [...prev];
+      newMappings[index] = { ...newMappings[index], [field]: value };
+      return newMappings;
+    });
+  }, []);
+
+  // Remove field mapping
+  const removeFieldMapping = useCallback((index) => {
+    setFieldMappings(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Delete pipeline
+  const deletePipeline = useCallback((pipelineId) => {
+    if (selectedTemplateIndex === null) return;
+    
+    const pipeline = currentCardTemplates[selectedTemplateIndex].pipelines?.find(p => p.id === pipelineId);
+    if (!pipeline) return;
+    
+    if (window.confirm(`Are you sure you want to delete the pipeline "${pipeline.name}"? This action cannot be undone.`)) {
+      setCurrentCardTemplates((prev) => {
+        const newTemplates = [...prev];
+        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        
+        currentTemplate.pipelines = (currentTemplate.pipelines || []).filter(p => p.id !== pipelineId);
+        currentTemplate.isModified = true;
+        currentTemplate.action = currentTemplate.action || "update";
+        
+        newTemplates[selectedTemplateIndex] = currentTemplate;
+        return newTemplates;
+      });
+    }
+  }, [selectedTemplateIndex, currentCardTemplates]);
+
   // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
@@ -413,6 +506,15 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           rightButton: {
             label: "Save",
             onClick: saveHeader,
+            isActive: true,
+            isRemove: false,
+          },
+        },
+        {
+          title: "Pipeline Configuration",
+          rightButton: {
+            label: "Save Pipeline",
+            onClick: () => savePipeline(),
             isActive: true,
             isRemove: false,
           },
@@ -543,13 +645,29 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           isRemove: false,
         },
       });
+    } else if (currentStep === 6) {
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.name || "Template",
+        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.name || "Template", onClick: handleBack },
+        title: "Pipeline Configuration",
+        leftButton: null,
+        rightButton: {
+          label: "Save Pipeline",
+          onClick: savePipeline,
+          isActive: true,
+          isRemove: false,
+        },
+      });
     }
 
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, handleBack]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, savePipeline, handleBack]);
 
   // Confirm new template
   const confirmNewTemplate = useCallback(() => {
@@ -576,6 +694,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           isUsed: true,
         },
         {
+          key: "linkId",
+          name: "Link ID",
+          type: "text",
+          section: "Card Data",
+          isUsed: true,
+        },
+        {
           key: "typeOfCards",
           name: "Type of Cards",
           type: "text",
@@ -597,7 +722,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         },
         {
           name: "Card Data",
-          keys: ["docId", "typeOfCards", "assignedTo"],
+          keys: ["docId", "linkId", "typeOfCards", "assignedTo"],
         },
       ],
       isModified: true,
@@ -677,7 +802,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "typeOfCards" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -690,7 +815,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
     const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "typeOfCards" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -945,8 +1070,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "typeOfCards" || key === "assignedTo") {
-        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be deselected from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
       setCurrentCardTemplates((prev) => {
@@ -980,8 +1105,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "typeOfCards" || key === "assignedTo") {
-        alert("The 'ID', 'Type of Cards' or 'Assigned To' field cannot be removed from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
@@ -1238,7 +1363,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5].map((step) => (
+        {[1, 2, 3, 4, 5, 6].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
@@ -1390,6 +1515,39 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               <IoChevronForward size={16} />
                             </div>
                           </div>
+                          <div
+                            onClick={() => {
+                              setSelectedTargetTemplate("");
+                              setPipelineName("");
+                              setFieldMappings([]);
+                              setNavigationDirection("forward");
+                              goToStep(6);
+                            }}
+                            className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            role="button"
+                            aria-label="Configure Pipeline"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                setSelectedTargetTemplate("");
+                                setPipelineName("");
+                                setFieldMappings([]);
+                                setNavigationDirection("forward");
+                                goToStep(6);
+                              }
+                            }}
+                          >
+                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <CgArrowsExchangeAlt size={24} />
+                            </div>
+                            <div className={styles.cardContent}>
+                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure Pipeline</h3>
+                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automated card conversions</p>
+                            </div>
+                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <IoChevronForward size={16} />
+                            </div>
+                          </div>
 
                         </div>
                       </div>
@@ -1455,6 +1613,48 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       ))}
                       </div>
                     </div>
+                    
+                    {/* Existing Pipelines Section */}
+                    {!editMode && currentCardTemplates[selectedTemplateIndex].pipelines && currentCardTemplates[selectedTemplateIndex].pipelines.length > 0 && (
+                      <div className={styles.section}>
+                        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h2>
+                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your card conversion pipelines.</p>
+                        <div className={`${styles.pipelinesGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          {currentCardTemplates[selectedTemplateIndex].pipelines.map((pipeline) => (
+                            <div key={pipeline.id} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <div className={styles.pipelineCardContent}>
+                                <div className={styles.pipelineHeader}>
+                                  <h4 className={`${styles.pipelineTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h4>
+                                  <button
+                                    onClick={() => deletePipeline(pipeline.id)}
+                                    className={`${styles.deletePipelineButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                    aria-label={`Delete ${pipeline.name} pipeline`}
+                                  >
+                                    <FaTrash size={14} />
+                                  </button>
+                                </div>
+                                <p className={`${styles.pipelineDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  Converts to {pipeline.targetTemplate}
+                                </p>
+                                <div className={styles.pipelineMappings}>
+                                  {pipeline.fieldMappings.slice(0, 3).map((mapping, index) => (
+                                    <span key={index} className={`${styles.mappingBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                      {mapping.source} → {mapping.target}
+                                    </span>
+                                  ))}
+                                  {pipeline.fieldMappings.length > 3 && (
+                                    <span className={`${styles.mappingMore} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                      +{pipeline.fieldMappings.length - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     {editMode && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Danger Zone</h2>
@@ -1867,6 +2067,101 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {step === 6 && selectedTemplateIndex !== null && (
+              <>
+                <div className={styles.section}>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Configuration</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create automated card conversion pipelines.</p>
+                  
+                  <div className={`${styles.pipelineForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
+                      <input
+                        type="text"
+                        value={pipelineName}
+                        onChange={(e) => setPipelineName(e.target.value)}
+                        placeholder="e.g., Lead to Customer"
+                        className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
+                      <select
+                        value={selectedTargetTemplate}
+                        onChange={(e) => setSelectedTargetTemplate(e.target.value)}
+                        className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        <option value="">Select target template...</option>
+                        {currentCardTemplates
+                          .filter((template, index) => index !== selectedTemplateIndex)
+                          .map((template) => (
+                            <option key={template.docId} value={template.typeOfCards}>
+                              {template.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Mappings</label>
+                      <div className={styles.fieldMappings}>
+                        {fieldMappings.map((mapping, index) => (
+                          <div key={index} className={`${styles.mappingRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <select
+                              value={mapping.source}
+                              onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
+                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Source field...</option>
+                              {currentCardTemplates[selectedTemplateIndex].headers
+                                .filter(h => h.key !== 'docId' && h.key !== 'typeOfCards')
+                                .map((header) => (
+                                  <option key={header.key} value={header.key}>
+                                    {header.name}
+                                  </option>
+                                ))}
+                            </select>
+                            <span className={`${styles.mappingArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>→</span>
+                            <select
+                              value={mapping.target}
+                              onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
+                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              disabled={!selectedTargetTemplate}
+                            >
+                              <option value="">Target field...</option>
+                              {selectedTargetTemplate && currentCardTemplates
+                                .find(t => t.typeOfCards === selectedTargetTemplate)?.headers
+                                .filter(h => h.key !== 'docId' && h.key !== 'typeOfCards')
+                                .map((header) => (
+                                  <option key={header.key} value={header.key}>
+                                    {header.name}
+                                  </option>
+                                ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeFieldMapping(index)}
+                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addFieldMapping}
+                          className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        >
+                          + Add Field Mapping
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>

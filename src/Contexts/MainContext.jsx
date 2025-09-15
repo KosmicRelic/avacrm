@@ -625,7 +625,16 @@ export const MainContextProvider = ({ children }) => {
             docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
             addedCardsMap.set(card, docRef.id); // Map original card to new Firestore ID
             const { isModified, action, docId, sheetName, ...cardData } = card;
-            batch.set(docRef, cardData);
+            
+            // Clean up undefined values for Firestore
+            const cleanCardData = {};
+            Object.keys(cardData).forEach(key => {
+              if (cardData[key] !== undefined) {
+                cleanCardData[key] = cardData[key];
+              }
+            });
+            
+            batch.set(docRef, cleanCardData);
             hasChanges = true;
           } else if (card.action === 'remove') {
             docRef = doc(stateConfig.cards.collectionPath(), card.docId);
@@ -634,7 +643,16 @@ export const MainContextProvider = ({ children }) => {
           } else if (card.action === 'update') {
             docRef = doc(stateConfig.cards.collectionPath(), card.docId);
             const { isModified, action, docId, sheetName, ...cardData } = card;
-            batch.set(docRef, cardData);
+            
+            // Clean up undefined values for Firestore
+            const cleanCardData = {};
+            Object.keys(cardData).forEach(key => {
+              if (cardData[key] !== undefined) {
+                cleanCardData[key] = cardData[key];
+              }
+            });
+            
+            batch.set(docRef, cleanCardData);
             hasChanges = true;
           }
         }

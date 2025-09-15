@@ -46,6 +46,9 @@ const formatTimeForInput = (value) => {
 
 // Helper to parse yyyy-mm-dd as local date (not UTC)
 function parseLocalDate(dateString) {
+  if (!dateString || typeof dateString !== 'string') {
+    return new Date(); // Return current date as fallback
+  }
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -53,6 +56,7 @@ function parseLocalDate(dateString) {
 const CardsEditor = ({
   onClose,
   onSave,
+  onOpenNewCard, // New prop for opening a new card after pipeline execution
   initialRowData,
   startInEditMode,
   preSelectedSheet,
@@ -75,7 +79,10 @@ const CardsEditor = ({
   const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
-    const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
+    // Use formData.typeOfCards first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
+    const template = cardTemplates?.find((t) => t.name === templateName);
+    
     if (!template || !template.sections) return [];
     return template.sections.map((section) => ({
       name: section.name,
@@ -90,7 +97,19 @@ const CardsEditor = ({
           };
         }),
     }));
-  }, [selectedCardType, cardTemplates, isEditing, initialRowData]);
+  }, [selectedCardType, cardTemplates, isEditing, initialRowData, formData.typeOfCards]);
+
+  // Ensure formData has all required fields properly initialized
+  useEffect(() => {
+    if (!isEditing && selectedCardType && !formData.linkId) {
+      setFormData(prev => ({
+        ...prev,
+        linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        assignedTo: prev.assignedTo || user?.email || '',
+        typeOfCards: selectedCardType
+      }));
+    }
+  }, [selectedCardType, isEditing, formData.linkId, user?.email]);
 
   const historicalFormData = useMemo(() => {
     if (!isViewingHistory || !selectedHistoryDate || !formData.history) {
@@ -193,6 +212,27 @@ const CardsEditor = ({
     }
   }, [selectedSheet, sheets, isEditing]);
 
+  // Update component state when initialRowData changes (for pipeline conversions)
+  useEffect(() => {
+    if (initialRowData) {
+      const newTemplate = initialRowData.typeOfCards
+        ? cardTemplates?.find((t) => t.name === initialRowData.typeOfCards)
+        : null;
+      
+      setSelectedSheet(initialRowData.sheetName || preSelectedSheet || '');
+      setSelectedCardType(newTemplate?.name || '');
+      setFormData({ ...initialRowData });
+      setIsEditing(!!initialRowData.docId);
+      setView('editor');
+      
+      // Reset other states for the new card
+      setIsViewingHistory(false);
+      setSelectedHistoryDate(null);
+      setIsHistoryModalOpen(false);
+      setShowInputsMap({});
+    }
+  }, [initialRowData, cardTemplates, preSelectedSheet]);
+
   const handleSelectionNext = useCallback(() => {
     if (!selectedSheet) {
       alert('Please select a sheet.');
@@ -241,13 +281,18 @@ const CardsEditor = ({
               // If no previous value, use today's date (local)
               baseDate = new Date();
             }
-            let [hours, minutes] = value.split(':');
-            hours = parseInt(hours, 10);
-            minutes = parseInt(minutes, 10);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-              // Set hours/minutes directly on a local date
-              dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes, 0, 0);
-              formattedValue = Timestamp.fromDate(dateObj);
+            if (value && typeof value === 'string') {
+              let [hours, minutes] = value.split(':');
+              hours = parseInt(hours, 10);
+              minutes = parseInt(minutes, 10);
+              if (!isNaN(hours) && !isNaN(minutes)) {
+                // Set hours/minutes directly on a local date
+                dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes, 0, 0);
+                formattedValue = Timestamp.fromDate(dateObj);
+              } else if (baseDate) {
+                dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+                formattedValue = Timestamp.fromDate(dateObj);
+              }
             } else if (baseDate) {
               dateObj = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), baseDate.getHours(), baseDate.getMinutes(), 0, 0);
               formattedValue = Timestamp.fromDate(dateObj);
@@ -284,6 +329,74 @@ const CardsEditor = ({
     [isViewingHistory, formData]
   );
 
+  // Get available pipelines for current card type (filter out already used ones)
+  const getAvailablePipelines = useCallback(() => {
+    // Use formData.typeOfCards first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
+    const currentTemplate = cardTemplates?.find((t) => t.name === templateName);
+    const allPipelines = currentTemplate?.pipelines || [];
+    
+    // Filter out pipelines that have already been used for this card
+    const usedPipelineIds = formData.usedPipelines || [];
+    return allPipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
+  }, [cardTemplates, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
+
+  // Execute pipeline to convert card to another type
+  const executePipeline = useCallback((pipeline) => {
+    if (!pipeline || !formData.linkId) {
+      alert('Unable to execute pipeline: missing required data.');
+      return;
+    }
+
+    const targetTemplate = cardTemplates?.find((t) => t.typeOfCards === pipeline.targetTemplate);
+    if (!targetTemplate) {
+      alert('Target template not found.');
+      return;
+    }
+
+    // Create new card data with mapped fields
+    const newCardData = {
+      linkId: formData.linkId, // Keep the same linkId to maintain connection
+      typeOfCards: targetTemplate.name, // Use template name for consistency
+      assignedTo: formData.assignedTo || user?.email || '', // Always carry over assignedTo with fallback
+      history: [], // Start fresh history for new card type
+      isModified: true,
+      action: 'add',
+    };
+
+    // Apply field mappings
+    pipeline.fieldMappings.forEach(mapping => {
+      if (mapping.source && mapping.target && formData[mapping.source]) {
+        newCardData[mapping.target] = formData[mapping.source];
+      }
+    });
+
+    // Confirm the conversion
+    if (window.confirm(`Convert this ${formData.typeOfCards} to ${pipeline.targetTemplate}? This will save the current card and open the new card for immediate editing.`)) {
+      // Mark this pipeline as used in the current card
+      const updatedUsedPipelines = [...(formData.usedPipelines || []), pipeline.id];
+      const updatedFormData = {
+        ...formData,
+        usedPipelines: updatedUsedPipelines,
+        isModified: true,
+        action: 'update'
+      };
+      
+      // Save the updated source card first (to mark pipeline as used)
+      onSave(updatedFormData, true);
+      
+      // Then create and open the new target card for immediate editing
+      if (onOpenNewCard) {
+        onOpenNewCard(newCardData);
+      } else {
+        // Fallback: create the card and close editor
+        onSave(newCardData, false);
+        alert(`Successfully created ${pipeline.targetTemplate} card with Link ID: ${formData.linkId}`);
+        onClose();
+      }
+    }
+  }, [formData, cardTemplates, onSave, onClose, onOpenNewCard, user]);
+
   const handleSave = useCallback(() => {
     if (!selectedSheet) {
       alert('No sheet selected.');
@@ -305,13 +418,15 @@ const CardsEditor = ({
     let newRow = {
       ...formData,
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
+      linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
+      assignedTo: formData.assignedTo || user?.email || '',
       history: formData.history || [],
       isModified: true,
       action: isEditing ? 'update' : 'add',
     };
 
-    const requiredFields = ['docId', 'typeOfCards', 'history', 'isModified', 'action'];
+    const requiredFields = ['docId', 'linkId', 'typeOfCards', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];
@@ -904,7 +1019,7 @@ const CardsEditor = ({
                                           placeholder={`Enter ${field.name}`}
                                           aria-label={`Enter ${field.name} date`}
                                           readOnly={isViewingHistory}
-                                          disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                          disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                         <input
                                           type="time"
@@ -918,7 +1033,7 @@ const CardsEditor = ({
                                           className={`${styles.fieldInput} ${styles.timeInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                                           aria-label={`Enter ${field.name} time`}
                                           readOnly={isViewingHistory}
-                                          disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                          disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                       </div>
                                     </div>
@@ -933,7 +1048,7 @@ const CardsEditor = ({
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
                                   readOnly={isViewingHistory || field.key === 'assignedTo'}
-                                  disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'id'}
+                                  disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                 />
                               )}
                             </div>
@@ -1000,6 +1115,49 @@ const CardsEditor = ({
                   </div>
                 )}
                 
+                {/* Pipeline Section - Only show for saved cards with docId */}
+                {view === 'editor' && formData.docId && isEditing && formData.linkId && (() => {
+                  const availablePipelines = getAvailablePipelines();
+                  return availablePipelines.length > 0 && (
+                    <div className={`${styles.pipelineSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={styles.sectionWrapper}>
+                        <div className={styles.sectionHeader}>
+                          <h3>Available Conversions</h3>
+                          <p>Convert this card to another type using predefined pipelines</p>
+                        </div>
+                        <div className={styles.pipelineList}>
+                          {availablePipelines.map((pipeline) => (
+                            <div key={pipeline.id} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              <div className={`${styles.pipelineInfo} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                <h4>{pipeline.name}</h4>
+                                <p>Convert to {pipeline.targetTemplate}</p>
+                                <div className={styles.mappingPreview}>
+                                  {pipeline.fieldMappings.slice(0, 2).map((mapping, index) => (
+                                    <span key={index} className={`${styles.mappingItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                      {mapping.source} → {mapping.target}
+                                    </span>
+                                  ))}
+                                  {pipeline.fieldMappings.length > 2 && (
+                                    <span className={`${styles.mappingMore} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                      +{pipeline.fieldMappings.length - 2} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => executePipeline(pipeline)}
+                                className={`${styles.pipelineButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                Convert
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
                 {isEditing && (
                   <div className={styles.deleteButtonWrapper}>
                     {isBusinessUser && (
@@ -1035,6 +1193,7 @@ const CardsEditor = ({
 CardsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onOpenNewCard: PropTypes.func, // Optional callback for opening new cards
   initialRowData: PropTypes.shape({
     docId: PropTypes.string,
     sheetName: PropTypes.string,
@@ -1059,6 +1218,7 @@ CardsEditor.propTypes = {
 
 CardsEditor.defaultProps = {
   startInEditMode: false,
+  onOpenNewCard: null,
 };
 
 export default CardsEditor;
