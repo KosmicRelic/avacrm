@@ -13,9 +13,17 @@ import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { updateCardTemplatesAndCardsFunction } from '../../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
+import fetchUserData from '../../Firebase/Firebase Functions/User Functions/FetchUserData';
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
-  const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
+  const { 
+    cardTemplates, 
+    isDarkTheme, 
+    businessId: businessIdContext,
+    templateEntities: contextTemplateEntities,
+    setTemplateEntities: contextSetTemplateEntities,
+    setCardTemplates
+  } = useContext(MainContext);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   const businessId = businessIdProp || businessIdContext;
@@ -69,8 +77,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   
-  // Entity management state
-  const [templateEntities, setTemplateEntities] = useState([]);
+  // Entity management state - use context for global state synchronization
+  const templateEntities = contextTemplateEntities;
+  const setTemplateEntities = contextSetTemplateEntities;
   const [selectedEntityIndex, setSelectedEntityIndex] = useState(null);
   const [newEntityName, setNewEntityName] = useState("");
   const [showEntityForm, setShowEntityForm] = useState(false);
@@ -1060,7 +1069,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   );
 
   // Entity Management Functions
-  const createNewEntity = useCallback(() => {
+  const createNewEntity = useCallback(async () => {
     if (!newEntityName.trim()) {
       alert("Please enter an entity name.");
       return;
@@ -1072,13 +1081,64 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
     const newEntity = {
       id: uuidv4(),
-      name: newEntityName.trim()
+      name: newEntityName.trim(),
+      templates: [],
+      pipelines: []
     };
 
-    setTemplateEntities(prev => [...prev, newEntity]);
-    setNewEntityName("");
-    setShowEntityForm(false);
-  }, [newEntityName, templateEntities]);
+    try {
+      // Add entity to local state first
+      const updatedEntities = [...templateEntities, newEntity];
+      setTemplateEntities(updatedEntities);
+      
+      // Update tempData immediately
+      setTempData({ 
+        currentCardTemplates, 
+        deletedHeaderKeys, 
+        templateEntities: updatedEntities 
+      });
+      
+      // Save to backend immediately
+      await updateCardTemplatesAndCardsFunction({
+        businessId,
+        entities: updatedEntities.map(ent => ({
+          id: ent.id,
+          name: ent.name,
+          templates: currentCardTemplates.filter(template => 
+            template.entityId === ent.id && template.action !== "remove"
+          ),
+          pipelines: ent.pipelines || []
+        }))
+      });
+
+      // Refresh data from backend - use the same method as component mount
+      const entitiesRef = collection(db, 'businesses', businessId, 'templateEntities');
+      const snapshot = await getDocs(entitiesRef);
+      const refreshedEntities = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setTemplateEntities(refreshedEntities);
+      
+      // Update tempData with refreshed entities
+      setTempData({ 
+        currentCardTemplates, 
+        deletedHeaderKeys, 
+        templateEntities: refreshedEntities 
+      });
+
+      console.log(`Entity "${newEntity.name}" created successfully`);
+      
+      setNewEntityName("");
+      setShowEntityForm(false);
+    } catch (error) {
+      console.error('Error creating entity:', error);
+      alert('Failed to create entity. Please try again.');
+      
+      // Restore previous state in case of error
+      setTemplateEntities(templateEntities);
+    }
+  }, [newEntityName, templateEntities, businessId, currentCardTemplates, deletedHeaderKeys, setTempData]);
 
   const selectEntity = useCallback((entityIndex) => {
     setSelectedEntityIndex(entityIndex);
@@ -1086,24 +1146,90 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     goToStep(2);
   }, [goToStep]);
 
-  const deleteEntity = useCallback((entityIndex) => {
+  const deleteEntity = useCallback(async (entityIndex) => {
     const entity = templateEntities[entityIndex];
-    const entityTemplates = currentCardTemplates.filter(template => 
+    
+    // Check for templates in both local state and entity.templates (from backend)
+    const localTemplates = currentCardTemplates.filter(template => 
       template.entityId === entity.id && template.action !== "remove"
     );
+    const entityTemplatesFromBackend = entity.templates || [];
     
-    if (entityTemplates.length > 0) {
-      alert(`Cannot delete entity "${entity.name}" because it contains ${entityTemplates.length} template(s). Please delete all templates first.`);
+    // Count total templates (local + backend, avoiding duplicates)
+    const allTemplateIds = new Set([
+      ...localTemplates.map(t => t.docId),
+      ...entityTemplatesFromBackend.map(t => t.docId)
+    ]);
+    
+    if (allTemplateIds.size > 0) {
+      alert(`Cannot delete entity "${entity.name}" because it contains ${allTemplateIds.size} template(s). Please delete all templates first.`);
       return;
     }
-    
     if (window.confirm(`Are you sure you want to delete the entity "${entity.name}"? This action cannot be undone.`)) {
-      setTemplateEntities(prev => prev.filter((_, index) => index !== entityIndex));
-      if (selectedEntityIndex === entityIndex) {
-        setSelectedEntityIndex(null);
+      try {
+        // Remove entity from local state
+        const remainingEntities = templateEntities.filter((_, index) => index !== entityIndex);
+        setTemplateEntities(remainingEntities);
+        
+        // Remove any templates belonging to this entity from currentCardTemplates
+        const updatedCardTemplates = currentCardTemplates.filter(template => template.entityId !== entity.id);
+        setCurrentCardTemplates(updatedCardTemplates);
+        
+        // Immediately update tempData to reflect the deletion
+        setTempData({ 
+          currentCardTemplates: updatedCardTemplates, 
+          deletedHeaderKeys, 
+          templateEntities: remainingEntities 
+        });
+        
+        // Reset selected entity if it was the deleted one
+        if (selectedEntityIndex === entityIndex) {
+          setSelectedEntityIndex(null);
+        }
+        
+        // Save changes to backend immediately - include deleted entity with action: 'remove'
+        const entitiesToSend = [
+          ...remainingEntities.map(ent => ({
+            id: ent.id,
+            name: ent.name,
+            templates: updatedCardTemplates.filter(template => 
+              template.entityId === ent.id && template.action !== "remove"
+            ),
+            pipelines: ent.pipelines || []
+          })),
+          // Add the deleted entity with action: 'remove'
+          {
+            id: entity.id,
+            name: entity.name,
+            action: 'remove'
+          }
+        ];
+        
+        await updateCardTemplatesAndCardsFunction({
+          businessId,
+          entities: entitiesToSend
+        });
+        
+        // Refresh data from backend to ensure UI is synchronized
+        await fetchUserData({
+          businessId,
+          route: '/templates',
+          setCardTemplates,
+          setTemplateEntities,
+          updateSheets: false,
+        });
+        
+        console.log(`Entity "${entity.name}" deleted successfully`);
+      } catch (error) {
+        console.error('Error deleting entity:', error);
+        alert('Failed to delete entity. Please try again.');
+        
+        // Restore entity in case of error
+        setTemplateEntities(templateEntities);
+        setSelectedEntityIndex(selectedEntityIndex);
       }
     }
-  }, [templateEntities, selectedEntityIndex, currentCardTemplates]);
+  }, [templateEntities, selectedEntityIndex, currentCardTemplates, businessId, setCardTemplates, setTemplateEntities, deletedHeaderKeys, setTempData]);
 
   const updateEntityName = useCallback((entityIndex, newName) => {
     if (!newName.trim()) return;
@@ -1175,6 +1301,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         businessId,
         entities: entitiesWithTemplates
       });
+
+      // Clean up local state - remove templates marked for deletion
+      setCurrentCardTemplates(prev => 
+        prev.filter(template => template.action !== "remove")
+          .map(template => ({ ...template, isModified: false, action: undefined }))
+      );
 
       console.log('Template entities saved successfully');
     } catch (error) {
