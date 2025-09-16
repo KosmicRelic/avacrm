@@ -1323,18 +1323,29 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   }, [templateEntities]);
 
   // Add new pipeline to entity
-  const addEntityPipeline = useCallback(() => {
+  const addEntityPipeline = useCallback(async () => {
+    console.log('=== PIPELINE CREATION DEBUG ===');
+    console.log('Pipeline name:', newPipelineName);
+    console.log('Source template:', pipelineSourceTemplate);
+    console.log('Target template:', pipelineTargetTemplate);
+    console.log('Field mappings:', pipelineFieldMappings);
+    console.log('Selected entity index:', selectedEntityIndex);
+    console.log('Current templateEntities:', templateEntities);
+    
     if (!newPipelineName.trim() || !pipelineSourceTemplate || !pipelineTargetTemplate) {
+      console.log('Pipeline creation cancelled - missing required fields');
       alert('Please fill in all required fields for the pipeline.');
       return;
     }
 
     if (pipelineSourceTemplate === pipelineTargetTemplate) {
+      console.log('Pipeline creation cancelled - same source and target');
       alert('Source and target templates must be different.');
       return;
     }
 
     if (pipelineFieldMappings.length === 0) {
+      console.log('Pipeline creation cancelled - no field mappings');
       alert('Please add at least one field mapping.');
       return;
     }
@@ -1344,6 +1355,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     );
 
     if (!isValidMapping) {
+      console.log('Pipeline creation cancelled - invalid field mappings');
       alert('Please complete all field mappings.');
       return;
     }
@@ -1357,25 +1369,76 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       createdAt: new Date().toISOString()
     };
 
-    console.log('Adding new pipeline to entity:', newPipeline);
+    console.log('Creating new pipeline:', newPipeline);
 
-    setTemplateEntities(prev => {
-      const updated = prev.map((entity, index) =>
+    try {
+      // Update local state first
+      const updatedEntities = templateEntities.map((entity, index) =>
         index === selectedEntityIndex
           ? { ...entity, pipelines: [...(entity.pipelines || []), newPipeline] }
           : entity
       );
-      console.log('Updated templateEntities with new pipeline:', updated[selectedEntityIndex]);
-      return updated;
-    });
+      
+      setTemplateEntities(updatedEntities);
+      console.log('Updated templateEntities with new pipeline:', updatedEntities[selectedEntityIndex]);
+      
+      // Update tempData immediately
+      setTempData({ 
+        currentCardTemplates, 
+        deletedHeaderKeys, 
+        templateEntities: updatedEntities 
+      });
+      
+      // Save to backend immediately
+      console.log('Saving pipeline to backend...');
+      await updateCardTemplatesAndCardsFunction({
+        businessId,
+        entities: updatedEntities.map(ent => ({
+          id: ent.id,
+          name: ent.name,
+          templates: currentCardTemplates.filter(template => 
+            template.entityId === ent.id && template.action !== "remove"
+          ),
+          pipelines: ent.pipelines || []
+        }))
+      });
 
-    // Reset form
-    setNewPipelineName("");
-    setPipelineSourceTemplate("");
-    setPipelineTargetTemplate("");
-    setPipelineFieldMappings([]);
-    setShowPipelineForm(false);
-  }, [selectedEntityIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings]);
+      // Refresh data from backend
+      console.log('Refreshing entities from backend...');
+      const entitiesRef = collection(db, 'businesses', businessId, 'templateEntities');
+      const snapshot = await getDocs(entitiesRef);
+      const refreshedEntities = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setTemplateEntities(refreshedEntities);
+      
+      // Update tempData with refreshed entities
+      setTempData({ 
+        currentCardTemplates, 
+        deletedHeaderKeys, 
+        templateEntities: refreshedEntities 
+      });
+
+      console.log(`Pipeline "${newPipeline.name}" created successfully`);
+
+      // Reset form
+      console.log('Resetting pipeline form...');
+      setNewPipelineName("");
+      setPipelineSourceTemplate("");
+      setPipelineTargetTemplate("");
+      setPipelineFieldMappings([]);
+      setShowPipelineForm(false);
+    } catch (error) {
+      console.error('Error creating pipeline:', error);
+      alert('Failed to create pipeline. Please try again.');
+      
+      // Restore previous state in case of error
+      setTemplateEntities(templateEntities);
+    }
+    
+    console.log('=== PIPELINE CREATION COMPLETED ===');
+  }, [selectedEntityIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, templateEntities, businessId, currentCardTemplates, deletedHeaderKeys, setTempData]);
 
   // Edit existing pipeline
   const editEntityPipeline = useCallback((pipelineIndex) => {
