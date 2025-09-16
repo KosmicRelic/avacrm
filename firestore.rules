@@ -95,6 +95,14 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId);
       }
 
+      // TemplateEntities: Allow read for viewers/editors, write for owner only
+      match /templateEntities/{entityId} {
+        allow read: if isBusinessOwner(businessId) ||
+                      (isTeamMember(businessId) &&
+                       getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+        allow write: if isBusinessOwner(businessId);
+      }
+
       // Dashboards: Allow read for viewers/editors, write for editors
       match /dashboards/{dashboardId} {
         allow read: if isBusinessOwner(businessId) ||

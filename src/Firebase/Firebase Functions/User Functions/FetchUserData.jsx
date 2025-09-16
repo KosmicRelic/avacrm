@@ -14,6 +14,7 @@ const fetchUserData = async ({
   setSheets,
   setCards,
   setCardTemplates,
+  setTemplateEntities,
   setMetrics,
   setDashboards,
   setActions,
@@ -258,26 +259,68 @@ const fetchUserData = async ({
 
           unsubscribeFunctions.push(sheetsUnsubscribe, structureUnsubscribe);
         }
-        // PHASE 2: Defer cardTemplates, metrics, dashboards fetch to background
+        // PHASE 2: Defer templateEntities, metrics, dashboards fetch to background
         setTimeout(() => {
-          // Set up real-time listener for card templates
-          const cardTemplatesUnsubscribe = onSnapshot(
-            collection(db, 'businesses', businessId, 'cardTemplates'),
-            (cardTemplatesSnapshot) => {
-              setCardTemplates && setCardTemplates(
-                cardTemplatesSnapshot.docs.map((doc) => ({
-                  docId: doc.id,
+          // Set up real-time listener for template entities (new structure)
+          const templateEntitiesUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'templateEntities'),
+            (templateEntitiesSnapshot) => {
+              // Store original entities for pipeline access
+              if (setTemplateEntities) {
+                const entities = templateEntitiesSnapshot.docs.map((doc) => ({
+                  id: doc.id,
                   ...doc.data(),
-                }))
-              );
+                }));
+                setTemplateEntities(entities);
+              }
+              
+              // Flatten all templates from all entities for backward compatibility
+              if (setCardTemplates) {
+                const allTemplates = [];
+                templateEntitiesSnapshot.docs.forEach((doc) => {
+                  const entity = doc.data();
+                  if (entity.templates && Array.isArray(entity.templates)) {
+                    entity.templates.forEach(template => {
+                      allTemplates.push({
+                        docId: template.docId,
+                        ...template,
+                        entityId: entity.id,
+                        entityName: entity.name
+                      });
+                    });
+                  }
+                });
+                
+                console.log(`[FetchUserData] Loaded ${allTemplates.length} templates from ${templateEntitiesSnapshot.docs.length} entities`);
+                setCardTemplates(allTemplates);
+              }
             },
             (error) => {
-              console.error('Error in card templates real-time listener:', error);
+              console.error('Error in template entities real-time listener:', error);
+              // Fallback to old cardTemplates collection if templateEntities fails
+              console.log('[FetchUserData] Falling back to legacy cardTemplates collection');
+              const cardTemplatesUnsubscribe = onSnapshot(
+                collection(db, 'businesses', businessId, 'cardTemplates'),
+                (cardTemplatesSnapshot) => {
+                  setCardTemplates && setCardTemplates(
+                    cardTemplatesSnapshot.docs.map((doc) => ({
+                      docId: doc.id,
+                      ...doc.data(),
+                    }))
+                  );
+                },
+                (fallbackError) => {
+                  console.error('Error in fallback card templates listener:', fallbackError);
+                }
+              );
+              if (cardTemplatesUnsubscribe) {
+                unsubscribeFunctions.push(cardTemplatesUnsubscribe);
+              }
             }
           );
           
           // Store the unsubscribe function
-          unsubscribeFunctions.push(cardTemplatesUnsubscribe);
+          unsubscribeFunctions.push(templateEntitiesUnsubscribe);
           
           // Set up real-time listener for metrics
           const metricsUnsubscribe = onSnapshot(

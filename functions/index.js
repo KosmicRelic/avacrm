@@ -554,18 +554,58 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
       }
 
-      const { businessId, updates } = body || {};
+      const { businessId, entities, updates } = body || {};
 
-      functions.logger.info('Parsed body', { businessId, updates });
+      functions.logger.info('Parsed body with detailed types', { 
+        businessId, 
+        entities, 
+        updates,
+        entitiesType: typeof entities,
+        entitiesIsArray: Array.isArray(entities),
+        updatesType: typeof updates,
+        updatesIsArray: Array.isArray(updates),
+        bodyKeys: Object.keys(body || {}),
+        fullBody: JSON.stringify(body)
+      });
 
-      if (!businessId || !updates || !Array.isArray(updates)) {
-        functions.logger.error('Missing required fields', { businessId, updates });
+      if (!businessId) {
+        functions.logger.error('Missing required fields', { businessId });
         return res.status(400).json({
-          error: `Missing required fields: ${!businessId ? 'businessId ' : ''}${!updates ? 'updates ' : ''}${
-            updates && !Array.isArray(updates) ? 'updates must be an array' : ''
-          }`,
+          error: 'Missing required field: businessId',
         });
       }
+
+      // Validate that at least entities or updates are provided
+      const hasEntities = entities && Array.isArray(entities);
+      const hasUpdates = updates && Array.isArray(updates);
+      
+      functions.logger.info('Validation check', { 
+        hasEntities, 
+        hasUpdates,
+        entitiesLength: hasEntities ? entities.length : 'N/A',
+        updatesLength: hasUpdates ? updates.length : 'N/A'
+      });
+      
+      if (!hasEntities && !hasUpdates) {
+        functions.logger.error('Neither entities nor updates provided', { 
+          entities, 
+          updates, 
+          hasEntities, 
+          hasUpdates,
+          entitiesType: typeof entities,
+          updatesType: typeof updates
+        });
+        return res.status(400).json({
+          error: 'Missing required fields: updates',
+        });
+      }
+
+      functions.logger.info('Validation passed:', { 
+        hasEntities, 
+        entitiesLength: hasEntities ? entities.length : 0,
+        hasUpdates, 
+        updatesLength: hasUpdates ? updates.length : 0 
+      });
 
       const businessDoc = await admin.firestore().collection('businesses').doc(businessId).get();
       if (!businessDoc.exists) {
@@ -576,109 +616,166 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       const batch = admin.firestore().batch();
       let totalUpdatedCards = 0;
       let totalUpdatedTemplates = 0;
+      let totalUpdatedEntities = 0;
       const messages = [];
 
-      for (const update of updates) {
-        const { docId, typeOfCards, newTypeOfCards, deletedKeys, newTemplate, action } = update;
+      // Handle entity updates if entities are provided
+      if (entities && Array.isArray(entities)) {
+        for (const entity of entities) {
+          const { id, name, templates, pipelines, action } = entity;
 
-        if (!docId || !typeOfCards) {
-          functions.logger.warn('Skipping update: Missing docId or typeOfCards', { docId, typeOfCards });
-          messages.push(`Skipping update: Missing docId or typeOfCards for ${docId || 'unknown'}`);
-          continue;
-        }
+          if (!id || !name) {
+            functions.logger.warn('Skipping entity: Missing id or name', { id, name });
+            continue;
+          }
 
-        const templateRef = admin
-          .firestore()
-          .collection('businesses')
-          .doc(businessId)
-          .collection('cardTemplates')
-          .doc(docId);
+          const entityRef = admin
+            .firestore()
+            .collection('businesses')
+            .doc(businessId)
+            .collection('templateEntities')
+            .doc(id);
 
-        if (action === 'remove') {
-          functions.logger.info('Deleting cardTemplate:', { docId });
-          batch.delete(templateRef);
-          totalUpdatedTemplates += 1;
-          messages.push(`Deleted cardTemplate: ${docId}`);
-          continue;
-        }
-
-        const cardsRef = admin
-          .firestore()
-          .collection('businesses')
-          .doc(businessId)
-          .collection('cards')
-          .where('typeOfCards', '==', typeOfCards);
-        const snapshot = await cardsRef.get();
-
-        if (snapshot.empty) {
-          functions.logger.info('No cards found:', { typeOfCards });
-          messages.push(`No cards found for typeOfCards: ${typeOfCards}`);
-        } else {
-          snapshot.forEach((doc) => {
-            const cardData = doc.data();
-            const updateData = {};
-
-            if (deletedKeys && Array.isArray(deletedKeys)) {
-              deletedKeys.forEach((key) => {
-                if (key in cardData) {
-                  updateData[key] = admin.firestore.FieldValue.delete();
-                }
-              });
-
-              if (cardData.history && Array.isArray(cardData.history)) {
-                const updatedHistory = cardData.history.filter(
-                  (entry) => !deletedKeys.includes(entry.field)
-                );
-                if (updatedHistory.length !== cardData.history.length) {
-                  updateData.history = updatedHistory;
-                }
-              }
-            }
-
-            if (newTypeOfCards && newTypeOfCards !== typeOfCards) {
-              updateData.typeOfCards = newTypeOfCards;
-            }
-
-            if (Object.keys(updateData).length > 0) {
-              functions.logger.info('Updating card:', { cardId: doc.id, updateData });
-              batch.update(doc.ref, updateData);
-            }
-          });
-
-          totalUpdatedCards += snapshot.size;
-          messages.push(
-            `Processed ${snapshot.size} cards for typeOfCards: ${typeOfCards}${
-              deletedKeys && deletedKeys.length > 0 ? `, deleted keys: ${deletedKeys.join(', ')}` : ''
-            }${newTypeOfCards ? `, updated to newTypeOfCards: ${newTypeOfCards}` : ''}`
-          );
-        }
-
-        if (newTemplate) {
-          functions.logger.info('Updating cardTemplate:', { docId, newTemplate });
-          batch.set(templateRef, newTemplate);
-          totalUpdatedTemplates += 1;
-          messages.push(`Updated cardTemplate: ${docId}, typeOfCards: ${newTemplate.typeOfCards}`);
-        } else if (newTypeOfCards) {
-          const updateData = {
-            typeOfCards: newTypeOfCards,
-            name: newTypeOfCards,
-          };
-          functions.logger.info('Partially updating cardTemplate:', { docId, updateData });
-          batch.update(templateRef, updateData);
-          totalUpdatedTemplates += 1;
-          messages.push(`Partially updated cardTemplate: ${docId}`);
+          if (action === 'remove') {
+            functions.logger.info('Deleting templateEntity:', { id });
+            batch.delete(entityRef);
+            messages.push(`Deleted entity: ${name}`);
+          } else {
+            functions.logger.info('Upserting templateEntity:', { 
+              id, 
+              name, 
+              templateCount: templates?.length || 0, 
+              pipelineCount: pipelines?.length || 0 
+            });
+            batch.set(entityRef, {
+              id,
+              name,
+              templates: templates || [],
+              pipelines: pipelines || [],
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            messages.push(`Updated entity: ${name} with ${templates?.length || 0} templates and ${pipelines?.length || 0} pipelines`);
+          }
+          totalUpdatedEntities += 1;
         }
       }
 
-      functions.logger.info('Committing batch with updates:', { totalUpdatedCards, totalUpdatedTemplates });
-      await batch.commit();
+      // Handle legacy template updates if updates are provided (for backward compatibility)
+      if (updates && Array.isArray(updates)) {
+        for (const update of updates) {
+          const { docId, typeOfCards, newTypeOfCards, deletedKeys, newTemplate, action } = update;
 
-      functions.logger.info('Batch committed successfully:', { totalUpdatedCards, totalUpdatedTemplates });
+          if (!docId || !typeOfCards) {
+            functions.logger.warn('Skipping update: Missing docId or typeOfCards', { docId, typeOfCards });
+            messages.push(`Skipping update: Missing docId or typeOfCards for ${docId || 'unknown'}`);
+            continue;
+          }
+
+          const templateRef = admin
+            .firestore()
+            .collection('businesses')
+            .doc(businessId)
+            .collection('cardTemplates')
+            .doc(docId);
+
+          if (action === 'remove') {
+            functions.logger.info('Deleting cardTemplate:', { docId });
+            batch.delete(templateRef);
+            totalUpdatedTemplates += 1;
+            messages.push(`Deleted cardTemplate: ${docId}`);
+            continue;
+          }
+
+          const cardsRef = admin
+            .firestore()
+            .collection('businesses')
+            .doc(businessId)
+            .collection('cards')
+            .where('typeOfCards', '==', typeOfCards);
+          const snapshot = await cardsRef.get();
+
+          if (snapshot.empty) {
+            functions.logger.info('No cards found:', { typeOfCards });
+            messages.push(`No cards found for typeOfCards: ${typeOfCards}`);
+          } else {
+            snapshot.forEach((doc) => {
+              const cardData = doc.data();
+              const updateData = {};
+
+              if (deletedKeys && Array.isArray(deletedKeys)) {
+                deletedKeys.forEach((key) => {
+                  if (key in cardData) {
+                    updateData[key] = admin.firestore.FieldValue.delete();
+                  }
+                });
+
+                if (cardData.history && Array.isArray(cardData.history)) {
+                  const updatedHistory = cardData.history.filter(
+                    (entry) => !deletedKeys.includes(entry.field)
+                  );
+                  if (updatedHistory.length !== cardData.history.length) {
+                    updateData.history = updatedHistory;
+                  }
+                }
+              }
+
+              if (newTypeOfCards && newTypeOfCards !== typeOfCards) {
+                updateData.typeOfCards = newTypeOfCards;
+              }
+
+              if (Object.keys(updateData).length > 0) {
+                functions.logger.info('Updating card:', { cardId: doc.id, updateData });
+                batch.update(doc.ref, updateData);
+              }
+            });
+
+            totalUpdatedCards += snapshot.size;
+            messages.push(
+              `Processed ${snapshot.size} cards for typeOfCards: ${typeOfCards}${
+                deletedKeys && deletedKeys.length > 0 ? `, deleted keys: ${deletedKeys.join(', ')}` : ''
+              }${newTypeOfCards ? `, updated to newTypeOfCards: ${newTypeOfCards}` : ''}`
+            );
+          }
+
+          if (newTemplate) {
+            functions.logger.info('Updating cardTemplate:', { docId, newTemplate });
+            batch.set(templateRef, newTemplate);
+            totalUpdatedTemplates += 1;
+            messages.push(`Updated cardTemplate: ${docId}, typeOfCards: ${newTemplate.typeOfCards}`);
+          } else if (newTypeOfCards) {
+            const updateData = {
+              typeOfCards: newTypeOfCards,
+              name: newTypeOfCards,
+            };
+            functions.logger.info('Partially updating cardTemplate:', { docId, updateData });
+            batch.update(templateRef, updateData);
+            totalUpdatedTemplates += 1;
+            messages.push(`Partially updated cardTemplate: ${docId}`);
+          }
+        }
+      }
+
+      if (totalUpdatedEntities > 0 || totalUpdatedTemplates > 0) {
+        functions.logger.info('Committing batch with updates:', { 
+          totalUpdatedCards, 
+          totalUpdatedTemplates, 
+          totalUpdatedEntities 
+        });
+        await batch.commit();
+        functions.logger.info('Batch committed successfully:', { 
+          totalUpdatedCards, 
+          totalUpdatedTemplates, 
+          totalUpdatedEntities 
+        });
+      } else {
+        functions.logger.info('No batch operations to commit - this is normal for empty entity arrays');
+      }
       return res.status(200).json({
         success: true,
         message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
         updatedCardsCount: totalUpdatedCards,
         updatedTemplatesCount: totalUpdatedTemplates,
+        updatedEntitiesCount: totalUpdatedEntities,
       });
     } catch (error) {
       functions.logger.error('updateCardTemplatesAndCards failed', {

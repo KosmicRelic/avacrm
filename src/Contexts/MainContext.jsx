@@ -24,6 +24,7 @@ export const MainContextProvider = ({ children }) => {
   // Cache cards per sheetId: { [sheetId]: cardsArray }
   const [cardsCache, setCardsCache] = useState({});
   const [cardTemplates, setCardTemplates] = useState([]);
+  const [templateEntities, setTemplateEntities] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
   const [tempData, setTempData] = useState(null);
@@ -61,6 +62,7 @@ export const MainContextProvider = ({ children }) => {
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedCards = useMemo(() => cards, [cards]);
   const memoizedCardTemplates = useMemo(() => cardTemplates, [cardTemplates]);
+  const memoizedTemplateEntities = useMemo(() => templateEntities, [templateEntities]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
@@ -212,6 +214,7 @@ export const MainContextProvider = ({ children }) => {
                     route: '/sheets',
                     setSheets,
                     setCardTemplates,
+                    setTemplateEntities,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
                   })
@@ -224,6 +227,7 @@ export const MainContextProvider = ({ children }) => {
                     route: '/sheets',
                     setSheets,
                     setCardTemplates,
+                    setTemplateEntities,
                     updateSheets: true,
                   })
                 );
@@ -240,6 +244,7 @@ export const MainContextProvider = ({ children }) => {
                   setSheets,
                   setCards,
                   setCardTemplates,
+                  setTemplateEntities,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -254,6 +259,7 @@ export const MainContextProvider = ({ children }) => {
                   setSheets,
                   setCards,
                   setCardTemplates,
+                  setTemplateEntities,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -266,6 +272,7 @@ export const MainContextProvider = ({ children }) => {
                   businessId: fetchedBusinessId,
                   route: '/actions',
                   setActions,
+                  setTemplateEntities,
                 })
               );
             }
@@ -438,6 +445,7 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
+        setTemplateEntities,
         setCards: (fetchedCards) => {
           setCards(fetchedCards);
           setCardsCache((prev) => ({ ...prev, [sheetId]: fetchedCards }));
@@ -672,19 +680,20 @@ export const MainContextProvider = ({ children }) => {
             }
           }
 
-          // Batch add for cardTemplates
-          const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
-          for (const template of modifiedCardTemplates) {
-            const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
-            if (template.action === 'remove') {
-              batch.delete(docRef);
-              hasChanges = true;
-            } else if (template.action === 'add' || template.action === 'update') {
-              const { isModified, action, docId, ...templateData } = template;
-              batch.set(docRef, templateData);
-              hasChanges = true;
-            }
-          }
+          // NOTE: Template batch operations disabled - now handled via entity-based system in ModalUtils
+          // Templates are stored within templateEntities and managed through CardsTemplate modal
+          // const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
+          // for (const template of modifiedCardTemplates) {
+          //   const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
+          //   if (template.action === 'remove') {
+          //     batch.delete(docRef);
+          //     hasChanges = true;
+          //   } else if (template.action === 'add' || template.action === 'update') {
+          //     const { isModified, action, docId, ...templateData } = template;
+          //     batch.set(docRef, templateData);
+          //     hasChanges = true;
+          //   }
+          // }
 
           // Batch add for metrics
           const modifiedMetrics = metrics.filter((metric) => metric.isModified);
@@ -963,6 +972,13 @@ export const MainContextProvider = ({ children }) => {
       }
       setCardTemplates(newTemplates);
     },
+    templateEntities,
+    setTemplateEntities: (newEntities) => {
+      if (shallowEqual(templateEntities, newEntities)) {
+        return;
+      }
+      setTemplateEntities(newEntities);
+    },
     tempData,
     setTempData,
     selectedTemplateIndex,
@@ -1026,6 +1042,7 @@ export const MainContextProvider = ({ children }) => {
         route: '/sheets',
         setCards,
         setCardTemplates,
+        setTemplateEntities,
         setMetrics,
         setDashboards,
         activeSheetName,

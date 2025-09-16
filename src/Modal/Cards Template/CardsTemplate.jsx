@@ -4,14 +4,15 @@ import styles from "./CardsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup } from "react-icons/fa";
-import { IoChevronForward } from "react-icons/io5";
+import { IoChevronForward, IoAdd, IoGitBranch, IoCreate, IoTrash } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { MdDragIndicator } from "react-icons/md";
-import { CgArrowsExchangeAlt } from "react-icons/cg";
+
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { updateCardTemplatesAndCardsFunction } from '../../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { cardTemplates, isDarkTheme, businessId: businessIdContext } = useContext(MainContext);
@@ -68,17 +69,27 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   
-  // Pipeline configuration state
-  const [selectedTargetTemplate, setSelectedTargetTemplate] = useState("");
-  const [fieldMappings, setFieldMappings] = useState([]);
-  const [pipelineName, setPipelineName] = useState("");
+  // Entity management state
+  const [templateEntities, setTemplateEntities] = useState([]);
+  const [selectedEntityIndex, setSelectedEntityIndex] = useState(null);
+  const [newEntityName, setNewEntityName] = useState("");
+  const [showEntityForm, setShowEntityForm] = useState(false);
+  
+  // Pipeline management state
+  const [newPipelineName, setNewPipelineName] = useState("");
+  const [pipelineSourceTemplate, setPipelineSourceTemplate] = useState("");
+  const [pipelineTargetTemplate, setPipelineTargetTemplate] = useState("");
+  const [pipelineFieldMappings, setPipelineFieldMappings] = useState([]);
+  const [showPipelineForm, setShowPipelineForm] = useState(false);
+  const [editingPipelineIndex, setEditingPipelineIndex] = useState(null);
   
   const keyRefs = useRef(new Map());
   const sectionRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevCardTemplatesRef = useRef(currentCardTemplates);
   const prevStepRef = useRef(currentStep);
-  const lastTempDataRef = useRef({ currentCardTemplates, deletedHeaderKeys });
+  const lastTempDataRef = useRef({ currentCardTemplates, deletedHeaderKeys, templateEntities });
+  const initialStateRef = useRef(null); // Track initial state to detect changes
 
   // Memoize currentCardTemplates to prevent unnecessary re-renders
   useEffect(() => {
@@ -89,13 +100,121 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   useEffect(() => {
     if (
       !isEqual(lastTempDataRef.current.currentCardTemplates, currentCardTemplates) ||
-      !isEqual(lastTempDataRef.current.deletedHeaderKeys, deletedHeaderKeys)
+      !isEqual(lastTempDataRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
+      !isEqual(lastTempDataRef.current.templateEntities, templateEntities)
     ) {
-      setTempData({ currentCardTemplates, deletedHeaderKeys });
-      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys };
+      setTempData({ currentCardTemplates, deletedHeaderKeys, templateEntities });
+      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
     }
      
-  }, [currentCardTemplates, deletedHeaderKeys, setTempData]);
+  }, [currentCardTemplates, deletedHeaderKeys, templateEntities, setTempData]);
+
+  // Initialize initial state and detect changes
+  useEffect(() => {
+    if (!initialStateRef.current) {
+      // Store initial state when component mounts
+      initialStateRef.current = {
+        currentCardTemplates: JSON.parse(JSON.stringify(currentCardTemplates)),
+        deletedHeaderKeys: [...deletedHeaderKeys],
+        templateEntities: JSON.parse(JSON.stringify(templateEntities))
+      };
+    }
+  }, [currentCardTemplates, deletedHeaderKeys, templateEntities]);
+
+  // Function to detect if there are any changes from initial state
+  const hasChanges = useCallback(() => {
+    if (!initialStateRef.current) return false;
+    
+    return (
+      !isEqual(initialStateRef.current.currentCardTemplates, currentCardTemplates) ||
+      !isEqual(initialStateRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
+      !isEqual(initialStateRef.current.templateEntities, templateEntities)
+    );
+  }, [currentCardTemplates, deletedHeaderKeys, templateEntities]);
+
+  // Function to update tempData only if there are changes
+  const updateTempDataIfChanged = useCallback(() => {
+    if (hasChanges()) {
+      console.log('[CardsTemplate] Changes detected, updating tempData');
+      setTempData({ currentCardTemplates, deletedHeaderKeys, templateEntities });
+      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
+    } else {
+      console.log('[CardsTemplate] No changes detected, skipping tempData update');
+    }
+  }, [currentCardTemplates, deletedHeaderKeys, templateEntities, hasChanges, setTempData]);
+
+  // Fetch template entities when component mounts
+  useEffect(() => {
+    const fetchTemplateEntities = async () => {
+      if (!businessId) return;
+      
+      try {
+        const entitiesRef = collection(db, 'businesses', businessId, 'templateEntities');
+        const snapshot = await getDocs(entitiesRef);
+        const entities = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTemplateEntities(entities);
+      } catch (error) {
+        console.error('Error fetching template entities:', error);
+      }
+    };
+
+    fetchTemplateEntities();
+  }, [businessId]);
+
+  // Initialize tempData with initial values including templateEntities
+  useEffect(() => {
+    setTempData({ currentCardTemplates, deletedHeaderKeys, templateEntities });
+    lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
+    
+    // Store initial state after first load
+    if (!initialStateRef.current) {
+      initialStateRef.current = {
+        currentCardTemplates: JSON.parse(JSON.stringify(currentCardTemplates)),
+        deletedHeaderKeys: [...deletedHeaderKeys],
+        templateEntities: JSON.parse(JSON.stringify(templateEntities))
+      };
+    }
+  }, []); // Only run once on mount
+
+  // Merge templates from templateEntities into currentCardTemplates after entities are loaded
+  useEffect(() => {
+    if (templateEntities.length > 0) {
+      console.log('Loading entities with templates and pipelines');
+      
+      // Extract all templates from entities and add to currentCardTemplates if not already present
+      const allEntityTemplates = [];
+      templateEntities.forEach(entity => {
+        console.log(`Entity "${entity.name}" has ${entity.pipelines?.length || 0} pipelines and ${entity.templates?.length || 0} templates`);
+        if (entity.templates && Array.isArray(entity.templates)) {
+          entity.templates.forEach(template => {
+            // Ensure template has entityId set to the entity it belongs to
+            allEntityTemplates.push({
+              ...template,
+              entityId: entity.id
+            });
+          });
+        }
+      });
+      
+      if (allEntityTemplates.length > 0) {
+        setCurrentCardTemplates(prev => {
+          // Find templates that aren't already in currentCardTemplates
+          const newTemplates = allEntityTemplates.filter(entityTemplate => {
+            return !prev.some(existingTemplate => 
+              existingTemplate.docId === entityTemplate.docId ||
+              (existingTemplate.name === entityTemplate.name && existingTemplate.typeOfCards === entityTemplate.typeOfCards)
+            );
+          });
+          
+          console.log(`Adding ${newTemplates.length} new templates from entities`);
+          return [...prev, ...newTemplates];
+        });
+      }
+    }
+  }, [templateEntities]); // Run when templateEntities changes
 
   // Reset header form
   const resetHeaderForm = useCallback(() => {
@@ -108,26 +227,24 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    if (currentStep === 6) {
-      setSelectedTargetTemplate("");
-      setPipelineName("");
-      setFieldMappings([]);
-      goBack();
-    } else if (currentStep === 5 || currentStep === 4) {
+    if (currentStep === 6 || currentStep === 5) {
       setActiveHeaderIndex(null);
       resetHeaderForm();
       goBack();
-    } else if (currentStep === 3) {
+    } else if (currentStep === 4) {
       setCurrentSectionIndex(null);
       setActiveHeaderIndex(null);
       goBack();
-    } else if (currentStep === 2) {
+    } else if (currentStep === 3) {
       if (editMode) {
         setEditMode(false);
       } else {
         setSelectedTemplateIndex(null);
         goBack();
       }
+    } else if (currentStep === 2) {
+      setSelectedEntityIndex(null);
+      goBack();
     } else {
       goBack();
     }
@@ -386,92 +503,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     [saveHeader, newHeaderType, newOption, addOption]
   );
 
-  // Save pipeline configuration
-  const savePipeline = useCallback(() => {
-    if (!selectedTargetTemplate || !pipelineName.trim() || fieldMappings.length === 0) {
-      alert("Please fill in all pipeline configuration fields.");
-      return;
-    }
-
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev];
-      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-      
-      // Add or update pipelines array
-      if (!currentTemplate.pipelines) {
-        currentTemplate.pipelines = [];
-      }
-      
-      const newPipeline = {
-        id: `pipeline_${Date.now()}`,
-        name: pipelineName.trim(),
-        targetTemplate: selectedTargetTemplate,
-        fieldMappings: [...fieldMappings],
-        createdAt: new Date().toISOString()
-      };
-      
-      currentTemplate.pipelines.push(newPipeline);
-      currentTemplate.isModified = true;
-      currentTemplate.action = currentTemplate.action || "update";
-      
-      newTemplates[selectedTemplateIndex] = currentTemplate;
-      return newTemplates;
-    });
-
-    // Reset pipeline form
-    setSelectedTargetTemplate("");
-    setPipelineName("");
-    setFieldMappings([]);
-    alert("Pipeline saved successfully!");
-    goBack();
-  }, [selectedTargetTemplate, pipelineName, fieldMappings, selectedTemplateIndex, goBack]);
-
-  // Add field mapping
-  const addFieldMapping = useCallback(() => {
-    setFieldMappings(prev => [...prev, { source: "", target: "" }]);
-  }, []);
-
-  // Update field mapping
-  const updateFieldMapping = useCallback((index, field, value) => {
-    setFieldMappings(prev => {
-      const newMappings = [...prev];
-      newMappings[index] = { ...newMappings[index], [field]: value };
-      return newMappings;
-    });
-  }, []);
-
-  // Remove field mapping
-  const removeFieldMapping = useCallback((index) => {
-    setFieldMappings(prev => prev.filter((_, i) => i !== index));
-  }, []);
-
-  // Delete pipeline
-  const deletePipeline = useCallback((pipelineId) => {
-    if (selectedTemplateIndex === null) return;
-    
-    const pipeline = currentCardTemplates[selectedTemplateIndex].pipelines?.find(p => p.id === pipelineId);
-    if (!pipeline) return;
-    
-    if (window.confirm(`Are you sure you want to delete the pipeline "${pipeline.name}"? This action cannot be undone.`)) {
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
-        
-        currentTemplate.pipelines = (currentTemplate.pipelines || []).filter(p => p.id !== pipelineId);
-        currentTemplate.isModified = true;
-        currentTemplate.action = currentTemplate.action || "update";
-        
-        newTemplates[selectedTemplateIndex] = currentTemplate;
-        return newTemplates;
-      });
-    }
-  }, [selectedTemplateIndex, currentCardTemplates]);
-
   // Initialize modal steps
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
       const steps = [
+        { title: "Template Entities", rightButton: null },
         { title: "Card Templates", rightButton: null },
         {
           title: () =>
@@ -510,15 +547,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             isRemove: false,
           },
         },
-        {
-          title: "Pipeline Configuration",
-          rightButton: {
-            label: "Save Pipeline",
-            onClick: () => savePipeline(),
-            isActive: true,
-            isRemove: false,
-          },
-        },
       ];
 
       registerModalSteps({ steps });
@@ -540,12 +568,23 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: "Card Templates",
+        title: "Template Entities",
         backButtonTitle: "",
         leftButton: null,
         rightButton: null,
       });
     } else if (currentStep === 2) {
+      setModalConfig({
+        showTitle: true,
+        showDoneButton: true,
+        showBackButton: true,
+        title: "Card Templates",
+        backButtonTitle: "Template Entities",
+        backButton: { label: "Template Entities", onClick: handleBack },
+        leftButton: null,
+        rightButton: null,
+      });
+    } else if (currentStep === 3) {
       setModalConfig({
         showTitle: true,
         showDoneButton: false,
@@ -580,7 +619,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             }
           : null,
       });
-    } else if (currentStep === 3) {
+    } else if (currentStep === 4) {
       setModalConfig({
         showTitle: true,
         showDoneButton: false,
@@ -613,7 +652,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               color: "blue",
             },
       });
-    } else if (currentStep === 4) {
+    } else if (currentStep === 5) {
       setModalConfig({
         showTitle: true,
         showDoneButton: false,
@@ -629,7 +668,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           isRemove: false,
         },
       });
-    } else if (currentStep === 5) {
+    } else if (currentStep === 6) {
       setModalConfig({
         showTitle: true,
         showDoneButton: false,
@@ -645,34 +684,22 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           isRemove: false,
         },
       });
-    } else if (currentStep === 6) {
-      setModalConfig({
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.name || "Template",
-        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.name || "Template", onClick: handleBack },
-        title: "Pipeline Configuration",
-        leftButton: null,
-        rightButton: {
-          label: "Save Pipeline",
-          onClick: savePipeline,
-          isActive: true,
-          isRemove: false,
-        },
-      });
     }
 
     if (prevStepRef.current !== currentStep) {
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, savePipeline, handleBack]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, handleBack]);
 
   // Confirm new template
   const confirmNewTemplate = useCallback(() => {
     if (!newTemplateName.trim()) {
       alert("Please enter a template name.");
+      return;
+    }
+    if (selectedEntityIndex === null) {
+      alert("Please select an entity first.");
       return;
     }
     if (currentCardTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
@@ -685,6 +712,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       docId: timestampId,
       name: newTemplateName.trim(),
       typeOfCards: newTemplateName.trim(),
+      entityId: templateEntities[selectedEntityIndex].id,
       headers: [
         {
           key: "docId",
@@ -735,9 +763,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setEditMode(false);
       return newTemplates;
     });
+
     setNavigationDirection("forward");
-    goToStep(2);
-  }, [newTemplateName, currentCardTemplates, goToStep]);
+    goToStep(3);
+  }, [newTemplateName, currentCardTemplates, goToStep, selectedEntityIndex, templateEntities]);
 
   // Add new section
   const addSection = useCallback(() => {
@@ -1016,7 +1045,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           setSelectedTemplateIndex(existingIndex);
           setEditMode(false);
           setNavigationDirection("forward");
-          goToStep(2);
+          goToStep(3);
           return;
         }
       }
@@ -1025,10 +1054,334 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNewTemplateName("");
       setEditMode(false);
       setNavigationDirection("forward");
-      goToStep(2);
+      goToStep(3);
     },
     [currentCardTemplates, goToStep]
   );
+
+  // Entity Management Functions
+  const createNewEntity = useCallback(() => {
+    if (!newEntityName.trim()) {
+      alert("Please enter an entity name.");
+      return;
+    }
+    if (templateEntities.some((entity) => entity.name.toLowerCase() === newEntityName.trim().toLowerCase())) {
+      alert("An entity with this name already exists. Please choose a unique name.");
+      return;
+    }
+
+    const newEntity = {
+      id: uuidv4(),
+      name: newEntityName.trim()
+    };
+
+    setTemplateEntities(prev => [...prev, newEntity]);
+    setNewEntityName("");
+    setShowEntityForm(false);
+  }, [newEntityName, templateEntities]);
+
+  const selectEntity = useCallback((entityIndex) => {
+    setSelectedEntityIndex(entityIndex);
+    setNavigationDirection("forward");
+    goToStep(2);
+  }, [goToStep]);
+
+  const deleteEntity = useCallback((entityIndex) => {
+    const entity = templateEntities[entityIndex];
+    const entityTemplates = currentCardTemplates.filter(template => 
+      template.entityId === entity.id && template.action !== "remove"
+    );
+    
+    if (entityTemplates.length > 0) {
+      alert(`Cannot delete entity "${entity.name}" because it contains ${entityTemplates.length} template(s). Please delete all templates first.`);
+      return;
+    }
+    
+    if (window.confirm(`Are you sure you want to delete the entity "${entity.name}"? This action cannot be undone.`)) {
+      setTemplateEntities(prev => prev.filter((_, index) => index !== entityIndex));
+      if (selectedEntityIndex === entityIndex) {
+        setSelectedEntityIndex(null);
+      }
+    }
+  }, [templateEntities, selectedEntityIndex, currentCardTemplates]);
+
+  const updateEntityName = useCallback((entityIndex, newName) => {
+    if (!newName.trim()) return;
+    if (templateEntities.some((entity, index) => index !== entityIndex && entity.name.toLowerCase() === newName.trim().toLowerCase())) {
+      alert("An entity with this name already exists. Please choose a unique name.");
+      return;
+    }
+
+    setTemplateEntities(prev => 
+      prev.map((entity, index) => 
+        index === entityIndex 
+          ? { ...entity, name: newName.trim() }
+          : entity
+      )
+    );
+  }, [templateEntities]);
+
+  const getEntityTemplates = useCallback((entityIndex) => {
+    if (entityIndex === null || !templateEntities[entityIndex]) return [];
+    const entity = templateEntities[entityIndex];
+    return currentCardTemplates.filter(template => 
+      template.entityId === entity.id && template.action !== "remove"
+    );
+  }, [templateEntities, currentCardTemplates]);
+
+  // Save template entities with their templates
+  const saveTemplateEntities = useCallback(async () => {
+    if (!businessId) return;
+
+    try {
+      console.log('saveTemplateEntities - All currentCardTemplates:', currentCardTemplates);
+      console.log('saveTemplateEntities - All templateEntities:', templateEntities);
+      
+      // Prepare entities with their templates
+      const entitiesWithTemplates = templateEntities.map(entity => {
+        console.log('=== ENTITY PROCESSING ===');
+        console.log('Entity:', entity);
+        console.log('Entity ID:', JSON.stringify(entity.id));
+        console.log('All templates:', currentCardTemplates);
+        
+        // Check each template individually
+        currentCardTemplates.forEach((template, index) => {
+          console.log(`Template ${index}:`, template);
+          console.log(`  - entityId: ${JSON.stringify(template.entityId)}`);
+          console.log(`  - action: ${JSON.stringify(template.action)}`);
+          console.log(`  - entityId === entity.id: ${template.entityId === entity.id}`);
+          console.log(`  - action !== "remove": ${template.action !== "remove"}`);
+          console.log(`  - both conditions: ${template.entityId === entity.id && template.action !== "remove"}`);
+        });
+        
+        const entityTemplates = currentCardTemplates.filter(template => 
+          template.entityId === entity.id && template.action !== "remove"
+        );
+        
+        console.log('Final filtered templates:', entityTemplates);
+        console.log('=== END ENTITY PROCESSING ===');
+        
+        return {
+          id: entity.id,
+          name: entity.name,
+          templates: entityTemplates,
+          pipelines: entity.pipelines || []
+        };
+      });
+
+      console.log('Final entitiesWithTemplates:', entitiesWithTemplates);
+
+      await updateCardTemplatesAndCardsFunction({
+        businessId,
+        entities: entitiesWithTemplates
+      });
+
+      console.log('Template entities saved successfully');
+    } catch (error) {
+      console.error('Error saving template entities:', error);
+      alert('Failed to save template entities. Please try again.');
+    }
+  }, [businessId, templateEntities, currentCardTemplates]);
+
+  // Get pipelines for a specific entity
+  const getEntityPipelines = useCallback((entityIndex) => {
+    if (entityIndex === null || !templateEntities[entityIndex]) return [];
+    const entity = templateEntities[entityIndex];
+    return entity.pipelines || [];
+  }, [templateEntities]);
+
+  // Add new pipeline to entity
+  const addEntityPipeline = useCallback(() => {
+    if (!newPipelineName.trim() || !pipelineSourceTemplate || !pipelineTargetTemplate) {
+      alert('Please fill in all required fields for the pipeline.');
+      return;
+    }
+
+    if (pipelineSourceTemplate === pipelineTargetTemplate) {
+      alert('Source and target templates must be different.');
+      return;
+    }
+
+    if (pipelineFieldMappings.length === 0) {
+      alert('Please add at least one field mapping.');
+      return;
+    }
+
+    const isValidMapping = pipelineFieldMappings.every(mapping => 
+      mapping.source && mapping.target
+    );
+
+    if (!isValidMapping) {
+      alert('Please complete all field mappings.');
+      return;
+    }
+
+    const newPipeline = {
+      id: `pipeline_${Date.now()}`,
+      name: newPipelineName.trim(),
+      sourceTemplateId: pipelineSourceTemplate,
+      targetTemplateId: pipelineTargetTemplate,
+      fieldMappings: pipelineFieldMappings.length > 0 ? pipelineFieldMappings : [],
+      createdAt: new Date().toISOString()
+    };
+
+    console.log('Adding new pipeline to entity:', newPipeline);
+
+    setTemplateEntities(prev => {
+      const updated = prev.map((entity, index) =>
+        index === selectedEntityIndex
+          ? { ...entity, pipelines: [...(entity.pipelines || []), newPipeline] }
+          : entity
+      );
+      console.log('Updated templateEntities with new pipeline:', updated[selectedEntityIndex]);
+      return updated;
+    });
+
+    // Reset form
+    setNewPipelineName("");
+    setPipelineSourceTemplate("");
+    setPipelineTargetTemplate("");
+    setPipelineFieldMappings([]);
+    setShowPipelineForm(false);
+  }, [selectedEntityIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings]);
+
+  // Edit existing pipeline
+  const editEntityPipeline = useCallback((pipelineIndex) => {
+    const pipeline = getEntityPipelines(selectedEntityIndex)[pipelineIndex];
+    if (!pipeline) return;
+
+    setEditingPipelineIndex(pipelineIndex);
+    setNewPipelineName(pipeline.name);
+    setPipelineSourceTemplate(pipeline.sourceTemplateId);
+    setPipelineTargetTemplate(pipeline.targetTemplateId);
+    setPipelineFieldMappings(pipeline.fieldMappings || []);
+    setShowPipelineForm(true);
+  }, [selectedEntityIndex, getEntityPipelines]);
+
+  // Update existing pipeline
+  const updateEntityPipeline = useCallback(() => {
+    if (editingPipelineIndex === null) return;
+    
+    if (!newPipelineName.trim() || !pipelineSourceTemplate || !pipelineTargetTemplate) {
+      alert('Please fill in all required fields for the pipeline.');
+      return;
+    }
+
+    if (pipelineSourceTemplate === pipelineTargetTemplate) {
+      alert('Source and target templates must be different.');
+      return;
+    }
+
+    if (pipelineFieldMappings.length === 0) {
+      alert('Please add at least one field mapping.');
+      return;
+    }
+
+    const isValidMapping = pipelineFieldMappings.every(mapping => 
+      mapping.source && mapping.target
+    );
+
+    if (!isValidMapping) {
+      alert('Please complete all field mappings.');
+      return;
+    }
+
+    console.log('Updating existing pipeline at index:', editingPipelineIndex);
+
+    setTemplateEntities(prev => {
+      const updated = prev.map((entity, index) =>
+        index === selectedEntityIndex
+          ? {
+              ...entity,
+              pipelines: entity.pipelines?.map((pipeline, pIndex) =>
+                pIndex === editingPipelineIndex
+                  ? {
+                      ...pipeline,
+                      name: newPipelineName.trim(),
+                      sourceTemplateId: pipelineSourceTemplate,
+                      targetTemplateId: pipelineTargetTemplate,
+                      fieldMappings: pipelineFieldMappings,
+                      updatedAt: new Date().toISOString()
+                    }
+                  : pipeline
+              ) || []
+            }
+          : entity
+      );
+      console.log('Updated templateEntities with modified pipeline:', updated[selectedEntityIndex]);
+      return updated;
+    });
+
+    // Reset form
+    setNewPipelineName("");
+    setPipelineSourceTemplate("");
+    setPipelineTargetTemplate("");
+    setPipelineFieldMappings([]);
+    setShowPipelineForm(false);
+    setEditingPipelineIndex(null);
+  }, [selectedEntityIndex, editingPipelineIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings]);
+
+  // Delete pipeline
+  const deleteEntityPipeline = useCallback((pipelineIndex) => {
+    if (!confirm('Are you sure you want to delete this pipeline?')) return;
+
+    setTemplateEntities(prev =>
+      prev.map((entity, index) =>
+        index === selectedEntityIndex
+          ? {
+              ...entity,
+              pipelines: entity.pipelines?.filter((_, pIndex) => pIndex !== pipelineIndex) || []
+            }
+          : entity
+      )
+    );
+  }, [selectedEntityIndex]);
+
+  // Cancel pipeline form
+  const cancelPipelineForm = useCallback(() => {
+    setNewPipelineName("");
+    setPipelineSourceTemplate("");
+    setPipelineTargetTemplate("");
+    setPipelineFieldMappings([]);
+    setShowPipelineForm(false);
+    setEditingPipelineIndex(null);
+  }, []);
+
+  // Field mapping functions for pipelines
+  const addFieldMapping = useCallback(() => {
+    setPipelineFieldMappings(prev => [...prev, { source: '', target: '' }]);
+  }, []);
+
+  const removeFieldMapping = useCallback((index) => {
+    setPipelineFieldMappings(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateFieldMapping = useCallback((index, field, value) => {
+    setPipelineFieldMappings(prev => 
+      prev.map((mapping, i) => 
+        i === index ? { ...mapping, [field]: value } : mapping
+      )
+    );
+  }, []);
+
+  const getSourceTemplateHeaders = useCallback(() => {
+    if (!pipelineSourceTemplate || selectedEntityIndex === null) return [];
+    const sourceTemplate = getEntityTemplates(selectedEntityIndex).find(t => t.docId === pipelineSourceTemplate);
+    return sourceTemplate?.headers || [];
+  }, [pipelineSourceTemplate, selectedEntityIndex, getEntityTemplates]);
+
+  const getTargetTemplateHeaders = useCallback(() => {
+    if (!pipelineTargetTemplate || selectedEntityIndex === null) return [];
+    const targetTemplate = getEntityTemplates(selectedEntityIndex).find(t => t.docId === pipelineTargetTemplate);
+    return targetTemplate?.headers || [];
+  }, [pipelineTargetTemplate, selectedEntityIndex, getEntityTemplates]);
+
+  // Auto-add initial field mapping when templates are selected
+  useEffect(() => {
+    if (pipelineSourceTemplate && pipelineTargetTemplate && pipelineFieldMappings.length === 0) {
+      addFieldMapping();
+    }
+  }, [pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings.length, addFieldMapping]);
 
   // Update template name
   const updateTemplateName = useCallback(
@@ -1061,7 +1414,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     (index) => {
       setCurrentSectionIndex(index);
       setNavigationDirection("forward");
-      goToStep(3);
+      goToStep(4);
     },
     [goToStep]
   );
@@ -1172,7 +1525,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         setSelectedTemplateIndex(null);
         setEditMode(false);
         setNavigationDirection("backward");
-        goToStep(1);
+        goToStep(2);
         return newTemplates;
       });
     }
@@ -1189,7 +1542,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNewHeaderSection(header.section || "");
       setNewHeaderOptions(header.options || []);
       setNavigationDirection("forward");
-      goToStep(4);
+      goToStep(5);
     },
     [selectedTemplateIndex, currentCardTemplates, goToStep]
   );
@@ -1201,7 +1554,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const currentSectionName = currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Card Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
-    goToStep(5);
+    goToStep(6);
   }, [resetHeaderForm, goToStep, currentCardTemplates, selectedTemplateIndex, currentSectionIndex]);
 
   // Export cards for the current template
@@ -1363,7 +1716,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   return (
     <div className={`${styles.templateWrapper} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ""} ${
@@ -1378,18 +1731,18 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             {step === 1 && (
               <>
                 <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your card data structure.</p>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Entity</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Entities help organize your card templates into logical groups.</p>
                   <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                     <div
-                      onClick={() => handleOpenEditor()}
+                      onClick={() => setShowEntityForm(true)}
                       className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
                       role="button"
-                      aria-label="Add New Card Template"
+                      aria-label="Add New Entity"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
-                          handleOpenEditor();
+                          setShowEntityForm(true);
                         }
                       }}
                     >
@@ -1397,51 +1750,90 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         <FaPlus size={24} />
                       </div>
                       <div className={styles.cardContent}>
-                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Template</h3>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your cards</p>
+                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Entity</h3>
+                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new entity to group your templates</p>
                       </div>
                       <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <IoChevronForward size={16} />
                       </div>
                     </div>
                   </div>
+                  
+                  {showEntityForm && (
+                    <div className={`${styles.formSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Entity</h3>
+                      <input
+                        type="text"
+                        value={newEntityName}
+                        onChange={(e) => setNewEntityName(e.target.value)}
+                        placeholder="Entity Name"
+                        className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        autoFocus
+                      />
+                      <div className={styles.formActions}>
+                        <button
+                          onClick={() => {
+                            setShowEntityForm(false);
+                            setNewEntityName("");
+                          }}
+                          className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={createNewEntity}
+                          className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          disabled={!newEntityName.trim()}
+                        >
+                          Create Entity
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {currentCardTemplates.filter((template) => template.action !== "remove").length > 0 && (
+                
+                {templateEntities.length > 0 && (
                   <div className={styles.section}>
-                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Templates</h2>
-                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing card templates.</p>
+                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Entities</h2>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select an entity to manage its templates.</p>
                     <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {currentCardTemplates
-                        .filter((template) => template.action !== "remove")
-                        .map((template, index) => (
-                          <div
-                            key={template.name || `template-${index}`}
-                            onClick={() => handleOpenEditor(template)}
-                            className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            role="button"
-                            aria-label={`Edit ${template.name || "Unnamed Template"}`}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                handleOpenEditor(template);
-                              }
+                      {templateEntities.map((entity, index) => (
+                        <div
+                          key={entity.id}
+                          onClick={() => selectEntity(index)}
+                          className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          role="button"
+                          aria-label={`Open ${entity.name}`}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              selectEntity(index);
+                            }
+                          }}
+                        >
+                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <FaLayerGroup size={24} />
+                          </div>
+                          <div className={styles.cardContent}>
+                            <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{entity.name}</h3>
+                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {getEntityTemplates(index).length} template{getEntityTemplates(index).length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <IoChevronForward size={16} />
+                          </div>
+                          <div 
+                            className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteEntity(index);
                             }}
                           >
-                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <FaRegCircle size={24} />
-                            </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
-                              <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                {template.sections?.length || 0} sections
-                              </div>
-                            </div>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <IoChevronForward size={16} />
-                            </div>
+                            <FaTrash size={14} />
                           </div>
-                        ))}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -1449,6 +1841,315 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             )}
 
             {step === 2 && (
+              <>
+                {selectedEntityIndex !== null && templateEntities[selectedEntityIndex] ? (
+                  <>
+                    <div className={styles.section}>
+                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your card data structure in {templateEntities[selectedEntityIndex].name}.</p>
+                      <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div
+                          onClick={() => handleOpenEditor()}
+                          className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          role="button"
+                          aria-label="Add New Card Template"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              handleOpenEditor();
+                            }
+                          }}
+                        >
+                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <FaPlus size={24} />
+                          </div>
+                          <div className={styles.cardContent}>
+                            <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Template</h3>
+                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your cards</p>
+                          </div>
+                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <IoChevronForward size={16} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {getEntityTemplates(selectedEntityIndex).length > 0 && (
+                      <div className={styles.section}>
+                        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Templates</h2>
+                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing card templates in {templateEntities[selectedEntityIndex].name}.</p>
+                        <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          {getEntityTemplates(selectedEntityIndex).map((template, index) => (
+                            <div
+                              key={template.name || `template-${index}`}
+                              onClick={() => handleOpenEditor(template)}
+                              className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              role="button"
+                              aria-label={`Edit ${template.name || "Unnamed Template"}`}
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  handleOpenEditor(template);
+                                }
+                              }}
+                            >
+                              <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <FaRegCircle size={24} />
+                              </div>
+                              <div className={styles.cardContent}>
+                                <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
+                                <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
+                                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  {template.sections?.length || 0} sections
+                                </div>
+                              </div>
+                              <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <IoChevronForward size={16} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Pipelines Section */}
+                    <div className={styles.section}>
+                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Entity Pipelines</h2>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move cards between templates in {templateEntities[selectedEntityIndex].name}.</p>
+                      
+                      {/* Add Pipeline Button */}
+                      <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div
+                          onClick={() => setShowPipelineForm(true)}
+                          className={`${styles.configCard} ${styles.createCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          role="button"
+                          aria-label="Create new pipeline"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              setShowPipelineForm(true);
+                            }
+                          }}
+                        >
+                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <IoAdd size={24} />
+                          </div>
+                          <div className={styles.cardContent}>
+                            <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Pipeline</h3>
+                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automatic card movement between templates</p>
+                          </div>
+                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <IoChevronForward size={16} />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Pipeline Form */}
+                      {showPipelineForm && (
+                        <div className={`${styles.pipelineForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {editingPipelineIndex !== null ? 'Edit Pipeline' : 'Create New Pipeline'}
+                          </h3>
+                          
+                          <div className={styles.inputGroup}>
+                            <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
+                            <input
+                              type="text"
+                              value={newPipelineName}
+                              onChange={(e) => setNewPipelineName(e.target.value)}
+                              placeholder="Enter pipeline name"
+                              className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            />
+                          </div>
+                          
+                          <div className={styles.inputGroup}>
+                            <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Source Template</label>
+                            <select
+                              value={pipelineSourceTemplate}
+                              onChange={(e) => setPipelineSourceTemplate(e.target.value)}
+                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Select source template...</option>
+                              {getEntityTemplates(selectedEntityIndex).map((template) => (
+                                <option key={template.docId} value={template.docId}>
+                                  {template.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className={styles.inputGroup}>
+                            <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
+                            <select
+                              value={pipelineTargetTemplate}
+                              onChange={(e) => setPipelineTargetTemplate(e.target.value)}
+                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Select target template...</option>
+                              {getEntityTemplates(selectedEntityIndex).map((template) => (
+                                <option key={template.docId} value={template.docId}>
+                                  {template.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          {/* Field Mappings Section */}
+                          {pipelineSourceTemplate && pipelineTargetTemplate && (
+                            <div className={styles.fieldMappingsSection}>
+                              <div className={styles.fieldMappingsHeader}>
+                                <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  Field Mappings
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={addFieldMapping}
+                                  className={`${styles.addMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                >
+                                  <IoAdd size={16} />
+                                  Add Mapping
+                                </button>
+                              </div>
+                              
+                              <div className={styles.fieldMappings}>
+                                {pipelineFieldMappings.map((mapping, index) => (
+                                  <div key={index} className={`${styles.mappingRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                    <select
+                                      value={mapping.source}
+                                      onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
+                                      className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                    >
+                                      <option value="">Source field...</option>
+                                      {getSourceTemplateHeaders().map((header) => (
+                                        <option key={header.key} value={header.key}>
+                                          {header.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    
+                                    <span className={`${styles.mappingArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                      →
+                                    </span>
+                                    
+                                    <select
+                                      value={mapping.target}
+                                      onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
+                                      className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                    >
+                                      <option value="">Target field...</option>
+                                      {getTargetTemplateHeaders().map((header) => (
+                                        <option key={header.key} value={header.key}>
+                                          {header.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    
+                                    <button
+                                      type="button"
+                                      onClick={() => removeFieldMapping(index)}
+                                      className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                      title="Remove mapping"
+                                    >
+                                      <IoTrash size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+                                
+                                {pipelineFieldMappings.length === 0 && (
+                                  <div className={`${styles.emptyMappings} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                    <p>No field mappings yet. Add mappings to specify how data transfers between templates.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className={styles.formActions}>
+                            <button
+                              onClick={cancelPipelineForm}
+                              className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={editingPipelineIndex !== null ? updateEntityPipeline : addEntityPipeline}
+                              className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              disabled={
+                                !newPipelineName.trim() || 
+                                !pipelineSourceTemplate || 
+                                !pipelineTargetTemplate ||
+                                pipelineFieldMappings.length === 0 ||
+                                !pipelineFieldMappings.every(mapping => mapping.source && mapping.target)
+                              }
+                            >
+                              {editingPipelineIndex !== null ? 'Update Pipeline' : 'Create Pipeline'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Existing Pipelines */}
+                      {getEntityPipelines(selectedEntityIndex).length > 0 && (
+                        <div className={styles.existingPipelines}>
+                          <h3 className={`${styles.subsectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h3>
+                          <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {getEntityPipelines(selectedEntityIndex).map((pipeline, index) => {
+                              const sourceTemplate = getEntityTemplates(selectedEntityIndex).find(t => t.docId === pipeline.sourceTemplateId);
+                              const targetTemplate = getEntityTemplates(selectedEntityIndex).find(t => t.docId === pipeline.targetTemplateId);
+                              
+                              return (
+                                <div
+                                  key={pipeline.id}
+                                  className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                >
+                                  <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                    <IoGitBranch size={24} />
+                                  </div>
+                                  <div className={styles.cardContent}>
+                                    <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h3>
+                                    <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                      {sourceTemplate?.name || 'Unknown'} → {targetTemplate?.name || 'Unknown'}
+                                    </p>
+                                    <div className={`${styles.mappingInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                      <span className={`${styles.mappingCount} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                        {pipeline.fieldMappings?.length || 0} field mapping{(pipeline.fieldMappings?.length || 0) !== 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={styles.cardActions}>
+                                    <button
+                                      onClick={() => editEntityPipeline(index)}
+                                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                      aria-label="Edit pipeline"
+                                    >
+                                      <IoCreate size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteEntityPipeline(index)}
+                                      className={`${styles.actionButton} ${styles.dangerButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                      aria-label="Delete pipeline"
+                                    >
+                                      <IoTrash size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.section}>
+                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>No Entity Selected</h2>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Please select an entity first to manage templates.</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {step === 3 && (
               <>
                 {selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] ? (
                   <>
@@ -1510,39 +2211,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             <div className={styles.cardContent}>
                               <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Export Cards</h3>
                               <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Download your card data as CSV</p>
-                            </div>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <IoChevronForward size={16} />
-                            </div>
-                          </div>
-                          <div
-                            onClick={() => {
-                              setSelectedTargetTemplate("");
-                              setPipelineName("");
-                              setFieldMappings([]);
-                              setNavigationDirection("forward");
-                              goToStep(6);
-                            }}
-                            className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            role="button"
-                            aria-label="Configure Pipeline"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                setSelectedTargetTemplate("");
-                                setPipelineName("");
-                                setFieldMappings([]);
-                                setNavigationDirection("forward");
-                                goToStep(6);
-                              }
-                            }}
-                          >
-                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <CgArrowsExchangeAlt size={24} />
-                            </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure Pipeline</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automated card conversions</p>
                             </div>
                             <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <IoChevronForward size={16} />
@@ -1614,47 +2282,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       </div>
                     </div>
                     
-                    {/* Existing Pipelines Section */}
-                    {!editMode && currentCardTemplates[selectedTemplateIndex].pipelines && currentCardTemplates[selectedTemplateIndex].pipelines.length > 0 && (
-                      <div className={styles.section}>
-                        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h2>
-                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your card conversion pipelines.</p>
-                        <div className={`${styles.pipelinesGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {currentCardTemplates[selectedTemplateIndex].pipelines.map((pipeline) => (
-                            <div key={pipeline.id} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              <div className={styles.pipelineCardContent}>
-                                <div className={styles.pipelineHeader}>
-                                  <h4 className={`${styles.pipelineTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h4>
-                                  <button
-                                    onClick={() => deletePipeline(pipeline.id)}
-                                    className={`${styles.deletePipelineButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                    aria-label={`Delete ${pipeline.name} pipeline`}
-                                  >
-                                    <FaTrash size={14} />
-                                  </button>
-                                </div>
-                                <p className={`${styles.pipelineDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  Converts to {pipeline.targetTemplate}
-                                </p>
-                                <div className={styles.pipelineMappings}>
-                                  {pipeline.fieldMappings.slice(0, 3).map((mapping, index) => (
-                                    <span key={index} className={`${styles.mappingBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                      {mapping.source} → {mapping.target}
-                                    </span>
-                                  ))}
-                                  {pipeline.fieldMappings.length > 3 && (
-                                    <span className={`${styles.mappingMore} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                      +{pipeline.fieldMappings.length - 3} more
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
                     {editMode && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Danger Zone</h2>
@@ -1693,7 +2320,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               </>
             )}
 
-            {step === 3 &&
+            {step === 4 &&
               selectedTemplateIndex !== null &&
               currentSectionIndex !== null &&
               currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex] && (
@@ -1884,7 +2511,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               </>
             )}
 
-            {step === 4 &&
+            {step === 5 &&
               selectedTemplateIndex !== null &&
               activeHeaderIndex !== null &&
               currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
@@ -1991,7 +2618,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               </>
             )}
 
-            {step === 5 && selectedTemplateIndex !== null && (
+            {step === 6 && selectedTemplateIndex !== null && (
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add New Field</h2>
@@ -2067,101 +2694,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         </div>
                       </div>
                     )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {step === 6 && selectedTemplateIndex !== null && (
-              <>
-                <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Configuration</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create automated card conversion pipelines.</p>
-                  
-                  <div className={`${styles.pipelineForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    <div className={styles.inputGroup}>
-                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
-                      <input
-                        type="text"
-                        value={pipelineName}
-                        onChange={(e) => setPipelineName(e.target.value)}
-                        placeholder="e.g., Lead to Customer"
-                        className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      />
-                    </div>
-
-                    <div className={styles.inputGroup}>
-                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
-                      <select
-                        value={selectedTargetTemplate}
-                        onChange={(e) => setSelectedTargetTemplate(e.target.value)}
-                        className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      >
-                        <option value="">Select target template...</option>
-                        {currentCardTemplates
-                          .filter((template, index) => index !== selectedTemplateIndex)
-                          .map((template) => (
-                            <option key={template.docId} value={template.typeOfCards}>
-                              {template.name}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.inputGroup}>
-                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Mappings</label>
-                      <div className={styles.fieldMappings}>
-                        {fieldMappings.map((mapping, index) => (
-                          <div key={index} className={`${styles.mappingRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            <select
-                              value={mapping.source}
-                              onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
-                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            >
-                              <option value="">Source field...</option>
-                              {currentCardTemplates[selectedTemplateIndex].headers
-                                .filter(h => h.key !== 'docId' && h.key !== 'typeOfCards')
-                                .map((header) => (
-                                  <option key={header.key} value={header.key}>
-                                    {header.name}
-                                  </option>
-                                ))}
-                            </select>
-                            <span className={`${styles.mappingArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>→</span>
-                            <select
-                              value={mapping.target}
-                              onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
-                              className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                              disabled={!selectedTargetTemplate}
-                            >
-                              <option value="">Target field...</option>
-                              {selectedTargetTemplate && currentCardTemplates
-                                .find(t => t.typeOfCards === selectedTargetTemplate)?.headers
-                                .filter(h => h.key !== 'docId' && h.key !== 'typeOfCards')
-                                .map((header) => (
-                                  <option key={header.key} value={header.key}>
-                                    {header.name}
-                                  </option>
-                                ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => removeFieldMapping(index)}
-                              className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={addFieldMapping}
-                          className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        >
-                          + Add Field Mapping
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </>

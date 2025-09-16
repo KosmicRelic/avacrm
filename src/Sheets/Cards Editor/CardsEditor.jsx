@@ -61,7 +61,7 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
+  const { sheets, cardTemplates, templateEntities, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfCards
@@ -334,12 +334,24 @@ const CardsEditor = ({
     // Use formData.typeOfCards first (for pipeline conversions), then fall back to other sources
     const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
     const currentTemplate = cardTemplates?.find((t) => t.name === templateName);
-    const allPipelines = currentTemplate?.pipelines || [];
+    
+    if (!currentTemplate || !templateEntities) {
+      return [];
+    }
+    
+    // Find the entity that contains this template
+    const entity = templateEntities.find(e => e.id === currentTemplate.entityId);
+    const allPipelines = entity?.pipelines || [];
+    
+    // Filter pipelines that have this template as source
+    const sourcePipelines = allPipelines.filter(pipeline => 
+      pipeline.sourceTemplateId === currentTemplate.docId
+    );
     
     // Filter out pipelines that have already been used for this card
     const usedPipelineIds = formData.usedPipelines || [];
-    return allPipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
-  }, [cardTemplates, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
+    return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
+  }, [cardTemplates, templateEntities, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
 
   // Execute pipeline to convert card to another type
   const executePipeline = useCallback((pipeline) => {
@@ -348,7 +360,7 @@ const CardsEditor = ({
       return;
     }
 
-    const targetTemplate = cardTemplates?.find((t) => t.typeOfCards === pipeline.targetTemplate);
+    const targetTemplate = cardTemplates?.find((t) => t.docId === pipeline.targetTemplateId);
     if (!targetTemplate) {
       alert('Target template not found.');
       return;
@@ -364,15 +376,17 @@ const CardsEditor = ({
       action: 'add',
     };
 
-    // Apply field mappings
-    pipeline.fieldMappings.forEach(mapping => {
-      if (mapping.source && mapping.target && formData[mapping.source]) {
-        newCardData[mapping.target] = formData[mapping.source];
-      }
-    });
+    // Apply field mappings from the pipeline
+    if (pipeline.fieldMappings && Array.isArray(pipeline.fieldMappings)) {
+      pipeline.fieldMappings.forEach(mapping => {
+        if (mapping.source && mapping.target && formData[mapping.source] !== undefined) {
+          newCardData[mapping.target] = formData[mapping.source];
+        }
+      });
+    }
 
     // Confirm the conversion
-    if (window.confirm(`Convert this ${formData.typeOfCards} to ${pipeline.targetTemplate}? This will save the current card and open the new card for immediate editing.`)) {
+    if (window.confirm(`Convert this ${formData.typeOfCards} to ${targetTemplate.name}? This will save the current card and open the new card for immediate editing.`)) {
       // Mark this pipeline as used in the current card
       const updatedUsedPipelines = [...(formData.usedPipelines || []), pipeline.id];
       const updatedFormData = {
@@ -391,7 +405,7 @@ const CardsEditor = ({
       } else {
         // Fallback: create the card and close editor
         onSave(newCardData, false);
-        alert(`Successfully created ${pipeline.targetTemplate} card with Link ID: ${formData.linkId}`);
+        alert(`Successfully created ${targetTemplate.name} card with Link ID: ${formData.linkId}`);
         onClose();
       }
     }

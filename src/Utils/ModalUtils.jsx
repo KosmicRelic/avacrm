@@ -214,8 +214,82 @@ export const handleModalSave = async ({
         data.onComplete();
       }
       break;
-    case 'cardsTemplate':
-      if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
+      case 'cardsTemplate':
+      console.log('CardsTemplate modal save - received data:', data);
+      if (data?.templateEntities && Array.isArray(data.templateEntities)) {
+        // New entity-based system
+        if (!businessId) {
+          console.warn('Cannot update templates and cards: businessId is missing');
+          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
+          return;
+        }
+
+        try {
+          // Prepare entities with their templates 
+          const entitiesWithTemplates = data.templateEntities.map(entity => {
+            console.log('Processing entity:', entity.name, 'with stored templates:', entity.templates);
+            console.log('Entity pipelines:', entity.pipelines);
+            
+            // Always use the current edited templates from currentCardTemplates 
+            // as they reflect the user's latest changes, not the old database state
+            const entityTemplates = (data.currentCardTemplates || []).filter(template => 
+              template.entityId === entity.id && template.action !== "remove"
+            ).map(template => {
+              const { isModified, action, ...cleanTemplate } = template;
+              return cleanTemplate;
+            });            console.log('Using current edited templates from currentCardTemplates:', entityTemplates);
+            
+            console.log('Final templates for entity', entity.name, ':', entityTemplates);
+            console.log('Including pipelines for entity', entity.name, ':', entity.pipelines);
+            
+            return {
+              id: entity.id,
+              name: entity.name,
+              templates: entityTemplates,
+              pipelines: entity.pipelines || []
+            };
+          });
+
+          // Check if there are any actual changes before sending to backend
+          const hasActualChanges = data.currentCardTemplates?.some(template => 
+            template.isModified || template.action === 'add' || template.action === 'remove'
+          ) || data.deletedHeaderKeys?.length > 0;
+
+          if (!hasActualChanges) {
+            console.log('[ModalUtils] No changes detected, skipping backend update');
+            console.log('Template entities saved successfully (no changes)');
+            return;
+          }
+
+          console.log('[ModalUtils] Changes detected, proceeding with backend update');
+
+          const totalPipelines = entitiesWithTemplates.reduce((total, entity) => total + (entity.pipelines?.length || 0), 0);
+          console.log(`Sending ${entitiesWithTemplates.length} entities with total ${totalPipelines} pipelines to backend`);
+          console.log('Sending entities to backend:', { businessId, entities: entitiesWithTemplates });
+
+          const result = await updateCardTemplatesAndCardsFunction({
+            businessId,
+            entities: entitiesWithTemplates,
+          });
+
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to update template entities');
+          }
+
+          // Update local state - flatten all templates from all entities
+          const allTemplates = entitiesWithTemplates.flatMap(entity => 
+            entity.templates || []
+          );
+          setCardTemplates(allTemplates);
+
+          console.log('Template entities saved successfully');
+        } catch (error) {
+          console.error('Error updating template entities:', error);
+          alert(`Failed to update template entities. Error: ${error.message}`);
+          return;
+        }
+      } else if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
+        // Fallback to legacy template handling for backward compatibility
         if (!businessId) {
           console.warn('Cannot update templates and cards: businessId is missing');
           alert('Error: Business ID is missing. Please ensure your account is properly configured.');
@@ -329,7 +403,11 @@ export const handleModalSave = async ({
           return;
         }
       } else {
-        console.warn('Invalid or missing currentCardTemplates:', data?.currentCardTemplates);
+        console.warn('No template entities or card templates found to save. Data received:', {
+          templateEntities: data?.templateEntities,
+          currentCardTemplates: data?.currentCardTemplates,
+          dataKeys: Object.keys(data || {})
+        });
       }
       break;
     case 'folderModal':
@@ -799,6 +877,7 @@ export const renderModalContent = ({
           handleClose={handleModalClose}
         />
       );
+    // pipelineManagement removed - now integrated into Card Templates workflow
     default:
       return null;
   }
@@ -935,3 +1014,5 @@ export const onOpenFolderModal = ({
   });
   folderModal?.open();
 };
+
+// onOpenPipelineManagementModal removed - pipeline management now integrated into Card Templates workflow

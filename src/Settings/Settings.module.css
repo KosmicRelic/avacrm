@@ -579,6 +579,51 @@
   }
 }
 
+/* Pipeline Management Styles */
+.pipelineHeader {
+  margin-bottom: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pipelineHeader.darkTheme {
+  border-bottom-color: #374151;
+}
+
+.pipelineHeaderContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pipelineIcon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.pipelineDescription {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+.pipelineDescription.darkTheme {
+  color: #9ca3af;
+}
+
+.pipelineContainer {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pipelineContainer.darkTheme {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 /* Desktop-specific styles */
 @media (min-width: 769px) {
   .leftPane {

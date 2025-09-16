@@ -5,6 +5,7 @@ import { doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } fro
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
 import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash } from 'react-icons/fa';
+import { IoGitBranch } from 'react-icons/io5';
 import { getAuth } from 'firebase/auth';
 import { DeleteTeamMemberFunction } from '../Firebase/Firebase Functions/User Functions/DeleteTeamMemberFunction';
 
@@ -35,7 +36,6 @@ export default function Settings() {
   });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -538,6 +538,7 @@ export default function Settings() {
             <span>{t('settings.manageTeamAccess')}</span>
             <FaChevronRight className={styles.arrowIcon} />
           </button>
+          {/* Pipeline Management moved to Actions → Card Templates */}
         </div>
 
         <div
@@ -903,6 +904,8 @@ export default function Settings() {
                 </div>
               </div>
             )}
+
+            {/* Pipeline Management moved to Actions → Card Templates workflow */}
           </div>
         </div>
       </div>
