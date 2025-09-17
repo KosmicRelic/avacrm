@@ -43,7 +43,6 @@ export const handleModalSave = async ({
   setSheets,
   activeSheetName,
   isSheetModalEditMode,
-  setCardTemplates,
   setTemplateEntities,
   setEditMode,
   setSelectedTemplateIndex,
@@ -57,7 +56,7 @@ export const handleModalSave = async ({
   metrics,
   dashboards,
   setActiveModal,
-  cardTemplates,
+  templateEntities,
   businessId,
   cards,
   setCards,
@@ -218,7 +217,7 @@ export const handleModalSave = async ({
       case 'cardsTemplate':
       console.log('CardsTemplate modal save - received data:', data);
       if (data?.templateEntities && Array.isArray(data.templateEntities)) {
-        // New entity-based system
+        // Entity-based system
         if (!businessId) {
           console.warn('Cannot update templates and cards: businessId is missing');
           alert('Error: Business ID is missing. Please ensure your account is properly configured.');
@@ -229,18 +228,17 @@ export const handleModalSave = async ({
           // Prepare entities with their templates - include ALL entities, even those marked for deletion
           // The backend will handle deletion based on the action flag
           const entitiesWithTemplates = data.templateEntities.map(entity => {
-            console.log('Processing entity:', entity.name, 'with stored templates:', entity.templates);
+            console.log('Processing entity:', entity.name, 'with templates:', entity.templates);
             console.log('Entity pipelines:', entity.pipelines);
             console.log('Entity action:', entity.action);
             
-            // Always use the current edited templates from currentCardTemplates 
-            // as they reflect the user's latest changes, not the old database state
-            const entityTemplates = (data.currentCardTemplates || []).filter(template => 
-              template.entityId === entity.id && template.action !== "remove"
+            // Use the templates from the entity (they already reflect the user's changes)
+            const entityTemplates = (entity.templates || []).filter(template => 
+              template.action !== "remove"
             ).map(template => {
               const { isModified, action, ...cleanTemplate } = template;
               return cleanTemplate;
-            });            console.log('Using current edited templates from currentCardTemplates:', entityTemplates);
+            });
             
             console.log('Final templates for entity', entity.name, ':', entityTemplates);
             console.log('Including pipelines for entity', entity.name, ':', entity.pipelines);
@@ -256,18 +254,19 @@ export const handleModalSave = async ({
             };
           });
 
-          // Check if there are any actual changes before sending to backend
-          const hasTemplateChanges = data.currentCardTemplates?.some(template => 
-            template.isModified || template.action === 'add' || template.action === 'remove'
-          ) || data.deletedHeaderKeys?.length > 0;
-          
-          // Check if CardsTemplate detected entity changes
+          // Check if there are any actual changes
           const hasEntityChanges = data.hasEntityChanges === true || 
             (data.templateEntities && data.templateEntities.some(entity => 
               entity.isModified || entity.action === 'add' || entity.action === 'update' || entity.action === 'remove'
             ));
           
-          const hasActualChanges = hasTemplateChanges || hasEntityChanges;
+          const hasTemplateChanges = data.templateEntities.some(entity =>
+            entity.templates?.some(template => 
+              template.isModified || template.action === 'add' || template.action === 'remove'
+            )
+          );
+          
+          const hasActualChanges = hasTemplateChanges || hasEntityChanges || (data.deletedHeaderKeys?.length > 0);
 
           if (!hasActualChanges) {
             console.log('[ModalUtils] No changes detected, skipping backend update');
@@ -290,25 +289,19 @@ export const handleModalSave = async ({
             throw new Error(result.error || 'Failed to update template entities');
           }
 
-          // Update local state - flatten all templates from all entities
-          const allTemplates = entitiesWithTemplates.flatMap(entity => 
-            entity.templates || []
-          );
-          setCardTemplates(allTemplates);
-          
-          // Also update templateEntities in context to ensure immediate UI update
+          // Update templateEntities in context to ensure immediate UI update
           // Filter out entities marked for deletion since they will be deleted from Firestore
+          const entitiesForContext = entitiesWithTemplates.filter(entity => entity.action !== "remove");
+          
           if (setTemplateEntities) {
-            const entitiesForContext = entitiesWithTemplates.filter(entity => entity.action !== "remove");
             setTemplateEntities(entitiesForContext);
           }
 
           // Update tempData to reflect the latest changes and reset editing state
           if (setTempData) {
             setTempData({
-              currentCardTemplates: allTemplates,
+              templateEntities: entitiesForContext,
               deletedHeaderKeys: data.deletedHeaderKeys || [],
-              templateEntities: entitiesWithTemplates,
               hasEntityChanges: false, // Reset since we just saved
               // Reset editing state so UI shows updated names
               editingEntityIndex: null,
@@ -322,124 +315,9 @@ export const handleModalSave = async ({
           alert(`Failed to update template entities. Error: ${error.message}`);
           return;
         }
-      } else if (data?.currentCardTemplates && Array.isArray(data.currentCardTemplates)) {
-        // Fallback to legacy template handling for backward compatibility
-        if (!businessId) {
-          console.warn('Cannot update templates and cards: businessId is missing');
-          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
-          return;
-        }
-
-        const updates = data.currentCardTemplates
-          .map((newTemplate) => {
-            const oldTemplate = cardTemplates.find((t) => t.docId === newTemplate.docId);
-            // Allow new templates (action: 'add') even if oldTemplate is undefined
-            if ((!oldTemplate && newTemplate.action !== 'add') || !newTemplate.isModified) return null;
-
-            const update = {
-              docId: newTemplate.docId,
-              typeOfCards: newTemplate.typeOfCards,
-            };
-
-            if (newTemplate.action === 'add') {
-              // For new templates, send the full template
-              const { isModified, action, ...cleanTemplate } = newTemplate;
-              update.newTemplate = {
-                ...cleanTemplate,
-                headers: cleanTemplate.headers,
-                sections: cleanTemplate.sections,
-                name: cleanTemplate.name || cleanTemplate.typeOfCards,
-                typeOfCards: cleanTemplate.typeOfCards,
-              };
-              update.action = 'add';
-            } else if (
-              newTemplate.action === 'update' &&
-              oldTemplate &&
-              oldTemplate.typeOfCards !== newTemplate.typeOfCards &&
-              newTemplate.typeOfCards
-            ) {
-              update.newTypeOfCards = newTemplate.typeOfCards;
-            }
-
-            if (oldTemplate) {
-              const oldKeys = oldTemplate.headers.map((h) => h.key);
-              const newKeys = newTemplate.headers.map((h) => h.key);
-              const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
-              if (deletedKeys.length > 0) {
-                update.deletedKeys = deletedKeys;
-              }
-            }
-
-            if (newTemplate.action === 'update') {
-              const { isModified, action, ...cleanTemplate } = newTemplate;
-              update.newTemplate = {
-                ...cleanTemplate,
-                headers: cleanTemplate.headers,
-                sections: cleanTemplate.sections,
-                name: cleanTemplate.name || cleanTemplate.typeOfCards,
-                typeOfCards: cleanTemplate.typeOfCards,
-              };
-            } else if (newTemplate.action === 'remove') {
-              update.action = 'remove';
-            }
-
-            return Object.keys(update).length > 1 ? update : null;
-          })
-          .filter((update) => update !== null);
-
-        try {
-          if (updates.length > 0) {
-            const result = await updateCardTemplatesAndCardsFunction({
-              businessId,
-              updates,
-            });
-
-            if (!result.success) {
-              throw new Error(result.error || 'Failed to update templates and cards');
-            }
-
-            setCardTemplates(
-              data.currentCardTemplates.map((template) => {
-                const { isModified, action, ...cleanTemplate } = template;
-                return cleanTemplate;
-              })
-            );
-
-            const updatedCards = cards.map((card) => {
-              const matchingUpdate = updates.find(
-                (update) => update.typeOfCards === card.typeOfCards
-              );
-              if (!matchingUpdate) return card;
-
-              let updatedCard = { ...card };
-
-              if (matchingUpdate.newTypeOfCards) {
-                updatedCard.typeOfCards = matchingUpdate.newTypeOfCards;
-              }
-
-              if (matchingUpdate.deletedKeys && matchingUpdate.deletedKeys.length > 0) {
-                matchingUpdate.deletedKeys.forEach((key) => {
-                  if (key in updatedCard) {
-                    delete updatedCard[key];
-                  }
-                });
-              }
-
-              const { isModified, action, ...cleanCard } = updatedCard;
-              return cleanCard;
-            });
-
-            setCards(updatedCards);
-          }
-        } catch (error) {
-          console.error('Error updating templates and cards:', error);
-          alert(`Failed to update card templates. Error: ${error.message}`);
-          return;
-        }
       } else {
-        console.warn('No template entities or card templates found to save. Data received:', {
+        console.warn('No template entities found to save. Data received:', {
           templateEntities: data?.templateEntities,
-          currentCardTemplates: data?.currentCardTemplates,
           dataKeys: Object.keys(data || {})
         });
       }
@@ -767,7 +645,7 @@ export const renderModalContent = ({
   handleDeleteSheet,
   handleModalClose,
   resolvedRows,
-  cardTemplates,
+  templateEntities,
   handleSheetChange,
   handleSheetSave,
   handleFolderSave,
@@ -837,7 +715,11 @@ export const renderModalContent = ({
     case 'cardsTemplate':
       return (
         <CardsTemplate
-          tempData={activeModal.data || { currentCardTemplates: [...(cardTemplates || [])] }}
+          tempData={activeModal.data || {
+            templateEntities: [...(templateEntities || [])],
+            deletedHeaderKeys: [],
+            hasEntityChanges: false
+          }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
           businessId={businessId}
@@ -850,7 +732,6 @@ export const renderModalContent = ({
           setTempData={setActiveModalData}
           sheets={sheets}
           setSheets={setSheets}
-          cardTemplates={cardTemplates}
           onSheetChange={handleSheetChange}
           handleSheetSave={handleSheetSave}
           handleFolderSave={handleFolderSave}
@@ -997,16 +878,20 @@ export const onOpenTransportModal = ({
 };
 
 export const onOpenCardsTemplateModal = ({
-  cardTemplates,
+  templateEntities,
   setEditMode,
   setActiveModal,
   cardsTemplateModal,
 }) => {
-  if (!cardTemplates) return;
+  if (!templateEntities) return;
   setEditMode(false);
   setActiveModal({
     type: 'cardsTemplate',
-    data: { currentCardTemplates: [...(cardTemplates || [])] },
+    data: {
+      templateEntities: [...(templateEntities || [])],
+      deletedHeaderKeys: [],
+      hasEntityChanges: false
+    },
   });
   cardsTemplateModal?.open();
 };

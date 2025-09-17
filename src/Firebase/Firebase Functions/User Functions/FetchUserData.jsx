@@ -13,7 +13,6 @@ const fetchUserData = async ({
   route,
   setSheets,
   setCards,
-  setCardTemplates,
   setTemplateEntities,
   setMetrics,
   setDashboards,
@@ -273,49 +272,9 @@ const fetchUserData = async ({
                 }));
                 setTemplateEntities(entities);
               }
-              
-              // Flatten all templates from all entities for backward compatibility
-              if (setCardTemplates) {
-                const allTemplates = [];
-                templateEntitiesSnapshot.docs.forEach((doc) => {
-                  const entity = doc.data();
-                  if (entity.templates && Array.isArray(entity.templates)) {
-                    entity.templates.forEach(template => {
-                      allTemplates.push({
-                        docId: template.docId,
-                        ...template,
-                        entityId: entity.id,
-                        entityName: entity.name
-                      });
-                    });
-                  }
-                });
-                
-                console.log(`[FetchUserData] Loaded ${allTemplates.length} templates from ${templateEntitiesSnapshot.docs.length} entities`);
-                setCardTemplates(allTemplates);
-              }
             },
             (error) => {
               console.error('Error in template entities real-time listener:', error);
-              // Fallback to old cardTemplates collection if templateEntities fails
-              console.log('[FetchUserData] Falling back to legacy cardTemplates collection');
-              const cardTemplatesUnsubscribe = onSnapshot(
-                collection(db, 'businesses', businessId, 'cardTemplates'),
-                (cardTemplatesSnapshot) => {
-                  setCardTemplates && setCardTemplates(
-                    cardTemplatesSnapshot.docs.map((doc) => ({
-                      docId: doc.id,
-                      ...doc.data(),
-                    }))
-                  );
-                },
-                (fallbackError) => {
-                  console.error('Error in fallback card templates listener:', fallbackError);
-                }
-              );
-              if (cardTemplatesUnsubscribe) {
-                unsubscribeFunctions.push(cardTemplatesUnsubscribe);
-              }
             }
           );
           

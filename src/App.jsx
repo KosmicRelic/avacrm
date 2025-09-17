@@ -71,8 +71,6 @@ function App() {
     setSheets,
     cards,
     setCards,
-    cardTemplates,
-    setCardTemplates,
     templateEntities,
     setTemplateEntities,
     editMode,
@@ -463,8 +461,6 @@ function App() {
   const modalUtilsProps = {
     sheets,
     setSheets,
-    cardTemplates,
-    setCardTemplates,
     templateEntities,
     setTemplateEntities,
     editMode,

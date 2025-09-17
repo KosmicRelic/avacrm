@@ -42,7 +42,16 @@ const EditSheetsModal = ({
   setActiveSheetName,
   clearFetchedSheets,
 }) => {
-  const { isDarkTheme, cardTemplates } = useContext(MainContext);
+  const { isDarkTheme, templateEntities } = useContext(MainContext);
+  
+  // Get all templates directly from entities
+  const allTemplates = templateEntities.flatMap(entity => 
+    (entity.templates || []).map(template => ({
+      ...template,
+      entityId: entity.id,
+      entityName: entity.name
+    }))
+  );
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || '');
   const [currentHeaders, setCurrentHeaders] = useState(() => {
@@ -88,13 +97,13 @@ const EditSheetsModal = ({
 
   // Ensure cardTypeFilters always has all headers for each selected card type
   useEffect(() => {
-    if (!cardTemplates || selectedCardTypes.length === 0) return;
+    if (!allTemplates || selectedCardTypes.length === 0) return;
 
     let changed = false;
     const updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
 
     selectedCardTypes.forEach((typeOfCards) => {
-      const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+      const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
       if (!template) return;
       if (!updatedCardTypeFilters[typeOfCards]) {
         updatedCardTypeFilters[typeOfCards] = {};
@@ -123,7 +132,7 @@ const EditSheetsModal = ({
         cardTypeFilters: updatedCardTypeFilters,
       });
     }
-  }, [selectedCardTypes, cardTemplates, tempData, setTempData]);
+  }, [selectedCardTypes, allTemplates, tempData, setTempData]);
 
   // Compute filter summary for display
   const getFilterSummary = useCallback(
@@ -134,14 +143,14 @@ const EditSheetsModal = ({
       Object.entries(filters).forEach(([headerKey, filter]) => {
         if (headerKey === 'userFilter') {
           if (filter.headerKey) {
-            const header = cardTemplates
+            const header = allTemplates
               .find((t) => t.typeOfCards === cardType)
               ?.headers.find((h) => h.key === filter.headerKey);
             summaries.push(`${header?.name || filter.headerKey} = Current User`);
           }
           return;
         }
-        const header = cardTemplates
+        const header = allTemplates
           .find((t) => t.typeOfCards === cardType)
           ?.headers.find((h) => h.key === headerKey);
         if (!header) return;
@@ -171,14 +180,14 @@ const EditSheetsModal = ({
 
       return summaries.length > 0 ? summaries.join('; ') : 'None';
     },
-    [tempData.cardTypeFilters, cardTemplates]
+    [tempData.cardTypeFilters, allTemplates]
   );
 
   // Handle save action
   const onDoneClick = useCallback(() => {
     let updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
     selectedCardTypes.forEach((typeOfCards) => {
-      const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+      const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
       if (!template) return;
       if (!updatedCardTypeFilters[typeOfCards]) updatedCardTypeFilters[typeOfCards] = {};
       template.headers
@@ -246,7 +255,7 @@ const EditSheetsModal = ({
     setActiveSheetName,
     clearFetchedSheets,
     handleClose,
-    cardTemplates,
+    allTemplates,
   ]);
 
   const handleBackClick = useCallback(() => {
@@ -339,7 +348,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 4) {
-      const templateName = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
+      const templateName = allTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -385,7 +394,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 7) {
-      const cardTypeName = cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
+      const cardTypeName = allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -414,9 +423,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: filterTypeTitle,
-        backButtonTitle: `Filters for ${cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+        backButtonTitle: `Filters for ${allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
         backButton: {
-          label: `< Filters for ${cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+          label: `< Filters for ${allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -428,7 +437,7 @@ const EditSheetsModal = ({
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, cardTemplates, filterType]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, allTemplates, filterType]);
 
   // Sync tempData with state changes
   useEffect(() => {
@@ -910,16 +919,16 @@ const EditSheetsModal = ({
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose a Template</h2>
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select a card template to add columns from. Templates define the structure of your data.</p>
                 <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {cardTemplates.length === 0 ? (
+                  {allTemplates.length === 0 ? (
                     <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
-                  ) : cardTemplates.filter((template) => selectedCardTypes.includes(template.typeOfCards)).length === 0 ? (
+                  ) : allTemplates.filter((template) => selectedCardTypes.includes(template.typeOfCards)).length === 0 ? (
                     <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No card types selected. Go back to "Data Types" to select templates first.
                     </div>
                   ) : (
-                    cardTemplates
+                    allTemplates
                       .filter((template) => selectedCardTypes.includes(template.typeOfCards))
                       .map((template) => (
                       <div
@@ -947,7 +956,7 @@ const EditSheetsModal = ({
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which columns from this template to include in your sheet. You can reorder them later.</p>
                 <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {(() => {
-                    const selectedTemplate = cardTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
+                    const selectedTemplate = allTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
                     const templateHeaders = selectedTemplate?.headers
                       .filter((header) => header.isUsed !== false)
                       .map((header) => ({
@@ -1000,7 +1009,7 @@ const EditSheetsModal = ({
                     </div>
                   )}
                   {selectedCardTypes.map((typeOfCards) => {
-                    const template = cardTemplates.find((t) => t.typeOfCards === typeOfCards);
+                    const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
                     return (
                       <div
                         key={typeOfCards}
@@ -1037,12 +1046,12 @@ const EditSheetsModal = ({
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which card types to include in this sheet. Selected templates will be available for filtering and display.</p>
                 <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {cardTemplates.length === 0 ? (
+                  {allTemplates.length === 0 ? (
                     <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
                   ) : (
-                    cardTemplates.map((template) => (
+                    allTemplates.map((template) => (
                       <div
                         key={template.typeOfCards}
                         className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -1095,7 +1104,7 @@ const EditSheetsModal = ({
                   <div className={`${styles.filterListSection}`}>
                     <CardTypeFilterLikeFilterModal
                       cardType={selectedCardTypeForFilter}
-                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                      headers={allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}
@@ -1144,7 +1153,7 @@ const EditSheetsModal = ({
                   {selectedCardTypeForFilter && (
                     <CardTypeFilterLikeFilterModal
                       cardType={selectedCardTypeForFilter}
-                      headers={cardTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                      headers={allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}

@@ -23,7 +23,6 @@ export const MainContextProvider = ({ children }) => {
   const [cards, setCards] = useState([]);
   // Cache cards per sheetId: { [sheetId]: cardsArray }
   const [cardsCache, setCardsCache] = useState({});
-  const [cardTemplates, setCardTemplates] = useState([]);
   const [templateEntities, setTemplateEntities] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
@@ -47,7 +46,6 @@ export const MainContextProvider = ({ children }) => {
   const prevStates = useRef({
     sheets: { allSheets: [], structure: [], deletedSheetId: null },
     cards: [],
-    cardTemplates: [],
     metrics: [],
     dashboards: [],
   });
@@ -61,7 +59,6 @@ export const MainContextProvider = ({ children }) => {
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedCards = useMemo(() => cards, [cards]);
-  const memoizedCardTemplates = useMemo(() => cardTemplates, [cardTemplates]);
   const memoizedTemplateEntities = useMemo(() => templateEntities, [templateEntities]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
@@ -213,7 +210,6 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setCardTemplates,
                     setTemplateEntities,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
@@ -226,7 +222,6 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setCardTemplates,
                     setTemplateEntities,
                     updateSheets: true,
                   })
@@ -243,7 +238,6 @@ export const MainContextProvider = ({ children }) => {
                   route: '/dashboard',
                   setSheets,
                   setCards,
-                  setCardTemplates,
                   setTemplateEntities,
                   setMetrics,
                   setDashboards,
@@ -258,7 +252,6 @@ export const MainContextProvider = ({ children }) => {
                   route: '/metrics',
                   setSheets,
                   setCards,
-                  setCardTemplates,
                   setTemplateEntities,
                   setMetrics,
                   setDashboards,
@@ -294,7 +287,6 @@ export const MainContextProvider = ({ children }) => {
           setBusinessId(null);
           setSheets({ allSheets: [], structure: [], deletedSheetId: null });
           setCards([]);
-          setCardTemplates([]);
           setMetrics([]);
           setDashboards([]);
           setTeamMembers([]);
@@ -307,7 +299,6 @@ export const MainContextProvider = ({ children }) => {
           prevStates.current = {
             sheets: { allSheets: [], structure: [], deletedSheetId: null },
             cards: [],
-            cardTemplates: [],
             metrics: [],
             dashboards: [],
           };
@@ -450,7 +441,6 @@ export const MainContextProvider = ({ children }) => {
           setCards(fetchedCards);
           setCardsCache((prev) => ({ ...prev, [sheetId]: fetchedCards }));
         },
-        setCardTemplates,
         setMetrics,
         setDashboards,
         activeSheetName,
@@ -548,12 +538,12 @@ export const MainContextProvider = ({ children }) => {
 
     if (isUpdatingCardsFromTemplate.current) {
       isUpdatingCardsFromTemplate.current = false;
-      prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
+      prevStates.current = { sheets, cards, metrics, dashboards };
       return;
     }
 
     if (sheets.allSheets.length === 0 && sheets.structure.length === 0 && !sheets.deletedSheetId) {
-      prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
+      prevStates.current = { sheets, cards, metrics, dashboards };
       return;
     }
 
@@ -580,11 +570,6 @@ export const MainContextProvider = ({ children }) => {
       },
       cards: {
         collectionPath: () => collection(db, 'businesses', businessId, 'cards'),
-        getCollectionData: (state) => state,
-        setCollectionData: (state, data) => data,
-      },
-      cardTemplates: {
-        collectionPath: () => collection(db, 'businesses', businessId, 'cardTemplates'),
         getCollectionData: (state) => state,
         setCollectionData: (state, data) => data,
       },
@@ -713,7 +698,7 @@ export const MainContextProvider = ({ children }) => {
           const collectionsToCheck = ['sheets'];
           for (const stateKey of collectionsToCheck) {
             const config = stateConfig[stateKey];
-            const currentState = { sheets, cards, cardTemplates, metrics, dashboards }[stateKey];
+            const currentState = { sheets, cards, metrics, dashboards }[stateKey];
             const prevState = prevStates.current[stateKey];
 
             const currentCollectionData = config.getCollectionData(currentState);
@@ -817,18 +802,6 @@ export const MainContextProvider = ({ children }) => {
                 })
             );
 
-            setCardTemplates((prev) =>
-              prev
-                .filter((template) => !(template.isModified && template.action === 'remove'))
-                .map((template) => {
-                  if (template.isModified) {
-                    const { isModified, action, ...cleanTemplate } = template;
-                    return cleanTemplate;
-                  }
-                  return template;
-                })
-            );
-
             setMetrics((prev) =>
               prev
                 .filter((metric) => !(metric.isModified && metric.action === 'remove'))
@@ -870,7 +843,7 @@ export const MainContextProvider = ({ children }) => {
         alert('Failed to save changes. Please try again.');
       } finally {
         isBatchProcessing.current = false;
-        prevStates.current = { sheets, cards, cardTemplates, metrics, dashboards };
+        prevStates.current = { sheets, cards, metrics, dashboards };
       }
     };
 
@@ -913,7 +886,7 @@ export const MainContextProvider = ({ children }) => {
     };
 
     processUpdates();
-  }, [user, businessId, memoizedSheets, memoizedCards, memoizedCardTemplates, memoizedMetrics, memoizedDashboards, isDataLoaded]);
+  }, [user, businessId, memoizedSheets, memoizedCards, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
   // Utility: shallow compare for arrays/objects
   const shallowEqual = (a, b) => {
@@ -965,13 +938,6 @@ export const MainContextProvider = ({ children }) => {
     isDarkTheme,
     setIsDarkTheme,
     themeRef,
-    cardTemplates,
-    setCardTemplates: (newTemplates) => {
-      if (shallowEqual(cardTemplates, newTemplates)) {
-        return;
-      }
-      setCardTemplates(newTemplates);
-    },
     templateEntities,
     setTemplateEntities: (newEntities) => {
       if (shallowEqual(templateEntities, newEntities)) {
@@ -1021,7 +987,7 @@ export const MainContextProvider = ({ children }) => {
     actions,
     setActions,
     dataLoading, // New: expose loading state for Firestore data
-  }), [sheets, cards, isDarkTheme, cardTemplates, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
+  }), [sheets, cards, isDarkTheme, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
 
   // Debounce for sheet card fetches
   const debounceRef = useRef();
@@ -1041,7 +1007,6 @@ export const MainContextProvider = ({ children }) => {
         businessId,
         route: '/sheets',
         setCards,
-        setCardTemplates,
         setTemplateEntities,
         setMetrics,
         setDashboards,

@@ -17,44 +17,15 @@ import fetchUserData from '../../Firebase/Firebase Functions/User Functions/Fetc
 
 const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { 
-    cardTemplates, 
     isDarkTheme, 
     businessId: businessIdContext,
     templateEntities: contextTemplateEntities,
-    setTemplateEntities: contextSetTemplateEntities,
-    setCardTemplates
+    setTemplateEntities: contextSetTemplateEntities
   } = useContext(MainContext);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
   const businessId = businessIdProp || businessIdContext;
 
-  const [currentCardTemplates, setCurrentCardTemplates] = useState(() =>
-    (tempData.currentCardTemplates || cardTemplates || []).map((t) => {
-      // Remove duplicate headers based on key
-      const seenKeys = new Set();
-      const uniqueHeaders = t.headers?.filter(header => {
-        if (seenKeys.has(header.key)) {
-          return false;
-        }
-        seenKeys.add(header.key);
-        return true;
-      }) || [];
-
-      return {
-        ...t,
-        headers: uniqueHeaders.map((h) => ({
-          ...h,
-          isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
-        })),
-        sections: t.sections.map((s) => ({
-          ...s,
-          keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
-        })),
-        isModified: t.isModified || false,
-        action: t.action || null,
-      };
-    })
-  );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -78,7 +49,38 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   
   // Entity management state - use local state to prevent Firestore overwrites
-  const [templateEntities, setTemplateEntities] = useState(() => contextTemplateEntities || []);
+  const [templateEntities, setTemplateEntities] = useState(() => {
+    const entities = contextTemplateEntities || [];
+    // Process entities to ensure templates have proper structure
+    return entities.map(entity => ({
+      ...entity,
+      templates: (entity.templates || []).map((t) => {
+        // Remove duplicate headers based on key
+        const seenKeys = new Set();
+        const uniqueHeaders = t.headers?.filter(header => {
+          if (seenKeys.has(header.key)) {
+            return false;
+          }
+          seenKeys.add(header.key);
+          return true;
+        }) || [];
+
+        return {
+          ...t,
+          headers: uniqueHeaders.map((h) => ({
+            ...h,
+            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+          })),
+          sections: t.sections.map((s) => ({
+            ...s,
+            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+          })),
+          isModified: t.isModified || false,
+          action: t.action || null,
+        };
+      })
+    }));
+  });
   const [selectedEntityIndex, setSelectedEntityIndex] = useState(null);
   const [newEntityName, setNewEntityName] = useState("");
   const [showEntityForm, setShowEntityForm] = useState(false);
@@ -96,64 +98,66 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const keyRefs = useRef(new Map());
   const sectionRefs = useRef(new Map());
   const hasInitialized = useRef(false);
-  const prevCardTemplatesRef = useRef(currentCardTemplates);
+  
+  // Helper function to get all templates flattened
+  const getAllTemplates = useCallback(() => {
+    return templateEntities.flatMap(entity => 
+      (entity.templates || []).map(template => ({
+        ...template,
+        entityId: entity.id,
+        entityName: entity.name
+      }))
+    );
+  }, [templateEntities]);
+  
   const prevStepRef = useRef(currentStep);
-  const lastTempDataRef = useRef({ currentCardTemplates, deletedHeaderKeys, templateEntities });
+  const lastTempDataRef = useRef({ deletedHeaderKeys, templateEntities });
   const initialStateRef = useRef(null); // Track initial state to detect changes
-
-  // Memoize currentCardTemplates to prevent unnecessary re-renders
-  useEffect(() => {
-    prevCardTemplatesRef.current = currentCardTemplates;
-  }, [currentCardTemplates]);
 
   // Update tempData only when necessary (prevent infinite loop)
   useEffect(() => {
     if (
-      !isEqual(lastTempDataRef.current.currentCardTemplates, currentCardTemplates) ||
       !isEqual(lastTempDataRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
       !isEqual(lastTempDataRef.current.templateEntities, templateEntities)
     ) {
       setTempData({ 
-        currentCardTemplates, 
         deletedHeaderKeys, 
         templateEntities,
         hasEntityChanges: hasChanges() // Pass the change detection result
       });
-      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
+      lastTempDataRef.current = { deletedHeaderKeys, templateEntities };
     }
      
-  }, [currentCardTemplates, deletedHeaderKeys, templateEntities, setTempData]);
+  }, [deletedHeaderKeys, templateEntities, setTempData]);
 
   // Initialize initial state and detect changes
   useEffect(() => {
     if (!initialStateRef.current) {
       // Store initial state when component mounts
       initialStateRef.current = {
-        currentCardTemplates: JSON.parse(JSON.stringify(currentCardTemplates)),
         deletedHeaderKeys: [...deletedHeaderKeys],
         templateEntities: JSON.parse(JSON.stringify(templateEntities))
       };
     }
-  }, [currentCardTemplates, deletedHeaderKeys, templateEntities]);
+  }, [deletedHeaderKeys, templateEntities]);
 
   // Function to detect if there are any changes from initial state
   const hasChanges = useCallback(() => {
     if (!initialStateRef.current) return false;
     
     return (
-      !isEqual(initialStateRef.current.currentCardTemplates, currentCardTemplates) ||
       !isEqual(initialStateRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
       !isEqual(initialStateRef.current.templateEntities, templateEntities)
     );
-  }, [currentCardTemplates, deletedHeaderKeys, templateEntities]);
+  }, [deletedHeaderKeys, templateEntities]);
 
   // Function to update tempData only if there are changes
   const updateTempDataIfChanged = useCallback(() => {
     if (hasChanges()) {
-      setTempData({ currentCardTemplates, deletedHeaderKeys, templateEntities });
-      lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
+      setTempData({ deletedHeaderKeys, templateEntities });
+      lastTempDataRef.current = { deletedHeaderKeys, templateEntities };
     }
-  }, [currentCardTemplates, deletedHeaderKeys, templateEntities, hasChanges, setTempData]);
+  }, [deletedHeaderKeys, templateEntities, hasChanges, setTempData]);
 
   // Sync local templateEntities with context on initial load
   useEffect(() => {
@@ -165,57 +169,21 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Initialize tempData with initial values including templateEntities
   useEffect(() => {
     setTempData({ 
-      currentCardTemplates, 
       deletedHeaderKeys, 
       templateEntities,
       hasEntityChanges: hasChanges() // Include change detection
     });
-    lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
+    lastTempDataRef.current = { deletedHeaderKeys, templateEntities };
     
     // Store initial state after first load
     if (!initialStateRef.current) {
       initialStateRef.current = {
-        currentCardTemplates: JSON.parse(JSON.stringify(currentCardTemplates)),
         deletedHeaderKeys: [...deletedHeaderKeys],
         templateEntities: JSON.parse(JSON.stringify(templateEntities))
       };
     }
   }, []); // Only run once on mount
 
-  // Merge templates from templateEntities into currentCardTemplates after entities are loaded
-  useEffect(() => {
-    if (templateEntities.length > 0) {
-      // Extract all templates from entities and add to currentCardTemplates if not already present
-      const allEntityTemplates = [];
-      templateEntities.forEach(entity => {
-        if (entity.templates && Array.isArray(entity.templates)) {
-          entity.templates.forEach(template => {
-            // Ensure template has entityId set to the entity it belongs to
-            allEntityTemplates.push({
-              ...template,
-              entityId: entity.id
-            });
-          });
-        }
-      });
-      
-      if (allEntityTemplates.length > 0) {
-        setCurrentCardTemplates(prev => {
-          // Find templates that aren't already in currentCardTemplates
-          const newTemplates = allEntityTemplates.filter(entityTemplate => {
-            return !prev.some(existingTemplate => 
-              existingTemplate.docId === entityTemplate.docId ||
-              (existingTemplate.name === entityTemplate.name && existingTemplate.typeOfCards === entityTemplate.typeOfCards)
-            );
-          });
-          
-          return [...prev, ...newTemplates];
-        });
-      }
-    }
-  }, [templateEntities]); // Run when templateEntities changes
-
-  // Reset editing state when templateEntities changes (e.g., after successful save)
   const initialEditingNameRef = useRef(null);
   
   useEffect(() => {
@@ -277,8 +245,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   const deleteHeader = useCallback(
     (index) => {
-      if (selectedTemplateIndex === null) return;
-      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+      const entity = templateEntities[selectedEntityIndex];
+      const template = entity.templates[selectedTemplateIndex];
+      const header = template.headers[index];
       if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfCards" || header.key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deleted.");
         return;
@@ -286,34 +256,38 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const headerName = header.name;
       if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
         setDeletedHeaderKeys((prev) => [...new Set([...prev, header.key])]); // Avoid duplicates
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        setTemplateEntities((prev) => {
+          const newEntities = [...prev];
+          const currentEntity = { ...newEntities[selectedEntityIndex] };
+          const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
           const deletedKey = currentTemplate.headers[index].key;
           currentTemplate.headers = currentTemplate.headers.filter((_, i) => i !== index);
           currentTemplate.sections = currentTemplate.sections.map((section) => ({
             ...section,
             keys: section.keys.filter((k) => k !== deletedKey),
           }));
-          newTemplates[selectedTemplateIndex] = {
+          currentEntity.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          return newTemplates;
+          newEntities[selectedEntityIndex] = currentEntity;
+          return newEntities;
         });
         setActiveHeaderIndex(null);
         setNavigationDirection("backward");
         goBack();
       }
     },
-    [selectedTemplateIndex, goBack, currentCardTemplates]
+    [selectedEntityIndex, selectedTemplateIndex, templateEntities, goBack]
   );
 
   const handleDeleteSection = useCallback(
     (index) => {
-      if (selectedTemplateIndex === null) return;
-      const section = currentCardTemplates[selectedTemplateIndex].sections[index];
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+      const entity = templateEntities[selectedEntityIndex];
+      const template = entity.templates[selectedTemplateIndex];
+      const section = template.sections[index];
       if (section.name === "Card Data") {
         alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
         return;
@@ -325,26 +299,28 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
         setDeletedHeaderKeys((prev) => [...new Set([...prev, ...section.keys])]); // Avoid duplicates
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        setTemplateEntities((prev) => {
+          const newEntities = [...prev];
+          const currentEntity = { ...newEntities[selectedEntityIndex] };
+          const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
           const deletedSection = currentTemplate.sections[index];
           currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
           currentTemplate.headers = currentTemplate.headers.map((h) =>
             h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
           );
-          newTemplates[selectedTemplateIndex] = {
+          currentEntity.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          return newTemplates;
+          newEntities[selectedEntityIndex] = currentEntity;
+          return newEntities;
         });
         setNavigationDirection("backward");
         goBack();
       }
     },
-    [selectedTemplateIndex, goBack, currentCardTemplates]
+    [selectedEntityIndex, selectedTemplateIndex, templateEntities, goBack]
   );
 
   // Validate header name
@@ -369,8 +345,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   // Add new header
   const addHeader = useCallback(() => {
-    if (selectedTemplateIndex === null) return;
-    const existingHeaders = currentCardTemplates[selectedTemplateIndex].headers;
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
+    const existingHeaders = template.headers;
     if (!validateHeader(newHeaderName, existingHeaders)) return;
     if (!newHeaderSection) {
       alert("Please select a section for the field.");
@@ -390,9 +368,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
     };
 
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev];
-      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+    setTemplateEntities((prev) => {
+      const newEntities = [...prev];
+      const currentEntity = { ...newEntities[selectedEntityIndex] };
+      const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
       currentTemplate.headers = [...currentTemplate.headers, newHeader];
       currentTemplate.sections = currentTemplate.sections.map((section) => {
         if (section.name === newHeaderSection) {
@@ -400,12 +379,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         }
         return section;
       });
-      newTemplates[selectedTemplateIndex] = {
+      currentEntity.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || "update",
       };
-      return newTemplates;
+      newEntities[selectedEntityIndex] = currentEntity;
+      return newEntities;
     });
     resetHeaderForm();
     setActiveHeaderIndex(null);
@@ -416,7 +396,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     newHeaderType,
     newHeaderSection,
     newHeaderOptions,
+    selectedEntityIndex,
     selectedTemplateIndex,
+    templateEntities,
     validateHeader,
     resetHeaderForm,
     goBack,
@@ -425,15 +407,17 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Update existing header
   const updateHeader = useCallback(
     (index) => {
-      if (selectedTemplateIndex === null) return;
-      const existingHeaders = currentCardTemplates[selectedTemplateIndex].headers;
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+      const entity = templateEntities[selectedEntityIndex];
+      const template = entity.templates[selectedTemplateIndex];
+      const existingHeaders = template.headers;
       if (!validateHeader(newHeaderName, existingHeaders, true, index)) return;
       if (!newHeaderSection) {
         alert("Please select a section for the field.");
         return;
       }
 
-      const currentHeader = currentCardTemplates[selectedTemplateIndex].headers[index];
+      const currentHeader = template.headers[index];
       const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfCards" || currentHeader.key === "assignedTo";
 
       if (isProtected && newHeaderSection !== "Card Data") {
@@ -447,11 +431,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         return;
       }
 
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const template = { ...newTemplates[selectedTemplateIndex] };
-        const headers = [...template.headers];
-        const sections = template.sections.map((s) => ({ ...s, keys: [...s.keys] })); // Deep copy sections
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
+        const headers = [...currentTemplate.headers];
+        const sections = currentTemplate.sections.map((s) => ({ ...s, keys: [...s.keys] })); // Deep copy sections
         headers[index] = {
           ...headers[index],
           name: newHeaderName.trim(),
@@ -474,21 +459,22 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           });
         }
 
-        newTemplates[selectedTemplateIndex] = {
-          ...template,
+        currentEntity.templates[selectedTemplateIndex] = {
+          ...currentTemplate,
           headers,
           sections,
           isModified: true,
-          action: template.action || "update",
+          action: currentTemplate.action || "update",
         };
-        return newTemplates;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
       resetHeaderForm();
       setActiveHeaderIndex(null);
       setNavigationDirection("backward");
       goBack();
     },
-    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedTemplateIndex, validateHeader, resetHeaderForm, goBack, currentCardTemplates]
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedEntityIndex, selectedTemplateIndex, templateEntities, validateHeader, resetHeaderForm, goBack]
   );
 
   // Save header (add or update)
@@ -536,24 +522,24 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         { title: "Card Templates", rightButton: null },
         {
           title: () =>
-            selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
-              ? currentCardTemplates[selectedTemplateIndex].name || "New Template"
+            selectedEntityIndex !== null && selectedTemplateIndex !== null && templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]
+              ? templateEntities[selectedEntityIndex].templates[selectedTemplateIndex].name || "New Template"
               : "New Template",
           rightButton: null,
         },
         {
           title: () =>
-            selectedTemplateIndex !== null &&
+            selectedEntityIndex !== null && selectedTemplateIndex !== null &&
             currentSectionIndex !== null &&
-            currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]
-              ? currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+            templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]
+              ? templateEntities[selectedEntityIndex].templates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
               : "Section",
           rightButton: null,
         },
         {
           title: () =>
-            activeHeaderIndex !== null && currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex]
-              ? currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].name || "Edit Field"
+            selectedEntityIndex !== null && selectedTemplateIndex !== null && activeHeaderIndex !== null && templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]
+              ? templateEntities[selectedEntityIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex].name || "Edit Field"
               : "Edit Field",
           rightButton: {
             label: "Save",
@@ -583,7 +569,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         leftButton: null,
       });
     }
-  }, [registerModalSteps, setModalConfig, selectedTemplateIndex, currentSectionIndex, currentCardTemplates, saveHeader]);
+  }, [registerModalSteps, setModalConfig, selectedEntityIndex, selectedTemplateIndex, currentSectionIndex, templateEntities, saveHeader]);
 
   // Update modal config
   useEffect(() => {
@@ -615,7 +601,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showBackButton: !editMode,
         backButtonTitle: "Card Templates",
         backButton: editMode ? null : { label: "Card Templates", onClick: handleBack },
-        title: selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] ? currentCardTemplates[selectedTemplateIndex].name || "New Template" : "New Template",
+        title: selectedEntityIndex !== null && selectedTemplateIndex !== null && templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex] ? templateEntities[selectedEntityIndex].templates[selectedTemplateIndex].name || "New Template" : "New Template",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -633,7 +619,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               isRemove: false,
               color: "blue",
             }
-          : selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex]
+          : selectedEntityIndex !== null && selectedTemplateIndex !== null && templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]
           ? {
               label: "Edit",
               onClick: () => setEditMode(true),
@@ -648,9 +634,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: false,
         showBackButton: !editMode,
-        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.name || "New Template",
-        backButton: editMode ? null : { label: currentCardTemplates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
-        title: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButtonTitle: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.name || "New Template",
+        backButton: editMode ? null : { label: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
+        title: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -681,9 +667,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
-        title: currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex]?.name || "Edit Field",
+        backButtonTitle: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        title: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]?.name || "Edit Field",
         leftButton: null,
         rightButton: {
           label: "Save",
@@ -697,8 +683,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        backButtonTitle: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-        backButton: { label: currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        backButtonTitle: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
         title: "Create New Field",
         leftButton: null,
         rightButton: {
@@ -714,7 +700,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, currentCardTemplates, setModalConfig, saveHeader, handleBack]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, templateEntities, setModalConfig, saveHeader, handleBack]);
 
   // Confirm new template
   const confirmNewTemplate = useCallback(() => {
@@ -726,7 +712,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       alert("Please select an entity first.");
       return;
     }
-    if (currentCardTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
+    // Check for duplicate names across all templates
+    const allTemplates = getAllTemplates();
+    if (allTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
       alert("A template with this name already exists. Please choose a unique name.");
       return;
     }
@@ -788,45 +776,51 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       action: "add",
     };
 
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev, newTemplate];
-      setSelectedTemplateIndex(newTemplates.length - 1);
-      setEditMode(false);
-      return newTemplates;
+    setTemplateEntities((prev) => {
+      const newEntities = [...prev];
+      const currentEntity = { ...newEntities[selectedEntityIndex] };
+      currentEntity.templates = [...currentEntity.templates, newTemplate];
+      newEntities[selectedEntityIndex] = currentEntity;
+      return newEntities;
     });
+    setSelectedTemplateIndex(templateEntities[selectedEntityIndex].templates.length);
+    setEditMode(false);
 
     setNavigationDirection("forward");
     goToStep(3);
-  }, [newTemplateName, currentCardTemplates, goToStep, selectedEntityIndex, templateEntities]);
+  }, [newTemplateName, getAllTemplates, selectedEntityIndex, templateEntities, goToStep]);
 
   // Add new section
   const addSection = useCallback(() => {
-    if (selectedTemplateIndex === null) return;
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev];
-      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    setTemplateEntities((prev) => {
+      const newEntities = [...prev];
+      const currentEntity = { ...newEntities[selectedEntityIndex] };
+      const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
       const newSectionName = `Section ${currentTemplate.sections.length + 1}`;
       if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.toLowerCase())) {
         alert(`Section name "${newSectionName}" already exists. Please use a unique name.`);
         return prev;
       }
       currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName, keys: [] }];
-      newTemplates[selectedTemplateIndex] = {
+      currentEntity.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || "update",
       };
-      return newTemplates;
+      newEntities[selectedEntityIndex] = currentEntity;
+      return newEntities;
     });
-  }, [selectedTemplateIndex, currentCardTemplates]);
+  }, [selectedEntityIndex, selectedTemplateIndex, templateEntities]);
   
   // Update section name
   const updateSectionName = useCallback(
     (index, newName) => {
-      if (selectedTemplateIndex === null) return;
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
         const currentSection = currentTemplate.sections[index];
         
         if (currentSection.name === "Card Data") {
@@ -848,20 +842,24 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         currentTemplate.headers = currentTemplate.headers.map((h) =>
           h.section === oldName ? { ...h, section: newName.trim() } : h
         );
-        newTemplates[selectedTemplateIndex] = {
+        currentEntity.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || "update",
         };
-        return newTemplates;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
     },
-    [selectedTemplateIndex, currentCardTemplates]
+    [selectedEntityIndex, selectedTemplateIndex, templateEntities]
   );
 
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
-    const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
+    const key = template.sections[sectionIndex].keys[index];
     if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
@@ -871,10 +869,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     e.dataTransfer.effectAllowed = "move";
     const element = keyRefs.current.get(`${sectionIndex}-${index}`);
     if (element) element.classList.add(styles.dragging);
-  }, [selectedTemplateIndex, currentCardTemplates]);
+  }, [selectedTemplateIndex, templateEntities]);
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
-    const key = currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys[index];
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
+    const key = template.sections[sectionIndex].keys[index];
     if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
       e.preventDefault();
       return;
@@ -892,32 +893,34 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const element = keyRefs.current.get(`${sectionIndex}-${index}`);
       if (element) element.classList.add(styles.dragging);
     }
-  }, [selectedTemplateIndex, currentCardTemplates, styles.dragIcon]);
+  }, [selectedEntityIndex, selectedTemplateIndex, templateEntities, styles.dragIcon]);
 
   const handleDragOver = useCallback(
     (e, sectionIndex, index) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === index) return;
+      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === index || selectedEntityIndex === null || selectedTemplateIndex === null) return;
 
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
         const newSections = [...currentTemplate.sections];
         const sectionKeys = [...newSections[sectionIndex].keys];
         const [draggedItem] = sectionKeys.splice(draggedIndex, 1);
         sectionKeys.splice(index, 0, draggedItem);
         newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
         currentTemplate.sections = newSections;
-        newTemplates[selectedTemplateIndex] = {
+        currentEntity.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || "update",
         };
-        return newTemplates;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
       setTimeout(() => setDraggedIndex(index), 0);
     },
-    [draggedIndex, draggedSectionIndex, selectedTemplateIndex, currentCardTemplates]
+    [draggedIndex, draggedSectionIndex, selectedEntityIndex, selectedTemplateIndex, templateEntities]
   );
 
   const handleTouchMove = useCallback(
@@ -930,29 +933,32 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const delta = Math.round((touchY - touchStartY) / itemHeight);
       const newIndex = Math.max(
         0,
-        Math.min(touchTargetIndex + delta, currentCardTemplates[selectedTemplateIndex].sections[sectionIndex].keys.length - 1)
+        Math.min(touchTargetIndex + delta, templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[sectionIndex]?.keys.length - 1 || 0)
       );
 
       if (newIndex !== draggedIndex) {
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+        setTemplateEntities((prev) => {
+          const newEntities = [...prev];
+          const currentEntity = { ...newEntities[selectedEntityIndex] };
+          const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
           const newSections = [...currentTemplate.sections];
           const sectionKeys = [...newSections[sectionIndex].keys];
           const [draggedItem] = sectionKeys.splice(draggedIndex, 1);
           sectionKeys.splice(newIndex, 0, draggedItem);
           newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
           currentTemplate.sections = newSections;
-          newTemplates[selectedTemplateIndex] = {
+          currentEntity.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
+          newEntities[selectedEntityIndex] = currentEntity;
+          return newEntities;
         });
         setTimeout(() => setDraggedIndex(newIndex), 0);
       }
     },
-    [draggedIndex, touchStartY, touchTargetIndex, selectedTemplateIndex, currentCardTemplates]
+    [draggedIndex, touchStartY, touchTargetIndex, selectedEntityIndex, selectedTemplateIndex, templateEntities]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -996,49 +1002,54 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
   const handleSectionDragOver = useCallback((e, index) => {
     e.preventDefault();
-    if (draggedSectionOrderIndex === null || draggedSectionOrderIndex === index) return;
-    setCurrentCardTemplates((prev) => {
-      const newTemplates = [...prev];
-      const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+    if (draggedSectionOrderIndex === null || draggedSectionOrderIndex === index || selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    setTemplateEntities((prev) => {
+      const newEntities = [...prev];
+      const currentEntity = { ...newEntities[selectedEntityIndex] };
+      const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
       const newSections = [...currentTemplate.sections];
       const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
       newSections.splice(index, 0, draggedSection);
       currentTemplate.sections = newSections;
-      newTemplates[selectedTemplateIndex] = {
+      currentEntity.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || 'update',
       };
-      setDraggedSectionOrderIndex(index);
-      return newTemplates;
+      newEntities[selectedEntityIndex] = currentEntity;
+      return newEntities;
     });
-  }, [draggedSectionOrderIndex, selectedTemplateIndex]);
+    setDraggedSectionOrderIndex(index);
+  }, [draggedSectionOrderIndex, selectedEntityIndex, selectedTemplateIndex, templateEntities]);
 
   const handleSectionTouchMove = useCallback((e, index) => {
-    if (draggedSectionOrderIndex === null || sectionTouchStartY === null) return;
+    if (draggedSectionOrderIndex === null || sectionTouchStartY === null || selectedEntityIndex === null || selectedTemplateIndex === null) return;
     e.preventDefault();
     const touchY = e.touches[0].clientY;
     const itemHeight = 44;
     const delta = Math.round((touchY - sectionTouchStartY) / itemHeight);
-    const newIndex = Math.max(0, Math.min(sectionTouchTargetIndex + delta, currentCardTemplates[selectedTemplateIndex].sections.length - 1));
+    const template = templateEntities[selectedEntityIndex].templates[selectedTemplateIndex];
+    const newIndex = Math.max(0, Math.min(sectionTouchTargetIndex + delta, template.sections.length - 1));
     if (newIndex !== draggedSectionOrderIndex) {
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex] };
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
         const newSections = [...currentTemplate.sections];
         const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
         newSections.splice(newIndex, 0, draggedSection);
         currentTemplate.sections = newSections;
-        newTemplates[selectedTemplateIndex] = {
+        currentEntity.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || 'update',
         };
-        setDraggedSectionOrderIndex(newIndex);
-        return newTemplates;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
+      setDraggedSectionOrderIndex(newIndex);
     }
-  }, [draggedSectionOrderIndex, sectionTouchStartY, sectionTouchTargetIndex, selectedTemplateIndex, currentCardTemplates]);
+  }, [draggedSectionOrderIndex, sectionTouchStartY, sectionTouchTargetIndex, selectedEntityIndex, selectedTemplateIndex, templateEntities]);
 
   const handleSectionDragEnd = useCallback(() => {
     const element = sectionRefs.current.get(draggedSectionOrderIndex);
@@ -1070,10 +1081,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Open template editor
   const handleOpenEditor = useCallback(
     (template = null) => {
-      if (template) {
-        const existingIndex = currentCardTemplates.findIndex((t) => t.name === template.name);
-        if (existingIndex >= 0) {
-          setSelectedTemplateIndex(existingIndex);
+      if (template && selectedEntityIndex !== null) {
+        const entity = templateEntities[selectedEntityIndex];
+        const templateIndex = entity.templates.findIndex((t) => t.name === template.name);
+        if (templateIndex >= 0) {
+          setSelectedTemplateIndex(templateIndex);
           setEditMode(false);
           setNavigationDirection("forward");
           goToStep(3);
@@ -1087,7 +1099,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNavigationDirection("forward");
       goToStep(3);
     },
-    [currentCardTemplates, goToStep]
+    [selectedEntityIndex, templateEntities, goToStep]
   );
 
   // Entity Management Functions
@@ -1115,7 +1127,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       
       // Update tempData immediately
       setTempData({ 
-        currentCardTemplates, 
         deletedHeaderKeys, 
         templateEntities: updatedEntities,
         hasEntityChanges: true // Mark that entities have changed
@@ -1130,7 +1141,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       // Restore previous state in case of error
       setTemplateEntities(templateEntities);
     }
-  }, [newEntityName, templateEntities, businessId, currentCardTemplates, deletedHeaderKeys, setTempData]);
+  }, [newEntityName, templateEntities, businessId, deletedHeaderKeys, setTempData]);
 
   const selectEntity = useCallback((entityIndex) => {
     setSelectedEntityIndex(entityIndex);
@@ -1142,7 +1153,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const entity = templateEntities[entityIndex];
     
     // Check for templates in both local state and entity.templates (from backend)
-    const localTemplates = currentCardTemplates.filter(template => 
+    const localTemplates = getAllTemplates().filter(template => 
       template.entityId === entity.id && template.action !== "remove"
     );
     const entityTemplatesFromBackend = entity.templates || [];
@@ -1167,17 +1178,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         );
         setTemplateEntities(updatedEntities);
         
-        // Remove any templates belonging to this entity from currentCardTemplates
-        const updatedCardTemplates = currentCardTemplates.filter(template => template.entityId !== entity.id);
-        setCurrentCardTemplates(updatedCardTemplates);
-        
-        // Immediately update tempData to reflect the deletion
-        setTempData({ 
-          currentCardTemplates: updatedCardTemplates, 
-          deletedHeaderKeys, 
-          templateEntities: updatedEntities,
-          hasEntityChanges: true // Mark that entities have changed
-        });
+      setTempData({ 
+        deletedHeaderKeys, 
+        templateEntities: updatedEntities,
+        hasEntityChanges: true // Mark that entities have changed
+      });
         
         // Reset selected entity if it was the deleted one
         if (selectedEntityIndex === entityIndex) {
@@ -1192,7 +1197,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         setSelectedEntityIndex(selectedEntityIndex);
       }
     }
-  }, [templateEntities, selectedEntityIndex, currentCardTemplates, businessId, setCardTemplates, setTemplateEntities, deletedHeaderKeys, setTempData]);
+  }, [templateEntities, selectedEntityIndex, businessId, setTemplateEntities, deletedHeaderKeys, setTempData]);
 
   const updateEntityName = useCallback(async (entityIndex, newName) => {
     if (!newName.trim()) return;
@@ -1207,29 +1212,28 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     // Update local state only
     const updatedEntities = templateEntities.map((entity, index) => 
       index === entityIndex 
-        ? { ...entity, name: newName.trim(), isModified: true, action: entity.action || "update" }
+        ? { 
+            ...entity, 
+            name: newName.trim(), 
+            isModified: true, 
+            action: entity.action || "update",
+            templates: (entity.templates || []).map(template => ({
+              ...template,
+              entityName: newName.trim()
+            }))
+          }
         : entity
     );
     
     setTemplateEntities(updatedEntities);
-
-    // Update entityName in all templates that belong to this entity
-    const updatedCardTemplates = currentCardTemplates.map(template => 
-      template.entityId === entityId 
-        ? { ...template, entityName: newName.trim() }
-        : template
-    );
-    
-    setCurrentCardTemplates(updatedCardTemplates);
     
     // Update tempData immediately to reflect the name change
     setTempData({ 
-      currentCardTemplates: updatedCardTemplates, 
       deletedHeaderKeys, 
       templateEntities: updatedEntities,
       hasEntityChanges: true // Explicitly mark that entities have changed
     });
-  }, [templateEntities, currentCardTemplates, deletedHeaderKeys, setTempData]);
+  }, [templateEntities, deletedHeaderKeys, setTempData]);
 
   const startEditingEntity = useCallback((entityIndex) => {
     setEditingEntityIndex(entityIndex);
@@ -1252,10 +1256,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const getEntityTemplates = useCallback((entityIndex) => {
     if (entityIndex === null || !templateEntities[entityIndex]) return [];
     const entity = templateEntities[entityIndex];
-    return currentCardTemplates.filter(template => 
-      template.entityId === entity.id && template.action !== "remove"
-    );
-  }, [templateEntities, currentCardTemplates]);
+    return (entity.templates || []).filter(template => template.action !== "remove");
+  }, [templateEntities]);
 
   // Get pipelines for a specific entity
   const getEntityPipelines = useCallback((entityIndex) => {
@@ -1326,7 +1328,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       
       // Update tempData immediately
       setTempData({ 
-        currentCardTemplates, 
         deletedHeaderKeys, 
         templateEntities: updatedEntities 
       });
@@ -1349,7 +1350,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     }
     
     console.log('=== PIPELINE CREATION COMPLETED ===');
-  }, [selectedEntityIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, templateEntities, businessId, currentCardTemplates, deletedHeaderKeys, setTempData]);
+  }, [selectedEntityIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, templateEntities, businessId, deletedHeaderKeys, setTempData]);
 
   // Edit existing pipeline
   const editEntityPipeline = useCallback((pipelineIndex) => {
@@ -1492,27 +1493,33 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Update template name
   const updateTemplateName = useCallback(
     (newName) => {
-      if (selectedTemplateIndex === null) return;
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex] };
+        
+        // Check for duplicate names across all templates
+        const allTemplates = getAllTemplates();
         if (
           newName.trim() &&
-          newTemplates.some((t, i) => i !== selectedTemplateIndex && t.name.toLowerCase() === newName.trim().toLowerCase())
+          allTemplates.some((t) => t.name.toLowerCase() === newName.trim().toLowerCase() && t !== currentTemplate)
         ) {
           alert("A template with this name already exists. Please choose a unique name.");
           return prev;
         }
-        newTemplates[selectedTemplateIndex] = {
-          ...newTemplates[selectedTemplateIndex],
-          name: newName.trim(),
-          typeOfCards: newName.trim(),
-          isModified: true,
-          action: newTemplates[selectedTemplateIndex].action || "update",
-        };
-        return newTemplates;
+        
+        currentTemplate.name = newName.trim();
+        currentTemplate.typeOfCards = newName.trim();
+        currentTemplate.isModified = true;
+        currentTemplate.action = currentTemplate.action || "update";
+        
+        currentEntity.templates[selectedTemplateIndex] = currentTemplate;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
     },
-    [selectedTemplateIndex]
+    [selectedEntityIndex, selectedTemplateIndex, templateEntities, getAllTemplates]
   );
 
   // Edit section
@@ -1528,14 +1535,15 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Toggle key selection
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
-      if (selectedTemplateIndex === null || sectionIndex === null) return;
+      if (selectedEntityIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
       if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = [...prev];
-        const currentTemplate = { ...newTemplates[selectedTemplateIndex], headers: [...newTemplates[selectedTemplateIndex].headers] };
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex], headers: [...currentEntity.templates[selectedTemplateIndex].headers] };
         const newSections = [...currentTemplate.sections];
         const section = { ...newSections[sectionIndex], keys: [...newSections[sectionIndex].keys] };
         const isSelected = section.keys.includes(key);
@@ -1549,55 +1557,57 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         currentTemplate.headers = currentTemplate.headers.map((h) =>
           h.key === key ? { ...h, isUsed: !isSelected } : h
         );
-        newTemplates[selectedTemplateIndex] = {
-          ...currentTemplate,
-          isModified: true,
-          action: currentTemplate.action || "update",
-        };
-        return newTemplates;
+        currentTemplate.isModified = true;
+        currentTemplate.action = currentTemplate.action || "update";
+        currentEntity.templates[selectedTemplateIndex] = currentTemplate;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
     },
-    [selectedTemplateIndex]
+    [selectedEntityIndex, selectedTemplateIndex]
   );
 
   // Delete key from section
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
-      if (selectedTemplateIndex === null || sectionIndex === null) return;
+      if (selectedEntityIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
       if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
-        setCurrentCardTemplates((prev) => {
-          const newTemplates = [...prev];
-          const currentTemplate = { ...newTemplates[selectedTemplateIndex], headers: [...newTemplates[selectedTemplateIndex].headers] };
+        setTemplateEntities((prev) => {
+          const newEntities = [...prev];
+          const currentEntity = { ...newEntities[selectedEntityIndex] };
+          const currentTemplate = { ...currentEntity.templates[selectedTemplateIndex], headers: [...currentEntity.templates[selectedTemplateIndex].headers] };
           const newSections = [...currentTemplate.sections];
           newSections[sectionIndex].keys = newSections[sectionIndex].keys.filter((k) => k !== key);
           currentTemplate.sections = newSections;
           currentTemplate.headers = currentTemplate.headers.map((h) =>
             h.key === key ? { ...h, isUsed: false } : h
           );
-          newTemplates[selectedTemplateIndex] = {
-            ...currentTemplate,
-            isModified: true,
-            action: currentTemplate.action || "update",
-          };
+          currentTemplate.isModified = true;
+          currentTemplate.action = currentTemplate.action || "update";
+          currentEntity.templates[selectedTemplateIndex] = currentTemplate;
+          newEntities[selectedEntityIndex] = currentEntity;
+          return newEntities;
         });
       }
     },
-    [selectedTemplateIndex]
+    [selectedEntityIndex, selectedTemplateIndex]
   );
 
   // Filter headers for search
   const filteredHeaders = useCallback(() => {
-    if (selectedTemplateIndex === null || currentSectionIndex === null) return [];
+    if (selectedEntityIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return [];
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
 
-    const usedKeys = currentCardTemplates[selectedTemplateIndex]?.sections
+    const usedKeys = template.sections
       .flatMap((section) => section.keys) || [];
 
     const filtered = (
-      currentCardTemplates[selectedTemplateIndex]?.headers?.filter(
+      template.headers?.filter(
         (header) =>
           !usedKeys.includes(header.key) &&
           [header.name, header.type, header.section].some((field) =>
@@ -1615,34 +1625,41 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       seenKeys.add(header.key);
       return true;
     });
-  }, [currentCardTemplates, selectedTemplateIndex, currentSectionIndex, searchQuery]);
+  }, [templateEntities, selectedEntityIndex, selectedTemplateIndex, currentSectionIndex, searchQuery]);
 
   // Delete template
   const handleDeleteTemplate = useCallback(() => {
-    if (selectedTemplateIndex === null) return;
-    const templateName = currentCardTemplates[selectedTemplateIndex].name;
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
+    const templateName = template.name;
     if (window.confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
-      setCurrentCardTemplates((prev) => {
-        const newTemplates = prev.map((template, i) =>
+      setTemplateEntities((prev) => {
+        const newEntities = [...prev];
+        const currentEntity = { ...newEntities[selectedEntityIndex] };
+        currentEntity.templates = currentEntity.templates.map((template, i) =>
           i === selectedTemplateIndex
             ? { ...template, isModified: true, action: "remove" }
             : template
         );
-        setSelectedTemplateIndex(null);
-        setEditMode(false);
-        setNavigationDirection("backward");
-        goToStep(2);
-        return newTemplates;
+        newEntities[selectedEntityIndex] = currentEntity;
+        return newEntities;
       });
+      setSelectedTemplateIndex(null);
+      setEditMode(false);
+      setNavigationDirection("backward");
+      goToStep(2);
     }
-  }, [selectedTemplateIndex, currentCardTemplates, goToStep]);
+  }, [selectedEntityIndex, selectedTemplateIndex, templateEntities, goToStep]);
 
   // Edit header
   const handleEditHeader = useCallback(
     (index) => {
-      if (selectedTemplateIndex === null) return;
+      if (selectedEntityIndex === null || selectedTemplateIndex === null) return;
       setActiveHeaderIndex(index);
-      const header = currentCardTemplates[selectedTemplateIndex].headers[index];
+      const entity = templateEntities[selectedEntityIndex];
+      const template = entity.templates[selectedTemplateIndex];
+      const header = template.headers[index];
       setNewHeaderName(header.name);
       setNewHeaderType(header.type || "text");
       setNewHeaderSection(header.section || "");
@@ -1650,26 +1667,30 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       setNavigationDirection("forward");
       goToStep(5);
     },
-    [selectedTemplateIndex, currentCardTemplates, goToStep]
+    [selectedEntityIndex, selectedTemplateIndex, templateEntities, goToStep]
   );
 
   // Create new header
   const handleCreateHeader = useCallback(() => {
+    if (selectedEntityIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return;
     setActiveHeaderIndex(-1);
     resetHeaderForm();
-    const currentSectionName = currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name;
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
+    const currentSectionName = template.sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Card Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
     goToStep(6);
-  }, [resetHeaderForm, goToStep, currentCardTemplates, selectedTemplateIndex, currentSectionIndex]);
+  }, [resetHeaderForm, goToStep, templateEntities, selectedEntityIndex, selectedTemplateIndex, currentSectionIndex]);
 
   // Export cards for the current template
   const exportCards = useCallback(async () => {
-    if (selectedTemplateIndex === null) {
+    if (selectedEntityIndex === null || selectedTemplateIndex === null) {
       alert('No template selected.');
       return;
     }
-    const template = currentCardTemplates[selectedTemplateIndex];
+    const entity = templateEntities[selectedEntityIndex];
+    const template = entity.templates[selectedTemplateIndex];
     const typeOfCards = template.name;
     if (!typeOfCards || !businessId) {
       alert('Missing template name or business ID.');
@@ -1812,7 +1833,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       console.error('Export error:', err);
       alert('Failed to export cards.');
     }
-  }, [selectedTemplateIndex, currentCardTemplates, businessId]);
+  }, [selectedEntityIndex, selectedTemplateIndex, templateEntities, businessId]);
 
 
 
@@ -2321,14 +2342,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
             {step === 3 && (
               <>
-                {selectedTemplateIndex !== null && currentCardTemplates[selectedTemplateIndex] ? (
+                {selectedTemplateIndex !== null && templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex] ? (
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Template Details</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your template name and structure.</p>
                       <input
                         type="text"
-                        value={currentCardTemplates[selectedTemplateIndex].name || ""}
+                        value={templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].name || ""}
                         onChange={(e) => updateTemplateName(e.target.value)}
                         placeholder="Template Name"
                         className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -2394,7 +2415,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Organize your card data into logical sections.</p>
                       <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        {currentCardTemplates[selectedTemplateIndex].sections.map((section, index) => (
+                        {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections.map((section, index) => (
                         <div
                           ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
                           key={section.name || `section-${index}`}
@@ -2493,18 +2514,18 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             {step === 4 &&
               selectedTemplateIndex !== null &&
               currentSectionIndex !== null &&
-              currentCardTemplates[selectedTemplateIndex]?.sections[currentSectionIndex] && (
+              templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex] && (
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Section Configuration</h2>
                   <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Customize the section name and manage its fields.</p>
                   <input
                     type="text"
-                    value={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
+                    value={templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
                     onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                     placeholder="Section Name"
-                    disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data" || !editMode}
+                    disabled={templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data" || !editMode}
                   />
                 </div>
                 {!editMode && (
@@ -2542,13 +2563,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   <div className={styles.section}>
                     <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Fields in Section</h3>
                     <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>These fields are currently included in this section.</p>
-                    {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
-                      const header = currentCardTemplates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
+                    {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
+                      const header = templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
                         key,
                         name: key,
                         type: "text",
                       };
-                      const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
+                      const headerIndex = templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
                       const isProtected = header.key === "docId" || header.key === "typeOfCards" || header.key === "assignedTo";
                       return (
                         <div
@@ -2577,7 +2598,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
                                 <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                                  {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
                                     header.key
                                   ) ? (
                                     <FaRegCheckCircle size={18} className={styles.checked} />
@@ -2623,7 +2644,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       />
                     </div>
                     {filteredHeaders().map((header) => {
-                      const headerIndex = currentCardTemplates[selectedTemplateIndex].headers.findIndex(
+                      const headerIndex = templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers.findIndex(
                         (h) => h.key === header.key
                       );
                       return (
@@ -2643,7 +2664,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
                                 <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                                  {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
                                     header.key
                                   ) ? (
                                     <FaRegCheckCircle size={18} className={styles.checked} />
@@ -2672,7 +2693,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <button
                       className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                       onClick={() => handleDeleteSection(currentSectionIndex)}
-                      disabled={currentCardTemplates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
+                      disabled={templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
                     >
                       Delete Section
                     </button>
@@ -2684,7 +2705,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             {step === 5 &&
               selectedTemplateIndex !== null &&
               activeHeaderIndex !== null &&
-              currentCardTemplates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
+              templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Configuration</h2>
@@ -2701,8 +2722,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       onKeyPress={handleKeyPress}
                       placeholder="Field Name"
                       className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      disabled={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
-                      tabIndex={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
+                      disabled={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                      tabIndex={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                     />
                     <div className={styles.fieldContainer}>
                       <select
@@ -2762,7 +2783,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <div className={styles.editActionsButtons}>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key);
+                          navigator.clipboard.writeText(templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key);
                           setCopiedHeaderId(true);
                           setTimeout(() => setCopiedHeaderId(false), 1200);
                         }}
@@ -2771,9 +2792,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       >
                         {copiedHeaderId ? "Copied!" : "Copy Header Key"}
                       </button>
-                      {currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
-                        currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" &&
-                        currentCardTemplates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
+                      {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
+                        templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" &&
+                        templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
                           <button
                             onClick={() => deleteHeader(activeHeaderIndex)}
                             className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -2823,7 +2844,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                     >
                       <option value="">Select Section</option>
-                      {currentCardTemplates[selectedTemplateIndex].sections
+                      {templateEntities[selectedEntityIndex]?.templates[selectedTemplateIndex].sections
                         .filter((section) => section.name !== "Card Data")
                         .map((section, index) => (
                           <option key={index} value={section.name}>
@@ -2877,30 +2898,41 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
 CardsTemplate.propTypes = {
   tempData: PropTypes.shape({
-    currentCardTemplates: PropTypes.arrayOf(
+    templateEntities: PropTypes.arrayOf(
       PropTypes.shape({
+        id: PropTypes.string,
         name: PropTypes.string,
-        typeOfCards: PropTypes.string,
-        headers: PropTypes.arrayOf(
+        templates: PropTypes.arrayOf(
           PropTypes.shape({
-            key: PropTypes.string,
             name: PropTypes.string,
-            type: PropTypes.string,
-            section: PropTypes.string,
-            isUsed: PropTypes.bool,
-            options: PropTypes.arrayOf(PropTypes.string),
+            typeOfCards: PropTypes.string,
+            headers: PropTypes.arrayOf(
+              PropTypes.shape({
+                key: PropTypes.string,
+                name: PropTypes.string,
+                type: PropTypes.string,
+                section: PropTypes.string,
+                isUsed: PropTypes.bool,
+                options: PropTypes.arrayOf(PropTypes.string),
+              })
+            ),
+            sections: PropTypes.arrayOf(
+              PropTypes.shape({
+                name: PropTypes.string,
+                keys: PropTypes.arrayOf(PropTypes.string),
+              })  
+            ),
+            isModified: PropTypes.bool,
+            action: PropTypes.oneOf(["add", "update", "remove", null]),
           })
         ),
-        sections: PropTypes.arrayOf(
-          PropTypes.shape({
-            name: PropTypes.string,
-            keys: PropTypes.arrayOf(PropTypes.string),
-          })  
-        ),
+        pipelines: PropTypes.arrayOf(PropTypes.object),
         isModified: PropTypes.bool,
         action: PropTypes.oneOf(["add", "update", "remove", null]),
       })
     ),
+    deletedHeaderKeys: PropTypes.arrayOf(PropTypes.string),
+    hasEntityChanges: PropTypes.bool,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   businessId: PropTypes.string,
