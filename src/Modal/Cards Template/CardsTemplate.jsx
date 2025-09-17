@@ -77,9 +77,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   
-  // Entity management state - use context for global state synchronization
-  const templateEntities = contextTemplateEntities;
-  const setTemplateEntities = contextSetTemplateEntities;
+  // Entity management state - use local state to prevent Firestore overwrites
+  const [templateEntities, setTemplateEntities] = useState(() => contextTemplateEntities || []);
   const [selectedEntityIndex, setSelectedEntityIndex] = useState(null);
   const [newEntityName, setNewEntityName] = useState("");
   const [showEntityForm, setShowEntityForm] = useState(false);
@@ -151,34 +150,17 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Function to update tempData only if there are changes
   const updateTempDataIfChanged = useCallback(() => {
     if (hasChanges()) {
-      console.log('[CardsTemplate] Changes detected, updating tempData');
       setTempData({ currentCardTemplates, deletedHeaderKeys, templateEntities });
       lastTempDataRef.current = { currentCardTemplates, deletedHeaderKeys, templateEntities };
-    } else {
-      console.log('[CardsTemplate] No changes detected, skipping tempData update');
     }
   }, [currentCardTemplates, deletedHeaderKeys, templateEntities, hasChanges, setTempData]);
 
-  // Fetch template entities when component mounts
+  // Sync local templateEntities with context on initial load
   useEffect(() => {
-    const fetchTemplateEntities = async () => {
-      if (!businessId) return;
-      
-      try {
-        const entitiesRef = collection(db, 'businesses', businessId, 'templateEntities');
-        const snapshot = await getDocs(entitiesRef);
-        const entities = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setTemplateEntities(entities);
-      } catch (error) {
-        console.error('Error fetching template entities:', error);
-      }
-    };
-
-    fetchTemplateEntities();
-  }, [businessId]);
+    if (contextTemplateEntities && contextTemplateEntities.length > 0 && templateEntities.length === 0) {
+      setTemplateEntities(contextTemplateEntities);
+    }
+  }, [contextTemplateEntities, templateEntities.length, setTemplateEntities]);
 
   // Initialize tempData with initial values including templateEntities
   useEffect(() => {
@@ -203,12 +185,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   // Merge templates from templateEntities into currentCardTemplates after entities are loaded
   useEffect(() => {
     if (templateEntities.length > 0) {
-      console.log('Loading entities with templates and pipelines');
-      
       // Extract all templates from entities and add to currentCardTemplates if not already present
       const allEntityTemplates = [];
       templateEntities.forEach(entity => {
-        console.log(`Entity "${entity.name}" has ${entity.pipelines?.length || 0} pipelines and ${entity.templates?.length || 0} templates`);
         if (entity.templates && Array.isArray(entity.templates)) {
           entity.templates.forEach(template => {
             // Ensure template has entityId set to the entity it belongs to
@@ -230,7 +209,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
             );
           });
           
-          console.log(`Adding ${newTemplates.length} new templates from entities`);
           return [...prev, ...newTemplates];
         });
       }
@@ -1142,8 +1120,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         templateEntities: updatedEntities,
         hasEntityChanges: true // Mark that entities have changed
       });
-
-      console.log(`Entity "${newEntity.name}" created successfully (will save to backend when modal is closed)`);
       
       setNewEntityName("");
       setShowEntityForm(false);
@@ -1183,9 +1159,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     }
     if (window.confirm(`Are you sure you want to delete the entity "${entity.name}"? This action cannot be undone.`)) {
       try {
-        // Remove entity from local state
-        const remainingEntities = templateEntities.filter((_, index) => index !== entityIndex);
-        setTemplateEntities(remainingEntities);
+        // Mark entity for deletion instead of removing it from array
+        const updatedEntities = templateEntities.map((e, index) => 
+          index === entityIndex 
+            ? { ...e, isModified: true, action: "remove" }
+            : e
+        );
+        setTemplateEntities(updatedEntities);
         
         // Remove any templates belonging to this entity from currentCardTemplates
         const updatedCardTemplates = currentCardTemplates.filter(template => template.entityId !== entity.id);
@@ -1195,7 +1175,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         setTempData({ 
           currentCardTemplates: updatedCardTemplates, 
           deletedHeaderKeys, 
-          templateEntities: remainingEntities,
+          templateEntities: updatedEntities,
           hasEntityChanges: true // Mark that entities have changed
         });
         
@@ -1203,11 +1183,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         if (selectedEntityIndex === entityIndex) {
           setSelectedEntityIndex(null);
         }
-
-        console.log(`Entity "${entity.name}" deleted successfully (will save to backend when modal is closed)`);
       } catch (error) {
-        console.error('Error deleting entity:', error);
-        alert('Failed to delete entity. Please try again.');
+        console.error('Error marking entity for deletion:', error);
+        alert('Failed to mark entity for deletion. Please try again.');
         
         // Restore entity in case of error
         setTemplateEntities(templateEntities);
@@ -1228,7 +1206,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     // Update local state only
     const updatedEntities = templateEntities.map((entity, index) => 
       index === entityIndex 
-        ? { ...entity, name: newName.trim() }
+        ? { ...entity, name: newName.trim(), isModified: true, action: entity.action || "update" }
         : entity
     );
     
@@ -1241,8 +1219,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       templateEntities: updatedEntities,
       hasEntityChanges: true // Explicitly mark that entities have changed
     });
-
-    console.log(`Entity renamed from "${previousName}" to "${newName.trim()}" (will save to backend when modal is closed)`);
   }, [templateEntities, currentCardTemplates, deletedHeaderKeys, setTempData]);
 
   const startEditingEntity = useCallback((entityIndex) => {
@@ -1270,66 +1246,6 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       template.entityId === entity.id && template.action !== "remove"
     );
   }, [templateEntities, currentCardTemplates]);
-
-  // Save template entities with their templates
-  const saveTemplateEntities = useCallback(async () => {
-    if (!businessId) return;
-
-    try {
-      console.log('saveTemplateEntities - All currentCardTemplates:', currentCardTemplates);
-      console.log('saveTemplateEntities - All templateEntities:', templateEntities);
-      
-      // Prepare entities with their templates
-      const entitiesWithTemplates = templateEntities.map(entity => {
-        console.log('=== ENTITY PROCESSING ===');
-        console.log('Entity:', entity);
-        console.log('Entity ID:', JSON.stringify(entity.id));
-        console.log('All templates:', currentCardTemplates);
-        
-        // Check each template individually
-        currentCardTemplates.forEach((template, index) => {
-          console.log(`Template ${index}:`, template);
-          console.log(`  - entityId: ${JSON.stringify(template.entityId)}`);
-          console.log(`  - action: ${JSON.stringify(template.action)}`);
-          console.log(`  - entityId === entity.id: ${template.entityId === entity.id}`);
-          console.log(`  - action !== "remove": ${template.action !== "remove"}`);
-          console.log(`  - both conditions: ${template.entityId === entity.id && template.action !== "remove"}`);
-        });
-        
-        const entityTemplates = currentCardTemplates.filter(template => 
-          template.entityId === entity.id && template.action !== "remove"
-        );
-        
-        console.log('Final filtered templates:', entityTemplates);
-        console.log('=== END ENTITY PROCESSING ===');
-        
-        return {
-          id: entity.id,
-          name: entity.name,
-          templates: entityTemplates,
-          pipelines: entity.pipelines || []
-        };
-      });
-
-      console.log('Final entitiesWithTemplates:', entitiesWithTemplates);
-
-      await updateCardTemplatesAndCardsFunction({
-        businessId,
-        entities: entitiesWithTemplates
-      });
-
-      // Clean up local state - remove templates marked for deletion
-      setCurrentCardTemplates(prev => 
-        prev.filter(template => template.action !== "remove")
-          .map(template => ({ ...template, isModified: false, action: undefined }))
-      );
-
-      console.log('Template entities saved successfully');
-    } catch (error) {
-      console.error('Error saving template entities:', error);
-      alert('Failed to save template entities. Please try again.');
-    }
-  }, [businessId, templateEntities, currentCardTemplates]);
 
   // Get pipelines for a specific entity
   const getEntityPipelines = useCallback((entityIndex) => {
@@ -1977,7 +1893,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Entities</h2>
                     <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select an entity to manage its templates.</p>
                     <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {templateEntities.map((entity, index) => (
+                      {templateEntities
+                        .map((entity, originalIndex) => ({ entity, originalIndex }))
+                        .filter(({ entity }) => entity.action !== "remove")
+                        .map(({ entity, originalIndex }) => (
                         <div
                           key={entity.id}
                           className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -1990,14 +1909,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                           </div>
                           <div 
                             className={styles.cardContent}
-                            onClick={() => editingEntityIndex !== index && selectEntity(index)}
+                            onClick={() => editingEntityIndex !== originalIndex && selectEntity(originalIndex)}
                             onKeyDown={(e) => {
-                              if ((e.key === "Enter" || e.key === " ") && editingEntityIndex !== index) {
-                                selectEntity(index);
+                              if ((e.key === "Enter" || e.key === " ") && editingEntityIndex !== originalIndex) {
+                                selectEntity(originalIndex);
                               }
                             }}
                           >
-                            {editingEntityIndex === index ? (
+                            {editingEntityIndex === originalIndex ? (
                               <div className={styles.editingContent}>
                                 <input
                                   type="text"
@@ -2041,12 +1960,12 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               <>
                                 <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{entity.name}</h3>
                                 <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {getEntityTemplates(index).length} template{getEntityTemplates(index).length !== 1 ? 's' : ''}
+                                  {getEntityTemplates(originalIndex).length} template{getEntityTemplates(originalIndex).length !== 1 ? 's' : ''}
                                 </p>
                               </>
                             )}
                           </div>
-                          {editingEntityIndex !== index && (
+                          {editingEntityIndex !== originalIndex && (
                             <>
                               <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                 <IoChevronForward size={16} />
@@ -2056,7 +1975,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                   className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    startEditingEntity(index);
+                                    startEditingEntity(originalIndex);
                                   }}
                                 >
                                   <FaEdit size={12} />
@@ -2065,7 +1984,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                   className={`${styles.entityDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteEntity(index);
+                                    deleteEntity(originalIndex);
                                   }}
                                 >
                                   <FaTrash size={12} />
@@ -2083,7 +2002,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
 
             {step === 2 && (
               <>
-                {selectedEntityIndex !== null && templateEntities[selectedEntityIndex] ? (
+                {selectedEntityIndex !== null && templateEntities[selectedEntityIndex] && templateEntities[selectedEntityIndex].action !== "remove" ? (
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>

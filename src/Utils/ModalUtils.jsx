@@ -226,10 +226,12 @@ export const handleModalSave = async ({
         }
 
         try {
-          // Prepare entities with their templates 
+          // Prepare entities with their templates - include ALL entities, even those marked for deletion
+          // The backend will handle deletion based on the action flag
           const entitiesWithTemplates = data.templateEntities.map(entity => {
             console.log('Processing entity:', entity.name, 'with stored templates:', entity.templates);
             console.log('Entity pipelines:', entity.pipelines);
+            console.log('Entity action:', entity.action);
             
             // Always use the current edited templates from currentCardTemplates 
             // as they reflect the user's latest changes, not the old database state
@@ -243,11 +245,14 @@ export const handleModalSave = async ({
             console.log('Final templates for entity', entity.name, ':', entityTemplates);
             console.log('Including pipelines for entity', entity.name, ':', entity.pipelines);
             
+            // Include action and isModified flags so backend knows what to do
             return {
               id: entity.id,
               name: entity.name,
               templates: entityTemplates,
-              pipelines: entity.pipelines || []
+              pipelines: entity.pipelines || [],
+              action: entity.action,
+              isModified: entity.isModified
             };
           });
 
@@ -257,7 +262,10 @@ export const handleModalSave = async ({
           ) || data.deletedHeaderKeys?.length > 0;
           
           // Check if CardsTemplate detected entity changes
-          const hasEntityChanges = data.hasEntityChanges === true;
+          const hasEntityChanges = data.hasEntityChanges === true || 
+            (data.templateEntities && data.templateEntities.some(entity => 
+              entity.isModified || entity.action === 'add' || entity.action === 'update' || entity.action === 'remove'
+            ));
           
           const hasActualChanges = hasTemplateChanges || hasEntityChanges;
 
@@ -289,8 +297,10 @@ export const handleModalSave = async ({
           setCardTemplates(allTemplates);
           
           // Also update templateEntities in context to ensure immediate UI update
+          // Filter out entities marked for deletion since they will be deleted from Firestore
           if (setTemplateEntities) {
-            setTemplateEntities(entitiesWithTemplates);
+            const entitiesForContext = entitiesWithTemplates.filter(entity => entity.action !== "remove");
+            setTemplateEntities(entitiesForContext);
           }
 
           // Update tempData to reflect the latest changes and reset editing state
