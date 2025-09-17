@@ -641,12 +641,91 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
             batch.delete(entityRef);
             messages.push(`Deleted entity: ${name}`);
           } else {
+            // Check if entity name has changed by comparing with existing entity
+            let entityNameChanged = false;
+            let previousName = null;
+            
+            try {
+              const existingEntityDoc = await entityRef.get();
+              if (existingEntityDoc.exists) {
+                const existingData = existingEntityDoc.data();
+                previousName = existingData.name;
+                entityNameChanged = previousName && previousName !== name;
+              }
+            } catch (error) {
+              functions.logger.warn('Error checking existing entity:', { error: error.message });
+            }
+
             functions.logger.info('Upserting templateEntity:', { 
               id, 
               name, 
+              previousName,
+              entityNameChanged,
               templateCount: templates?.length || 0, 
               pipelineCount: pipelines?.length || 0 
             });
+
+            // Debug: Log the comparison details
+            functions.logger.info('Entity name change detection:', {
+              entityId: id,
+              incomingName: name,
+              existingName: previousName,
+              namesAreDifferent: previousName !== name,
+              hasTemplates: templates && Array.isArray(templates) && templates.length > 0,
+              entityNameChanged
+            });
+
+            // If entity name changed, update typeOfProfile in all cards that use templates from this entity
+            if (entityNameChanged && templates && Array.isArray(templates)) {
+              functions.logger.info('Entity name changed, updating typeOfProfile in cards:', { 
+                entityId: id, 
+                previousName, 
+                newName: name,
+                templateCount: templates.length
+              });
+
+              for (const template of templates) {
+                if (template.typeOfCards) {
+                  const cardsRef = admin
+                    .firestore()
+                    .collection('businesses')
+                    .doc(businessId)
+                    .collection('cards')
+                    .where('typeOfCards', '==', template.typeOfCards);
+                  
+                  try {
+                    const cardsSnapshot = await cardsRef.get();
+                    if (!cardsSnapshot.empty) {
+                      functions.logger.info('Updating typeOfProfile in cards:', {
+                        typeOfCards: template.typeOfCards,
+                        cardCount: cardsSnapshot.size,
+                        from: previousName,
+                        to: name
+                      });
+
+                      cardsSnapshot.forEach((cardDoc) => {
+                        const cardData = cardDoc.data();
+                        // Only update if the card's typeOfProfile matches the previous entity name
+                        if (cardData.typeOfProfile === previousName) {
+                          batch.update(cardDoc.ref, {
+                            typeOfProfile: name
+                          });
+                          totalUpdatedCards += 1;
+                        }
+                      });
+
+                      messages.push(`Updated typeOfProfile from "${previousName}" to "${name}" in ${cardsSnapshot.size} cards for template "${template.typeOfCards}"`);
+                    }
+                  } catch (error) {
+                    functions.logger.error('Error updating cards for template:', { 
+                      typeOfCards: template.typeOfCards, 
+                      error: error.message 
+                    });
+                  }
+                }
+              }
+            }
+
             batch.set(entityRef, {
               id,
               name,

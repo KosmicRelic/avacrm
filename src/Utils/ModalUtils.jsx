@@ -44,6 +44,7 @@ export const handleModalSave = async ({
   activeSheetName,
   isSheetModalEditMode,
   setCardTemplates,
+  setTemplateEntities,
   setEditMode,
   setSelectedTemplateIndex,
   setCurrentSectionIndex,
@@ -251,9 +252,14 @@ export const handleModalSave = async ({
           });
 
           // Check if there are any actual changes before sending to backend
-          const hasActualChanges = data.currentCardTemplates?.some(template => 
+          const hasTemplateChanges = data.currentCardTemplates?.some(template => 
             template.isModified || template.action === 'add' || template.action === 'remove'
           ) || data.deletedHeaderKeys?.length > 0;
+          
+          // Check if CardsTemplate detected entity changes
+          const hasEntityChanges = data.hasEntityChanges === true;
+          
+          const hasActualChanges = hasTemplateChanges || hasEntityChanges;
 
           if (!hasActualChanges) {
             console.log('[ModalUtils] No changes detected, skipping backend update');
@@ -281,6 +287,24 @@ export const handleModalSave = async ({
             entity.templates || []
           );
           setCardTemplates(allTemplates);
+          
+          // Also update templateEntities in context to ensure immediate UI update
+          if (setTemplateEntities) {
+            setTemplateEntities(entitiesWithTemplates);
+          }
+
+          // Update tempData to reflect the latest changes and reset editing state
+          if (setTempData) {
+            setTempData({
+              currentCardTemplates: allTemplates,
+              deletedHeaderKeys: data.deletedHeaderKeys || [],
+              templateEntities: entitiesWithTemplates,
+              hasEntityChanges: false, // Reset since we just saved
+              // Reset editing state so UI shows updated names
+              editingEntityIndex: null,
+              editingEntityName: ""
+            });
+          }
 
           console.log('Template entities saved successfully');
         } catch (error) {

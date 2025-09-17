@@ -370,6 +370,14 @@ const CardsEditor = ({
     const newCardData = {
       linkId: formData.linkId, // Keep the same linkId to maintain connection
       typeOfCards: targetTemplate.name, // Use template name for consistency
+      typeOfProfile: (() => {
+        // Find the entity for target template to set typeOfProfile
+        if (targetTemplate.entityId && templateEntities) {
+          const entity = templateEntities.find(e => e.id === targetTemplate.entityId);
+          return entity ? entity.name : '';
+        }
+        return '';
+      })(),
       assignedTo: formData.assignedTo || user?.email || '', // Always carry over assignedTo with fallback
       history: [], // Start fresh history for new card type
       isModified: true,
@@ -434,6 +442,14 @@ const CardsEditor = ({
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
+      typeOfProfile: (() => {
+        // Find the entity for this template to set typeOfProfile
+        if (template.entityId && templateEntities) {
+          const entity = templateEntities.find(e => e.id === template.entityId);
+          return entity ? entity.name : '';
+        }
+        return formData.typeOfProfile || '';
+      })(),
       assignedTo: formData.assignedTo || user?.email || '',
       history: formData.history || [],
       isModified: true,
