@@ -1202,6 +1202,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     }
 
     const previousName = templateEntities[entityIndex].name;
+    const entityId = templateEntities[entityIndex].id;
 
     // Update local state only
     const updatedEntities = templateEntities.map((entity, index) => 
@@ -1211,10 +1212,19 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     );
     
     setTemplateEntities(updatedEntities);
+
+    // Update entityName in all templates that belong to this entity
+    const updatedCardTemplates = currentCardTemplates.map(template => 
+      template.entityId === entityId 
+        ? { ...template, entityName: newName.trim() }
+        : template
+    );
+    
+    setCurrentCardTemplates(updatedCardTemplates);
     
     // Update tempData immediately to reflect the name change
     setTempData({ 
-      currentCardTemplates, 
+      currentCardTemplates: updatedCardTemplates, 
       deletedHeaderKeys, 
       templateEntities: updatedEntities,
       hasEntityChanges: true // Explicitly mark that entities have changed
