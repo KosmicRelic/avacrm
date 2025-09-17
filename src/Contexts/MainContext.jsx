@@ -945,6 +945,13 @@ export const MainContextProvider = ({ children }) => {
       }
       setTemplateEntities(newEntities);
     },
+    cardTemplates: templateEntities?.flatMap(entity => 
+      (entity.templates || []).map(template => ({
+        ...template,
+        entityId: entity.id,
+        entityName: entity.name
+      }))
+    ) || [],
     tempData,
     setTempData,
     selectedTemplateIndex,
