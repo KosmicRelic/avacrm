@@ -294,6 +294,276 @@
   border: none;
 }
 
+.editSelect {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.readOnlyCell {
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.readOnlyCell:hover {
+  background-color: transparent !important;
+}
+
+.dropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownDisplay {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+  user-select: none;
+}
+
+.dropdownArrow {
+  font-size: 10px;
+  color: #86868b;
+  transition: transform 0.2s ease;
+}
+
+.dropdownDisplay:hover .dropdownArrow {
+  color: #007aff;
+}
+
+.dropdownDisplay.darkTheme:hover .dropdownArrow {
+  color: #0a84ff;
+}
+
+.dropdownMenu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #d1d1d6;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 99999;
+  margin-top: 4px;
+  min-width: 150px;
+}
+
+.dropdownMenu.darkTheme {
+  background: #2c2c2e;
+  border-color: #48484a;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.dropdownOption {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  color: #1d1d1f;
+  border-bottom: 1px solid #f2f2f7;
+}
+
+.dropdownOption:last-child {
+  border-bottom: none;
+}
+
+.dropdownOption:hover {
+  background-color: #f2f2f7;
+}
+
+.dropdownOption.selected {
+  background-color: #007aff;
+  color: #ffffff;
+}
+
+.dropdownOption.darkTheme {
+  color: #ffffff;
+  border-bottom-color: #48484a;
+}
+
+.dropdownOption.darkTheme:hover {
+  background-color: #3a3a3c;
+}
+
+.dropdownOption.darkTheme.selected {
+  background-color: #0a84ff;
+  color: #ffffff;
+}
+
+.multiSelectMenu {
+  padding-bottom: 0;
+}
+
+.singleSelectMenu {
+  padding-bottom: 0;
+}
+
+.assignedToMenu {
+  padding-bottom: 0;
+}
+
+.multiSelectOption {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  border-bottom: 1px solid #f2f2f7;
+}
+
+.multiSelectOption:hover {
+  background-color: #f2f2f7;
+}
+
+.multiSelectOption.darkTheme:hover {
+  background-color: #3a3a3c;
+}
+
+.multiSelectOption.darkTheme {
+  border-bottom-color: #48484a;
+}
+
+.multiSelectCheckbox {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.multiSelectOption span {
+  user-select: none;
+  color: #1d1d1f;
+}
+
+.multiSelectOption.darkTheme span {
+  color: #ffffff;
+}
+
+.multiSelectButtons {
+  display: flex;
+  padding: 8px;
+  gap: 8px;
+  border-top: 1px solid #f2f2f7;
+  background: #fbfbfd;
+}
+
+.multiSelectButtons.darkTheme {
+  border-top-color: #48484a;
+  background: #2c2c2e;
+}
+
+.multiSelectButton {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.multiSelectButton:hover {
+  background: #f2f2f7;
+}
+
+.multiSelectButton.save {
+  background: #007aff;
+  color: #ffffff;
+  border-color: #007aff;
+}
+
+.multiSelectButton.save:hover {
+  background: #0056cc;
+}
+
+.multiSelectButton.darkTheme {
+  background: #48484a;
+  color: #ffffff;
+  border-color: #636366;
+}
+
+.multiSelectButton.darkTheme:hover {
+  background: #5a5a5e;
+}
+
+.multiSelectButton.darkTheme.save {
+  background: #0a84ff;
+  border-color: #0a84ff;
+}
+
+.multiSelectButton.darkTheme.save:hover {
+  background: #0066cc;
+}
+
+.multiSelectContainer {
+  position: relative;
+  width: 100%;
+}
+
+.multiSelectDropdown {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #d1d1d6;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999;
+  margin-top: 4px;
+  min-width: 150px;
+}
+
+.multiSelectDropdown.darkTheme {
+  background: #2c2c2e;
+  border-color: #48484a;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.multiSelectOption {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.multiSelectOption:hover {
+  background-color: #f2f2f7;
+}
+
+.multiSelectOption.darkTheme:hover {
+  background-color: #3a3a3c;
+}
+
+.multiSelectCheckbox {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.multiSelectOption span {
+  user-select: none;
+  color: #1d1d1f;
+}
+
+.multiSelectOption.darkTheme span {
+  color: #ffffff;
+}
+
 .selectedRow {
   background: rgba(0, 122, 255, 0.08);
   box-shadow: 0 2px 12px rgba(0, 122, 255, 0.12);

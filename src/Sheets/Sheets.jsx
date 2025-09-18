@@ -707,6 +707,7 @@ const Sheets = ({
               style={{ display: activeSheet ? undefined : 'none' }}
               getTeamMemberName={getTeamMemberName}
               onInlineSave={handleInlineSave}
+              teamMembers={teamMembers}
             />
             {finalRows.filter(rowData => rowData.docId).length > 0 ? (
               finalRows.filter(rowData => rowData.docId).map((rowData, rowIndex) => (
@@ -720,6 +721,7 @@ const Sheets = ({
                   onSelect={handleRowSelect}
                   getTeamMemberName={getTeamMemberName}
                   onInlineSave={handleInlineSave}
+                  teamMembers={teamMembers}
                 />
               ))
             ) : (
