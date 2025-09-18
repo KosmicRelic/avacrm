@@ -1144,3 +1144,55 @@
     border-radius: 0;
   }
 }
+
+/* Floating edit button styles */
+.floatingEditButton {
+  background: rgba(0, 122, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: 20px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.25);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.floatingEditButton:hover {
+  background: rgba(0, 122, 255, 1);
+  border-color: rgba(0, 122, 255, 0.3);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 122, 255, 0.3);
+}
+
+.floatingEditButton.darkTheme {
+  background: rgba(10, 132, 255, 0.95);
+  border-color: rgba(10, 132, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(10, 132, 255, 0.3);
+}
+
+.floatingEditButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 1);
+  border-color: rgba(10, 132, 255, 0.4);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 25px rgba(10, 132, 255, 0.35);
+}

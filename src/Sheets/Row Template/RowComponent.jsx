@@ -1,17 +1,15 @@
 // RowComponent.js
-import { useContext, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
-import { FiEdit } from 'react-icons/fi';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
-const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onEdit, onInlineSave }) => {
+const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onInlineSave }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme, user, businessId } = useContext(MainContext);
   const isBusinessUser = user && user.uid === businessId;
-  const [isHovered, setIsHovered] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
 
@@ -20,13 +18,6 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
       onAddRow();
     } else if (onClick) {
       onClick(rowData);
-    }
-  };
-
-  const handleEditClick = (e) => {
-    e.stopPropagation();
-    if (onEdit && !isAddNew) {
-      onEdit(rowData);
     }
   };
 
@@ -39,17 +30,27 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
     }
   };
 
-  const handleCellClick = (e) => {
-    // Prevent row click when clicking on cells
-    e.stopPropagation();
+  const handleCellClick = (e, headerKey, currentValue, rawValue) => {
+    // If row is selected (not in select mode), clicking a cell should edit that cell
+    if (!isSelectMode && isSelected) {
+      e.stopPropagation();
+      setEditingCell(headerKey);
+      setEditValue(rawValue || ''); // Use raw value instead of display value
+      return;
+    }
+    // Only prevent row click when clicking on cells if in select mode
+    // Allow row click for selection when not in select mode
+    if (isSelectMode) {
+      e.stopPropagation();
+    }
   };
 
-  const handleCellDoubleClick = (e, headerKey, currentValue) => {
+  const handleCellDoubleClick = (e, headerKey, currentValue, rawValue) => {
     // Prevent row click when double-clicking on cells
     e.stopPropagation();
     if (isAddNew) return;
     setEditingCell(headerKey);
-    setEditValue(currentValue || '');
+    setEditValue(rawValue || ''); // Use raw value instead of display value
   };
 
   const handleEditSave = () => {
@@ -80,8 +81,6 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
         isSelected ? styles.selectedRow : ''
       } ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Only show select button for business user */}
       {!isAddNew && isSelectMode && isBusinessUser && (
@@ -99,18 +98,6 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           >
             {isSelected ? <FaRegCheckCircle size={18} /> : <FaRegCircle size={18} />}
           </div>
-        </div>
-      )}
-      {/* Edit button that appears on hover */}
-      {!isAddNew && isHovered && (
-        <div className={`${styles.editButtonContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <button
-            className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleEditClick}
-            title="Edit card"
-          >
-            <FiEdit size={16} />
-          </button>
         </div>
       )}
       {isAddNew ? (
@@ -160,9 +147,9 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           return (
             <div
               key={i}
-              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''} ${editingCell === header.key ? styles.editingCell : ''}`}
-              onClick={handleCellClick}
-              onDoubleClick={(e) => handleCellDoubleClick(e, header.key, displayValue)}
+              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={(e) => handleCellClick(e, header.key, displayValue, value)}
+              onDoubleClick={(e) => handleCellDoubleClick(e, header.key, displayValue, value)}
             >
               {editingCell === header.key ? (
                 <input
@@ -204,7 +191,6 @@ RowComponent.propTypes = {
   isSelectMode: PropTypes.bool,
   onSelect: PropTypes.func,
   getTeamMemberName: PropTypes.func,
-  onEdit: PropTypes.func,
   onInlineSave: PropTypes.func,
 };
 

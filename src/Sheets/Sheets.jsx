@@ -6,6 +6,7 @@ import CardsEditor from './Cards Editor/CardsEditor';
 import { IoCloseCircle } from 'react-icons/io5';
 import { FaFolder } from 'react-icons/fa';
 import { MdFilterAlt } from 'react-icons/md';
+import { FiEdit } from 'react-icons/fi';
 import { MainContext } from '../Contexts/MainContext';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
@@ -239,6 +240,7 @@ const Sheets = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [selectedRowForEdit, setSelectedRowForEdit] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -274,6 +276,30 @@ const Sheets = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Click outside detection to deselect rows
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectedRowForEdit && !isSelectMode) {
+        // Check if the click is outside of any row
+        const rows = document.querySelectorAll('[class*="bodyRow"]');
+        const isClickOnRow = Array.from(rows).some(row => row.contains(event.target));
+        
+        // Also check if click is on the floating button
+        const floatingButton = document.querySelector('[class*="floatingEditButton"]');
+        const isClickOnButton = floatingButton && floatingButton.contains(event.target);
+        
+        if (!isClickOnRow && !isClickOnButton) {
+          setSelectedRowForEdit(null);
+        }
+      }
+    };
+
+    if (selectedRowForEdit && !isSelectMode) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [selectedRowForEdit, isSelectMode]);
 
   useEffect(() => {
     if (sheetTabsRef.current) {
@@ -407,8 +433,25 @@ const Sheets = ({
       if (rowData.isAddNew) {
         setIsEditorOpen(true);
         setSelectedRow(null);
+        setSelectedRowForEdit(null);
       } else {
-        const fullCard = cards.find((card) => card.docId === rowData.docId) || rowData;
+        // Check if this row is already selected
+        if (selectedRowForEdit?.docId === rowData.docId) {
+          // If already selected, deselect it
+          setSelectedRowForEdit(null);
+        } else {
+          // If not selected, select it (show floating button)
+          setSelectedRowForEdit(rowData);
+        }
+      }
+    },
+    []
+  );
+
+  const handleFloatingEditClick = useCallback(
+    () => {
+      if (selectedRowForEdit) {
+        const fullCard = cards.find((card) => card.docId === selectedRowForEdit.docId) || selectedRowForEdit;
         setSelectedRow(fullCard);
         setIsEditorOpen(true);
         setIsClosing(false);
@@ -417,9 +460,10 @@ const Sheets = ({
           const urlSheetName = activeSheetName.replace(/ /g, "-");
           navigate(`/sheets/${urlSheetName}/${fullCard.docId}`, { replace: false });
         }
+        setSelectedRowForEdit(null); // Clear selection after opening editor
       }
     },
-    [onRowClick, cards, activeSheetName, navigate]
+    [selectedRowForEdit, cards, onRowClick, activeSheetName, navigate]
   );
 
   const handleEditorClose = useCallback(() => {
@@ -427,6 +471,7 @@ const Sheets = ({
     setTimeout(() => {
       setIsEditorOpen(false);
       setSelectedRow(null);
+      setSelectedRowForEdit(null);
       setIsClosing(false);
       const urlSheetName = activeSheetName.replace(/ /g, "-");
       navigate(`/sheets/${urlSheetName}`, { replace: true });
@@ -661,7 +706,6 @@ const Sheets = ({
               onAddRow={() => handleRowClick({ isAddNew: true })}
               style={{ display: activeSheet ? undefined : 'none' }}
               getTeamMemberName={getTeamMemberName}
-              onEdit={handleRowClick}
               onInlineSave={handleInlineSave}
             />
             {finalRows.filter(rowData => rowData.docId).length > 0 ? (
@@ -670,12 +714,11 @@ const Sheets = ({
                   key={rowData.docId || rowIndex}
                   rowData={rowData}
                   headers={visibleHeaders}
-                  onClick={() => handleRowSelect(rowData)}
-                  isSelected={selectedRowIds.includes(rowData.docId)}
+                  onClick={() => isSelectMode ? handleRowSelect(rowData) : handleRowClick(rowData)}
+                  isSelected={isSelectMode ? selectedRowIds.includes(rowData.docId) : (selectedRowForEdit?.docId === rowData.docId)}
                   isSelectMode={isSelectMode}
                   onSelect={handleRowSelect}
                   getTeamMemberName={getTeamMemberName}
-                  onEdit={handleRowClick}
                   onInlineSave={handleInlineSave}
                 />
               ))
@@ -761,6 +804,24 @@ const Sheets = ({
           </div>
         )}
       </div>
+      {/* Floating edit button positioned at bottom center of screen */}
+      {selectedRowForEdit && !isSelectMode && (
+        <button
+          className={`${styles.floatingEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={handleFloatingEditClick}
+          title="Edit card"
+          style={{
+            position: 'fixed',
+            bottom: '100px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 900
+          }}
+        >
+          <FiEdit size={16} />
+          Edit
+        </button>
+      )}
       {isEditorOpen && !isMobile && (
         <>
           <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>

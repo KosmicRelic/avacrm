@@ -4,16 +4,16 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 16px;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: all 0.2s ease-in-out;
   min-width: 100%;
   width: max-content;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
   margin: 8px 0px;
   cursor: pointer;
-  animation: rowAppear 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   position: relative;
   left: 1em;
   border: 1px solid rgba(0, 0, 0, 0.04);
+  will-change: transform, box-shadow;
 }
 
 .bodyRow.darkTheme {
@@ -25,14 +25,14 @@
 .bodyRow:hover {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-1px);
   border-color: rgba(0, 122, 255, 0.08);
 }
 
 .bodyRow.darkTheme:hover {
-  background: rgba(58, 58, 60, 0.9);
+  background: rgba(44, 44, 46, 0.9);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15);
-  border-color: rgba(10, 132, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.1);
 }
 
 .addNewRow {
@@ -73,15 +73,28 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease-in-out;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   letter-spacing: -0.008em;
   line-height: 1.2;
+  will-change: background-color;
 }
 
 .bodyCell.darkTheme {
   background: transparent;
   color: rgb(235, 235, 245);
+}
+
+/* Hover effect for cells in selected rows */
+.selectedRow .bodyCell:hover {
+  background: rgba(0, 122, 255, 0.06);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.selectedRow.darkTheme .bodyCell:hover {
+  background: rgba(10, 132, 255, 0.08);
 }
 
 .bodyCell.selectMode {
@@ -237,16 +250,20 @@
   border-color: rgba(10, 132, 255, 0.4);
 }
 
+/* Legacy editingCell styles - can be removed if not used elsewhere */
 .editingCell {
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid rgba(0, 122, 255, 0.3);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 1);
+  border: 2px solid rgba(0, 122, 255, 0.5);
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+  position: relative;
 }
 
 .editingCell.darkTheme {
-  background: rgba(44, 44, 46, 0.95);
-  border-color: rgba(10, 132, 255, 0.4);
+  background: rgba(44, 44, 46, 1);
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.15);
 }
 
 .editInput {
@@ -260,6 +277,11 @@
   letter-spacing: -0.008em;
   line-height: 1.2;
   outline: none;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .editInput.darkTheme {
@@ -268,31 +290,49 @@
 
 .editInput:focus {
   outline: none;
+  box-shadow: none;
+  border: none;
 }
 
 .selectedRow {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.12), 0 8px 32px rgba(0, 122, 255, 0.06);
-  border: 2px solid rgba(0, 122, 255, 0.2);
-  transform: translateY(-1px);
+  background: rgba(0, 122, 255, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 122, 255, 0.12);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  transform: none;
+  position: relative;
+}
+
+.selectedRow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(0, 122, 255, 0.6);
+  border-radius: 0 2px 2px 0;
 }
 
 .selectedRow.darkTheme {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.18) 100%);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.15), 0 8px 32px rgba(10, 132, 255, 0.08);
-  border: 2px solid rgba(10, 132, 255, 0.3);
+  background: rgba(10, 132, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(10, 132, 255, 0.15);
+  border: 1px solid rgba(10, 132, 255, 0.25);
+}
+
+.selectedRow.darkTheme::before {
+  background: rgba(10, 132, 255, 0.7);
 }
 
 .selectedRow:hover {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(0, 122, 255, 0.18) 100%);
-  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.18), 0 12px 40px rgba(0, 122, 255, 0.1);
-  border-color: rgba(0, 122, 255, 0.3);
+  background: rgba(0, 122, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+  border-color: rgba(0, 122, 255, 0.25);
 }
 
 .selectedRow.darkTheme:hover {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18) 0%, rgba(10, 132, 255, 0.24) 100%);
-  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.2), 0 12px 40px rgba(10, 132, 255, 0.12);
-  border-color: rgba(10, 132, 255, 0.4);
+  background: rgba(10, 132, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.18);
+  border-color: rgba(10, 132, 255, 0.3);
 }
 
 @media (max-width: 1024px) {
