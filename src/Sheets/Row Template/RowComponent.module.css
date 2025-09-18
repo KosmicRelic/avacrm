@@ -198,6 +198,78 @@
   background: rgba(10, 132, 255, 0.2);
 }
 
+.editButtonContainer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.editButton {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #007aff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+  border-color: rgba(0, 122, 255, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+}
+
+.editButton.darkTheme {
+  background: rgba(58, 58, 60, 0.9);
+  border-color: rgba(10, 132, 255, 0.3);
+  color: #0a84ff;
+}
+
+.editButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.15);
+  border-color: rgba(10, 132, 255, 0.4);
+}
+
+.editingCell {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 122, 255, 0.3);
+  border-radius: 8px;
+}
+
+.editingCell.darkTheme {
+  background: rgba(44, 44, 46, 0.95);
+  border-color: rgba(10, 132, 255, 0.4);
+}
+
+.editInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.008em;
+  line-height: 1.2;
+  outline: none;
+}
+
+.editInput.darkTheme {
+  color: rgb(235, 235, 245);
+}
+
+.editInput:focus {
+  outline: none;
+}
+
 .selectedRow {
   background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%);
   box-shadow: 0 4px 16px rgba(0, 122, 255, 0.12), 0 8px 32px rgba(0, 122, 255, 0.06);

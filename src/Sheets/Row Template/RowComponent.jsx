@@ -1,21 +1,32 @@
 // RowComponent.js
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { FiEdit } from 'react-icons/fi';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
-const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName }) => {
+const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onEdit, onInlineSave }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme, user, businessId } = useContext(MainContext);
   const isBusinessUser = user && user.uid === businessId;
+  const [isHovered, setIsHovered] = useState(false);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   const handleClick = () => {
     if (isAddNew && onAddRow) {
       onAddRow();
     } else if (onClick) {
       onClick(rowData);
+    }
+  };
+
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    if (onEdit && !isAddNew) {
+      onEdit(rowData);
     }
   };
 
@@ -28,12 +39,49 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
     }
   };
 
+  const handleCellClick = (e) => {
+    // Prevent row click when clicking on cells
+    e.stopPropagation();
+  };
+
+  const handleCellDoubleClick = (e, headerKey, currentValue) => {
+    // Prevent row click when double-clicking on cells
+    e.stopPropagation();
+    if (isAddNew) return;
+    setEditingCell(headerKey);
+    setEditValue(currentValue || '');
+  };
+
+  const handleEditSave = () => {
+    if (editingCell && onInlineSave) {
+      const updatedRowData = { ...rowData, [editingCell]: editValue };
+      onInlineSave(updatedRowData);
+    }
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleEditCancel = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleEditSave();
+    } else if (e.key === 'Escape') {
+      handleEditCancel();
+    }
+  };
+
   return (
     <div
       className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ''} ${
         isSelected ? styles.selectedRow : ''
       } ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Only show select button for business user */}
       {!isAddNew && isSelectMode && isBusinessUser && (
@@ -41,6 +89,7 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           className={`${styles.bodyCell} ${styles.selectCell} ${styles.selectMode} ${
             isDarkTheme ? styles.darkTheme : ''
           }`}
+          onClick={handleCellClick}
         >
           <div
             className={`${styles.selectIcon} ${isSelected ? styles.selected : ''} ${
@@ -52,10 +101,23 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           </div>
         </div>
       )}
+      {/* Edit button that appears on hover */}
+      {!isAddNew && isHovered && (
+        <div className={`${styles.editButtonContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <button
+            className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleEditClick}
+            title="Edit card"
+          >
+            <FiEdit size={16} />
+          </button>
+        </div>
+      )}
       {isAddNew ? (
         <>
           <div
             className={`${styles.bodyCell} ${styles.addCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleCellClick}
           >
             {/* Only show select button for business user in add new row */}
             {isBusinessUser && (
@@ -69,6 +131,7 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           </div>
           <div
             className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleCellClick}
           >
             + Add
           </div>
@@ -76,6 +139,7 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
             <div
               key={i}
               className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleCellClick}
             ></div>
           ))}
         </>
@@ -96,9 +160,23 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
           return (
             <div
               key={i}
-              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
+              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''} ${editingCell === header.key ? styles.editingCell : ''}`}
+              onClick={handleCellClick}
+              onDoubleClick={(e) => handleCellDoubleClick(e, header.key, displayValue)}
             >
-              {displayValue}
+              {editingCell === header.key ? (
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={handleEditSave}
+                  onKeyDown={handleKeyDown}
+                  className={`${styles.editInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  autoFocus
+                />
+              ) : (
+                displayValue
+              )}
             </div>
           );
         })
@@ -126,6 +204,8 @@ RowComponent.propTypes = {
   isSelectMode: PropTypes.bool,
   onSelect: PropTypes.func,
   getTeamMemberName: PropTypes.func,
+  onEdit: PropTypes.func,
+  onInlineSave: PropTypes.func,
 };
 
 RowComponent.defaultProps = {

@@ -449,7 +449,20 @@ const Sheets = ({
       setSelectedRow(newCardData);
       setIsEditorOpen(false);
     },
-    [onCardSave, setCards]
+    [onCardSave]
+  );
+
+  const handleInlineSave = useCallback(
+    (updatedRowData) => {
+      const rowId = updatedRowData.docId;
+      const newCardData = { ...updatedRowData, isModified: true, action: 'update' };
+
+      setCards((prev) =>
+        prev.map((card) => (card.docId === rowId ? newCardData : card))
+      );
+      onCardSave(newCardData);
+    },
+    [onCardSave]
   );
 
   const handleOpenNewCard = useCallback(
@@ -648,6 +661,8 @@ const Sheets = ({
               onAddRow={() => handleRowClick({ isAddNew: true })}
               style={{ display: activeSheet ? undefined : 'none' }}
               getTeamMemberName={getTeamMemberName}
+              onEdit={handleRowClick}
+              onInlineSave={handleInlineSave}
             />
             {finalRows.filter(rowData => rowData.docId).length > 0 ? (
               finalRows.filter(rowData => rowData.docId).map((rowData, rowIndex) => (
@@ -660,6 +675,8 @@ const Sheets = ({
                   isSelectMode={isSelectMode}
                   onSelect={handleRowSelect}
                   getTeamMemberName={getTeamMemberName}
+                  onEdit={handleRowClick}
+                  onInlineSave={handleInlineSave}
                 />
               ))
             ) : (
