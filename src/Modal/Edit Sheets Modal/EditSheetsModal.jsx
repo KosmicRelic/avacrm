@@ -42,14 +42,14 @@ const EditSheetsModal = ({
   setActiveSheetName,
   clearFetchedSheets,
 }) => {
-  const { isDarkTheme, templateProfiles } = useContext(MainContext);
+  const { isDarkTheme, templateObjects } = useContext(MainContext);
   
-  // Get all templates directly from profiles
-  const allTemplates = templateProfiles.flatMap(profile => 
-    (profile.templates || []).map(template => ({
+  // Get all templates directly from objects
+  const allTemplates = templateObjects.flatMap(object => 
+    (object.templates || []).map(template => ({
       ...template,
-      profileId: profile.id,
-      profileName: profile.name
+      objectId: object.id,
+      objectName: object.name
     }))
   );
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);

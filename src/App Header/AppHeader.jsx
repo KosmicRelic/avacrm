@@ -242,7 +242,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
           </nav>
         )}
         <button
-          className={styles.profileButton}
+          className={styles.objectButton}
           onClick={() => setIsProfileModalOpen(true)}
           aria-label="Profile"
         >

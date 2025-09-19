@@ -43,7 +43,7 @@ export const handleModalSave = async ({
   setSheets,
   activeSheetName,
   isSheetModalEditMode,
-  setTemplateProfiles,
+  setTemplateObjects,
   setEditMode,
   setSelectedTemplateIndex,
   setCurrentSectionIndex,
@@ -56,7 +56,7 @@ export const handleModalSave = async ({
   metrics,
   dashboards,
   setActiveModal,
-  templateProfiles,
+  templateObjects,
   businessId,
   records,
   setRecords,
@@ -215,7 +215,7 @@ export const handleModalSave = async ({
       }
       break;
       case 'recordsTemplate':
-      if (data?.templateProfiles && Array.isArray(data.templateProfiles)) {
+      if (data?.templateObjects && Array.isArray(data.templateObjects)) {
         // Profile-based system
         if (!businessId) {
           console.warn('Cannot update templates and records: businessId is missing');
@@ -224,12 +224,12 @@ export const handleModalSave = async ({
         }
 
         try {
-          // Prepare profiles with their templates - include ALL profiles, even those marked for deletion
+          // Prepare objects with their templates - include ALL objects, even those marked for deletion
           // The backend will handle deletion based on the action flag
-          const profilesWithTemplates = data.templateProfiles.map(profile => {
+          const objectsWithTemplates = data.templateObjects.map(object => {
             
-            // Use the templates from the profile (they already reflect the user's changes)
-            const profileTemplates = (profile.templates || []).filter(template => 
+            // Use the templates from the object (they already reflect the user's changes)
+            const objectTemplates = (object.templates || []).filter(template => 
               template.action !== "remove"
             ).map(template => {
               const { isModified, action, ...cleanTemplate } = template;
@@ -238,23 +238,23 @@ export const handleModalSave = async ({
             
             // Include action and isModified flags so backend knows what to do
             return {
-              id: profile.id,
-              name: profile.name,
-              templates: profileTemplates,
-              pipelines: profile.pipelines || [],
-              action: profile.action,
-              isModified: profile.isModified
+              id: object.id,
+              name: object.name,
+              templates: objectTemplates,
+              pipelines: object.pipelines || [],
+              action: object.action,
+              isModified: object.isModified
             };
           });
 
           // Check if there are any actual changes
           const hasProfileChanges = data.hasProfileChanges === true || 
-            (data.templateProfiles && data.templateProfiles.some(profile => 
-              profile.isModified || profile.action === 'add' || profile.action === 'update' || profile.action === 'remove'
+            (data.templateObjects && data.templateObjects.some(object => 
+              object.isModified || object.action === 'add' || object.action === 'update' || object.action === 'remove'
             ));
           
-          const hasTemplateChanges = data.templateProfiles.some(profile =>
-            profile.templates?.some(template => 
+          const hasTemplateChanges = data.templateObjects.some(object =>
+            object.templates?.some(template => 
               template.isModified || template.action === 'add' || template.action === 'remove'
             )
           );
@@ -265,29 +265,29 @@ export const handleModalSave = async ({
             return;
           }
 
-          const totalPipelines = profilesWithTemplates.reduce((total, profile) => total + (profile.pipelines?.length || 0), 0);
+          const totalPipelines = objectsWithTemplates.reduce((total, object) => total + (object.pipelines?.length || 0), 0);
 
           const result = await updateRecordTemplatesAndRecordsFunction({
             businessId,
-            profiles: profilesWithTemplates,
+            objects: objectsWithTemplates,
           });
 
           if (!result.success) {
-            throw new Error(result.error || 'Failed to update template profiles');
+            throw new Error(result.error || 'Failed to update template objects');
           }
 
-          // Update templateProfiles in context to ensure immediate UI update
-          // Filter out profiles marked for deletion since they will be deleted from Firestore
-          const profilesForContext = profilesWithTemplates.filter(profile => profile.action !== "remove");
+          // Update templateObjects in context to ensure immediate UI update
+          // Filter out objects marked for deletion since they will be deleted from Firestore
+          const objectsForContext = objectsWithTemplates.filter(object => object.action !== "remove");
           
-          if (setTemplateProfiles) {
-            setTemplateProfiles(profilesForContext);
+          if (setTemplateObjects) {
+            setTemplateObjects(objectsForContext);
           }
 
           // Update tempData to reflect the latest changes and reset editing state
           if (setTempData) {
             setTempData({
-              templateProfiles: profilesForContext,
+              templateObjects: objectsForContext,
               deletedHeaderKeys: data.deletedHeaderKeys || [],
               hasProfileChanges: false, // Reset since we just saved
               // Reset editing state so UI shows updated names
@@ -296,13 +296,13 @@ export const handleModalSave = async ({
             });
           }
         } catch (error) {
-          console.error('Error updating template profiles:', error);
-          alert(`Failed to update template profiles. Error: ${error.message}`);
+          console.error('Error updating template objects:', error);
+          alert(`Failed to update template objects. Error: ${error.message}`);
           return;
         }
       } else {
-        console.warn('No template profiles found to save. Data received:', {
-          templateProfiles: data?.templateProfiles,
+        console.warn('No template objects found to save. Data received:', {
+          templateObjects: data?.templateObjects,
           dataKeys: Object.keys(data || {})
         });
       }
@@ -630,7 +630,7 @@ export const renderModalContent = ({
   handleDeleteSheet,
   handleModalClose,
   resolvedRows,
-  templateProfiles,
+  templateObjects,
   handleSheetChange,
   handleSheetSave,
   handleFolderSave,
@@ -701,7 +701,7 @@ export const renderModalContent = ({
       return (
         <RecordsTemplate
           tempData={activeModal.data || {
-            templateProfiles: [...(templateProfiles || [])],
+            templateObjects: [...(templateObjects || [])],
             deletedHeaderKeys: [],
             hasProfileChanges: false
           }}
@@ -863,17 +863,17 @@ export const onOpenTransportModal = ({
 };
 
 export const onOpenRecordsTemplateModal = ({
-  templateProfiles,
+  templateObjects,
   setEditMode,
   setActiveModal,
   recordsTemplateModal,
 }) => {
-  if (!templateProfiles) return;
+  if (!templateObjects) return;
   setEditMode(false);
   setActiveModal({
     type: 'recordsTemplate',
     data: {
-      templateProfiles: [...(templateProfiles || [])],
+      templateObjects: [...(templateObjects || [])],
       deletedHeaderKeys: [],
       hasProfileChanges: false
     },

@@ -61,7 +61,7 @@ const RecordsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, recordTemplates, templateProfiles, headers, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
+  const { sheets, recordTemplates, templateObjects, headers, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecords
@@ -335,13 +335,13 @@ const RecordsEditor = ({
     const templateName = formData.typeOfRecords || (isEditing ? initialRowData?.typeOfRecords : selectedRecordType);
     const currentTemplate = recordTemplates?.find((t) => t.name === templateName);
     
-    if (!currentTemplate || !templateProfiles) {
+    if (!currentTemplate || !templateObjects) {
       return [];
     }
     
-    // Find the profile that contains this template
-    const profile = templateProfiles.find(e => e.id === currentTemplate.profileId);
-    const allPipelines = profile?.pipelines || [];
+    // Find the object that contains this template
+    const object = templateObjects.find(e => e.id === currentTemplate.objectId);
+    const allPipelines = object?.pipelines || [];
     
     // Filter pipelines that have this template as source
     const sourcePipelines = allPipelines.filter(pipeline => 
@@ -351,7 +351,7 @@ const RecordsEditor = ({
     // Filter out pipelines that have already been used for this record
     const usedPipelineIds = formData.usedPipelines || [];
     return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
-  }, [recordTemplates, templateProfiles, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecords]);
+  }, [recordTemplates, templateObjects, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecords]);
 
   // Execute pipeline to convert record to another type
   const executePipeline = useCallback((pipeline) => {
@@ -371,10 +371,10 @@ const RecordsEditor = ({
       linkId: formData.linkId, // Keep the same linkId to maintain connection
       typeOfRecords: targetTemplate.name, // Use template name for consistency
       typeOfProfile: (() => {
-        // Find the profile for target template to set typeOfProfile
-        if (targetTemplate.profileId && templateProfiles) {
-          const profile = templateProfiles.find(e => e.id === targetTemplate.profileId);
-          return profile ? profile.name : '';
+        // Find the object for target template to set typeOfProfile
+        if (targetTemplate.objectId && templateObjects) {
+          const object = templateObjects.find(e => e.id === targetTemplate.objectId);
+          return object ? object.name : '';
         }
         return '';
       })(),
@@ -443,10 +443,10 @@ const RecordsEditor = ({
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       typeOfRecords: isEditing ? initialRowData?.typeOfRecords : template.name,
       typeOfProfile: (() => {
-        // Find the profile for this template to set typeOfProfile
-        if (template.profileId && templateProfiles) {
-          const profile = templateProfiles.find(e => e.id === template.profileId);
-          return profile ? profile.name : '';
+        // Find the object for this template to set typeOfProfile
+        if (template.objectId && templateObjects) {
+          const object = templateObjects.find(e => e.id === template.objectId);
+          return object ? object.name : '';
         }
         return formData.typeOfProfile || '';
       })(),

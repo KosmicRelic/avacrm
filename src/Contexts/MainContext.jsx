@@ -23,7 +23,7 @@ export const MainContextProvider = ({ children }) => {
   const [records, setRecords] = useState([]);
   // Cache records per sheetId: { [sheetId]: recordsArray }
   const [recordsCache, setRecordsCache] = useState({});
-  const [templateProfiles, setTemplateProfiles] = useState([]);
+  const [templateObjects, setTemplateObjects] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
   const [tempData, setTempData] = useState(null);
@@ -59,7 +59,7 @@ export const MainContextProvider = ({ children }) => {
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedRecords = useMemo(() => records, [records]);
-  const memoizedTemplateProfiles = useMemo(() => templateProfiles, [templateProfiles]);
+  const memoizedTemplateObjects = useMemo(() => templateObjects, [templateObjects]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
@@ -210,7 +210,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setTemplateProfiles,
+                    setTemplateObjects,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
                   })
@@ -222,7 +222,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setTemplateProfiles,
+                    setTemplateObjects,
                     updateSheets: true,
                   })
                 );
@@ -238,7 +238,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/dashboard',
                   setSheets,
                   setRecords,
-                  setTemplateProfiles,
+                  setTemplateObjects,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -252,7 +252,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/metrics',
                   setSheets,
                   setRecords,
-                  setTemplateProfiles,
+                  setTemplateObjects,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -265,7 +265,7 @@ export const MainContextProvider = ({ children }) => {
                   businessId: fetchedBusinessId,
                   route: '/actions',
                   setActions,
-                  setTemplateProfiles,
+                  setTemplateObjects,
                 })
               );
             }
@@ -436,7 +436,7 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
-        setTemplateProfiles,
+        setTemplateObjects,
         setRecords: (fetchedRecords) => {
           setRecords(fetchedRecords);
           setRecordsCache((prev) => ({ ...prev, [sheetId]: fetchedRecords }));
@@ -664,8 +664,8 @@ export const MainContextProvider = ({ children }) => {
             }
           }
 
-          // NOTE: Template batch operations disabled - now handled via profile-based system in ModalUtils
-          // Templates are stored within templateProfiles and managed through RecordsTemplate modal
+          // NOTE: Template batch operations disabled - now handled via object-based system in ModalUtils
+          // Templates are stored within templateObjects and managed through RecordsTemplate modal
           // const modifiedRecordTemplates = recordTemplates.filter((template) => template.isModified);
           // for (const template of modifiedRecordTemplates) {
           //   const docRef = doc(stateConfig.recordTemplates.collectionPath(), template.docId);
@@ -937,18 +937,18 @@ export const MainContextProvider = ({ children }) => {
     isDarkTheme,
     setIsDarkTheme,
     themeRef,
-    templateProfiles,
-    setTemplateProfiles: (newProfiles) => {
-      if (shallowEqual(templateProfiles, newProfiles)) {
+    templateObjects,
+    setTemplateObjects: (newObjects) => {
+      if (shallowEqual(templateObjects, newObjects)) {
         return;
       }
-      setTemplateProfiles(newProfiles);
+      setTemplateObjects(newObjects);
     },
-    recordTemplates: templateProfiles?.flatMap(profile => 
-      (profile.templates || []).map(template => ({
+    recordTemplates: templateObjects?.flatMap(object => 
+      (object.templates || []).map(template => ({
         ...template,
-        profileId: profile.id,
-        profileName: profile.name
+        objectId: object.id,
+        objectName: object.name
       }))
     ) || [],
     tempData,
@@ -1013,7 +1013,7 @@ export const MainContextProvider = ({ children }) => {
         businessId,
         route: '/sheets',
         setRecords,
-        setTemplateProfiles,
+        setTemplateObjects,
         setMetrics,
         setDashboards,
         activeSheetName,

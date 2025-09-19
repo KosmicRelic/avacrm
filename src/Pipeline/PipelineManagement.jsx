@@ -5,8 +5,8 @@ import { IoAdd, IoGitBranch, IoCreate, IoTrash, IoCheckmark, IoClose } from 'rea
 import { updateRecordTemplatesAndRecordsFunction } from '../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
 const PipelineManagement = ({ 
-  templateProfiles, 
-  setTemplateProfiles, 
+  templateObjects, 
+  setTemplateObjects, 
   isDarkTheme, 
   businessId 
 }) => {
@@ -19,7 +19,7 @@ const PipelineManagement = ({
   const [selectedProfileId, setSelectedProfileId] = useState("");
 
   // Save changes to backend
-  const saveProfilesToBackend = useCallback(async (updatedProfiles) => {
+  const saveObjectsToBackend = useCallback(async (updatedObjects) => {
     if (!businessId) {
       console.error('No business ID provided');
       return false;
@@ -28,51 +28,51 @@ const PipelineManagement = ({
     try {
       await updateRecordTemplatesAndRecordsFunction({
         businessId,
-        profiles: updatedProfiles,
+        objects: updatedObjects,
       });
       return true;
     } catch (error) {
-      console.error('Failed to save profiles to backend:', error);
+      console.error('Failed to save objects to backend:', error);
       alert('Failed to save changes. Please try again.');
       return false;
     }
   }, [businessId]);
 
-  // Get all templates across all profiles for dropdown selection
+  // Get all templates across all objects for dropdown selection
   const getAllTemplates = useCallback(() => {
     const templates = [];
-    templateProfiles.forEach(profile => {
-      if (profile.templates && Array.isArray(profile.templates)) {
-        profile.templates.forEach(template => {
+    templateObjects.forEach(object => {
+      if (object.templates && Array.isArray(object.templates)) {
+        object.templates.forEach(template => {
           templates.push({
             ...template,
-            profileName: profile.name,
-            profileId: profile.id
+            objectName: object.name,
+            objectId: object.id
           });
         });
       }
     });
     return templates;
-  }, [templateProfiles]);
+  }, [templateObjects]);
 
   const allTemplates = getAllTemplates();
 
-  // Get all pipelines across all profiles
+  // Get all pipelines across all objects
   const getAllPipelines = useCallback(() => {
     const pipelines = [];
-    templateProfiles.forEach(profile => {
-      if (profile.pipelines && Array.isArray(profile.pipelines)) {
-        profile.pipelines.forEach(pipeline => {
+    templateObjects.forEach(object => {
+      if (object.pipelines && Array.isArray(object.pipelines)) {
+        object.pipelines.forEach(pipeline => {
           pipelines.push({
             ...pipeline,
-            profileName: profile.name,
-            profileId: profile.id
+            objectName: object.name,
+            objectId: object.id
           });
         });
       }
     });
     return pipelines;
-  }, [templateProfiles]);
+  }, [templateObjects]);
 
   const allPipelines = getAllPipelines();
 
@@ -121,7 +121,7 @@ const PipelineManagement = ({
   // Handle create/edit pipeline
   const handleSavePipeline = useCallback(async () => {
     if (!newPipelineName.trim() || !sourceTemplate || !targetTemplate || !selectedProfileId) {
-      alert("Please fill in all required fields (name, source template, target template, and profile).");
+      alert("Please fill in all required fields (name, source template, target template, and object).");
       return;
     }
 
@@ -152,29 +152,29 @@ const PipelineManagement = ({
       updatedAt: new Date().toISOString()
     };
 
-    const updatedProfiles = templateProfiles.map(profile => {
-      if (profile.id === selectedProfileId) {
-        const pipelines = profile.pipelines || [];
+    const updatedObjects = templateObjects.map(object => {
+      if (object.id === selectedProfileId) {
+        const pipelines = object.pipelines || [];
         
         if (editingPipelineId) {
           // Edit existing pipeline
           const updatedPipelines = pipelines.map(p => 
             p.id === editingPipelineId ? pipelineData : p
           );
-          return { ...profile, pipelines: updatedPipelines };
+          return { ...object, pipelines: updatedPipelines };
         } else {
           // Add new pipeline
-          return { ...profile, pipelines: [...pipelines, pipelineData] };
+          return { ...object, pipelines: [...pipelines, pipelineData] };
         }
       }
-      return profile;
+      return object;
     });
 
     // Save to backend
-    const saveSuccess = await saveProfilesToBackend(updatedProfiles);
+    const saveSuccess = await saveObjectsToBackend(updatedObjects);
     
     if (saveSuccess) {
-      setTemplateProfiles(updatedProfiles);
+      setTemplateObjects(updatedObjects);
       resetForm();
       alert(editingPipelineId ? "Pipeline updated successfully!" : "Pipeline created successfully!");
     }
@@ -185,9 +185,9 @@ const PipelineManagement = ({
     selectedProfileId, 
     fieldMappings, 
     editingPipelineId, 
-    templateProfiles,
-    saveProfilesToBackend,
-    setTemplateProfiles, 
+    templateObjects,
+    saveObjectsToBackend,
+    setTemplateObjects, 
     resetForm
   ]);
 
@@ -198,30 +198,30 @@ const PipelineManagement = ({
     setSourceTemplate(pipeline.sourceTemplate);
     setTargetTemplate(pipeline.targetTemplate);
     setFieldMappings(pipeline.fieldMappings || []);
-    setSelectedProfileId(pipeline.profileId);
+    setSelectedProfileId(pipeline.objectId);
     setShowCreateForm(true);
   }, []);
 
   // Handle delete pipeline
-  const handleDeletePipeline = useCallback(async (pipelineId, profileId, pipelineName) => {
+  const handleDeletePipeline = useCallback(async (pipelineId, objectId, pipelineName) => {
     if (window.confirm(`Are you sure you want to delete the pipeline "${pipelineName}"? This action cannot be undone.`)) {
-      const updatedProfiles = templateProfiles.map(profile => {
-        if (profile.id === profileId) {
-          const updatedPipelines = (profile.pipelines || []).filter(p => p.id !== pipelineId);
-          return { ...profile, pipelines: updatedPipelines };
+      const updatedObjects = templateObjects.map(object => {
+        if (object.id === objectId) {
+          const updatedPipelines = (object.pipelines || []).filter(p => p.id !== pipelineId);
+          return { ...object, pipelines: updatedPipelines };
         }
-        return profile;
+        return object;
       });
 
       // Save to backend
-      const saveSuccess = await saveProfilesToBackend(updatedProfiles);
+      const saveSuccess = await saveObjectsToBackend(updatedObjects);
       
       if (saveSuccess) {
-        setTemplateProfiles(updatedProfiles);
+        setTemplateObjects(updatedObjects);
         alert("Pipeline deleted successfully!");
       }
     }
-  }, [templateProfiles, saveProfilesToBackend, setTemplateProfiles]);
+  }, [templateObjects, saveObjectsToBackend, setTemplateObjects]);
 
   // Update field mappings when templates change
   useEffect(() => {
@@ -295,7 +295,7 @@ const PipelineManagement = ({
                         <IoCreate size={16} />
                       </button>
                       <button
-                        onClick={() => handleDeletePipeline(pipeline.id, pipeline.profileId, pipeline.name)}
+                        onClick={() => handleDeletePipeline(pipeline.id, pipeline.objectId, pipeline.name)}
                         className={`${styles.actionButton} ${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                         title="Delete Pipeline"
                       >
@@ -309,8 +309,8 @@ const PipelineManagement = ({
                       <span className={styles.templateName}>
                         {sourceTemplateObj?.name || pipeline.sourceTemplate}
                       </span>
-                      <span className={styles.profileTag}>
-                        {pipeline.profileName}
+                      <span className={styles.objectTag}>
+                        {pipeline.objectName}
                       </span>
                     </div>
                     <div className={`${styles.flowArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -320,8 +320,8 @@ const PipelineManagement = ({
                       <span className={styles.templateName}>
                         {targetTemplateObj?.name || pipeline.targetTemplate}
                       </span>
-                      <span className={styles.profileTag}>
-                        {targetTemplateObj?.profileName || 'Unknown'}
+                      <span className={styles.objectTag}>
+                        {targetTemplateObj?.objectName || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -378,10 +378,10 @@ const PipelineManagement = ({
                     onChange={(e) => setSelectedProfileId(e.target.value)}
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
-                    <option value="">Select profile...</option>
-                    {templateProfiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.name}
+                    <option value="">Select object...</option>
+                    {templateObjects.map((object) => (
+                      <option key={object.id} value={object.id}>
+                        {object.name}
                       </option>
                     ))}
                   </select>
@@ -399,7 +399,7 @@ const PipelineManagement = ({
                     <option value="">Select source template...</option>
                     {allTemplates.map((template) => (
                       <option key={template.docId} value={template.typeOfRecords}>
-                        {template.name} ({template.profileName})
+                        {template.name} ({template.objectName})
                       </option>
                     ))}
                   </select>
@@ -419,7 +419,7 @@ const PipelineManagement = ({
                       .filter(template => template.typeOfRecords !== sourceTemplate)
                       .map((template) => (
                         <option key={template.docId} value={template.typeOfRecords}>
-                          {template.name} ({template.profileName})
+                          {template.name} ({template.objectName})
                         </option>
                       ))}
                   </select>
@@ -513,7 +513,7 @@ const PipelineManagement = ({
 };
 
 PipelineManagement.propTypes = {
-  templateProfiles: PropTypes.arrayOf(
+  templateObjects: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
@@ -521,7 +521,7 @@ PipelineManagement.propTypes = {
       pipelines: PropTypes.array,
     })
   ).isRequired,
-  setTemplateProfiles: PropTypes.func.isRequired,
+  setTemplateObjects: PropTypes.func.isRequired,
   isDarkTheme: PropTypes.bool,
   businessId: PropTypes.string,
 };

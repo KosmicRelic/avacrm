@@ -1,7 +1,7 @@
 import { getAuth } from 'firebase/auth';
 import { app } from '../../../firebase'; // Adjust path to your Firebase config
 
-export const updateRecordTemplatesAndRecordsFunction = async ({ businessId, profiles, updates }) => {
+export const updateRecordTemplatesAndRecordsFunction = async ({ businessId, objects, updates }) => {
   try {
     const auth = getAuth(app);
     const token = await auth.currentUser?.getIdToken();
@@ -18,7 +18,7 @@ export const updateRecordTemplatesAndRecordsFunction = async ({ businessId, prof
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ businessId, profiles, updates }),
+        body: JSON.stringify({ businessId, objects, updates }),
       }
     );
 

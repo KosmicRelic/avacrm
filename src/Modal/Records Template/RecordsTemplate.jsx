@@ -19,8 +19,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   const { 
     isDarkTheme, 
     businessId: businessIdContext,
-    templateProfiles: contextTemplateProfiles,
-    setTemplateProfiles: contextSetTemplateProfiles
+    templateObjects: contextTemplateObjects,
+    setTemplateObjects: contextSetTemplateObjects
   } = useContext(MainContext);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
 
@@ -48,13 +48,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
   
-  // Profile management state - use local state to prevent Firestore overwrites
-  const [templateProfiles, setTemplateProfiles] = useState(() => {
-    const profiles = contextTemplateProfiles || [];
-    // Process profiles to ensure templates have proper structure
-    return profiles.map(profile => ({
-      ...profile,
-      templates: (profile.templates || []).map((t) => {
+  // Object management state - use local state to prevent Firestore overwrites
+  const [templateObjects, setTemplateObjects] = useState(() => {
+    const objects = contextTemplateObjects || [];
+    // Process objects to ensure templates have proper structure
+    return objects.map(object => ({
+      ...object,
+      templates: (object.templates || []).map((t) => {
         // Remove duplicate headers based on key
         const seenKeys = new Set();
         const uniqueHeaders = t.headers?.filter(header => {
@@ -81,11 +81,11 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       })
     }));
   });
-  const [selectedProfileIndex, setSelectedProfileIndex] = useState(null);
-  const [newProfileName, setNewProfileName] = useState("");
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [editingProfileIndex, setEditingProfileIndex] = useState(null);
-  const [editingProfileName, setEditingProfileName] = useState("");
+  const [selectedObjectIndex, setSelectedObjectIndex] = useState(null);
+  const [newObjectName, setNewObjectName] = useState("");
+  const [showObjectForm, setShowObjectForm] = useState(false);
+  const [editingObjectIndex, setEditingObjectIndex] = useState(null);
+  const [editingObjectName, setEditingObjectName] = useState("");
   
   // Pipeline management state
   const [newPipelineName, setNewPipelineName] = useState("");
@@ -101,34 +101,34 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   
   // Helper function to get all templates flattened
   const getAllTemplates = useCallback(() => {
-    return templateProfiles.flatMap(profile => 
-      (profile.templates || []).map(template => ({
+    return templateObjects.flatMap(object => 
+      (object.templates || []).map(template => ({
         ...template,
-        profileId: profile.id,
-        profileName: profile.name
+        objectId: object.id,
+        objectName: object.name
       }))
     );
-  }, [templateProfiles]);
+  }, [templateObjects]);
   
   const prevStepRef = useRef(currentStep);
-  const lastTempDataRef = useRef({ deletedHeaderKeys, templateProfiles });
+  const lastTempDataRef = useRef({ deletedHeaderKeys, templateObjects });
   const initialStateRef = useRef(null); // Track initial state to detect changes
 
   // Update tempData only when necessary (prevent infinite loop)
   useEffect(() => {
     if (
       !isEqual(lastTempDataRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
-      !isEqual(lastTempDataRef.current.templateProfiles, templateProfiles)
+      !isEqual(lastTempDataRef.current.templateObjects, templateObjects)
     ) {
       setTempData({ 
         deletedHeaderKeys, 
-        templateProfiles,
-        hasProfileChanges: hasChanges() // Pass the change detection result
+        templateObjects,
+        hasObjectChanges: hasChanges() // Pass the change detection result
       });
-      lastTempDataRef.current = { deletedHeaderKeys, templateProfiles };
+      lastTempDataRef.current = { deletedHeaderKeys, templateObjects };
     }
      
-  }, [deletedHeaderKeys, templateProfiles, setTempData]);
+  }, [deletedHeaderKeys, templateObjects, setTempData]);
 
   // Initialize initial state and detect changes
   useEffect(() => {
@@ -136,10 +136,10 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       // Store initial state when component mounts
       initialStateRef.current = {
         deletedHeaderKeys: [...deletedHeaderKeys],
-        templateProfiles: JSON.parse(JSON.stringify(templateProfiles))
+        templateObjects: JSON.parse(JSON.stringify(templateObjects))
       };
     }
-  }, [deletedHeaderKeys, templateProfiles]);
+  }, [deletedHeaderKeys, templateObjects]);
 
   // Function to detect if there are any changes from initial state
   const hasChanges = useCallback(() => {
@@ -147,39 +147,39 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     
     return (
       !isEqual(initialStateRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
-      !isEqual(initialStateRef.current.templateProfiles, templateProfiles)
+      !isEqual(initialStateRef.current.templateObjects, templateObjects)
     );
-  }, [deletedHeaderKeys, templateProfiles]);
+  }, [deletedHeaderKeys, templateObjects]);
 
   // Function to update tempData only if there are changes
   const updateTempDataIfChanged = useCallback(() => {
     if (hasChanges()) {
-      setTempData({ deletedHeaderKeys, templateProfiles });
-      lastTempDataRef.current = { deletedHeaderKeys, templateProfiles };
+      setTempData({ deletedHeaderKeys, templateObjects });
+      lastTempDataRef.current = { deletedHeaderKeys, templateObjects };
     }
-  }, [deletedHeaderKeys, templateProfiles, hasChanges, setTempData]);
+  }, [deletedHeaderKeys, templateObjects, hasChanges, setTempData]);
 
-  // Sync local templateProfiles with context on initial load
+  // Sync local templateObjects with context on initial load
   useEffect(() => {
-    if (contextTemplateProfiles && contextTemplateProfiles.length > 0 && templateProfiles.length === 0) {
-      setTemplateProfiles(contextTemplateProfiles);
+    if (contextTemplateObjects && contextTemplateObjects.length > 0 && templateObjects.length === 0) {
+      setTemplateObjects(contextTemplateObjects);
     }
-  }, [contextTemplateProfiles, templateProfiles.length, setTemplateProfiles]);
+  }, [contextTemplateObjects, templateObjects.length, setTemplateObjects]);
 
-  // Initialize tempData with initial values including templateProfiles
+  // Initialize tempData with initial values including templateObjects
   useEffect(() => {
     setTempData({ 
       deletedHeaderKeys, 
-      templateProfiles,
-      hasProfileChanges: hasChanges() // Include change detection
+      templateObjects,
+      hasObjectChanges: hasChanges() // Include change detection
     });
-    lastTempDataRef.current = { deletedHeaderKeys, templateProfiles };
+    lastTempDataRef.current = { deletedHeaderKeys, templateObjects };
     
     // Store initial state after first load
     if (!initialStateRef.current) {
       initialStateRef.current = {
         deletedHeaderKeys: [...deletedHeaderKeys],
-        templateProfiles: JSON.parse(JSON.stringify(templateProfiles))
+        templateObjects: JSON.parse(JSON.stringify(templateObjects))
       };
     }
   }, []); // Only run once on mount
@@ -187,26 +187,26 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   const initialEditingNameRef = useRef(null);
   
   useEffect(() => {
-    if (editingProfileIndex !== null) {
+    if (editingObjectIndex !== null) {
       // Store the initial name when editing starts
       if (initialEditingNameRef.current === null) {
-        initialEditingNameRef.current = templateProfiles[editingProfileIndex]?.name || "";
+        initialEditingNameRef.current = templateObjects[editingObjectIndex]?.name || "";
       }
       
-      // Check if the profile name in context has changed from the initial name
+      // Check if the object name in context has changed from the initial name
       // This indicates an external update (like successful save)
-      const currentProfile = templateProfiles[editingProfileIndex];
-      if (currentProfile && currentProfile.name !== initialEditingNameRef.current) {
-        // Profile name was updated externally, reset editing state
-        setEditingProfileIndex(null);
-        setEditingProfileName("");
+      const currentObject = templateObjects[editingObjectIndex];
+      if (currentObject && currentObject.name !== initialEditingNameRef.current) {
+        // Object name was updated externally, reset editing state
+        setEditingObjectIndex(null);
+        setEditingObjectName("");
         initialEditingNameRef.current = null;
       }
     } else {
       // Reset the ref when not editing
       initialEditingNameRef.current = null;
     }
-  }, [templateProfiles, editingProfileIndex]);
+  }, [templateObjects, editingObjectIndex]);
 
   // Reset header form
   const resetHeaderForm = useCallback(() => {
@@ -235,7 +235,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         goBack();
       }
     } else if (currentStep === 2) {
-      setSelectedProfileIndex(null);
+      setSelectedObjectIndex(null);
       goBack();
     } else {
       goBack();
@@ -245,9 +245,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
   const deleteHeader = useCallback(
     (index) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-      const profile = templateProfiles[selectedProfileIndex];
-      const template = profile.templates[selectedTemplateIndex];
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      const object = templateObjects[selectedObjectIndex];
+      const template = object.templates[selectedTemplateIndex];
       const header = template.headers[index];
       if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfRecords" || header.key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deleted.");
@@ -256,37 +256,37 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       const headerName = header.name;
       if (window.confirm(`Are you sure you want to delete the field "${headerName}"?`)) {
         setDeletedHeaderKeys((prev) => [...new Set([...prev, header.key])]); // Avoid duplicates
-        setTemplateProfiles((prev) => {
-          const newProfiles = [...prev];
-          const currentProfile = { ...newProfiles[selectedProfileIndex] };
-          const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+        setTemplateObjects((prev) => {
+          const newObjects = [...prev];
+          const currentObject = { ...newObjects[selectedObjectIndex] };
+          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
           const deletedKey = currentTemplate.headers[index].key;
           currentTemplate.headers = currentTemplate.headers.filter((_, i) => i !== index);
           currentTemplate.sections = currentTemplate.sections.map((section) => ({
             ...section,
             keys: section.keys.filter((k) => k !== deletedKey),
           }));
-          currentProfile.templates[selectedTemplateIndex] = {
+          currentObject.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          newProfiles[selectedProfileIndex] = currentProfile;
-          return newProfiles;
+          newObjects[selectedObjectIndex] = currentObject;
+          return newObjects;
         });
         setActiveHeaderIndex(null);
         setNavigationDirection("backward");
         goBack();
       }
     },
-    [selectedProfileIndex, selectedTemplateIndex, templateProfiles, goBack]
+    [selectedObjectIndex, selectedTemplateIndex, templateObjects, goBack]
   );
 
   const handleDeleteSection = useCallback(
     (index) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-      const profile = templateProfiles[selectedProfileIndex];
-      const template = profile.templates[selectedTemplateIndex];
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      const object = templateObjects[selectedObjectIndex];
+      const template = object.templates[selectedTemplateIndex];
       const section = template.sections[index];
       if (section.name === "Record Data") {
         alert("The 'Record Data' section cannot be deleted as it contains critical fields.");
@@ -299,28 +299,28 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
         setDeletedHeaderKeys((prev) => [...new Set([...prev, ...section.keys])]); // Avoid duplicates
-        setTemplateProfiles((prev) => {
-          const newProfiles = [...prev];
-          const currentProfile = { ...newProfiles[selectedProfileIndex] };
-          const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+        setTemplateObjects((prev) => {
+          const newObjects = [...prev];
+          const currentObject = { ...newObjects[selectedObjectIndex] };
+          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
           const deletedSection = currentTemplate.sections[index];
           currentTemplate.sections = currentTemplate.sections.filter((_, i) => i !== index);
           currentTemplate.headers = currentTemplate.headers.map((h) =>
             h.section === deletedSection.name ? { ...h, section: "", isUsed: false } : h
           );
-          currentProfile.templates[selectedTemplateIndex] = {
+          currentObject.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          newProfiles[selectedProfileIndex] = currentProfile;
-          return newProfiles;
+          newObjects[selectedObjectIndex] = currentObject;
+          return newObjects;
         });
         setNavigationDirection("backward");
         goBack();
       }
     },
-    [selectedProfileIndex, selectedTemplateIndex, templateProfiles, goBack]
+    [selectedObjectIndex, selectedTemplateIndex, templateObjects, goBack]
   );
 
   // Validate header name
@@ -345,9 +345,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
   // Add new header
   const addHeader = useCallback(() => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const existingHeaders = template.headers;
     if (!validateHeader(newHeaderName, existingHeaders)) return;
     if (!newHeaderSection) {
@@ -355,7 +355,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       return;
     }
     if (newHeaderSection === "Record Data") {
-      alert("The 'Record Data' section is reserved for 'ID', 'Type of Records', 'Type of Profile' and 'Assigned To' fields.");
+      alert("The 'Record Data' section is reserved for 'ID', 'Type of Records', 'Type of Object' and 'Assigned To' fields.");
       return;
     }
 
@@ -368,10 +368,10 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
     };
 
-    setTemplateProfiles((prev) => {
-      const newProfiles = [...prev];
-      const currentProfile = { ...newProfiles[selectedProfileIndex] };
-      const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+    setTemplateObjects((prev) => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[selectedObjectIndex] };
+      const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
       currentTemplate.headers = [...currentTemplate.headers, newHeader];
       currentTemplate.sections = currentTemplate.sections.map((section) => {
         if (section.name === newHeaderSection) {
@@ -379,13 +379,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         }
         return section;
       });
-      currentProfile.templates[selectedTemplateIndex] = {
+      currentObject.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || "update",
       };
-      newProfiles[selectedProfileIndex] = currentProfile;
-      return newProfiles;
+      newObjects[selectedObjectIndex] = currentObject;
+      return newObjects;
     });
     resetHeaderForm();
     setActiveHeaderIndex(null);
@@ -396,9 +396,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     newHeaderType,
     newHeaderSection,
     newHeaderOptions,
-    selectedProfileIndex,
+    selectedObjectIndex,
     selectedTemplateIndex,
-    templateProfiles,
+    templateObjects,
     validateHeader,
     resetHeaderForm,
     goBack,
@@ -407,9 +407,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   // Update existing header
   const updateHeader = useCallback(
     (index) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-      const profile = templateProfiles[selectedProfileIndex];
-      const template = profile.templates[selectedTemplateIndex];
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      const object = templateObjects[selectedObjectIndex];
+      const template = object.templates[selectedTemplateIndex];
       const existingHeaders = template.headers;
       if (!validateHeader(newHeaderName, existingHeaders, true, index)) return;
       if (!newHeaderSection) {
@@ -431,10 +431,10 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         return;
       }
 
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
         const headers = [...currentTemplate.headers];
         const sections = currentTemplate.sections.map((s) => ({ ...s, keys: [...s.keys] })); // Deep copy sections
         headers[index] = {
@@ -459,22 +459,22 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           });
         }
 
-        currentProfile.templates[selectedTemplateIndex] = {
+        currentObject.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           headers,
           sections,
           isModified: true,
           action: currentTemplate.action || "update",
         };
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
       resetHeaderForm();
       setActiveHeaderIndex(null);
       setNavigationDirection("backward");
       goBack();
     },
-    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedProfileIndex, selectedTemplateIndex, templateProfiles, validateHeader, resetHeaderForm, goBack]
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedObjectIndex, selectedTemplateIndex, templateObjects, validateHeader, resetHeaderForm, goBack]
   );
 
   // Save header (add or update)
@@ -518,28 +518,28 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     if (!hasInitialized.current) {
       hasInitialized.current = true;
       const steps = [
-        { title: "Template Profiles", rightButton: null },
+        { title: "Template Objects", rightButton: null },
         { title: "Record Templates", rightButton: null },
         {
           title: () =>
-            selectedProfileIndex !== null && selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]
-              ? templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex].name || "New Template"
+            selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]
+              ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Template"
               : "New Template",
           rightButton: null,
         },
         {
           title: () =>
-            selectedProfileIndex !== null && selectedTemplateIndex !== null &&
+            selectedObjectIndex !== null && selectedTemplateIndex !== null &&
             currentSectionIndex !== null &&
-            templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]
-              ? templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
+            templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]
+              ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].sections[currentSectionIndex].name || "Section"
               : "Section",
           rightButton: null,
         },
         {
           title: () =>
-            selectedProfileIndex !== null && selectedTemplateIndex !== null && activeHeaderIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]
-              ? templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex].name || "Edit Field"
+            selectedObjectIndex !== null && selectedTemplateIndex !== null && activeHeaderIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]
+              ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex].name || "Edit Field"
               : "Edit Field",
           rightButton: {
             label: "Save",
@@ -569,7 +569,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         leftButton: null,
       });
     }
-  }, [registerModalSteps, setModalConfig, selectedProfileIndex, selectedTemplateIndex, currentSectionIndex, templateProfiles, saveHeader]);
+  }, [registerModalSteps, setModalConfig, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, templateObjects, saveHeader]);
 
   // Update modal config
   useEffect(() => {
@@ -578,7 +578,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: "Template Profiles",
+        title: "Template Objects",
         backButtonTitle: "",
         leftButton: null,
         rightButton: null,
@@ -589,8 +589,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showDoneButton: true,
         showBackButton: true,
         title: "Record Templates",
-        backButtonTitle: "Template Profiles",
-        backButton: { label: "Template Profiles", onClick: handleBack },
+        backButtonTitle: "Template Objects",
+        backButton: { label: "Template Objects", onClick: handleBack },
         leftButton: null,
         rightButton: null,
       });
@@ -601,7 +601,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showBackButton: !editMode,
         backButtonTitle: "Record Templates",
         backButton: editMode ? null : { label: "Record Templates", onClick: handleBack },
-        title: selectedProfileIndex !== null && selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex] ? templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex].name || "New Template" : "New Template",
+        title: selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex] ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Template" : "New Template",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -619,7 +619,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
               isRemove: false,
               color: "blue",
             }
-          : selectedProfileIndex !== null && selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]
+          : selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]
           ? {
               label: "Edit",
               onClick: () => setEditMode(true),
@@ -634,9 +634,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showTitle: true,
         showDoneButton: false,
         showBackButton: !editMode,
-        backButtonTitle: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.name || "New Template",
-        backButton: editMode ? null : { label: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
-        title: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButtonTitle: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Template",
+        backButton: editMode ? null : { label: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
+        title: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -667,9 +667,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        backButtonTitle: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-        backButton: { label: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
-        title: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]?.name || "Edit Field",
+        backButtonTitle: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        title: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]?.name || "Edit Field",
         leftButton: null,
         rightButton: {
           label: "Save",
@@ -683,8 +683,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
-        backButtonTitle: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
-        backButton: { label: templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
+        backButtonTitle: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
+        backButton: { label: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section", onClick: handleBack },
         title: "Create New Field",
         leftButton: null,
         rightButton: {
@@ -700,7 +700,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       setNavigationDirection(currentStep > prevStepRef.current ? "forward" : "backward");
       prevStepRef.current = currentStep;
     }
-  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, templateProfiles, setModalConfig, saveHeader, handleBack]);
+  }, [currentStep, selectedTemplateIndex, currentSectionIndex, editMode, templateObjects, setModalConfig, saveHeader, handleBack]);
 
   // Confirm new template
   const confirmNewTemplate = useCallback(() => {
@@ -708,8 +708,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       alert("Please enter a template name.");
       return;
     }
-    if (selectedProfileIndex === null) {
-      alert("Please select a profile first.");
+    if (selectedObjectIndex === null) {
+      alert("Please select a object first.");
       return;
     }
     // Check for duplicate names across all templates
@@ -724,7 +724,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       docId: timestampId,
       name: newTemplateName.trim(),
       typeOfRecords: newTemplateName.trim(),
-      profileId: templateProfiles[selectedProfileIndex].id,
+      objectId: templateObjects[selectedObjectIndex].id,
       headers: [
         {
           key: "docId",
@@ -748,8 +748,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           isUsed: true,
         },
         {
-          key: "typeOfProfile",
-          name: "Type of Profile",
+          key: "typeOfObject",
+          name: "Type of Object",
           type: "text",
           section: "Record Data",
           isUsed: true,
@@ -769,58 +769,58 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         },
         {
           name: "Record Data",
-          keys: ["docId", "linkId", "typeOfRecords", "typeOfProfile", "assignedTo"],
+          keys: ["docId", "linkId", "typeOfRecords", "typeOfObject", "assignedTo"],
         },
       ],
       isModified: true,
       action: "add",
     };
 
-    setTemplateProfiles((prev) => {
-      const newProfiles = [...prev];
-      const currentProfile = { ...newProfiles[selectedProfileIndex] };
-      currentProfile.templates = [...currentProfile.templates, newTemplate];
-      newProfiles[selectedProfileIndex] = currentProfile;
-      return newProfiles;
+    setTemplateObjects((prev) => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[selectedObjectIndex] };
+      currentObject.templates = [...currentObject.templates, newTemplate];
+      newObjects[selectedObjectIndex] = currentObject;
+      return newObjects;
     });
-    setSelectedTemplateIndex(templateProfiles[selectedProfileIndex].templates.length);
+    setSelectedTemplateIndex(templateObjects[selectedObjectIndex].templates.length);
     setEditMode(false);
 
     setNavigationDirection("forward");
     goToStep(3);
-  }, [newTemplateName, getAllTemplates, selectedProfileIndex, templateProfiles, goToStep]);
+  }, [newTemplateName, getAllTemplates, selectedObjectIndex, templateObjects, goToStep]);
 
   // Add new section
   const addSection = useCallback(() => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    setTemplateProfiles((prev) => {
-      const newProfiles = [...prev];
-      const currentProfile = { ...newProfiles[selectedProfileIndex] };
-      const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    setTemplateObjects((prev) => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[selectedObjectIndex] };
+      const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
       const newSectionName = `Section ${currentTemplate.sections.length + 1}`;
       if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.toLowerCase())) {
         alert(`Section name "${newSectionName}" already exists. Please use a unique name.`);
         return prev;
       }
       currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName, keys: [] }];
-      currentProfile.templates[selectedTemplateIndex] = {
+      currentObject.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || "update",
       };
-      newProfiles[selectedProfileIndex] = currentProfile;
-      return newProfiles;
+      newObjects[selectedObjectIndex] = currentObject;
+      return newObjects;
     });
-  }, [selectedProfileIndex, selectedTemplateIndex, templateProfiles]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects]);
   
   // Update section name
   const updateSectionName = useCallback(
     (index, newName) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
         const currentSection = currentTemplate.sections[index];
         
         if (currentSection.name === "Record Data") {
@@ -842,23 +842,23 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         currentTemplate.headers = currentTemplate.headers.map((h) =>
           h.section === oldName ? { ...h, section: newName.trim() } : h
         );
-        currentProfile.templates[selectedTemplateIndex] = {
+        currentObject.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || "update",
         };
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
     },
-    [selectedProfileIndex, selectedTemplateIndex, templateProfiles]
+    [selectedObjectIndex, selectedTemplateIndex, templateObjects]
   );
 
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
     if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
       e.preventDefault();
@@ -869,12 +869,12 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     e.dataTransfer.effectAllowed = "move";
     const element = keyRefs.current.get(`${sectionIndex}-${index}`);
     if (element) element.classList.add(styles.dragging);
-  }, [selectedTemplateIndex, templateProfiles]);
+  }, [selectedTemplateIndex, templateObjects]);
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
     if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
       e.preventDefault();
@@ -893,34 +893,34 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       const element = keyRefs.current.get(`${sectionIndex}-${index}`);
       if (element) element.classList.add(styles.dragging);
     }
-  }, [selectedProfileIndex, selectedTemplateIndex, templateProfiles, styles.dragIcon]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, styles.dragIcon]);
 
   const handleDragOver = useCallback(
     (e, sectionIndex, index) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === index || selectedProfileIndex === null || selectedTemplateIndex === null) return;
+      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === index || selectedObjectIndex === null || selectedTemplateIndex === null) return;
 
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
         const newSections = [...currentTemplate.sections];
         const sectionKeys = [...newSections[sectionIndex].keys];
         const [draggedItem] = sectionKeys.splice(draggedIndex, 1);
         sectionKeys.splice(index, 0, draggedItem);
         newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
         currentTemplate.sections = newSections;
-        currentProfile.templates[selectedTemplateIndex] = {
+        currentObject.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || "update",
         };
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
       setTimeout(() => setDraggedIndex(index), 0);
     },
-    [draggedIndex, draggedSectionIndex, selectedProfileIndex, selectedTemplateIndex, templateProfiles]
+    [draggedIndex, draggedSectionIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]
   );
 
   const handleTouchMove = useCallback(
@@ -933,32 +933,32 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       const delta = Math.round((touchY - touchStartY) / itemHeight);
       const newIndex = Math.max(
         0,
-        Math.min(touchTargetIndex + delta, templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[sectionIndex]?.keys.length - 1 || 0)
+        Math.min(touchTargetIndex + delta, templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[sectionIndex]?.keys.length - 1 || 0)
       );
 
       if (newIndex !== draggedIndex) {
-        setTemplateProfiles((prev) => {
-          const newProfiles = [...prev];
-          const currentProfile = { ...newProfiles[selectedProfileIndex] };
-          const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+        setTemplateObjects((prev) => {
+          const newObjects = [...prev];
+          const currentObject = { ...newObjects[selectedObjectIndex] };
+          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
           const newSections = [...currentTemplate.sections];
           const sectionKeys = [...newSections[sectionIndex].keys];
           const [draggedItem] = sectionKeys.splice(draggedIndex, 1);
           sectionKeys.splice(newIndex, 0, draggedItem);
           newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
           currentTemplate.sections = newSections;
-          currentProfile.templates[selectedTemplateIndex] = {
+          currentObject.templates[selectedTemplateIndex] = {
             ...currentTemplate,
             isModified: true,
             action: currentTemplate.action || "update",
           };
-          newProfiles[selectedProfileIndex] = currentProfile;
-          return newProfiles;
+          newObjects[selectedObjectIndex] = currentObject;
+          return newObjects;
         });
         setTimeout(() => setDraggedIndex(newIndex), 0);
       }
     },
-    [draggedIndex, touchStartY, touchTargetIndex, selectedProfileIndex, selectedTemplateIndex, templateProfiles]
+    [draggedIndex, touchStartY, touchTargetIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -1002,54 +1002,54 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
   const handleSectionDragOver = useCallback((e, index) => {
     e.preventDefault();
-    if (draggedSectionOrderIndex === null || draggedSectionOrderIndex === index || selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    setTemplateProfiles((prev) => {
-      const newProfiles = [...prev];
-      const currentProfile = { ...newProfiles[selectedProfileIndex] };
-      const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+    if (draggedSectionOrderIndex === null || draggedSectionOrderIndex === index || selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    setTemplateObjects((prev) => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[selectedObjectIndex] };
+      const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
       const newSections = [...currentTemplate.sections];
       const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
       newSections.splice(index, 0, draggedSection);
       currentTemplate.sections = newSections;
-      currentProfile.templates[selectedTemplateIndex] = {
+      currentObject.templates[selectedTemplateIndex] = {
         ...currentTemplate,
         isModified: true,
         action: currentTemplate.action || 'update',
       };
-      newProfiles[selectedProfileIndex] = currentProfile;
-      return newProfiles;
+      newObjects[selectedObjectIndex] = currentObject;
+      return newObjects;
     });
     setDraggedSectionOrderIndex(index);
-  }, [draggedSectionOrderIndex, selectedProfileIndex, selectedTemplateIndex, templateProfiles]);
+  }, [draggedSectionOrderIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]);
 
   const handleSectionTouchMove = useCallback((e, index) => {
-    if (draggedSectionOrderIndex === null || sectionTouchStartY === null || selectedProfileIndex === null || selectedTemplateIndex === null) return;
+    if (draggedSectionOrderIndex === null || sectionTouchStartY === null || selectedObjectIndex === null || selectedTemplateIndex === null) return;
     e.preventDefault();
     const touchY = e.touches[0].clientY;
     const itemHeight = 44;
     const delta = Math.round((touchY - sectionTouchStartY) / itemHeight);
-    const template = templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex];
+    const template = templateObjects[selectedObjectIndex].templates[selectedTemplateIndex];
     const newIndex = Math.max(0, Math.min(sectionTouchTargetIndex + delta, template.sections.length - 1));
     if (newIndex !== draggedSectionOrderIndex) {
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
         const newSections = [...currentTemplate.sections];
         const [draggedSection] = newSections.splice(draggedSectionOrderIndex, 1);
         newSections.splice(newIndex, 0, draggedSection);
         currentTemplate.sections = newSections;
-        currentProfile.templates[selectedTemplateIndex] = {
+        currentObject.templates[selectedTemplateIndex] = {
           ...currentTemplate,
           isModified: true,
           action: currentTemplate.action || 'update',
         };
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
       setDraggedSectionOrderIndex(newIndex);
     }
-  }, [draggedSectionOrderIndex, sectionTouchStartY, sectionTouchTargetIndex, selectedProfileIndex, selectedTemplateIndex, templateProfiles]);
+  }, [draggedSectionOrderIndex, sectionTouchStartY, sectionTouchTargetIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]);
 
   const handleSectionDragEnd = useCallback(() => {
     const element = sectionRefs.current.get(draggedSectionOrderIndex);
@@ -1081,9 +1081,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   // Open template editor
   const handleOpenEditor = useCallback(
     (template = null) => {
-      if (template && selectedProfileIndex !== null) {
-        const profile = templateProfiles[selectedProfileIndex];
-        const templateIndex = profile.templates.findIndex((t) => t.name === template.name);
+      if (template && selectedObjectIndex !== null) {
+        const object = templateObjects[selectedObjectIndex];
+        const templateIndex = object.templates.findIndex((t) => t.name === template.name);
         if (templateIndex >= 0) {
           setSelectedTemplateIndex(templateIndex);
           setEditMode(false);
@@ -1099,175 +1099,175 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       setNavigationDirection("forward");
       goToStep(3);
     },
-    [selectedProfileIndex, templateProfiles, goToStep]
+    [selectedObjectIndex, templateObjects, goToStep]
   );
 
-  // Profile Management Functions
-  const createNewProfile = useCallback(async () => {
-    if (!newProfileName.trim()) {
-      alert("Please enter a profile name.");
+  // Object Management Functions
+  const createNewObject = useCallback(async () => {
+    if (!newObjectName.trim()) {
+      alert("Please enter a object name.");
       return;
     }
-    if (templateProfiles.some((profile) => profile.name.toLowerCase() === newProfileName.trim().toLowerCase())) {
-      alert("A profile with this name already exists. Please choose a unique name.");
+    if (templateObjects.some((object) => object.name.toLowerCase() === newObjectName.trim().toLowerCase())) {
+      alert("A object with this name already exists. Please choose a unique name.");
       return;
     }
 
-    const newProfile = {
+    const newObject = {
       id: uuidv4(),
-      name: newProfileName.trim(),
+      name: newObjectName.trim(),
       templates: [],
       pipelines: []
     };
 
     try {
-      // Add profile to local state first
-      const updatedProfiles = [...templateProfiles, newProfile];
-      setTemplateProfiles(updatedProfiles);
+      // Add object to local state first
+      const updatedObjects = [...templateObjects, newObject];
+      setTemplateObjects(updatedObjects);
       
       // Update tempData immediately
       setTempData({ 
         deletedHeaderKeys, 
-        templateProfiles: updatedProfiles,
-        hasProfileChanges: true // Mark that profiles have changed
+        templateObjects: updatedObjects,
+        hasObjectChanges: true // Mark that objects have changed
       });
       
-      setNewProfileName("");
-      setShowProfileForm(false);
+      setNewObjectName("");
+      setShowObjectForm(false);
     } catch (error) {
-      console.error('Error creating profile:', error);
-      alert('Failed to create profile. Please try again.');
+      console.error('Error creating object:', error);
+      alert('Failed to create object. Please try again.');
       
       // Restore previous state in case of error
-      setTemplateProfiles(templateProfiles);
+      setTemplateObjects(templateObjects);
     }
-  }, [newProfileName, templateProfiles, businessId, deletedHeaderKeys, setTempData]);
+  }, [newObjectName, templateObjects, businessId, deletedHeaderKeys, setTempData]);
 
-  const selectProfile = useCallback((profileIndex) => {
-    setSelectedProfileIndex(profileIndex);
+  const selectObject = useCallback((objectIndex) => {
+    setSelectedObjectIndex(objectIndex);
     setNavigationDirection("forward");
     goToStep(2);
   }, [goToStep]);
 
-  const deleteProfile = useCallback(async (profileIndex) => {
-    const profile = templateProfiles[profileIndex];
+  const deleteObject = useCallback(async (objectIndex) => {
+    const object = templateObjects[objectIndex];
     
-    // Check for templates in both local state and profile.templates (from backend)
+    // Check for templates in both local state and object.templates (from backend)
     const localTemplates = getAllTemplates().filter(template => 
-      template.profileId === profile.id && template.action !== "remove"
+      template.objectId === object.id && template.action !== "remove"
     );
-    const profileTemplatesFromBackend = profile.templates || [];
+    const objectTemplatesFromBackend = object.templates || [];
     
     // Count total templates (local + backend, avoiding duplicates)
     const allTemplateIds = new Set([
       ...localTemplates.map(t => t.docId),
-      ...profileTemplatesFromBackend.map(t => t.docId)
+      ...objectTemplatesFromBackend.map(t => t.docId)
     ]);
     
     if (allTemplateIds.size > 0) {
-      alert(`Cannot delete profile "${profile.name}" because it contains ${allTemplateIds.size} template(s). Please delete all templates first.`);
+      alert(`Cannot delete object "${object.name}" because it contains ${allTemplateIds.size} template(s). Please delete all templates first.`);
       return;
     }
-    if (window.confirm(`Are you sure you want to delete the profile "${profile.name}"? This action cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete the object "${object.name}"? This action cannot be undone.`)) {
       try {
-        // Mark profile for deletion instead of removing it from array
-        const updatedProfiles = templateProfiles.map((e, index) => 
-          index === profileIndex 
+        // Mark object for deletion instead of removing it from array
+        const updatedObjects = templateObjects.map((e, index) => 
+          index === objectIndex 
             ? { ...e, isModified: true, action: "remove" }
             : e
         );
-        setTemplateProfiles(updatedProfiles);
+        setTemplateObjects(updatedObjects);
         
       setTempData({ 
         deletedHeaderKeys, 
-        templateProfiles: updatedProfiles,
-        hasProfileChanges: true // Mark that profiles have changed
+        templateObjects: updatedObjects,
+        hasObjectChanges: true // Mark that objects have changed
       });
         
-        // Reset selected profile if it was the deleted one
-        if (selectedProfileIndex === profileIndex) {
-          setSelectedProfileIndex(null);
+        // Reset selected object if it was the deleted one
+        if (selectedObjectIndex === objectIndex) {
+          setSelectedObjectIndex(null);
         }
       } catch (error) {
-        console.error('Error marking profile for deletion:', error);
-        alert('Failed to mark profile for deletion. Please try again.');
+        console.error('Error marking object for deletion:', error);
+        alert('Failed to mark object for deletion. Please try again.');
         
-        // Restore profile in case of error
-        setTemplateProfiles(templateProfiles);
-        setSelectedProfileIndex(selectedProfileIndex);
+        // Restore object in case of error
+        setTemplateObjects(templateObjects);
+        setSelectedObjectIndex(selectedObjectIndex);
       }
     }
-  }, [templateProfiles, selectedProfileIndex, businessId, setTemplateProfiles, deletedHeaderKeys, setTempData]);
+  }, [templateObjects, selectedObjectIndex, businessId, setTemplateObjects, deletedHeaderKeys, setTempData]);
 
-  const updateProfileName = useCallback(async (profileIndex, newName) => {
+  const updateObjectName = useCallback(async (objectIndex, newName) => {
     if (!newName.trim()) return;
-    if (templateProfiles.some((profile, index) => index !== profileIndex && profile.name.toLowerCase() === newName.trim().toLowerCase())) {
-      alert("A profile with this name already exists. Please choose a unique name.");
+    if (templateObjects.some((object, index) => index !== objectIndex && object.name.toLowerCase() === newName.trim().toLowerCase())) {
+      alert("A object with this name already exists. Please choose a unique name.");
       return;
     }
 
-    const previousName = templateProfiles[profileIndex].name;
-    const profileId = templateProfiles[profileIndex].id;
+    const previousName = templateObjects[objectIndex].name;
+    const objectId = templateObjects[objectIndex].id;
 
     // Update local state only
-    const updatedProfiles = templateProfiles.map((profile, index) => 
-      index === profileIndex 
+    const updatedObjects = templateObjects.map((object, index) => 
+      index === objectIndex 
         ? { 
-            ...profile, 
+            ...object, 
             name: newName.trim(), 
             isModified: true, 
-            action: profile.action || "update",
-            templates: (profile.templates || []).map(template => ({
+            action: object.action || "update",
+            templates: (object.templates || []).map(template => ({
               ...template,
-              profileName: newName.trim()
+              objectName: newName.trim()
             }))
           }
-        : profile
+        : object
     );
     
-    setTemplateProfiles(updatedProfiles);
+    setTemplateObjects(updatedObjects);
     
     // Update tempData immediately to reflect the name change
     setTempData({ 
       deletedHeaderKeys, 
-      templateProfiles: updatedProfiles,
-      hasProfileChanges: true // Explicitly mark that profiles have changed
+      templateObjects: updatedObjects,
+      hasObjectChanges: true // Explicitly mark that objects have changed
     });
-  }, [templateProfiles, deletedHeaderKeys, setTempData]);
+  }, [templateObjects, deletedHeaderKeys, setTempData]);
 
-  const startEditingProfile = useCallback((profileIndex) => {
-    setEditingProfileIndex(profileIndex);
-    setEditingProfileName(templateProfiles[profileIndex].name);
-  }, [templateProfiles]);
+  const startEditingObject = useCallback((objectIndex) => {
+    setEditingObjectIndex(objectIndex);
+    setEditingObjectName(templateObjects[objectIndex].name);
+  }, [templateObjects]);
 
-  const cancelEditingProfile = useCallback(() => {
-    setEditingProfileIndex(null);
-    setEditingProfileName("");
+  const cancelEditingObject = useCallback(() => {
+    setEditingObjectIndex(null);
+    setEditingObjectName("");
   }, []);
 
-  const saveProfileName = useCallback(async () => {
-    if (editingProfileIndex !== null) {
-      await updateProfileName(editingProfileIndex, editingProfileName);
-      setEditingProfileIndex(null);
-      setEditingProfileName("");
+  const saveObjectName = useCallback(async () => {
+    if (editingObjectIndex !== null) {
+      await updateObjectName(editingObjectIndex, editingObjectName);
+      setEditingObjectIndex(null);
+      setEditingObjectName("");
     }
-  }, [editingProfileIndex, editingProfileName, updateProfileName]);
+  }, [editingObjectIndex, editingObjectName, updateObjectName]);
 
-  const getProfileTemplates = useCallback((profileIndex) => {
-    if (profileIndex === null || !templateProfiles[profileIndex]) return [];
-    const profile = templateProfiles[profileIndex];
-    return (profile.templates || []).filter(template => template.action !== "remove");
-  }, [templateProfiles]);
+  const getObjectTemplates = useCallback((objectIndex) => {
+    if (objectIndex === null || !templateObjects[objectIndex]) return [];
+    const object = templateObjects[objectIndex];
+    return (object.templates || []).filter(template => template.action !== "remove");
+  }, [templateObjects]);
 
-  // Get pipelines for a specific profile
-  const getProfilePipelines = useCallback((profileIndex) => {
-    if (profileIndex === null || !templateProfiles[profileIndex]) return [];
-    const profile = templateProfiles[profileIndex];
-    return profile.pipelines || [];
-  }, [templateProfiles]);
+  // Get pipelines for a specific object
+  const getObjectPipelines = useCallback((objectIndex) => {
+    if (objectIndex === null || !templateObjects[objectIndex]) return [];
+    const object = templateObjects[objectIndex];
+    return object.pipelines || [];
+  }, [templateObjects]);
 
-  // Add new pipeline to profile
-  const addProfilePipeline = useCallback(async () => {
+  // Add new pipeline to object
+  const addObjectPipeline = useCallback(async () => {
     if (!newPipelineName.trim() || !pipelineSourceTemplate || !pipelineTargetTemplate) {
       alert('Please fill in all required fields for the pipeline.');
       return;
@@ -1303,18 +1303,18 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
     try {
       // Update local state first
-      const updatedProfiles = templateProfiles.map((profile, index) =>
-        index === selectedProfileIndex
-          ? { ...profile, pipelines: [...(profile.pipelines || []), newPipeline] }
-          : profile
+      const updatedObjects = templateObjects.map((object, index) =>
+        index === selectedObjectIndex
+          ? { ...object, pipelines: [...(object.pipelines || []), newPipeline] }
+          : object
       );
       
-      setTemplateProfiles(updatedProfiles);
+      setTemplateObjects(updatedObjects);
       
       // Update tempData immediately
       setTempData({ 
         deletedHeaderKeys, 
-        templateProfiles: updatedProfiles 
+        templateObjects: updatedObjects 
       });
       
       // Reset form
@@ -1328,13 +1328,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       alert('Failed to create pipeline. Please try again.');
       
       // Restore previous state in case of error
-      setTemplateProfiles(templateProfiles);
+      setTemplateObjects(templateObjects);
     }
-  }, [selectedProfileIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, templateProfiles, businessId, deletedHeaderKeys, setTempData]);
+  }, [selectedObjectIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, templateObjects, businessId, deletedHeaderKeys, setTempData]);
 
   // Edit existing pipeline
-  const editProfilePipeline = useCallback((pipelineIndex) => {
-    const pipeline = getProfilePipelines(selectedProfileIndex)[pipelineIndex];
+  const editObjectPipeline = useCallback((pipelineIndex) => {
+    const pipeline = getObjectPipelines(selectedObjectIndex)[pipelineIndex];
     if (!pipeline) return;
 
     setEditingPipelineIndex(pipelineIndex);
@@ -1343,10 +1343,10 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     setPipelineTargetTemplate(pipeline.targetTemplateId);
     setPipelineFieldMappings(pipeline.fieldMappings || []);
     setShowPipelineForm(true);
-  }, [selectedProfileIndex, getProfilePipelines]);
+  }, [selectedObjectIndex, getObjectPipelines]);
 
   // Update existing pipeline
-  const updateProfilePipeline = useCallback(() => {
+  const updateObjectPipeline = useCallback(() => {
     if (editingPipelineIndex === null) return;
     
     if (!newPipelineName.trim() || !pipelineSourceTemplate || !pipelineTargetTemplate) {
@@ -1373,12 +1373,12 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       return;
     }
 
-    setTemplateProfiles(prev => {
-      const updated = prev.map((profile, index) =>
-        index === selectedProfileIndex
+    setTemplateObjects(prev => {
+      const updated = prev.map((object, index) =>
+        index === selectedObjectIndex
           ? {
-              ...profile,
-              pipelines: profile.pipelines?.map((pipeline, pIndex) =>
+              ...object,
+              pipelines: object.pipelines?.map((pipeline, pIndex) =>
                 pIndex === editingPipelineIndex
                   ? {
                       ...pipeline,
@@ -1391,7 +1391,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                   : pipeline
               ) || []
             }
-          : profile
+          : object
       );
       return updated;
     });
@@ -1403,23 +1403,23 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     setPipelineFieldMappings([]);
     setShowPipelineForm(false);
     setEditingPipelineIndex(null);
-  }, [selectedProfileIndex, editingPipelineIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings]);
+  }, [selectedObjectIndex, editingPipelineIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings]);
 
   // Delete pipeline
-  const deleteProfilePipeline = useCallback((pipelineIndex) => {
+  const deleteObjectPipeline = useCallback((pipelineIndex) => {
     if (!confirm('Are you sure you want to delete this pipeline?')) return;
 
-    setTemplateProfiles(prev =>
-      prev.map((profile, index) =>
-        index === selectedProfileIndex
+    setTemplateObjects(prev =>
+      prev.map((object, index) =>
+        index === selectedObjectIndex
           ? {
-              ...profile,
-              pipelines: profile.pipelines?.filter((_, pIndex) => pIndex !== pipelineIndex) || []
+              ...object,
+              pipelines: object.pipelines?.filter((_, pIndex) => pIndex !== pipelineIndex) || []
             }
-          : profile
+          : object
       )
     );
-  }, [selectedProfileIndex]);
+  }, [selectedObjectIndex]);
 
   // Cancel pipeline form
   const cancelPipelineForm = useCallback(() => {
@@ -1449,16 +1449,16 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   }, []);
 
   const getSourceTemplateHeaders = useCallback(() => {
-    if (!pipelineSourceTemplate || selectedProfileIndex === null) return [];
-    const sourceTemplate = getProfileTemplates(selectedProfileIndex).find(t => t.docId === pipelineSourceTemplate);
+    if (!pipelineSourceTemplate || selectedObjectIndex === null) return [];
+    const sourceTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipelineSourceTemplate);
     return sourceTemplate?.headers || [];
-  }, [pipelineSourceTemplate, selectedProfileIndex, getProfileTemplates]);
+  }, [pipelineSourceTemplate, selectedObjectIndex, getObjectTemplates]);
 
   const getTargetTemplateHeaders = useCallback(() => {
-    if (!pipelineTargetTemplate || selectedProfileIndex === null) return [];
-    const targetTemplate = getProfileTemplates(selectedProfileIndex).find(t => t.docId === pipelineTargetTemplate);
+    if (!pipelineTargetTemplate || selectedObjectIndex === null) return [];
+    const targetTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipelineTargetTemplate);
     return targetTemplate?.headers || [];
-  }, [pipelineTargetTemplate, selectedProfileIndex, getProfileTemplates]);
+  }, [pipelineTargetTemplate, selectedObjectIndex, getObjectTemplates]);
 
   // Auto-add initial field mapping when templates are selected
   useEffect(() => {
@@ -1470,11 +1470,11 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   // Update template name
   const updateTemplateName = useCallback(
     (newName) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
         
         // Check for duplicate names across all templates
         const allTemplates = getAllTemplates();
@@ -1491,12 +1491,12 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         currentTemplate.isModified = true;
         currentTemplate.action = currentTemplate.action || "update";
         
-        currentProfile.templates[selectedTemplateIndex] = currentTemplate;
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        currentObject.templates[selectedTemplateIndex] = currentTemplate;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
     },
-    [selectedProfileIndex, selectedTemplateIndex, templateProfiles, getAllTemplates]
+    [selectedObjectIndex, selectedTemplateIndex, templateObjects, getAllTemplates]
   );
 
   // Edit section
@@ -1512,15 +1512,15 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   // Toggle key selection
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
+      if (selectedObjectIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
       if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex], headers: [...currentProfile.templates[selectedTemplateIndex].headers] };
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex], headers: [...currentObject.templates[selectedTemplateIndex].headers] };
         const newSections = [...currentTemplate.sections];
         const section = { ...newSections[sectionIndex], keys: [...newSections[sectionIndex].keys] };
         const isSelected = section.keys.includes(key);
@@ -1536,27 +1536,27 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         );
         currentTemplate.isModified = true;
         currentTemplate.action = currentTemplate.action || "update";
-        currentProfile.templates[selectedTemplateIndex] = currentTemplate;
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        currentObject.templates[selectedTemplateIndex] = currentTemplate;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
     },
-    [selectedProfileIndex, selectedTemplateIndex]
+    [selectedObjectIndex, selectedTemplateIndex]
   );
 
   // Delete key from section
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
+      if (selectedObjectIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
       if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
         alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
-        setTemplateProfiles((prev) => {
-          const newProfiles = [...prev];
-          const currentProfile = { ...newProfiles[selectedProfileIndex] };
-          const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex], headers: [...currentProfile.templates[selectedTemplateIndex].headers] };
+        setTemplateObjects((prev) => {
+          const newObjects = [...prev];
+          const currentObject = { ...newObjects[selectedObjectIndex] };
+          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex], headers: [...currentObject.templates[selectedTemplateIndex].headers] };
           const newSections = [...currentTemplate.sections];
           newSections[sectionIndex].keys = newSections[sectionIndex].keys.filter((k) => k !== key);
           currentTemplate.sections = newSections;
@@ -1565,20 +1565,20 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           );
           currentTemplate.isModified = true;
           currentTemplate.action = currentTemplate.action || "update";
-          currentProfile.templates[selectedTemplateIndex] = currentTemplate;
-          newProfiles[selectedProfileIndex] = currentProfile;
-          return newProfiles;
+          currentObject.templates[selectedTemplateIndex] = currentTemplate;
+          newObjects[selectedObjectIndex] = currentObject;
+          return newObjects;
         });
       }
     },
-    [selectedProfileIndex, selectedTemplateIndex]
+    [selectedObjectIndex, selectedTemplateIndex]
   );
 
   // Filter headers for search
   const filteredHeaders = useCallback(() => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return [];
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    if (selectedObjectIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return [];
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
 
     const usedKeys = template.sections
       .flatMap((section) => section.keys) || [];
@@ -1602,40 +1602,40 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       seenKeys.add(header.key);
       return true;
     });
-  }, [templateProfiles, selectedProfileIndex, selectedTemplateIndex, currentSectionIndex, searchQuery]);
+  }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, searchQuery]);
 
   // Delete template
   const handleDeleteTemplate = useCallback(() => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const templateName = template.name;
     if (window.confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
-      setTemplateProfiles((prev) => {
-        const newProfiles = [...prev];
-        const currentProfile = { ...newProfiles[selectedProfileIndex] };
-        currentProfile.templates = currentProfile.templates.map((template, i) =>
+      setTemplateObjects((prev) => {
+        const newObjects = [...prev];
+        const currentObject = { ...newObjects[selectedObjectIndex] };
+        currentObject.templates = currentObject.templates.map((template, i) =>
           i === selectedTemplateIndex
             ? { ...template, isModified: true, action: "remove" }
             : template
         );
-        newProfiles[selectedProfileIndex] = currentProfile;
-        return newProfiles;
+        newObjects[selectedObjectIndex] = currentObject;
+        return newObjects;
       });
       setSelectedTemplateIndex(null);
       setEditMode(false);
       setNavigationDirection("backward");
       goToStep(2);
     }
-  }, [selectedProfileIndex, selectedTemplateIndex, templateProfiles, goToStep]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, goToStep]);
 
   // Edit header
   const handleEditHeader = useCallback(
     (index) => {
-      if (selectedProfileIndex === null || selectedTemplateIndex === null) return;
+      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
       setActiveHeaderIndex(index);
-      const profile = templateProfiles[selectedProfileIndex];
-      const template = profile.templates[selectedTemplateIndex];
+      const object = templateObjects[selectedObjectIndex];
+      const template = object.templates[selectedTemplateIndex];
       const header = template.headers[index];
       setNewHeaderName(header.name);
       setNewHeaderType(header.type || "text");
@@ -1644,30 +1644,30 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       setNavigationDirection("forward");
       goToStep(5);
     },
-    [selectedProfileIndex, selectedTemplateIndex, templateProfiles, goToStep]
+    [selectedObjectIndex, selectedTemplateIndex, templateObjects, goToStep]
   );
 
   // Create new header
   const handleCreateHeader = useCallback(() => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return;
+    if (selectedObjectIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return;
     setActiveHeaderIndex(-1);
     resetHeaderForm();
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const currentSectionName = template.sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
     goToStep(6);
-  }, [resetHeaderForm, goToStep, templateProfiles, selectedProfileIndex, selectedTemplateIndex, currentSectionIndex]);
+  }, [resetHeaderForm, goToStep, templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
 
   // Export records for the current template
   const exportRecords = useCallback(async () => {
-    if (selectedProfileIndex === null || selectedTemplateIndex === null) {
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) {
       alert('No template selected.');
       return;
     }
-    const profile = templateProfiles[selectedProfileIndex];
-    const template = profile.templates[selectedTemplateIndex];
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
     const typeOfRecords = template.name;
     if (!typeOfRecords || !businessId) {
       alert('Missing template name or business ID.');
@@ -1810,7 +1810,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       console.error('Export error:', err);
       alert('Failed to export records.');
     }
-  }, [selectedProfileIndex, selectedTemplateIndex, templateProfiles, businessId]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, businessId]);
 
 
 
@@ -1835,18 +1835,18 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
             {step === 1 && (
               <>
                 <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Profile</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Profiles help organize your record templates into logical groups.</p>
+                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Object</h2>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Objects help organize your record templates into logical groups.</p>
                   <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                     <div
-                      onClick={() => setShowProfileForm(true)}
+                      onClick={() => setShowObjectForm(true)}
                       className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                       role="button"
-                      aria-label="Add New Profile"
+                      aria-label="Add New Object"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
-                          setShowProfileForm(true);
+                          setShowObjectForm(true);
                         }
                       }}
                     >
@@ -1854,8 +1854,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                         <FaPlus size={24} />
                       </div>
                       <div className={styles.recordContent}>
-                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Profile</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new profile to group your templates</p>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Object</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new object to group your templates</p>
                       </div>
                       <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <IoChevronForward size={16} />
@@ -1863,53 +1863,53 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     </div>
                   </div>
                   
-                  {showProfileForm && (
+                  {showObjectForm && (
                     <div className={`${styles.formSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Profile</h3>
+                      <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Object</h3>
                       <input
                         type="text"
-                        value={newProfileName}
-                        onChange={(e) => setNewProfileName(e.target.value)}
-                        placeholder="Profile Name"
+                        value={newObjectName}
+                        onChange={(e) => setNewObjectName(e.target.value)}
+                        placeholder="Object Name"
                         className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                         autoFocus
                       />
                       <div className={styles.formActions}>
                         <button
                           onClick={() => {
-                            setShowProfileForm(false);
-                            setNewProfileName("");
+                            setShowObjectForm(false);
+                            setNewObjectName("");
                           }}
                           className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                         >
                           Cancel
                         </button>
                         <button
-                          onClick={createNewProfile}
+                          onClick={createNewObject}
                           className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          disabled={!newProfileName.trim()}
+                          disabled={!newObjectName.trim()}
                         >
-                          Create Profile
+                          Create Object
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                {templateProfiles.length > 0 && (
+                {templateObjects.length > 0 && (
                   <div className={styles.section}>
-                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Profiles</h2>
-                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select a profile to manage its templates.</p>
+                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Objects</h2>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select a object to manage its templates.</p>
                     <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {templateProfiles
-                        .map((profile, originalIndex) => ({ profile, originalIndex }))
-                        .filter(({ profile }) => profile.action !== "remove")
-                        .map(({ profile, originalIndex }) => (
+                      {templateObjects
+                        .map((object, originalIndex) => ({ object, originalIndex }))
+                        .filter(({ object }) => object.action !== "remove")
+                        .map(({ object, originalIndex }) => (
                         <div
-                          key={profile.id}
+                          key={object.id}
                           className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                           role="button"
-                          aria-label={`Open ${profile.name}`}
+                          aria-label={`Open ${object.name}`}
                           tabIndex={0}
                         >
                           <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -1917,27 +1917,27 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                           </div>
                           <div 
                             className={styles.recordContent}
-                            onClick={() => editingProfileIndex !== originalIndex && selectProfile(originalIndex)}
+                            onClick={() => editingObjectIndex !== originalIndex && selectObject(originalIndex)}
                             onKeyDown={(e) => {
-                              if ((e.key === "Enter" || e.key === " ") && editingProfileIndex !== originalIndex) {
-                                selectProfile(originalIndex);
+                              if ((e.key === "Enter" || e.key === " ") && editingObjectIndex !== originalIndex) {
+                                selectObject(originalIndex);
                               }
                             }}
                           >
-                            {editingProfileIndex === originalIndex ? (
+                            {editingObjectIndex === originalIndex ? (
                               <div className={styles.editingContent}>
                                 <input
                                   type="text"
-                                  value={editingProfileName}
-                                  onChange={(e) => setEditingProfileName(e.target.value)}
-                                  className={`${styles.profileNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                  value={editingObjectName}
+                                  onChange={(e) => setEditingObjectName(e.target.value)}
+                                  className={`${styles.objectNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   onClick={(e) => e.stopPropagation()}
                                   onKeyDown={(e) => {
                                     e.stopPropagation();
                                     if (e.key === 'Enter') {
-                                      saveProfileName();
+                                      saveObjectName();
                                     } else if (e.key === 'Escape') {
-                                      cancelEditingProfile();
+                                      cancelEditingObject();
                                     }
                                   }}
                                   autoFocus
@@ -1946,17 +1946,17 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      saveProfileName();
+                                      saveObjectName();
                                     }}
                                     className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                                    disabled={!editingProfileName.trim()}
+                                    disabled={!editingObjectName.trim()}
                                   >
                                     <FaCheck size={12} />
                                   </button>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      cancelEditingProfile();
+                                      cancelEditingObject();
                                     }}
                                     className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   >
@@ -1966,33 +1966,33 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                               </div>
                             ) : (
                               <>
-                                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{profile.name}</h3>
+                                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{object.name}</h3>
                                 <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {getProfileTemplates(originalIndex).length} template{getProfileTemplates(originalIndex).length !== 1 ? 's' : ''}
+                                  {getObjectTemplates(originalIndex).length} template{getObjectTemplates(originalIndex).length !== 1 ? 's' : ''}
                                 </p>
                               </>
                             )}
                           </div>
-                          {editingProfileIndex !== originalIndex && (
+                          {editingObjectIndex !== originalIndex && (
                             <>
                               <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                 <IoChevronForward size={16} />
                               </div>
-                              <div className={styles.profileActions}>
+                              <div className={styles.objectActions}>
                                 <div 
                                   className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    startEditingProfile(originalIndex);
+                                    startEditingObject(originalIndex);
                                   }}
                                 >
                                   <FaEdit size={12} />
                                 </div>
                                 <div 
-                                  className={`${styles.profileDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                  className={`${styles.objectDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteProfile(originalIndex);
+                                    deleteObject(originalIndex);
                                   }}
                                 >
                                   <FaTrash size={12} />
@@ -2010,11 +2010,11 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
             {step === 2 && (
               <>
-                {selectedProfileIndex !== null && templateProfiles[selectedProfileIndex] && templateProfiles[selectedProfileIndex].action !== "remove" ? (
+                {selectedObjectIndex !== null && templateObjects[selectedObjectIndex] && templateObjects[selectedObjectIndex].action !== "remove" ? (
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record data structure in {templateProfiles[selectedProfileIndex].name}.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record data structure in {templateObjects[selectedObjectIndex].name}.</p>
                       <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <div
                           onClick={() => handleOpenEditor()}
@@ -2042,12 +2042,12 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       </div>
                     </div>
                     
-                    {getProfileTemplates(selectedProfileIndex).length > 0 && (
+                    {getObjectTemplates(selectedObjectIndex).length > 0 && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Templates</h2>
-                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing record templates in {templateProfiles[selectedProfileIndex].name}.</p>
+                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing record templates in {templateObjects[selectedObjectIndex].name}.</p>
                         <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {getProfileTemplates(selectedProfileIndex).map((template, index) => (
+                          {getObjectTemplates(selectedObjectIndex).map((template, index) => (
                             <div
                               key={template.name || `template-${index}`}
                               onClick={() => handleOpenEditor(template)}
@@ -2082,8 +2082,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     
                     {/* Pipelines Section */}
                     <div className={styles.section}>
-                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Profile Pipelines</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move records between templates in {templateProfiles[selectedProfileIndex].name}.</p>
+                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Object Pipelines</h2>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move records between templates in {templateObjects[selectedObjectIndex].name}.</p>
                       
                       {/* Add Pipeline Button */}
                       <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -2138,7 +2138,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                               className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                             >
                               <option value="">Select source template...</option>
-                              {getProfileTemplates(selectedProfileIndex).map((template) => (
+                              {getObjectTemplates(selectedObjectIndex).map((template) => (
                                 <option key={template.docId} value={template.docId}>
                                   {template.name}
                                 </option>
@@ -2154,7 +2154,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                               className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                             >
                               <option value="">Select target template...</option>
-                              {getProfileTemplates(selectedProfileIndex).map((template) => (
+                              {getObjectTemplates(selectedObjectIndex).map((template) => (
                                 <option key={template.docId} value={template.docId}>
                                   {template.name}
                                 </option>
@@ -2240,7 +2240,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                               Cancel
                             </button>
                             <button
-                              onClick={editingPipelineIndex !== null ? updateProfilePipeline : addProfilePipeline}
+                              onClick={editingPipelineIndex !== null ? updateObjectPipeline : addObjectPipeline}
                               className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                               disabled={
                                 !newPipelineName.trim() || 
@@ -2257,13 +2257,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       )}
                       
                       {/* Existing Pipelines */}
-                      {getProfilePipelines(selectedProfileIndex).length > 0 && (
+                      {getObjectPipelines(selectedObjectIndex).length > 0 && (
                         <div className={styles.existingPipelines}>
                           <h3 className={`${styles.subsectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h3>
                           <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {getProfilePipelines(selectedProfileIndex).map((pipeline, index) => {
-                              const sourceTemplate = getProfileTemplates(selectedProfileIndex).find(t => t.docId === pipeline.sourceTemplateId);
-                              const targetTemplate = getProfileTemplates(selectedProfileIndex).find(t => t.docId === pipeline.targetTemplateId);
+                            {getObjectPipelines(selectedObjectIndex).map((pipeline, index) => {
+                              const sourceTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.sourceTemplateId);
+                              const targetTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.targetTemplateId);
                               
                               return (
                                 <div
@@ -2286,14 +2286,14 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                                   </div>
                                   <div className={styles.recordActions}>
                                     <button
-                                      onClick={() => editProfilePipeline(index)}
+                                      onClick={() => editObjectPipeline(index)}
                                       className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                       aria-label="Edit pipeline"
                                     >
                                       <IoCreate size={16} />
                                     </button>
                                     <button
-                                      onClick={() => deleteProfilePipeline(index)}
+                                      onClick={() => deleteObjectPipeline(index)}
                                       className={`${styles.actionButton} ${styles.dangerButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                                       aria-label="Delete pipeline"
                                     >
@@ -2310,8 +2310,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                   </>
                 ) : (
                   <div className={styles.section}>
-                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>No Profile Selected</h2>
-                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Please select a profile first to manage templates.</p>
+                    <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>No Object Selected</h2>
+                    <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Please select a object first to manage templates.</p>
                   </div>
                 )}
               </>
@@ -2319,14 +2319,14 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
             {step === 3 && (
               <>
-                {selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex] ? (
+                {selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex] ? (
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Template Details</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your template name and structure.</p>
                       <input
                         type="text"
-                        value={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].name || ""}
+                        value={templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].name || ""}
                         onChange={(e) => updateTemplateName(e.target.value)}
                         placeholder="Template Name"
                         className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -2392,7 +2392,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Organize your record data into logical sections.</p>
                       <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections.map((section, index) => (
+                        {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections.map((section, index) => (
                         <div
                           ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
                           key={section.name || `section-${index}`}
@@ -2491,18 +2491,18 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
             {step === 4 &&
               selectedTemplateIndex !== null &&
               currentSectionIndex !== null &&
-              templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex] && (
+              templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex] && (
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Section Configuration</h2>
                   <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Customize the section name and manage its fields.</p>
                   <input
                     type="text"
-                    value={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
+                    value={templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name || ""}
                     onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                     placeholder="Section Name"
-                    disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data" || !editMode}
+                    disabled={templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data" || !editMode}
                   />
                 </div>
                 {!editMode && (
@@ -2540,13 +2540,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                   <div className={styles.section}>
                     <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Fields in Section</h3>
                     <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>These fields are currently included in this section.</p>
-                    {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
-                      const header = templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
+                    {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.map((key, index) => {
+                      const header = templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers.find((h) => h.key === key) || {
                         key,
                         name: key,
                         type: "text",
                       };
-                      const headerIndex = templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
+                      const headerIndex = templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
                       const isProtected = header.key === "docId" || header.key === "typeOfRecords" || header.key === "assignedTo";
                       return (
                         <div
@@ -2575,7 +2575,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
                                 <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                                  {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
                                     header.key
                                   ) ? (
                                     <FaRegCheckCircle size={18} className={styles.checked} />
@@ -2621,7 +2621,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       />
                     </div>
                     {filteredHeaders().map((header) => {
-                      const headerIndex = templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers.findIndex(
+                      const headerIndex = templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers.findIndex(
                         (h) => h.key === header.key
                       );
                       return (
@@ -2641,7 +2641,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
                                 <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                                  {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
+                                  {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].keys.includes(
                                     header.key
                                   ) ? (
                                     <FaRegCheckCircle size={18} className={styles.checked} />
@@ -2670,7 +2670,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     <button
                       className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                       onClick={() => handleDeleteSection(currentSectionIndex)}
-                      disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data"}
+                      disabled={templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data"}
                     >
                       Delete Section
                     </button>
@@ -2682,7 +2682,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
             {step === 5 &&
               selectedTemplateIndex !== null &&
               activeHeaderIndex !== null &&
-              templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
+              templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex] && (
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Configuration</h2>
@@ -2691,7 +2691,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Prevent focus/edit for id, typeOfRecords, typeOfProfile and assignedTo */}
+                    {/* Prevent focus/edit for id, typeOfRecords, typeOfObject and assignedTo */}
                     <input
                       type="text"
                       value={newHeaderName}
@@ -2699,8 +2699,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       onKeyPress={handleKeyPress}
                       placeholder="Field Name"
                       className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      disabled={['docId', 'typeOfRecords', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
-                      tabIndex={['docId', 'typeOfRecords', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
+                      disabled={['docId', 'typeOfRecords', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                      tabIndex={['docId', 'typeOfRecords', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                     />
                     <div className={styles.fieldContainer}>
                       <select
@@ -2760,7 +2760,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     <div className={styles.editActionsButtons}>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key);
+                          navigator.clipboard.writeText(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key);
                           setCopiedHeaderId(true);
                           setTimeout(() => setCopiedHeaderId(false), 1200);
                         }}
@@ -2769,9 +2769,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       >
                         {copiedHeaderId ? "Copied!" : "Copy Header Key"}
                       </button>
-                      {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
-                        templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfRecords" &&
-                        templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
+                      {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
+                        templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfRecords" &&
+                        templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
                           <button
                             onClick={() => deleteHeader(activeHeaderIndex)}
                             className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -2821,7 +2821,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                     >
                       <option value="">Select Section</option>
-                      {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections
+                      {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections
                         .filter((section) => section.name !== "Record Data")
                         .map((section, index) => (
                           <option key={index} value={section.name}>
@@ -2875,7 +2875,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
 
 RecordsTemplate.propTypes = {
   tempData: PropTypes.shape({
-    templateProfiles: PropTypes.arrayOf(
+    templateObjects: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string,
         name: PropTypes.string,
@@ -2909,7 +2909,7 @@ RecordsTemplate.propTypes = {
       })
     ),
     deletedHeaderKeys: PropTypes.arrayOf(PropTypes.string),
-    hasProfileChanges: PropTypes.bool,
+    hasObjectChanges: PropTypes.bool,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   businessId: PropTypes.string,

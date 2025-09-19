@@ -13,7 +13,7 @@ const fetchUserData = async ({
   route,
   setSheets,
   setRecords,
-  setTemplateProfiles,
+  setTemplateObjects,
   setMetrics,
   setDashboards,
   setActions,
@@ -258,28 +258,28 @@ const fetchUserData = async ({
 
           unsubscribeFunctions.push(sheetsUnsubscribe, structureUnsubscribe);
         }
-        // PHASE 2: Defer templateProfiles, metrics, dashboards fetch to background
+        // PHASE 2: Defer templateObjects, metrics, dashboards fetch to background
         setTimeout(() => {
-          // Set up real-time listener for template profiles (new structure)
-          const templateProfilesUnsubscribe = onSnapshot(
-            collection(db, 'businesses', businessId, 'templateProfiles'),
-            (templateProfilesSnapshot) => {
-              // Store original profiles for pipeline access
-              if (setTemplateProfiles) {
-                const profiles = templateProfilesSnapshot.docs.map((doc) => ({
+          // Set up real-time listener for template objects (new structure)
+          const templateObjectsUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'templateObjects'),
+            (templateObjectsSnapshot) => {
+              // Store original objects for pipeline access
+              if (setTemplateObjects) {
+                const objects = templateObjectsSnapshot.docs.map((doc) => ({
                   id: doc.id,
                   ...doc.data(),
                 }));
-                setTemplateProfiles(profiles);
+                setTemplateObjects(objects);
               }
             },
             (error) => {
-              console.error('Error in template profiles real-time listener:', error);
+              console.error('Error in template objects real-time listener:', error);
             }
           );
           
           // Store the unsubscribe function
-          unsubscribeFunctions.push(templateProfilesUnsubscribe);
+          unsubscribeFunctions.push(templateObjectsUnsubscribe);
           
           // Set up real-time listener for metrics
           const metricsUnsubscribe = onSnapshot(

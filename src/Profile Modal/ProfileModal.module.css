@@ -1,4 +1,4 @@
-.profileOverlay {
+.objectOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -8,21 +8,21 @@
   z-index: 1000;
 }
 
-.profileOverlay.open {
+.objectOverlay.open {
   display: flex; /* Show and animate when open */
   animation: fadeIn 0.4s ease-out forwards; /* Fade in: 0.4s */
 }
 
-.profileOverlay.darkTheme.open {
+.objectOverlay.darkTheme.open {
   animation: fadeInDark 0.4s ease-out forwards; /* Dark mode fade in: 0.4s */
 }
 
-.profileOverlay.closed {
+.objectOverlay.closed {
   display: flex; /* Keep visible during fade-out */
   animation: fadeOut 0.4s ease-in forwards; /* Fade out: 0.4s */
 }
 
-.profileOverlay.darkTheme.closed {
+.objectOverlay.darkTheme.closed {
   animation: fadeOutDark 0.4s ease-in forwards; /* Dark mode fade out: 0.4s */
 }
 
@@ -46,7 +46,7 @@
   to { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); } */
 }
 
-.profileContent {
+.objectContent {
   position: fixed;
   top: 0;
   left: 100%; /* Start off-screen to the right */
@@ -63,7 +63,7 @@
   z-index: 1000;
 }
 
-.profileContent.darkTheme {
+.objectContent.darkTheme {
   background: rgba(44, 44, 46, 0.4);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
@@ -178,7 +178,7 @@
 }
 
 @media (max-width: 768px) {
-  .profileContent {
+  .objectContent {
     width: 100%;
     max-width: 320px;
     left: 100%; /* Start off-screen to the right */

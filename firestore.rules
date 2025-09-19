@@ -95,8 +95,8 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId);
       }
 
-      // TemplateProfiles: Allow read for viewers/editors, write for owner only
-      match /templateProfiles/{profileId} {
+      // TemplateObjects: Allow read for viewers/editors, write for owner only
+      match /templateObjects/{objectId} {
         allow read: if isBusinessOwner(businessId) ||
                       (isTeamMember(businessId) &&
                        getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);

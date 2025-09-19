@@ -554,14 +554,14 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
         return res.status(400).json({ error: 'Content-Type must be application/json' });
       }
 
-      const { businessId, profiles, updates } = body || {};
+      const { businessId, objects, updates } = body || {};
 
       functions.logger.info('Parsed body with detailed types', { 
         businessId, 
-        profiles, 
+        objects, 
         updates,
-        profilesType: typeof profiles,
-        profilesIsArray: Array.isArray(profiles),
+        objectsType: typeof objects,
+        objectsIsArray: Array.isArray(objects),
         updatesType: typeof updates,
         updatesIsArray: Array.isArray(updates),
         bodyKeys: Object.keys(body || {}),
@@ -575,24 +575,24 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
         });
       }
 
-      // Validate that at least profiles or updates are provided
-      const hasProfiles = profiles && Array.isArray(profiles);
+      // Validate that at least objects or updates are provided
+      const hasObjects = objects && Array.isArray(objects);
       const hasUpdates = updates && Array.isArray(updates);
       
       functions.logger.info('Validation check', { 
-        hasProfiles, 
+        hasObjects, 
         hasUpdates,
-        profilesLength: hasProfiles ? profiles.length : 'N/A',
+        objectsLength: hasObjects ? objects.length : 'N/A',
         updatesLength: hasUpdates ? updates.length : 'N/A'
       });
       
-      if (!hasProfiles && !hasUpdates) {
-        functions.logger.error('Neither profiles nor updates provided', { 
-          profiles, 
+      if (!hasObjects && !hasUpdates) {
+        functions.logger.error('Neither objects nor updates provided', { 
+          objects, 
           updates, 
-          hasProfiles, 
+          hasObjects, 
           hasUpdates,
-          profilesType: typeof profiles,
+          objectsType: typeof objects,
           updatesType: typeof updates
         });
         return res.status(400).json({
@@ -601,8 +601,8 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
       }
 
       functions.logger.info('Validation passed:', { 
-        hasProfiles, 
-        profilesLength: hasProfiles ? profiles.length : 0,
+        hasObjects, 
+        objectsLength: hasObjects ? objects.length : 0,
         hasUpdates, 
         updatesLength: hasUpdates ? updates.length : 0 
       });
@@ -616,69 +616,69 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
       const batch = admin.firestore().batch();
       let totalUpdatedRecords = 0;
       let totalUpdatedTemplates = 0;
-      let totalUpdatedProfiles = 0;
+      let totalUpdatedObjects = 0;
       const messages = [];
 
-      // Handle profile updates if profiles are provided
-      if (profiles && Array.isArray(profiles)) {
-        for (const profile of profiles) {
-          const { id, name, templates, pipelines, action } = profile;
+      // Handle object updates if objects are provided
+      if (objects && Array.isArray(objects)) {
+        for (const object of objects) {
+          const { id, name, templates, pipelines, action } = object;
 
           if (!id || !name) {
-            functions.logger.warn('Skipping profile: Missing id or name', { id, name });
+            functions.logger.warn('Skipping object: Missing id or name', { id, name });
             continue;
           }
 
-          const profileRef = admin
+          const objectRef = admin
             .firestore()
             .collection('businesses')
             .doc(businessId)
-            .collection('templateProfiles')
+            .collection('templateObjects')
             .doc(id);
 
           if (action === 'remove') {
             functions.logger.info('Deleting templateProfile:', { id });
-            batch.delete(profileRef);
-            messages.push(`Deleted profile: ${name}`);
+            batch.delete(objectRef);
+            messages.push(`Deleted object: ${name}`);
           } else {
-            // Check if profile name has changed by comparing with existing profile
-            let profileNameChanged = false;
+            // Check if object name has changed by comparing with existing object
+            let objectNameChanged = false;
             let previousName = null;
             
             try {
-              const existingProfileDoc = await profileRef.get();
+              const existingProfileDoc = await objectRef.get();
               if (existingProfileDoc.exists) {
                 const existingData = existingProfileDoc.data();
                 previousName = existingData.name;
-                profileNameChanged = previousName && previousName !== name;
+                objectNameChanged = previousName && previousName !== name;
               }
             } catch (error) {
-              functions.logger.warn('Error checking existing profile:', { error: error.message });
+              functions.logger.warn('Error checking existing object:', { error: error.message });
             }
 
             functions.logger.info('Upserting templateProfile:', { 
               id, 
               name, 
               previousName,
-              profileNameChanged,
+              objectNameChanged,
               templateCount: templates?.length || 0, 
               pipelineCount: pipelines?.length || 0 
             });
 
             // Debug: Log the comparison details
             functions.logger.info('Profile name change detection:', {
-              profileId: id,
+              objectId: id,
               incomingName: name,
               existingName: previousName,
               namesAreDifferent: previousName !== name,
               hasTemplates: templates && Array.isArray(templates) && templates.length > 0,
-              profileNameChanged
+              objectNameChanged
             });
 
-            // If profile name changed, update typeOfProfile in all records that use templates from this profile
-            if (profileNameChanged && templates && Array.isArray(templates)) {
+            // If object name changed, update typeOfProfile in all records that use templates from this object
+            if (objectNameChanged && templates && Array.isArray(templates)) {
               functions.logger.info('Profile name changed, updating typeOfProfile in records:', { 
-                profileId: id, 
+                objectId: id, 
                 previousName, 
                 newName: name,
                 templateCount: templates.length
@@ -705,7 +705,7 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
 
                       recordsSnapshot.forEach((recordDoc) => {
                         const recordData = recordDoc.data();
-                        // Only update if the record's typeOfProfile matches the previous profile name
+                        // Only update if the record's typeOfProfile matches the previous object name
                         if (recordData.typeOfProfile === previousName) {
                           batch.update(recordDoc.ref, {
                             typeOfProfile: name
@@ -726,16 +726,16 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
               }
             }
 
-            batch.set(profileRef, {
+            batch.set(objectRef, {
               id,
               name,
               templates: templates || [],
               pipelines: pipelines || [],
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
-            messages.push(`Updated profile: ${name} with ${templates?.length || 0} templates and ${pipelines?.length || 0} pipelines`);
+            messages.push(`Updated object: ${name} with ${templates?.length || 0} templates and ${pipelines?.length || 0} pipelines`);
           }
-          totalUpdatedProfiles += 1;
+          totalUpdatedObjects += 1;
         }
       }
 
@@ -834,27 +834,27 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
         }
       }
 
-      if (totalUpdatedProfiles > 0 || totalUpdatedTemplates > 0) {
+      if (totalUpdatedObjects > 0 || totalUpdatedTemplates > 0) {
         functions.logger.info('Committing batch with updates:', { 
           totalUpdatedRecords, 
           totalUpdatedTemplates, 
-          totalUpdatedProfiles 
+          totalUpdatedObjects 
         });
         await batch.commit();
         functions.logger.info('Batch committed successfully:', { 
           totalUpdatedRecords, 
           totalUpdatedTemplates, 
-          totalUpdatedProfiles 
+          totalUpdatedObjects 
         });
       } else {
-        functions.logger.info('No batch operations to commit - this is normal for empty profile arrays');
+        functions.logger.info('No batch operations to commit - this is normal for empty object arrays');
       }
       return res.status(200).json({
         success: true,
         message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
         updatedRecordsCount: totalUpdatedRecords,
         updatedTemplatesCount: totalUpdatedTemplates,
-        updatedProfilesCount: totalUpdatedProfiles,
+        updatedObjectsCount: totalUpdatedObjects,
       });
     } catch (error) {
       functions.logger.error('updateRecordTemplatesAndRecords failed', {

@@ -896,7 +896,7 @@
 }
 
 /* Profile editing styles */
-.profileActions {
+.objectActions {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -934,7 +934,7 @@
   background: rgba(10, 132, 255, 0.2);
 }
 
-.profileDeleteButton {
+.objectDeleteButton {
   position: absolute;
   top: 12px;
   right: 20px;
@@ -952,17 +952,17 @@
   z-index: 10;
 }
 
-.profileDeleteButton.darkTheme {
+.objectDeleteButton.darkTheme {
   background: rgba(255, 69, 58, 0.15);
   color: #ff453a;
 }
 
-.profileDeleteButton:hover {
+.objectDeleteButton:hover {
   background: rgba(255, 69, 58, 0.15);
   transform: translateY(-1px);
 }
 
-.profileDeleteButton.darkTheme:hover {
+.objectDeleteButton.darkTheme:hover {
   background: rgba(255, 69, 58, 0.2);
 }
 
@@ -973,7 +973,7 @@
   width: 100%;
 }
 
-.profileNameInput {
+.objectNameInput {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(0, 122, 255, 0.3);
   border-radius: 12px;
@@ -986,19 +986,19 @@
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
 }
 
-.profileNameInput.darkTheme {
+.objectNameInput.darkTheme {
   background: rgba(29, 29, 31, 0.95);
   border-color: rgba(10, 132, 255, 0.3);
   color: #f2f2f7;
 }
 
-.profileNameInput:focus {
+.objectNameInput:focus {
   outline: none;
   border-color: #007aff;
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
 }
 
-.profileNameInput.darkTheme:focus {
+.objectNameInput.darkTheme:focus {
   border-color: #0a84ff;
   box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.1);
 }

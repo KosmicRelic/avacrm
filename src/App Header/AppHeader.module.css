@@ -395,7 +395,7 @@
   box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3);
 }
 
-.profileButton {
+.objectButton {
   color: #007aff;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -411,7 +411,7 @@
   overflow: hidden;
 }
 
-.profileButton::before {
+.objectButton::before {
   content: '';
   position: absolute;
   top: 0;
@@ -422,29 +422,29 @@
   transition: left 0.5s;
 }
 
-.profileButton:hover {
+.objectButton:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
 }
 
-.profileButton:hover::before {
+.objectButton:hover::before {
   left: 100%;
 }
 
-.profileButton:active {
+.objectButton:active {
   transform: translateY(0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.profileButton.darkTheme {
+.objectButton.darkTheme {
   color: #0a84ff;
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.profileButton.darkTheme:hover {
+.objectButton.darkTheme:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
 }

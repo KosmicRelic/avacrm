@@ -73,13 +73,13 @@ const ProfileModal = ({
   return (
     <div
       ref={overlayRef}
-      className={`${styles.profileOverlay} ${isAnimating ? styles.open : styles.closed} ${
+      className={`${styles.objectOverlay} ${isAnimating ? styles.open : styles.closed} ${
         isDarkTheme ? styles.darkTheme : ""
       }`}
       onClick={handleBackgroundClick}
     >
       <div
-        className={`${styles.profileContent} ${isAnimating ? styles.slideIn : styles.slideOut} ${
+        className={`${styles.objectContent} ${isAnimating ? styles.slideIn : styles.slideOut} ${
           isDarkTheme ? styles.darkTheme : ""
         }`}
       >
