@@ -57,6 +57,41 @@ export const MainContextProvider = ({ children }) => {
   const location = useLocation();
   const lastSheetNameFromClickRef = useRef(null);
 
+  // Optimistic update helper for records
+  const optimisticUpdateRecord = useCallback(async (recordData, operation = 'update') => {
+    const rollbackData = [...records];
+    
+    try {
+      // Immediately update local state for optimistic UI
+      if (operation === 'add') {
+        setRecords(prev => [...prev, { ...recordData, isModified: true, action: 'add' }]);
+      } else if (operation === 'update') {
+        setRecords(prev => prev.map(record => 
+          record.docId === recordData.docId 
+            ? { ...recordData, isModified: true, action: 'update' }
+            : record
+        ));
+      } else if (operation === 'delete') {
+        setRecords(prev => prev.filter(record => record.docId !== recordData.docId));
+      }
+
+      // Mark record as modified to trigger sync
+      const modifiedRecord = { ...recordData, isModified: true, action: operation };
+      
+      // Update records with modified flag
+      setRecords(prev => prev.map(record => 
+        record.docId === recordData.docId ? modifiedRecord : record
+      ));
+
+      return { success: true };
+    } catch (error) {
+      // Rollback on error
+      setRecords(rollbackData);
+      console.error('Optimistic update failed:', error);
+      return { success: false, error };
+    }
+  }, [records]);
+
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedRecords = useMemo(() => records, [records]);
   const memoizedTemplateObjects = useMemo(() => templateObjects, [templateObjects]);
@@ -934,6 +969,7 @@ export const MainContextProvider = ({ children }) => {
     },
     recordsCache,
     setRecordsCache,
+    optimisticUpdateRecord,
     isDarkTheme,
     setIsDarkTheme,
     themeRef,

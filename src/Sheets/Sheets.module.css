@@ -1196,3 +1196,14 @@
   transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 25px rgba(10, 132, 255, 0.35);
 }
+
+/* Virtual scrolling styles */
+.virtualizedList {
+  width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.virtualizedList > div {
+  width: 100% !important;
+}

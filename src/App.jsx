@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useMemo, useContext, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useContext, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import Sheets from './Sheets/Sheets';
 import AppHeader from './App Header/AppHeader';
 import { MainContext } from './Contexts/MainContext';
 import styles from './App.module.css';
@@ -9,13 +8,9 @@ import useModal from './Modal/Hooks/UseModal';
 import useSheets from './Modal/Hooks/UseSheets';
 import Modal from './Modal/Modal';
 import ProfileModal from './Profile Modal/ProfileModal';
-import Dashboard from './Dashboard/Dashboard';
-import Metrics from './Metrics/Metrics';
 import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
-import Settings from './Settings/Settings';
-import Actions from './Actions/Actions';
 import {
   handleModalSave,
   handleModalClose,
@@ -30,30 +25,28 @@ import {
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
 import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
+import ErrorBoundary from './Utils/ErrorBoundary';
 
-// Memoized ProtectedRoute to prevent unnecessary re-renders
-const ProtectedRoute = React.memo(({ children }) => {
-  const { user, userAuthChecked } = useContext(MainContext);
-  const location = useLocation();
+// Lazy load major components for code splitting
+const Sheets = lazy(() => import('./Sheets/Sheets'));
+const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
+const Metrics = lazy(() => import('./Metrics/Metrics'));
+const Settings = lazy(() => import('./Settings/Settings'));
+const Actions = lazy(() => import('./Actions/Actions'));
 
-  if (!userAuthChecked) {
-    return null; // Wait for auth check to complete
-  }
-
-  // Check if the path is for team member signup
-  const isTeamMemberSignup = location.pathname.match(/^\/signup\/[^/]+\/teammember\/[^/]+$/);
-
-  if (
-    !user &&
-    userAuthChecked &&
-    !['/signup/business', '/signin'].includes(location.pathname) &&
-    !isTeamMemberSignup
-  ) {
-    return <Navigate to="/signin" replace />;
-  }
-
-  return children;
-});
+// Loading component for lazy-loaded routes
+const LoadingSpinner = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '18px',
+    color: '#666'
+  }}>
+    <div>Loading...</div>
+  </div>
+);
 
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
@@ -531,7 +524,8 @@ function App() {
     !location.pathname.startsWith('/signup/');
 
   return (
-    <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+    <ErrorBoundary>
+      <div className={`${styles.appContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {currentBanner && (
         <div
           className={`${styles.banner} ${
@@ -560,7 +554,8 @@ function App() {
         </ProtectedRoute>
       )}
       <div className={styles.contentWrapper}>
-        <Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
           <Route path="/" element={<Navigate to="/sheets" replace />} />
           <Route
             path="/dashboard"
@@ -682,8 +677,9 @@ function App() {
           />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup/business" element={<BusinessSignUp />} />
-          <Route path="/signup/:businessName/teammember/:code" element={<TeamMemberSignUp />} />
-        </Routes>
+                      <Route path="/signup/:businessName/teammember/:code" element={<TeamMemberSignUp />} />
+          </Routes>
+        </Suspense>
         {activeModal && (
           <Modal
             onClose={(options) =>
@@ -716,6 +712,7 @@ function App() {
         />
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 

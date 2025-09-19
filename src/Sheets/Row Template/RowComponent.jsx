@@ -1,5 +1,5 @@
 // RowComponent.js
-import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useRef, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
@@ -7,7 +7,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
-const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onInlineSave, teamMembers }) => {
+const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onInlineSave, teamMembers }) => {
   const isAddNew = rowData.isAddNew;
   const { isDarkTheme, user, businessId } = useContext(MainContext);
   const isBusinessUser = user && user.uid === businessId;
@@ -675,7 +675,7 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
       )}
     </div>
   );
-};
+});
 
 RowComponent.propTypes = {
   rowData: PropTypes.shape({

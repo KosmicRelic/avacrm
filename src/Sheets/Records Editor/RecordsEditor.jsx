@@ -1,59 +1,10 @@
-import React, { useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useContext, useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier } from '../../Utils/assignedToUtils';
-
-// Utility function to format field names
-const formatFieldName = (key) => {
-  if (key === key.toUpperCase()) {
-    return key
-      .split(/[_-]/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  }
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/[_-]/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-// Utility function to format Firestore timestamp for <input type="date">
-const formatDateForInput = (value) => {
-  if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
-    const date = value.toDate ? value.toDate() : new Date(value.seconds * 1000);
-    return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD in local timezone
-  }
-  return value || '';
-};
-
-// Helper to format time for <input type="time"> (always 24-hour format, never AM/PM)
-const formatTimeForInput = (value) => {
-  if (value && typeof value === 'object' && ('seconds' in value || 'toDate' in value)) {
-    const date = value.toDate ? value.toDate() : new Date(value.seconds * 1000);
-    // Always return 24-hour format HH:mm (never AM/PM)
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-  return '';
-};
-
-// Helper to parse yyyy-mm-dd as local date (not UTC)
-function parseLocalDate(dateString) {
-  if (!dateString || typeof dateString !== 'string') {
-    return new Date(); // Return current date as fallback
-  }
-  const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-const RecordsEditor = ({
+import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -1251,7 +1202,7 @@ const RecordsEditor = ({
       {isHistoryModalOpen && <HistoryModal />}
     </div>
   );
-};
+});
 
 RecordsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,

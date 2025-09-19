@@ -1,0 +1,170 @@
+/* SkeletonLoader.module.css */
+.skeletonContainer {
+  width: 100%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Record skeleton styles */
+.recordSkeleton {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.recordSkeletonCheckbox {
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.recordSkeletonContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recordSkeletonRow {
+  display: flex;
+  gap: 16px;
+}
+
+.recordSkeletonCell {
+  height: 16px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.recordSkeletonCell:nth-child(1) {
+  flex: 0 0 120px;
+}
+
+.recordSkeletonCell:nth-child(2) {
+  flex: 0 0 100px;
+}
+
+.recordSkeletonCell:nth-child(3) {
+  flex: 0 0 150px;
+}
+
+/* Card skeleton styles */
+.cardSkeleton {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cardSkeletonHeader {
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  width: 60%;
+}
+
+.cardSkeletonBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardSkeletonLine {
+  height: 14px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.cardSkeletonLine:nth-child(1) {
+  width: 100%;
+}
+
+.cardSkeletonLine:nth-child(2) {
+  width: 80%;
+}
+
+.cardSkeletonLine:nth-child(3) {
+  width: 60%;
+}
+
+/* Table skeleton styles */
+.tableSkeleton {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tableSkeletonHeader {
+  display: flex;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  gap: 16px;
+}
+
+.tableSkeletonRow {
+  display: flex;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 16px;
+}
+
+.tableSkeletonCell {
+  height: 16px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  flex: 1;
+}
+
+/* Default skeleton styles */
+.defaultSkeleton {
+  padding: 12px 16px;
+}
+
+.defaultSkeletonLine {
+  height: 16px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .recordSkeleton,
+  .cardSkeleton,
+  .tableSkeleton {
+    background: rgba(44, 44, 46, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .recordSkeletonCell,
+  .cardSkeletonHeader,
+  .cardSkeletonLine,
+  .tableSkeletonCell,
+  .defaultSkeletonLine,
+  .recordSkeletonCheckbox {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .tableSkeletonHeader {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}

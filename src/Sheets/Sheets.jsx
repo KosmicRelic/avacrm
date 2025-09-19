@@ -98,8 +98,11 @@ const Sheets = ({
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
-  // Optimize record type filtering with Set lookup (O(1) instead of O(n))
-  const sheetRecordTypesSet = useMemo(() => new Set(sheetRecordTypes), [sheetRecordTypes]);
+  // Get filtered records (excluding the "Add New" row)
+  const filteredRecords = useMemo(() => 
+    finalRows.filter(rowData => rowData.docId), 
+    [finalRows]
+  );
 
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
@@ -683,12 +686,7 @@ const Sheets = ({
           ))}
         </div>
         {spinnerVisible ? (
-          <div className={`${styles.spinnerContainer} ${spinnerFading ? styles.spinnerFadeOut : ''}`}>
-            <ImSpinner2
-              className={`${styles.iconSpinner} ${isDarkTheme ? styles.iconSpinnerDark : styles.iconSpinnerLight}`}
-              size={24}
-            />
-          </div>
+          <SkeletonLoader type="record" count={8} />
         ) : !activeSheet ? (
           <div className={styles.selectSheetMessage + (isDarkTheme ? ' ' + styles.darkTheme : '')}>
             <div className={styles.selectSheetTitle}>Select a sheet</div>
@@ -709,8 +707,8 @@ const Sheets = ({
               onInlineSave={handleInlineSave}
               teamMembers={teamMembers}
             />
-            {finalRows.filter(rowData => rowData.docId).length > 0 ? (
-              finalRows.filter(rowData => rowData.docId).map((rowData, rowIndex) => (
+            {filteredRecords.length > 0 ? (
+              filteredRecords.map((rowData, rowIndex) => (
                 <RowComponent
                   key={rowData.docId || rowIndex}
                   rowData={rowData}
