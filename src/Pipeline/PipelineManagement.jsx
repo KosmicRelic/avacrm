@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from './PipelineManagement.module.css';
 import { IoAdd, IoGitBranch, IoCreate, IoTrash, IoCheckmark, IoClose } from 'react-icons/io5';
-import { updateCardTemplatesAndCardsFunction } from '../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
+import { updateRecordTemplatesAndRecordsFunction } from '../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
 const PipelineManagement = ({ 
   templateProfiles, 
@@ -26,7 +26,7 @@ const PipelineManagement = ({
     }
 
     try {
-      await updateCardTemplatesAndCardsFunction({
+      await updateRecordTemplatesAndRecordsFunction({
         businessId,
         profiles: updatedProfiles,
       });
@@ -96,15 +96,15 @@ const PipelineManagement = ({
   // Get source template headers
   const getSourceTemplateHeaders = useCallback(() => {
     if (!sourceTemplate) return [];
-    const template = allTemplates.find(t => t.typeOfCards === sourceTemplate);
-    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfCards') || [];
+    const template = allTemplates.find(t => t.typeOfRecords === sourceTemplate);
+    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecords') || [];
   }, [sourceTemplate, allTemplates]);
 
   // Get target template headers
   const getTargetTemplateHeaders = useCallback(() => {
     if (!targetTemplate) return [];
-    const template = allTemplates.find(t => t.typeOfCards === targetTemplate);
-    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfCards') || [];
+    const template = allTemplates.find(t => t.typeOfRecords === targetTemplate);
+    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecords') || [];
   }, [targetTemplate, allTemplates]);
 
   // Reset form
@@ -244,7 +244,7 @@ const PipelineManagement = ({
           <div>
             <h2 className={`${styles.title} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Management</h2>
             <p className={`${styles.subtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              Create automated card conversion workflows between templates
+              Create automated record conversion workflows between templates
             </p>
           </div>
         </div>
@@ -264,7 +264,7 @@ const PipelineManagement = ({
             <IoGitBranch size={48} className={styles.emptyIcon} />
             <h3 className={`${styles.emptyTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>No Pipelines Yet</h3>
             <p className={`${styles.emptyDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              Create your first pipeline to start automating card conversions between templates.
+              Create your first pipeline to start automating record conversions between templates.
             </p>
             <button
               onClick={() => setShowCreateForm(true)}
@@ -277,11 +277,11 @@ const PipelineManagement = ({
         ) : (
           <div className={styles.pipelineGrid}>
             {allPipelines.map((pipeline) => {
-              const sourceTemplateObj = allTemplates.find(t => t.typeOfCards === pipeline.sourceTemplate);
-              const targetTemplateObj = allTemplates.find(t => t.typeOfCards === pipeline.targetTemplate);
+              const sourceTemplateObj = allTemplates.find(t => t.typeOfRecords === pipeline.sourceTemplate);
+              const targetTemplateObj = allTemplates.find(t => t.typeOfRecords === pipeline.targetTemplate);
               
               return (
-                <div key={pipeline.id} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <div key={pipeline.id} className={`${styles.pipelineRecord} ${isDarkTheme ? styles.darkTheme : ""}`}>
                   <div className={styles.pipelineHeader}>
                     <h3 className={`${styles.pipelineName} ${isDarkTheme ? styles.darkTheme : ""}`}>
                       {pipeline.name}
@@ -398,7 +398,7 @@ const PipelineManagement = ({
                   >
                     <option value="">Select source template...</option>
                     {allTemplates.map((template) => (
-                      <option key={template.docId} value={template.typeOfCards}>
+                      <option key={template.docId} value={template.typeOfRecords}>
                         {template.name} ({template.profileName})
                       </option>
                     ))}
@@ -416,9 +416,9 @@ const PipelineManagement = ({
                   >
                     <option value="">Select target template...</option>
                     {allTemplates
-                      .filter(template => template.typeOfCards !== sourceTemplate)
+                      .filter(template => template.typeOfRecords !== sourceTemplate)
                       .map((template) => (
-                        <option key={template.docId} value={template.typeOfCards}>
+                        <option key={template.docId} value={template.typeOfRecords}>
                           {template.name} ({template.profileName})
                         </option>
                       ))}

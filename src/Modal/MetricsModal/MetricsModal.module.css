@@ -253,8 +253,8 @@
   transform: rotate(-180deg);
 }
 
-/* Card List (for fields in Step 5) */
-.cardList {
+/* Record List (for fields in Step 5) */
+.recordList {
   max-height: 150px;
   overflow-y: auto;
   border: 1px solid #d2d2d7;
@@ -263,12 +263,12 @@
   background: #fff;
 }
 
-.darkTheme.cardList {
+.darkTheme.recordList {
   border-color: #3a3a3c;
   background: #2c2c2e;
 }
 
-.cardItem {
+.recordItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -277,7 +277,7 @@
   color: #1d1d1f;
 }
 
-.darkTheme.cardItem {
+.darkTheme.recordItem {
   color: #fff;
 }
 
@@ -529,8 +529,8 @@
   background: #3b82f6;
 }
 
-/* Card Template List (Step 4) */
-.cardTemplateList {
+/* Record Template List (Step 4) */
+.recordTemplateList {
   margin-bottom: 20px;
   border-radius: 10px;
   overflow: hidden;
@@ -538,55 +538,55 @@
   transition: background 0.3s ease;
 }
 
-.cardTemplateList.darkTheme {
+.recordTemplateList.darkTheme {
   background: rgba(28, 28, 30, 0.95);
 }
 
-.cardTemplateItem {
+.recordTemplateItem {
   padding: 12.5px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease, border-bottom 0.3s ease;
 }
 
-.cardTemplateItem.darkTheme {
+.recordTemplateItem.darkTheme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(44, 44, 46, 0.9);
 }
 
-.cardTemplateItem:last-child {
+.recordTemplateItem:last-child {
   border-bottom: none;
 }
 
-.cardTemplateItem:hover:not(.activeItem) {
+.recordTemplateItem:hover:not(.activeItem) {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.cardTemplateItem.darkTheme:hover:not(.activeItem) {
+.recordTemplateItem.darkTheme:hover:not(.activeItem) {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.cardTemplateItem.activeItem {
+.recordTemplateItem.activeItem {
   background: rgba(255, 255, 255);
 }
 
-.cardTemplateItem.darkTheme.activeItem {
+.recordTemplateItem.darkTheme.activeItem {
   background: rgba(44, 44, 46);
 }
 
-.cardTemplateRow {
+.recordTemplateRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.cardTemplateNameType {
+.recordTemplateNameType {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
 }
 
-.cardTemplateNameType span {
+.recordTemplateNameType span {
   flex: 0 0 auto;
   font-weight: 600;
   font-size: 13px;
@@ -596,11 +596,11 @@
   transition: color 0.3s ease;
 }
 
-.cardTemplateList.darkTheme .cardTemplateNameType span {
+.recordTemplateList.darkTheme .recordTemplateNameType span {
   color: #ffffff;
 }
 
-.cardTemplateSummary {
+.recordTemplateSummary {
   flex: 0 0 auto;
   letter-spacing: 0.02em;
   color: #6e6e73;
@@ -609,7 +609,7 @@
   transition: color 0.3s ease;
 }
 
-.cardTemplateSummary.darkTheme {
+.recordTemplateSummary.darkTheme {
   color: #8e8e93;
 }
 
@@ -904,7 +904,7 @@
   background: rgba(255, 69, 58, 0.2);
 }
 
-.cardTemplateButton,
+.recordTemplateButton,
 .metricDetailsButton {
   display: flex;
   flex-direction: row;

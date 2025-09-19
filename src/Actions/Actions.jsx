@@ -6,7 +6,7 @@ import styles from './Actions.module.css';
 import { FaChevronLeft } from 'react-icons/fa';
 
 const Actions = () => {
-  const { cardTemplates, businessId, isDarkTheme, actions = [], setActions } = useContext(MainContext);
+  const { recordTemplates, businessId, isDarkTheme, actions = [], setActions } = useContext(MainContext);
   const [selectedAction, setSelectedAction] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [moneyHeader, setMoneyHeader] = useState('');
@@ -43,7 +43,7 @@ const Actions = () => {
   }, []);
 
   // Find the selected template object
-  const templateObj = cardTemplates?.find(t => t.name === selectedTemplate);
+  const templateObj = recordTemplates?.find(t => t.name === selectedTemplate);
   const templateHeaders = templateObj?.headers || [];
 
   // Filter headers by type
@@ -306,7 +306,7 @@ const Actions = () => {
       </div>
       {/* Right panel: configuration form */}
       {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={`${styles.recordDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {/* Step 1: Choose type */}
           {step === 1 && (
             <div className={styles.formContent}>
@@ -394,7 +394,7 @@ const Actions = () => {
                   {selectedAction === 'leadScore' && (
                     <>
                       <div className={styles.inputGroup}>
-                        <label htmlFor="template-select" className={styles.label}>Choose a card template</label>
+                        <label htmlFor="template-select" className={styles.label}>Choose a record template</label>
                         <select
                           id="template-select"
                           value={selectedTemplate}
@@ -416,7 +416,7 @@ const Actions = () => {
                           className={`${styles.select} ${isDarkTheme ? styles.darkTheme : ''}`}
                         >
                           <option value="">Select a template...</option>
-                          {cardTemplates?.map(template => (
+                          {recordTemplates?.map(template => (
                             <option key={template.name} value={template.name}>
                               {template.name}
                             </option>
@@ -839,16 +839,16 @@ const Actions = () => {
                           {calculatedScore !== null && (
                             <div className={styles.inputGroup}>
                               <label className={styles.label}>Maximum Lead Score (out of 100)</label>
-                              <div className={styles.typeOfCardsDisplay}>{calculatedScore}</div>
+                              <div className={styles.typeOfRecordsDisplay}>{calculatedScore}</div>
                             </div>
                           )}
 
-                          {/* Display Type of Cards for the selected template */}
+                          {/* Display Type of Records for the selected template */}
                           {selectedTemplate && (
                             <div className={styles.inputGroup}>
-                              <label className={styles.label}>Type of Cards for this Template</label>
-                              <div className={styles.typeOfCardsDisplay}>
-                                {cardTemplates.find(t => t.name === selectedTemplate)?.typeOfCards || 'N/A'}
+                              <label className={styles.label}>Type of Records for this Template</label>
+                              <div className={styles.typeOfRecordsDisplay}>
+                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecords || 'N/A'}
                               </div>
                             </div>
                           )}
@@ -865,8 +865,8 @@ const Actions = () => {
       {/* Mobile: slide-in panel */}
       {isMobile && (
         <div
-          className={`${styles.cardDetailsMobile} ${isDarkTheme ? styles.darkTheme : ''} ${
-            (step === 1 || step === 2) && !isClosing ? styles.cardOpen : styles.cardClosed
+          className={`${styles.recordDetailsMobile} ${isDarkTheme ? styles.darkTheme : ''} ${
+            (step === 1 || step === 2) && !isClosing ? styles.recordOpen : styles.recordClosed
           }`}
         >
           {step === 1 && (
@@ -958,7 +958,7 @@ const Actions = () => {
                     <>
                       <div className={styles.inputGroup}>
                         <label htmlFor="template-select" className={styles.label}>
-                          Choose a card template
+                          Choose a record template
                         </label>
                         <select
                           id="template-select"
@@ -981,7 +981,7 @@ const Actions = () => {
                           className={`${styles.select} ${isDarkTheme ? styles.darkTheme : ''}`}
                         >
                           <option value="">Select a template...</option>
-                          {cardTemplates?.map(template => (
+                          {recordTemplates?.map(template => (
                             <option key={template.name} value={template.name}>
                               {template.name}
                             </option>
@@ -1404,16 +1404,16 @@ const Actions = () => {
                           {calculatedScore !== null && (
                             <div className={styles.inputGroup}>
                               <label className={styles.label}>Maximum Lead Score (out of 100)</label>
-                              <div className={styles.typeOfCardsDisplay}>{calculatedScore}</div>
+                              <div className={styles.typeOfRecordsDisplay}>{calculatedScore}</div>
                             </div>
                           )}
 
-                          {/* Display Type of Cards for the selected template */}
+                          {/* Display Type of Records for the selected template */}
                           {selectedTemplate && (
                             <div className={styles.inputGroup}>
-                              <label className={styles.label}>Type of Cards for this Template</label>
-                              <div className={styles.typeOfCardsDisplay}>
-                                {cardTemplates.find(t => t.name === selectedTemplate)?.typeOfCards || 'N/A'}
+                              <label className={styles.label}>Type of Records for this Template</label>
+                              <div className={styles.typeOfRecordsDisplay}>
+                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecords || 'N/A'}
                               </div>
                             </div>
                           )}

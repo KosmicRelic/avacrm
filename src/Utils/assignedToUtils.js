@@ -56,7 +56,7 @@ export const formatHistoryEntry = (historyEntry, user, teamMembers = []) => {
 };
 
 /**
- * Format field names for display (same logic as in CardsEditor)
+ * Format field names for display (same logic as in RecordsEditor)
  * @param {string} key - Field key
  * @returns {string} Formatted field name
  */
@@ -77,18 +77,18 @@ export const formatFieldName = (key) => {
 };
 
 /**
- * Get the full history timeline for a card with formatted entries
- * @param {Object} card - Card object with history array
+ * Get the full history timeline for a record with formatted entries
+ * @param {Object} record - Record object with history array
  * @param {Object} user - Current user object
  * @param {Array} teamMembers - Array of team member objects
  * @returns {Array} Array of formatted history entries
  */
-export const getFormattedHistory = (card, user, teamMembers = []) => {
-  if (!card?.history || !Array.isArray(card.history)) {
+export const getFormattedHistory = (record, user, teamMembers = []) => {
+  if (!record?.history || !Array.isArray(record.history)) {
     return [];
   }
   
-  return card.history
+  return record.history
     .map(entry => ({
       ...entry,
       formatted: formatHistoryEntry(entry, user, teamMembers),
@@ -98,19 +98,19 @@ export const getFormattedHistory = (card, user, teamMembers = []) => {
 };
 
 /**
- * Get who created a card (first history entry)
- * @param {Object} card - Card object with history array
+ * Get who created a record (first history entry)
+ * @param {Object} record - Record object with history array
  * @param {Object} user - Current user object
  * @param {Array} teamMembers - Array of team member objects
  * @returns {Object} Creator info with name and timestamp
  */
-export const getCardCreator = (card, user, teamMembers = []) => {
-  if (!card?.history || !Array.isArray(card.history) || card.history.length === 0) {
+export const getRecordCreator = (record, user, teamMembers = []) => {
+  if (!record?.history || !Array.isArray(record.history) || record.history.length === 0) {
     return { name: 'Unknown', timestamp: null };
   }
   
   // Find the earliest history entry
-  const oldestEntry = card.history.reduce((oldest, current) => {
+  const oldestEntry = record.history.reduce((oldest, current) => {
     const currentTime = current.timestamp?._seconds || current.timestamp?.toDate?.()?.getTime?.() / 1000 || 0;
     const oldestTime = oldest.timestamp?._seconds || oldest.timestamp?.toDate?.()?.getTime?.() / 1000 || 0;
     return currentTime < oldestTime ? current : oldest;
@@ -124,19 +124,19 @@ export const getCardCreator = (card, user, teamMembers = []) => {
 };
 
 /**
- * Get who last modified a card (most recent history entry)
- * @param {Object} card - Card object with history array
+ * Get who last modified a record (most recent history entry)
+ * @param {Object} record - Record object with history array
  * @param {Object} user - Current user object
  * @param {Array} teamMembers - Array of team member objects
  * @returns {Object} Last modifier info with name and timestamp
  */
-export const getLastModifier = (card, user, teamMembers = []) => {
-  if (!card?.history || !Array.isArray(card.history) || card.history.length === 0) {
+export const getLastModifier = (record, user, teamMembers = []) => {
+  if (!record?.history || !Array.isArray(record.history) || record.history.length === 0) {
     return { name: 'Unknown', timestamp: null };
   }
   
   // Find the most recent history entry
-  const newestEntry = card.history.reduce((newest, current) => {
+  const newestEntry = record.history.reduce((newest, current) => {
     const currentTime = current.timestamp?._seconds || current.timestamp?.toDate?.()?.getTime?.() / 1000 || 0;
     const newestTime = newest.timestamp?._seconds || newest.timestamp?.toDate?.()?.getTime?.() / 1000 || 0;
     return currentTime > newestTime ? current : newest;
@@ -150,15 +150,15 @@ export const getLastModifier = (card, user, teamMembers = []) => {
 };
 
 /**
- * Check if a user has permission to view/edit a card based on assignment
- * @param {Object} card - Card object
+ * Check if a user has permission to view/edit a record based on assignment
+ * @param {Object} record - Record object
  * @param {string} userUid - Current user's UID
  * @param {string} businessId - Business ID
  * @returns {Object} Permission object with view and edit booleans
  */
-export const getCardPermissions = (card, userUid, businessId) => {
+export const getRecordPermissions = (record, userUid, businessId) => {
   const isBusinessOwner = userUid === businessId;
-  const isAssigned = card.assignedTo === userUid;
+  const isAssigned = record.assignedTo === userUid;
   
   return {
     view: isBusinessOwner || isAssigned,

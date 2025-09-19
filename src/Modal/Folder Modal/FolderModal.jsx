@@ -48,7 +48,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
       .filter(
         (sheet) =>
           !nestedSheetsSet.has(sheet.sheetName) && // Exclude sheets in any folder (including pending actions)
-          sheet.sheetName !== "All Cards"           // Exclude special "All Cards" sheet
+          sheet.sheetName !== "All Records"           // Exclude special "All Records" sheet
       )
       .map((sheet) => sheet.sheetName);
 

@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import styles from "./TransportModal.module.css"; // Extended with new styles below
+import styles from "./RecordsTransportModal.module.css"; // Extended with new styles below
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 
@@ -32,7 +32,7 @@ const TransportModal = ({ tempData, handleClose }) => {
     }
   }, [hasInitialized, registerModalSteps, setModalConfig, tempData.action]);
 
-  // Handle sheet selection and card transfer
+  // Handle sheet selection and record transfer
   const handleSheetSelect = (sheetName) => {
     setSheets((prevSheets) => {
       const newSheets = {
@@ -51,14 +51,14 @@ const TransportModal = ({ tempData, handleClose }) => {
       const targetSheet = newSheets.allSheets[targetSheetIndex];
       const { action, selectedRowIds } = tempData;
 
-      // Add selected card IDs to target sheet, avoiding duplicates
+      // Add selected record IDs to target sheet, avoiding duplicates
       const newTargetRows = [
         ...targetSheet.rows,
         ...selectedRowIds.filter((id) => !targetSheet.rows.includes(id)),
       ];
       newSheets.allSheets[targetSheetIndex] = { ...targetSheet, rows: newTargetRows };
 
-      // If moving, remove card IDs from source sheet
+      // If moving, remove record IDs from source sheet
       if (action === "move") {
         newSheets.allSheets[sourceSheetIndex] = {
           ...sourceSheet,

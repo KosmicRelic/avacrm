@@ -2,7 +2,7 @@ import { collection, doc, getDocs, getDoc, query, where, onSnapshot } from 'fire
 import { db, auth } from '../../../firebase';
 
 // Module-level cache to track fetched sheets and current businessId
-const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfCards to { filters }
+const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfRecords to { filters }
 let currentBusinessId = null;
 
 // Helper: Derive structure from sheets
@@ -12,7 +12,7 @@ const fetchUserData = async ({
   businessId,
   route,
   setSheets,
-  setCards,
+  setRecords,
   setTemplateProfiles,
   setMetrics,
   setDashboards,
@@ -83,18 +83,18 @@ const fetchUserData = async ({
       structureData = deriveStructureFromSheets(allSheets);
       setSheets && setSheets({ allSheets, structure: structureData });
       if (matchingSheet) {
-        const cardsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'cards'));
-        const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
-        setCards && setCards(cards);
+        const recordsSnapshot = await getDocs(collection(db, 'businesses', businessId, 'sheets', matchingSheet.docId, 'records'));
+        const records = recordsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+        setRecords && setRecords(records);
         // Optionally fetch templates, metrics, etc. as needed
       } else {
-        setCards && setCards([]);
+        setRecords && setRecords([]);
         console.warn('[FetchUserData.jsx] No matching sheet found for:', sheetNameFromUrl);
       }
     } catch (error) {
-      console.error('[FetchUserData.jsx] Error fetching sheet/cards for:', sheetNameFromUrl, error);
+      console.error('[FetchUserData.jsx] Error fetching sheet/records for:', sheetNameFromUrl, error);
       setSheets && setSheets({ allSheets: [], structure: [] });
-      setCards && setCards([]);
+      setRecords && setRecords([]);
     }
     return;
   }
@@ -335,7 +335,7 @@ const fetchUserData = async ({
           timestamp: new Date().toISOString(),
         });
         setSheets && setSheets({ allSheets: [], structure: [] });
-        setCards && setCards([]);
+        setRecords && setRecords([]);
         
         // Return combined unsubscribe function for any listeners that were set up
         return () => {
@@ -363,14 +363,14 @@ const fetchUserData = async ({
           userId: auth.currentUser?.uid || 'unknown',
           timestamp: new Date().toISOString(),
         });
-        setCards && setCards([]);
+        setRecords && setRecords([]);
         return () => {}; // For React Suspense compatibility
       }
     }
 
     // Determine which sheet to use
     let sheetNameToUse = activeSheetName;
-    // Always normalize the sheet name to avoid cardId issues
+    // Always normalize the sheet name to avoid recordId issues
     sheetNameToUse = normalizeSheetName(sheetNameToUse);
 
     if (!sheetNameToUse && updateSheets) {
@@ -390,50 +390,50 @@ const fetchUserData = async ({
 
     const activeSheet = allSheets.find((s) => s.sheetName === sheetNameToUse);
     if (!activeSheet) {
-      setCards && setCards([]);
+      setRecords && setRecords([]);
       return () => {}; // For React Suspense compatibility
     }
 
     const sheetId = activeSheet.docId;
-    const typeOfCardsToDisplay = activeSheet.typeOfCardsToDisplay || [];
-    const cardTypeFilters = activeSheet.cardTypeFilters || {};
+    const typeOfRecordsToDisplay = activeSheet.typeOfRecordsToDisplay || [];
+    const recordTypeFilters = activeSheet.recordTypeFilters || {};
 
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {
       fetchedSheets.set(sheetId, new Map());
     }
 
-    // Fetch cards based on typeOfCardsToDisplay and cardTypeFilters with real-time updates
+    // Fetch records based on typeOfRecordsToDisplay and recordTypeFilters with real-time updates
     try {
-      if (!Array.isArray(typeOfCardsToDisplay) || typeOfCardsToDisplay.length === 0) {
-        setCards && setCards([]);
+      if (!Array.isArray(typeOfRecordsToDisplay) || typeOfRecordsToDisplay.length === 0) {
+        setRecords && setRecords([]);
         return () => {}; // Return empty unsubscribe function
       }
 
       const unsubscribeFunctions = [];
-      const cardsByType = new Map(); // Store cards by type locally
+      const recordsByType = new Map(); // Store records by type locally
 
-      for (const type of typeOfCardsToDisplay) {
-        // Invalidate cache if cardTypeFilters have changed
+      for (const type of typeOfRecordsToDisplay) {
+        // Invalidate cache if recordTypeFilters have changed
         const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
-        const currentFilters = cardTypeFilters[type] || {};
+        const currentFilters = recordTypeFilters[type] || {};
         if (cachedFilters && JSON.stringify(cachedFilters) !== JSON.stringify(currentFilters)) {
           fetchedSheets.get(sheetId).delete(type);
         }
 
-        // Check if this card type has already been fetched for this sheet
+        // Check if this record type has already been fetched for this sheet
         if (fetchedSheets.get(sheetId).has(type)) {
           continue;
         }
         fetchedSheets.get(sheetId).set(type, { filters: currentFilters });
 
-        let cardQuery = query(
-          collection(db, 'businesses', businessId, 'cards'),
-          where('typeOfCards', '==', type)
+        let recordQuery = query(
+          collection(db, 'businesses', businessId, 'records'),
+          where('typeOfRecords', '==', type)
         );
 
-        // Apply cardTypeFilters for this card type
-        const filters = cardTypeFilters[type] || {};
+        // Apply recordTypeFilters for this record type
+        const filters = recordTypeFilters[type] || {};
         const clientSideFilters = [];
 
         // Remove all orderBy logic: only apply .where() for range/value filters
@@ -442,10 +442,10 @@ const fetchUserData = async ({
           if (filter.start || filter.end) {
             // Range filter
             if (filter.start) {
-              cardQuery = query(cardQuery, where(field, '>=', filter.start));
+              recordQuery = query(recordQuery, where(field, '>=', filter.start));
             }
             if (filter.end) {
-              cardQuery = query(cardQuery, where(field, '<=', filter.end));
+              recordQuery = query(recordQuery, where(field, '<=', filter.end));
             }
           } else if (filter.value && filter.order) {
             // Single value filter
@@ -460,14 +460,14 @@ const fetchUserData = async ({
               after: '>',
             };
             const operator = operatorMap[filter.order] || '==';
-            cardQuery = query(cardQuery, where(field, operator, filter.value));
+            recordQuery = query(recordQuery, where(field, operator, filter.value));
           } else if (filter.values && filter.values.length > 0) {
             // Dropdown (array contains) filter
-            cardQuery = query(cardQuery, where(field, 'in', filter.values));
+            recordQuery = query(recordQuery, where(field, 'in', filter.values));
           } else if (filter.condition && filter.value) {
             // Text filter
             if (filter.condition === 'equals') {
-              cardQuery = query(cardQuery, where(field, '==', filter.value));
+              recordQuery = query(recordQuery, where(field, '==', filter.value));
             } else {
               // Non-equals text filters (contains, startsWith, endsWith) are handled client-side
               clientSideFilters.push({ field, filter });
@@ -479,7 +479,7 @@ const fetchUserData = async ({
         let updateBatch = [];
         let batchTimeout = null;
         
-        const unsubscribe = onSnapshot(cardQuery, (snapshot) => {
+        const unsubscribe = onSnapshot(recordQuery, (snapshot) => {
           // Collect all changes in a batch instead of processing immediately
           snapshot.docChanges().forEach((change) => {
             updateBatch.push({ change, type, clientSideFilters });
@@ -494,7 +494,7 @@ const fetchUserData = async ({
             let hasAnyChanges = false;
 
             updateBatch.forEach(({ change, type: batchType, clientSideFilters: filters }) => {
-              let cardData = {
+              let recordData = {
                 docId: change.doc.id,
                 ...change.doc.data(),
               };
@@ -503,58 +503,58 @@ const fetchUserData = async ({
               let passesFilter = true;
               if (filters.length > 0) {
                 passesFilter = filters.every(({ field, filter }) => {
-                  const cardValue = String(cardData[field] || '').toLowerCase();
+                  const recordValue = String(recordData[field] || '').toLowerCase();
                   const filterValue = filter.value?.toLowerCase() || '';
                   switch (filter.condition) {
-                    case 'contains': return cardValue.includes(filterValue);
-                    case 'startsWith': return cardValue.startsWith(filterValue);
-                    case 'endsWith': return cardValue.endsWith(filterValue);
+                    case 'contains': return recordValue.includes(filterValue);
+                    case 'startsWith': return recordValue.startsWith(filterValue);
+                    case 'endsWith': return recordValue.endsWith(filterValue);
                     default: return true;
                   }
                 });
               }
 
-              // Get current cards for this type (use array for O(1) operations)
-              let currentCards = cardsByType.get(batchType) || [];
+              // Get current records for this type (use array for O(1) operations)
+              let currentRecords = recordsByType.get(batchType) || [];
 
               if (change.type === 'added' && passesFilter) {
                 // Direct push instead of spread (much faster)
-                currentCards.push(cardData);
+                currentRecords.push(recordData);
                 hasAnyChanges = true;
               } else if (change.type === 'modified') {
                 // Find and update in place (O(n) but unavoidable)
-                const index = currentCards.findIndex(card => card.docId === cardData.docId);
+                const index = currentRecords.findIndex(record => record.docId === recordData.docId);
                 if (passesFilter) {
                   if (index >= 0) {
-                    currentCards[index] = cardData; // In-place update
+                    currentRecords[index] = recordData; // In-place update
                   } else {
-                    currentCards.push(cardData); // Add if not found
+                    currentRecords.push(recordData); // Add if not found
                   }
                   hasAnyChanges = true;
                 } else if (index >= 0) {
-                  currentCards.splice(index, 1); // Remove if doesn't pass filter
+                  currentRecords.splice(index, 1); // Remove if doesn't pass filter
                   hasAnyChanges = true;
                 }
               } else if (change.type === 'removed') {
-                const index = currentCards.findIndex(card => card.docId === cardData.docId);
+                const index = currentRecords.findIndex(record => record.docId === recordData.docId);
                 if (index >= 0) {
-                  currentCards.splice(index, 1);
+                  currentRecords.splice(index, 1);
                   hasAnyChanges = true;
                 }
               }
 
-              cardsByType.set(batchType, currentCards);
+              recordsByType.set(batchType, currentRecords);
             });
 
             // Single state update for entire batch (MASSIVE performance gain)
-            if (hasAnyChanges && setCards) {
-              const allRealTimeCards = [];
-              for (const cardType of typeOfCardsToDisplay) {
-                const cardsForType = cardsByType.get(cardType) || [];
-                allRealTimeCards.push(...cardsForType);
+            if (hasAnyChanges && setRecords) {
+              const allRealTimeRecords = [];
+              for (const recordType of typeOfRecordsToDisplay) {
+                const recordsForType = recordsByType.get(recordType) || [];
+                allRealTimeRecords.push(...recordsForType);
               }
               
-              setCards(allRealTimeCards);
+              setRecords(allRealTimeRecords);
             }
 
             // Clear batch for next round
@@ -568,26 +568,26 @@ const fetchUserData = async ({
       // Return combined unsubscribe function
       return () => {
         unsubscribeFunctions.forEach(unsub => unsub());
-        // Clean up the temporary real-time cards storage
-        if (window.realTimeCards) {
-          for (const type of typeOfCardsToDisplay) {
-            window.realTimeCards.delete(type);
+        // Clean up the temporary real-time records storage
+        if (window.realTimeRecords) {
+          for (const type of typeOfRecordsToDisplay) {
+            window.realTimeRecords.delete(type);
           }
         }
       };
     } catch (error) {
-      console.error('Error fetching cards:', {
+      console.error('Error fetching records:', {
         code: error.code,
         message: error.message,
         businessId,
         sheetId,
         sheetName: sheetNameToUse,
-        typeOfCardsToDisplay,
-        cardTypeFilters,
+        typeOfRecordsToDisplay,
+        recordTypeFilters,
         userId: auth.currentUser?.uid || 'unknown',
         timestamp: new Date().toISOString(),
       });
-      setCards && setCards([]);
+      setRecords && setRecords([]);
       return () => {}; // Return empty unsubscribe function
     }
   } else if (route === '/dashboard' || route === '/metrics') {
@@ -619,7 +619,7 @@ const fetchUserData = async ({
   return () => {}; // For React Suspense compatibility
 };
 
-// Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
+// Utility to normalize sheet names (replace dashes with spaces, ignore recordId if present)
 const normalizeSheetName = (name) => {
   if (!name) return name;
   return name.split('/')[0].replace(/-/g, ' ');

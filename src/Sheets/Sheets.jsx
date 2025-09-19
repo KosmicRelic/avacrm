@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } 
 import PropTypes from 'prop-types';
 import styles from './Sheets.module.css';
 import RowComponent from './Row Template/RowComponent';
-import CardsEditor from './Cards Editor/CardsEditor';
+import RecordsEditor from './Records Editor/RecordsEditor';
 import { IoCloseCircle } from 'react-icons/io5';
 import { FaFolder } from 'react-icons/fa';
 import { MdFilterAlt } from 'react-icons/md';
@@ -14,7 +14,7 @@ import { ImSpinner2 } from 'react-icons/im';
 import { useParams, useNavigate } from 'react-router-dom';
 import { filterRowsLocally } from '../Modal/FilterModal/FilterModal';
 
-// Utility to decode dashes to spaces for sheet names from URL, and ignore cardId if present
+// Utility to decode dashes to spaces for sheet names from URL, and ignore recordId if present
 function decodeSheetName(name) {
   if (!name) return '';
   return name.split('/')[0].replace(/-/g, ' ');
@@ -57,24 +57,24 @@ const Sheets = ({
   onEditSheet,
   onFilter,
   onRowClick,
-  onCardSave,
-  onCardDelete,
+  onRecordSave,
+  onRecordDelete,
   onOpenSheetsModal,
   onOpenTransportModal,
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setCards, cards, setActiveSheetName: setActiveSheetNameWithRef, sheetCardsFetched, user, businessId, teamMembers } = useContext(MainContext);
+  const { isDarkTheme, setRecords, records, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
-  // --- LOGGING FOR DEBUGGING CARD LOADING ---
+  // --- LOGGING FOR DEBUGGING RECORD LOADING ---
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
 
   const sheetId = activeSheet?.docId;
-  const isLoading = sheetId && !sheetCardsFetched[sheetId];
+  const isLoading = sheetId && !sheetRecordsFetched[sheetId];
 
   const [spinnerVisible, setSpinnerVisible] = useState(false);
   const [spinnerFading, setSpinnerFading] = useState(false);
@@ -93,35 +93,35 @@ const Sheets = ({
     }
   }, [isLoading]);
 
-  const sheetCardTypes = useMemo(() => activeSheet?.typeOfCardsToDisplay || [], [activeSheet]);
-  const cardTypeFilters = useMemo(() => activeSheet?.cardTypeFilters || {}, [activeSheet]);
+  const sheetRecordTypes = useMemo(() => activeSheet?.typeOfRecordsToDisplay || [], [activeSheet]);
+  const recordTypeFilters = useMemo(() => activeSheet?.recordTypeFilters || {}, [activeSheet]);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
-  // Optimize card type filtering with Set lookup (O(1) instead of O(n))
-  const sheetCardTypesSet = useMemo(() => new Set(sheetCardTypes), [sheetCardTypes]);
+  // Optimize record type filtering with Set lookup (O(1) instead of O(n))
+  const sheetRecordTypesSet = useMemo(() => new Set(sheetRecordTypes), [sheetRecordTypes]);
 
-  const sheetCards = useMemo(() => {
+  const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
     
-    // Pre-filter by card types first (usually eliminates most cards quickly)
+    // Pre-filter by record types first (usually eliminates most records quickly)
     // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
-    const relevantCards = cards.filter((card) => sheetCardTypesSet.has(card.typeOfCards));
+    const relevantRecords = records.filter((record) => sheetRecordTypesSet.has(record.typeOfRecords));
     
-    // Then apply card type filters (only on relevant cards)
-    return relevantCards.filter((card) => {
-      const filters = cardTypeFilters[card.typeOfCards] || {};
+    // Then apply record type filters (only on relevant records)
+    return relevantRecords.filter((record) => {
+      const filters = recordTypeFilters[record.typeOfRecords] || {};
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
             if (filter.headerKey && filter.condition === 'equals') {
-              const cardValue = card[filter.headerKey];
-              return cardValue === user.uid;
+              const recordValue = record[filter.headerKey];
+              return recordValue === user.uid;
             }
             return true;
           }
 
           const header = headers.find((h) => h.key === field);
-          const value = card[field];
+          const value = record[field];
           if (!filter || !header) {
             return true;
           }
@@ -174,10 +174,10 @@ const Sheets = ({
           }
         });
       });
-  }, [cards, sheetCardTypesSet, cardTypeFilters, headers, user.uid]);
+  }, [records, sheetRecordTypesSet, recordTypeFilters, headers, user.uid]);
 
   const filteredWithGlobalFilters = useMemo(() => {
-    return sheetCards.filter((row) =>
+    return sheetRecords.filter((row) =>
       Object.entries(globalFilters).every(([headerKey, filter]) => {
         const header = headers.find((h) => h.key === headerKey);
         const rowValue = row[headerKey];
@@ -233,7 +233,7 @@ const Sheets = ({
         }
       })
     );
-  }, [sheetCards, globalFilters, headers]); // Removed activeSheetName since it doesn't directly affect the filtering logic
+  }, [sheetRecords, globalFilters, headers]); // Removed activeSheetName since it doesn't directly affect the filtering logic
 
   const scrollContainerRef = useRef(null);
   const sheetTabsRef = useRef(null);
@@ -366,7 +366,7 @@ const Sheets = ({
 
   useEffect(() => {
     if (activeSheet && Array.isArray(sheets.allSheets) && sheets.allSheets.length > 0) {
-      // console.log('[Sheets][DEBUG] Attempting to load cards for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
+      // console.log('[Sheets][DEBUG] Attempting to load records for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
     }
   }, [activeSheet, sheets.allSheets]);
 
@@ -416,17 +416,17 @@ const Sheets = ({
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
-  const cardIdFromUrl = params.cardId;
+  const recordIdFromUrl = params.recordId;
 
   useEffect(() => {
-    if (cardIdFromUrl && cards.length > 0) {
-      const card = cards.find((c) => c.docId === cardIdFromUrl);
-      if (card) {
-        setSelectedRow(card);
+    if (recordIdFromUrl && records.length > 0) {
+      const record = records.find((c) => c.docId === recordIdFromUrl);
+      if (record) {
+        setSelectedRow(record);
         setIsEditorOpen(true);
       }
     }
-  }, [cardIdFromUrl, cards]);
+  }, [recordIdFromUrl, records]);
 
   const handleRowClick = useCallback(
     (rowData) => {
@@ -451,19 +451,19 @@ const Sheets = ({
   const handleFloatingEditClick = useCallback(
     () => {
       if (selectedRowForEdit) {
-        const fullCard = cards.find((card) => card.docId === selectedRowForEdit.docId) || selectedRowForEdit;
-        setSelectedRow(fullCard);
+        const fullRecord = records.find((record) => record.docId === selectedRowForEdit.docId) || selectedRowForEdit;
+        setSelectedRow(fullRecord);
         setIsEditorOpen(true);
         setIsClosing(false);
-        onRowClick(fullCard);
-        if (fullCard?.docId) {
+        onRowClick(fullRecord);
+        if (fullRecord?.docId) {
           const urlSheetName = activeSheetName.replace(/ /g, "-");
-          navigate(`/sheets/${urlSheetName}/${fullCard.docId}`, { replace: false });
+          navigate(`/sheets/${urlSheetName}/${fullRecord.docId}`, { replace: false });
         }
         setSelectedRowForEdit(null); // Clear selection after opening editor
       }
     },
-    [selectedRowForEdit, cards, onRowClick, activeSheetName, navigate]
+    [selectedRowForEdit, records, onRowClick, activeSheetName, navigate]
   );
 
   const handleEditorClose = useCallback(() => {
@@ -481,48 +481,48 @@ const Sheets = ({
   const handleEditorSave = useCallback(
     (updatedRow, isEditing) => {
       const rowId = updatedRow.docId;
-      const newCardData = { ...updatedRow, isModified: true, action: isEditing ? 'update' : 'add' };
+      const newRecordData = { ...updatedRow, isModified: true, action: isEditing ? 'update' : 'add' };
 
       if (!isEditing) {
-        setCards((prev) => [...prev, newCardData]);
+        setRecords((prev) => [...prev, newRecordData]);
       } else {
-        setCards((prev) =>
-          prev.map((card) => (card.docId === rowId ? newCardData : card))
+        setRecords((prev) =>
+          prev.map((record) => (record.docId === rowId ? newRecordData : record))
         );
       }
-      onCardSave(newCardData);
-      setSelectedRow(newCardData);
+      onRecordSave(newRecordData);
+      setSelectedRow(newRecordData);
       setIsEditorOpen(false);
     },
-    [onCardSave]
+    [onRecordSave]
   );
 
   const handleInlineSave = useCallback(
     (updatedRowData) => {
       const rowId = updatedRowData.docId;
-      const newCardData = { ...updatedRowData, isModified: true, action: 'update' };
+      const newRecordData = { ...updatedRowData, isModified: true, action: 'update' };
 
-      setCards((prev) =>
-        prev.map((card) => (card.docId === rowId ? newCardData : card))
+      setRecords((prev) =>
+        prev.map((record) => (record.docId === rowId ? newRecordData : record))
       );
-      onCardSave(newCardData);
+      onRecordSave(newRecordData);
     },
-    [onCardSave]
+    [onRecordSave]
   );
 
-  const handleOpenNewCard = useCallback(
-    (newCardData) => {
-      // Add the new card to the cards array
-      setCards((prev) => [...prev, newCardData]);
+  const handleOpenNewRecord = useCallback(
+    (newRecordData) => {
+      // Add the new record to the records array
+      setRecords((prev) => [...prev, newRecordData]);
       
-      // Save the card to Firestore
-      onCardSave(newCardData);
+      // Save the record to Firestore
+      onRecordSave(newRecordData);
       
-      // Open the new card in the editor immediately
-      setSelectedRow(newCardData);
+      // Open the new record in the editor immediately
+      setSelectedRow(newRecordData);
       setIsEditorOpen(true);
     },
-    [onCardSave, setCards]
+    [onRecordSave, setRecords]
   );
 
   const handleSelectToggle = useCallback(() => {
@@ -553,16 +553,16 @@ const Sheets = ({
   }, [finalRows, selectedRowIds]);
 
   const handleDeleteSelected = useCallback(() => {
-    setCards((prev) =>
-      prev.map((card) =>
-        selectedRowIds.includes(card.docId)
-          ? { ...card, isModified: true, action: 'remove' }
-          : card
+    setRecords((prev) =>
+      prev.map((record) =>
+        selectedRowIds.includes(record.docId)
+          ? { ...record, isModified: true, action: 'remove' }
+          : record
       )
     );
     setSelectedRowIds([]);
     setIsSelectMode(false);
-  }, [selectedRowIds, setCards]);
+  }, [selectedRowIds, setRecords]);
 
   // Ensure URL always matches the current active sheet
   useEffect(() => {
@@ -604,7 +604,7 @@ const Sheets = ({
               <button
                 className={`${styles.filterButton} ${
                   isDarkTheme ? styles.darkTheme : ''
-                } ${Object.keys(cardTypeFilters).length > 0 ? styles.active : ''}`}
+                } ${Object.keys(recordTypeFilters).length > 0 ? styles.active : ''}`}
                 onClick={onFilter}
               >
                 <MdFilterAlt size={20} />
@@ -633,7 +633,7 @@ const Sheets = ({
                       onClick={() => {
                         if (
                           window.confirm(
-                            'Are you sure you want to delete the selected cards? This action cannot be undone.'
+                            'Are you sure you want to delete the selected records? This action cannot be undone.'
                           )
                         ) {
                           handleDeleteSelected();
@@ -697,7 +697,7 @@ const Sheets = ({
         ) : (
           <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <RowComponent
-              rowData={{ docId: 'Add New Card', isAddNew: true }}
+              rowData={{ docId: 'Add New Record', isAddNew: true }}
               headers={visibleHeaders}
               onClick={() => handleRowClick({ isAddNew: true })}
               isSelected={false}
@@ -790,15 +790,15 @@ const Sheets = ({
         {TableContent}
         {isMobile && isEditorOpen && (
           <div
-            className={`${styles.cardDetailsMobile} ${
-              shouldAnimateIn && !isClosing ? styles.cardOpen : isClosing ? styles.cardClosed : ''
+            className={`${styles.recordDetailsMobile} ${
+              shouldAnimateIn && !isClosing ? styles.recordOpen : isClosing ? styles.recordClosed : ''
             }`}
           >
-            <CardsEditor
+            <RecordsEditor
               key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
-              onOpenNewCard={handleOpenNewCard}
+              onOpenNewRecord={handleOpenNewRecord}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
@@ -811,7 +811,7 @@ const Sheets = ({
         <button
           className={`${styles.floatingEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={handleFloatingEditClick}
-          title="Edit card"
+          title="Edit record"
           style={{
             position: 'fixed',
             bottom: '100px',
@@ -827,12 +827,12 @@ const Sheets = ({
       {isEditorOpen && !isMobile && (
         <>
           <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
-          <div className={`${styles.cardDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? styles['animate-in'] : isClosing ? styles['animate-out'] : ''}`}>
-            <CardsEditor
+          <div className={`${styles.recordDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? styles['animate-in'] : isClosing ? styles['animate-out'] : ''}`}>
+            <RecordsEditor
               key={selectedRow?.docId || Date.now()}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
-              onOpenNewCard={handleOpenNewCard}
+              onOpenNewRecord={handleOpenNewRecord}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
@@ -864,8 +864,8 @@ Sheets.propTypes = {
   onEditSheet: PropTypes.func.isRequired,
   onFilter: PropTypes.func.isRequired,
   onRowClick: PropTypes.func.isRequired,
-  onCardSave: PropTypes.func.isRequired,
-  onCardDelete: PropTypes.func.isRequired,
+  onRecordSave: PropTypes.func.isRequired,
+  onRecordDelete: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,
   onOpenTransportModal: PropTypes.func.isRequired,
   onOpenSheetFolderModal: PropTypes.func.isRequired,

@@ -179,22 +179,22 @@ const MetricsContent = ({ selectedCategory, selectedMetric, previousTitle, onClo
               <div className={styles.metricChartWidgetWrapper}>
                 <CustomMetricChart
                   visualizationType={localSelectedMetric.type === 'speedometer' ? 'number' : localSelectedMetric.type}
-                  cards={(() => {
+                  records={(() => {
                     if (localSelectedMetric.type === 'line') {
                       // Filter records by selected month/year or year
                       const records = localSelectedMetric.records || [];
-                      const templateKey = localSelectedMetric.config?.cardTemplates?.[0] || '';
+                      const templateKey = localSelectedMetric.config?.recordTemplates?.[0] || '';
                       const selectedHeaderKey = localSelectedMetric.config?.fields?.[templateKey]?.[0] || '';
                       if (granularity === 'month') {
-                        return records.filter(card => {
-                          const ts = card[`${selectedHeaderKey}_timestamp`];
+                        return records.filter(record => {
+                          const ts = record[`${selectedHeaderKey}_timestamp`];
                           if (!ts || !(ts.seconds || ts._seconds)) return false;
                           const d = new Date((ts.seconds || ts._seconds) * 1000);
                           return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
                         });
                       } else if (granularity === 'year') {
-                        return records.filter(card => {
-                          const ts = card[`${selectedHeaderKey}_timestamp`];
+                        return records.filter(record => {
+                          const ts = record[`${selectedHeaderKey}_timestamp`];
                           if (!ts || !(ts.seconds || ts._seconds)) return false;
                           const d = new Date((ts.seconds || ts._seconds) * 1000);
                           return d.getFullYear() === currentYear;
@@ -204,8 +204,8 @@ const MetricsContent = ({ selectedCategory, selectedMetric, previousTitle, onClo
                     }
                     return localSelectedMetric.records || [];
                   })()}
-                  templateKey={localSelectedMetric.config?.cardTemplates?.[0] || ''}
-                  selectedHeaderKey={localSelectedMetric.config?.fields?.[localSelectedMetric.config?.cardTemplates?.[0]]?.[0] || ''}
+                  templateKey={localSelectedMetric.config?.recordTemplates?.[0] || ''}
+                  selectedHeaderKey={localSelectedMetric.config?.fields?.[localSelectedMetric.config?.recordTemplates?.[0]]?.[0] || ''}
                   header={null}
                   isDarkTheme={isDarkTheme}
                   aggregation={localSelectedMetric.config?.aggregation || 'average'}
@@ -220,7 +220,7 @@ const MetricsContent = ({ selectedCategory, selectedMetric, previousTitle, onClo
                       {(() => {
                         // Get chart data for legend
                         const chartData = localSelectedMetric.records.reduce((acc, rec) => {
-                          const val = rec[localSelectedMetric.config?.fields?.[localSelectedMetric.config?.cardTemplates?.[0]]?.[0]];
+                          const val = rec[localSelectedMetric.config?.fields?.[localSelectedMetric.config?.recordTemplates?.[0]]?.[0]];
                           if (val !== undefined && val !== null) {
                             acc[val] = (acc[val] || 0) + 1;
                           }

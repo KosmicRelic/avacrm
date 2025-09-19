@@ -37,10 +37,10 @@ const isNumeric = (value) => {
 
 // Get field changes for multiple fields, handling fields as an object
 export const getFieldChanges = (
-  cards,
+  records,
   fields,
   dateRange,
-  cardTemplates,
+  recordTemplates,
   filterValues = {},
   includeHistory = true,
   headers = []
@@ -49,47 +49,47 @@ export const getFieldChanges = (
   const startDate = startOfDay(new Date(start));
   const endDate = startOfDay(new Date(end));
 
-  // Filter cards based on cardTemplates and filterValues
-  const filteredCards = cards.filter((card) => {
-    if (!cardTemplates.includes(card.typeOfCards)) return false;
+  // Filter records based on recordTemplates and filterValues
+  const filteredRecords = records.filter((record) => {
+    if (!recordTemplates.includes(record.typeOfRecords)) return false;
 
     // Apply filterValues
     return Object.keys(filterValues).every((key) => {
       const filter = filterValues[key];
       if (!filter || Object.keys(filter).length === 0) return true;
 
-      const cardValue = card[key];
+      const recordValue = record[key];
       if (filter.values) {
         // Case-insensitive matching for dropdowns
-        return filter.values.some((val) => val.toLowerCase() === cardValue?.toString().toLowerCase());
+        return filter.values.some((val) => val.toLowerCase() === recordValue?.toString().toLowerCase());
       } else if (filter.start || filter.end) {
-        const cardDate = new Date(cardValue);
+        const recordDate = new Date(recordValue);
         const startFilter = filter.start ? new Date(filter.start) : null;
         const endFilter = filter.end ? new Date(filter.end) : null;
         return (
-          (!startFilter || cardDate >= startFilter) &&
-          (!endFilter || cardDate <= endFilter)
+          (!startFilter || recordDate >= startFilter) &&
+          (!endFilter || recordDate <= endFilter)
         );
       } else if (filter.value) {
         switch (filter.condition || filter.order || 'equals') {
           case 'equals':
-            return cardValue?.toString().toLowerCase() === filter.value.toLowerCase();
+            return recordValue?.toString().toLowerCase() === filter.value.toLowerCase();
           case 'contains':
-            return cardValue && cardValue.toString().toLowerCase().includes(filter.value.toLowerCase());
+            return recordValue && recordValue.toString().toLowerCase().includes(filter.value.toLowerCase());
           case 'greater':
-            return isNumeric(cardValue) && Number(cardValue) > Number(filter.value);
+            return isNumeric(recordValue) && Number(recordValue) > Number(filter.value);
           case 'less':
-            return isNumeric(cardValue) && Number(cardValue) < Number(filter.value);
+            return isNumeric(recordValue) && Number(recordValue) < Number(filter.value);
           case 'greaterOrEqual':
-            return isNumeric(cardValue) && Number(cardValue) >= Number(filter.value);
+            return isNumeric(recordValue) && Number(recordValue) >= Number(filter.value);
           case 'lessOrEqual':
-            return isNumeric(cardValue) && Number(cardValue) <= Number(filter.value);
+            return isNumeric(recordValue) && Number(recordValue) <= Number(filter.value);
           case 'before':
-            return new Date(cardValue) < new Date(filter.value);
+            return new Date(recordValue) < new Date(filter.value);
           case 'after':
-            return new Date(cardValue) > new Date(filter.value);
+            return new Date(recordValue) > new Date(filter.value);
           case 'on':
-            return new Date(cardValue).toDateString() === new Date(filter.value).toDateString();
+            return new Date(recordValue).toDateString() === new Date(filter.value).toDateString();
           default:
             return true;
         }
@@ -98,27 +98,27 @@ export const getFieldChanges = (
     });
   });
 
-  if (filteredCards.length === 0) {
-    // No cards match the filters or card templates.
+  if (filteredRecords.length === 0) {
+    // No records match the filters or record templates.
   }
 
   let history = [];
   let currentValues = [];
 
-  // Process each card template and its fields
-  cardTemplates.forEach((template) => {
+  // Process each record template and its fields
+  recordTemplates.forEach((template) => {
     const templateFields = fields[template] || [];
     if (templateFields.length === 0) return;
 
-    const templateCards = filteredCards.filter((card) => card.typeOfCards === template);
+    const templateRecords = filteredRecords.filter((record) => record.typeOfRecords === template);
 
     // Include history entries if enabled
     if (includeHistory) {
       history = [
         ...history,
-        ...templateCards.flatMap((card) =>
-          card.history
-            ? card.history
+        ...templateRecords.flatMap((record) =>
+          record.history
+            ? record.history
                 .filter(
                   (entry) =>
                     templateFields.includes(entry.field) &&
@@ -127,8 +127,8 @@ export const getFieldChanges = (
                     isNumeric(entry.value)
                 )
                 .map((entry) => ({
-                  cardId: card.id,
-                  cardType: card.typeOfCards,
+                  recordId: record.id,
+                  recordType: record.typeOfRecords,
                   field: entry.field,
                   oldValue: entry.oldValue || null,
                   newValue: entry.value || entry.newValue,
@@ -146,18 +146,18 @@ export const getFieldChanges = (
 
     currentValues = [
       ...currentValues,
-      ...templateCards.flatMap((card) =>
+      ...templateRecords.flatMap((record) =>
         templateFields
           .filter((field) => {
             const header = headers.find((h) => h.key === field);
-            return header && header.type === 'number' && isNumeric(card[field]);
+            return header && header.type === 'number' && isNumeric(record[field]);
           })
           .map((field) => ({
-            cardId: card.id,
-            cardType: card.typeOfCards,
+            recordId: record.id,
+            recordType: record.typeOfRecords,
             field,
             oldValue: null,
-            newValue: card[field]?.toString(),
+            newValue: record[field]?.toString(),
             timestamp: new Date(latestHistoryTimestamp),
           }))
       ),
@@ -170,9 +170,9 @@ export const getFieldChanges = (
 };
 
 // Aggregate data for pie chart
-export const aggregateForPie = (history, groupBy, fields, cardTemplates) => {
+export const aggregateForPie = (history, groupBy, fields, recordTemplates) => {
   const grouped = history.reduce((acc, entry) => {
-    const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.cardType;
+    const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.recordType;
     acc[groupKey] = (acc[groupKey] || 0) + 1;
     return acc;
   }, {});
@@ -198,11 +198,11 @@ export const aggregateForPie = (history, groupBy, fields, cardTemplates) => {
 export const aggregateByDay = (
   history,
   aggregation,
-  groupBy = 'cardType',
+  groupBy = 'recordType',
   dateRange = null,
   granularity = 'monthly',
   fields,
-  cardTemplates
+  recordTemplates
 ) => {
   if (!history.length) {
     return {
@@ -239,7 +239,7 @@ export const aggregateByDay = (
   // Group by date and groupBy
   const grouped = history.reduce((acc, entry) => {
     const date = format(timestampToDate(entry.timestamp), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd');
-    const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.cardType;
+    const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.recordType;
     if (!acc[date]) acc[date] = {};
     if (!acc[date][groupKey]) acc[date][groupKey] = [];
     acc[date][groupKey].push(entry);
@@ -250,7 +250,7 @@ export const aggregateByDay = (
   const labels = Object.keys(grouped).sort();
 
   // Generate datasets
-  const groups = [...new Set(history.map((entry) => (groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.cardType)))];
+  const groups = [...new Set(history.map((entry) => (groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.recordType)))];
   const datasets = groups.map((group, i) => {
     const values = labels.map((date) => {
       const entries = grouped[date]?.[group] || [];
@@ -304,7 +304,7 @@ export const computeNumberMetric = (
   history,
   aggregation,
   fields,
-  cardTemplates
+  recordTemplates
 ) => {
   const numericValues = history
     .map((entry) => parseFloat(entry.newValue))
@@ -357,7 +357,7 @@ export const aggregateByDayForComparison = (
   comparisonFields,
   dateRange,
   granularity,
-  cardTemplates
+  recordTemplates
 ) => {
   if (!history.length) {
     return {
@@ -450,7 +450,7 @@ export const aggregateByDayForComparison = (
 export const computeScatterData = (
   history,
   comparisonFields,
-  cardTemplates
+  recordTemplates
 ) => {
   if (comparisonFields.length !== 2) {
     return {
@@ -466,19 +466,19 @@ export const computeScatterData = (
     };
   }
 
-  // Group history by cardId to pair field values
-  const groupedByCard = history.reduce((acc, entry) => {
-    if (!acc[entry.cardId]) acc[entry.cardId] = {};
-    acc[entry.cardId][entry.field] = parseFloat(entry.newValue);
+  // Group history by recordId to pair field values
+  const groupedByRecord = history.reduce((acc, entry) => {
+    if (!acc[entry.recordId]) acc[entry.recordId] = {};
+    acc[entry.recordId][entry.field] = parseFloat(entry.newValue);
     return acc;
   }, {});
 
   // Create data points where both fields have values
-  const dataPoints = Object.values(groupedByCard)
-    .filter((card) => comparisonFields.every((field) => isNumeric(card[field])))
-    .map((card) => ({
-      x: card[comparisonFields[0]],
-      y: card[comparisonFields[1]],
+  const dataPoints = Object.values(groupedByRecord)
+    .filter((record) => comparisonFields.every((field) => isNumeric(record[field])))
+    .map((record) => ({
+      x: record[comparisonFields[0]],
+      y: record[comparisonFields[1]],
     }));
 
   return {
@@ -525,12 +525,12 @@ export const computeCorrelation = (data1, data2) => {
 };
 
 // Compute metric data
-export const computeMetricData = (cards, config, headers = []) => {
+export const computeMetricData = (records, config, headers = []) => {
   const {
     fields,
     dateRange,
     aggregation,
-    cardTemplates,
+    recordTemplates,
     filterValues = {},
     visualizationType,
     groupBy,
@@ -540,7 +540,7 @@ export const computeMetricData = (cards, config, headers = []) => {
   } = config;
 
   // Validate fields
-  const allFields = comparisonFields.length > 0 ? comparisonFields : cardTemplates.flatMap((template) => fields[template] || []);
+  const allFields = comparisonFields.length > 0 ? comparisonFields : recordTemplates.flatMap((template) => fields[template] || []);
   if (allFields.length === 0) {
     return {
       labels: [format(new Date(), granularity === 'monthly' ? 'yyyy-MM' : 'yyyy-MM-dd')],
@@ -565,27 +565,27 @@ export const computeMetricData = (cards, config, headers = []) => {
   }
 
   const history = getFieldChanges(
-    cards,
-    comparisonFields.length > 0 ? { [cardTemplates[0]]: comparisonFields } : fields,
+    records,
+    comparisonFields.length > 0 ? { [recordTemplates[0]]: comparisonFields } : fields,
     dateRange,
-    cardTemplates,
+    recordTemplates,
     filterValues,
     includeHistory,
     headers
   );
 
   if (visualizationType === 'pie') {
-    const result = aggregateForPie(history, groupBy, fields, cardTemplates);
+    const result = aggregateForPie(history, groupBy, fields, recordTemplates);
     return result;
   }
 
   if (visualizationType === 'number') {
-    const result = computeNumberMetric(history, aggregation, fields, cardTemplates);
+    const result = computeNumberMetric(history, aggregation, fields, recordTemplates);
     return result;
   }
 
   if (visualizationType === 'scatter' && comparisonFields.length === 2) {
-    const result = computeScatterData(history, comparisonFields, cardTemplates);
+    const result = computeScatterData(history, comparisonFields, recordTemplates);
     return result;
   }
 
@@ -596,7 +596,7 @@ export const computeMetricData = (cards, config, headers = []) => {
       comparisonFields,
       dateRange,
       granularity,
-      cardTemplates
+      recordTemplates
     );
     return result;
   }
@@ -608,7 +608,7 @@ export const computeMetricData = (cards, config, headers = []) => {
     dateRange,
     granularity,
     fields,
-    cardTemplates
+    recordTemplates
   );
   return result;
 };

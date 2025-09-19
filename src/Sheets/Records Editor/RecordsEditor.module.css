@@ -1,4 +1,4 @@
-/* Cards Editor - iOS 26 FilterModal Style */
+/* Records Editor - iOS 26 FilterModal Style */
 
 /* Container */
 .editorWrapper {
@@ -629,11 +629,11 @@
   box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.fieldSelect.cardTypeSelect {
+.fieldSelect.recordTypeSelect {
   border-bottom: none;
 }
 
-.fieldSelect.cardTypeSelect.darkTheme {
+.fieldSelect.recordTypeSelect.darkTheme {
   border-bottom: none;
 }
 
@@ -1149,7 +1149,7 @@
   gap: 12px;
 }
 
-.pipelineCard {
+.pipelineRecord {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1160,17 +1160,17 @@
   transition: all 0.2s ease;
 }
 
-.pipelineCard.darkTheme {
+.pipelineRecord.darkTheme {
   background: #1c1c1e;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.pipelineCard:hover {
+.pipelineRecord:hover {
   border-color: #007aff;
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
 }
 
-.pipelineCard.darkTheme:hover {
+.pipelineRecord.darkTheme:hover {
   border-color: #0a84ff;
   box-shadow: 0 2px 8px rgba(10, 132, 255, 0.2);
 }

@@ -1,4 +1,4 @@
-/* Updated CreateSheetsAndFolders.module.css to match CardsTemplate design */
+/* Updated CreateSheetsAndFolders.module.css to match RecordsTemplate design */
 
 .managerWrapper {
   background: transparent;
@@ -73,7 +73,7 @@
   opacity: 0.85;
 }
 
-/* Toggle container - updated to match CardsTemplate */
+/* Toggle container - updated to match RecordsTemplate */
 .toggleContainer {
   display: flex;
   width: 100%;
@@ -146,7 +146,7 @@
   padding: 0 12px;
 }
 
-/* Input field - updated to match CardsTemplate */
+/* Input field - updated to match RecordsTemplate */
 .searchBar {
   width: 100%;
   padding: 16px 20px;
@@ -262,8 +262,8 @@
   margin-top: 16px;
 }
 
-/* Configuration Cards - updated to match CardsTemplate */
-.configCard {
+/* Configuration Records - updated to match RecordsTemplate */
+.configRecord {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
@@ -280,7 +280,7 @@
   overflow: hidden;
 }
 
-.configCard::before {
+.configRecord::before {
   content: '';
   position: absolute;
   top: 0;
@@ -290,29 +290,29 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
 }
 
-.configCard:hover {
+.configRecord:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.9);
 }
 
-.configCard.darkTheme {
+.configRecord.darkTheme {
   background: rgba(44, 44, 46, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.configCard.darkTheme::before {
+.configRecord.darkTheme::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-.configCard.darkTheme:hover {
+.configRecord.darkTheme:hover {
   background: rgba(44, 44, 46, 0.9);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* Card Icon */
-.cardIcon {
+/* Record Icon */
+.recordIcon {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -328,7 +328,7 @@
   transition: all 0.3s ease;
 }
 
-.cardIcon::after {
+.recordIcon::after {
   content: '';
   position: absolute;
   inset: -2px;
@@ -339,17 +339,17 @@
   transition: opacity 0.3s ease;
 }
 
-.configCard:hover .cardIcon::after {
+.configRecord:hover .recordIcon::after {
   opacity: 1;
 }
 
-.cardIcon.darkTheme {
+.recordIcon.darkTheme {
   background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 50%, #ff453a 100%);
   box-shadow: 0 4px 12px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Card Content */
-.cardContent {
+/* Record Content */
+.recordContent {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -357,7 +357,7 @@
   padding: 16px 20px 16px 20px;
 }
 
-.cardTitle {
+.recordTitle {
   font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
@@ -367,11 +367,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardTitle.darkTheme {
+.recordTitle.darkTheme {
   color: #ffffff !important;
 }
 
-.cardDescription {
+.recordDescription {
   font-size: 15px;
   color: #86868b;
   margin: 0 0 12px 0;
@@ -381,12 +381,12 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardDescription.darkTheme {
+.recordDescription.darkTheme {
   color: #98989d;
 }
 
-/* Card Arrow Styles */
-.cardArrow {
+/* Record Arrow Styles */
+.recordArrow {
   position: absolute;
   top: 50%;
   right: 20px;
@@ -405,23 +405,23 @@
   z-index: 2;
 }
 
-.cardArrow.darkTheme {
+.recordArrow.darkTheme {
   color: #8e8e93;
   background: rgba(44, 44, 46, 0.8);
 }
 
-.cardArrow:hover {
+.recordArrow:hover {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
   transform: translateY(-50%) scale(1.1);
 }
 
-.cardArrow.darkTheme:hover {
+.recordArrow.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
 
-/* Header list - updated to match CardsTemplate bodyContainer */
+/* Header list - updated to match RecordsTemplate bodyContainer */
 .headerList {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.6);
@@ -615,7 +615,7 @@
   justify-content: center;
 }
 
-/* Create button - matching CardsTemplate design */
+/* Create button - matching RecordsTemplate design */
 .createButton {
   background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
   border: none;

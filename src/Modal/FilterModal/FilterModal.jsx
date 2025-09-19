@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { IoMdArrowDropdown, IoMdFunnel, IoMdOptions } from 'react-icons/io';
 
 const FilterModal = ({ headers, rows, tempData, setTempData }) => {
-  const { cardTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
+  const { recordTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [numberRangeMode, setNumberRangeMode] = useState(
     useMemo(() => {
@@ -73,10 +73,10 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         .filter((header) => !header.hidden)
         .map((header) => {
           let mergedHeader = { ...header };
-          // If dropdown or multi-select, try to get options from cardTemplates
-          if ((header.type === 'dropdown' || header.type === 'multi-select') && cardTemplates) {
+          // If dropdown or multi-select, try to get options from recordTemplates
+          if ((header.type === 'dropdown' || header.type === 'multi-select') && recordTemplates) {
             // Find the first template that has this header key
-            const templateHeader = cardTemplates
+            const templateHeader = recordTemplates
               .flatMap(t => t.headers || [])
               .find(h => h.key === header.key);
             if (templateHeader && Array.isArray(templateHeader.options)) {
@@ -90,7 +90,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             options: mergedHeader.options || [],
           };
         }),
-    [headers, cardTemplates]
+    [headers, recordTemplates]
   );
 
   const formatHeaderName = (key) => {
@@ -282,35 +282,35 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         </p>
       </div>
 
-      {/* Sort For Card */}
+      {/* Sort For Record */}
       <div
-        className={`${styles.configCard} ${showSortFor ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+        className={`${styles.configRecord} ${showSortFor ? styles.activeRecord : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
         onClick={() => setShowSortFor((prev) => !prev)}
       >
-        <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setShowSortFor((prev) => !prev); }}>
-          <div className={styles.cardContent}>
-            <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort By</div>
-            <div className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setShowSortFor((prev) => !prev); }}>
+          <div className={styles.recordContent}>
+            <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort By</div>
+            <div className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
               {(() => {
                 if (!sortFor.headerKey || !sortFor.order) return 'Choose how to sort your data';
                 const header = sortableHeaders.find(h => h.key === sortFor.headerKey);
                 if (!header) return 'Choose how to sort your data';
                 return `${header.name} (${sortFor.order === 'ascending' ? 'Ascending' : 'Descending'})`;
               })()}
-              <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 {(sortFor.headerKey && sortFor.order) ? 'Active' : 'None'}
               </div>
             </div>
           </div>
-          <div className={`${styles.cardArrow} ${showSortFor ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <div className={`${styles.recordArrow} ${showSortFor ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <IoMdArrowDropdown />
           </div>
         </div>
         {showSortFor && (
           <>
-            <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+            <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
             <div
-              className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+              className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={(e) => e.stopPropagation()}
             >
               <select
@@ -355,7 +355,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
         )}
       </div>
 
-      {/* Filter Cards */}
+      {/* Filter Records */}
       <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h2>
         <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -364,38 +364,38 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
       </div>
 
       {visibleHeaders.length === 0 ? (
-        <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
           No filterable fields available
         </div>
       ) : (
         visibleHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.configCard} ${activeFilterIndex === index ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.configRecord} ${activeFilterIndex === index ? styles.activeRecord : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
           >
-            <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
-              <div className={styles.cardContent}>
-                <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
-                <div className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
+              <div className={styles.recordContent}>
+                <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
+                <div className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {header.type === 'text' && 'Filter by text content'}
                   {header.type === 'number' && 'Filter by numeric values'}
                   {header.type === 'date' && 'Filter by date ranges'}
                   {header.type === 'dropdown' && 'Filter by selected options'}
                   {header.type === 'multi-select' && 'Filter by multiple selections'}
-                  <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
                   </div>
                 </div>
               </div>
-              <div className={`${styles.cardArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <div className={`${styles.recordArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <IoMdArrowDropdown />
               </div>
             </div>
             {activeFilterIndex === index && (
               <>
-                <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
                 <div
-                  className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {header.type === 'number' ? (

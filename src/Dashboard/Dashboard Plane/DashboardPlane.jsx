@@ -7,7 +7,7 @@ import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart
 
 // Window component
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
-  const { isDarkTheme, metrics, cards, cardTemplates } = useContext(MainContext);
+  const { isDarkTheme, metrics, records, recordTemplates } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
 
   const metric = widget?.metricId
@@ -113,22 +113,22 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
   let chartProps = {};
   if (metric && isChartType) {
     const config = metric.config || {};
-    const templateKey = config.cardTemplates?.[0] || '';
+    const templateKey = config.recordTemplates?.[0] || '';
     const selectedHeaderKey = config.fields?.[templateKey]?.[0] || '';
-    const template = cardTemplates?.find((t) => (t.name || t.typeOfCards) === templateKey);
+    const template = recordTemplates?.find((t) => (t.name || t.typeOfRecords) === templateKey);
     const header = template?.headers?.find((h) => h.key === selectedHeaderKey);
-    let filteredCards = metric.records || [];
+    let filteredRecords = metric.records || [];
     if (isLineChart) {
       if (granularity === 'month') {
-        filteredCards = filteredCards.filter(card => {
-          const ts = card[`${selectedHeaderKey}_timestamp`];
+        filteredRecords = filteredRecords.filter(record => {
+          const ts = record[`${selectedHeaderKey}_timestamp`];
           if (!ts || !(ts.seconds || ts._seconds)) return false;
           const d = new Date((ts.seconds || ts._seconds) * 1000);
           return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
         });
       } else if (granularity === 'year') {
-        filteredCards = filteredCards.filter(card => {
-          const ts = card[`${selectedHeaderKey}_timestamp`];
+        filteredRecords = filteredRecords.filter(record => {
+          const ts = record[`${selectedHeaderKey}_timestamp`];
           if (!ts || !(ts.seconds || ts._seconds)) return false;
           const d = new Date((ts.seconds || ts._seconds) * 1000);
           return d.getFullYear() === currentYear;
@@ -137,7 +137,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     }
     chartProps = {
       visualizationType: metric.type === 'speedometer' ? 'number' : metric.type,
-      cards: filteredCards,
+      records: filteredRecords,
       templateKey,
       selectedHeaderKey,
       header,

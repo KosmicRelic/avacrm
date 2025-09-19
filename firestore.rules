@@ -77,8 +77,8 @@ service cloud.firestore {
                         getTeamMemberPermissions(businessId).sheets.role == 'editor');
       }
 
-      // Cards: Allow read for viewers/editors, write for editors
-      match /cards/{cardId} {
+      // Records: Allow read for viewers/editors, write for editors
+      match /records/{recordId} {
         allow read: if isBusinessOwner(businessId) ||
                       (isTeamMember(businessId) &&
                        getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
@@ -87,8 +87,8 @@ service cloud.firestore {
                         getTeamMemberPermissions(businessId).sheets.role == 'editor');
       }
 
-      // CardTemplates: Allow read for viewers/editors, write for owner only
-      match /cardTemplates/{templateId} {
+      // RecordTemplates: Allow read for viewers/editors, write for owner only
+      match /recordTemplates/{templateId} {
         allow read: if isBusinessOwner(businessId) ||
                       (isTeamMember(businessId) &&
                        getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);

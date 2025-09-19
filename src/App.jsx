@@ -25,7 +25,7 @@ import {
   onManageMetrics,
   onOpenSheetsModal,
   onOpenTransportModal,
-  onOpenCardsTemplateModal,
+  onOpenRecordsTemplateModal,
   onOpenSheetFolderModal,
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
@@ -69,8 +69,8 @@ function App() {
   const {
     sheets,
     setSheets,
-    cards,
-    setCards,
+    records,
+    setRecords,
     templateProfiles,
     setTemplateProfiles,
     editMode,
@@ -93,9 +93,9 @@ function App() {
     setBannerQueue,
     activeSheetName,
     setActiveSheetName,
-    sheetCardsFetched,
-    setSheetCardsFetched,
-    setCardsCache,
+    sheetRecordsFetched,
+    setSheetRecordsFetched,
+    setRecordsCache,
   } = useContext(MainContext);
 
   const location = useLocation();
@@ -105,7 +105,7 @@ function App() {
   const filterModal = useModal();
   const sheetsModal = useModal();
   const transportModal = useModal();
-  const cardsTemplateModal = useModal();
+  const recordsTemplateModal = useModal();
   const sheetFolderModal = useModal();
   const folderModal = useModal();
   const widgetSizeModal = useModal();
@@ -185,9 +185,9 @@ function App() {
   }, [activeSheet]);
 
   const resolvedRows = useMemo(() => {
-    if (!activeSheet || !cards) return [];
-    return activeSheet.rows?.map((rowId) => cards.find((card) => card.id === rowId) || {}) || [];
-  }, [activeSheet, cards]);
+    if (!activeSheet || !records) return [];
+    return activeSheet.rows?.map((rowId) => records.find((record) => record.id === rowId) || {}) || [];
+  }, [activeSheet, records]);
 
   useEffect(() => {
     if (location.pathname === '/dashboard') {
@@ -433,7 +433,7 @@ function App() {
           onSheetSelect: (sheetName) => {
             setActiveSheetName(sheetName);
             handleSheetChange(sheetName);
-            setSheetCardsFetched((prev) => ({
+            setSheetRecordsFetched((prev) => ({
               ...prev,
               [sheetName]: false,
             }));
@@ -449,7 +449,7 @@ function App() {
         },
       });
     },
-    [folderModal, setActiveSheetName, handleSheetChange, setSheetCardsFetched]
+    [folderModal, setActiveSheetName, handleSheetChange, setSheetRecordsFetched]
   );
 
   useEffect(() => {
@@ -484,7 +484,7 @@ function App() {
     filterModal,
     sheetsModal,
     transportModal,
-    cardsTemplateModal,
+    recordsTemplateModal,
     sheetFolderModal,
     widgetSizeModal,
     widgetViewModal,
@@ -501,25 +501,25 @@ function App() {
     handlePinToggle,
     handleDeleteSheet,
     businessId,
-    cards,
-    setCards,
+    records,
+    setRecords,
     clearFetchedSheets: (sheetId) => {
       if (sheetId) {
         // Clear cache for specific sheet
-        setSheetCardsFetched((prev) => {
+        setSheetRecordsFetched((prev) => {
           const newFetched = { ...prev };
           delete newFetched[sheetId];
           return newFetched;
         });
-        setCardsCache((prev) => {
+        setRecordsCache((prev) => {
           const newCache = { ...prev };
           delete newCache[sheetId];
           return newCache;
         });
       } else {
         // Clear all caches if no specific sheet ID
-        setSheetCardsFetched({});
-        setCardsCache({});
+        setSheetRecordsFetched({});
+        setRecordsCache({});
       }
     },
   };
@@ -588,8 +588,8 @@ function App() {
                   onEditSheet={() => onEditSheet(modalUtilsProps)}
                   onFilter={() => onFilter(modalUtilsProps)}
                   onRowClick={() => {}}
-                  onCardSave={() => {}}
-                  onCardDelete={() => {}}
+                  onRecordSave={() => {}}
+                  onRecordDelete={() => {}}
                   onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                   onOpenTransportModal={(action, selectedRowIds, onComplete) =>
                     onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
@@ -614,8 +614,8 @@ function App() {
                   onEditSheet={() => onEditSheet(modalUtilsProps)}
                   onFilter={() => onFilter(modalUtilsProps)}
                   onRowClick={() => {}}
-                  onCardSave={() => {}}
-                  onCardDelete={() => {}}
+                  onRecordSave={() => {}}
+                  onRecordDelete={() => {}}
                   onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                   onOpenTransportModal={(action, selectedRowIds, onComplete) =>
                     onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
@@ -627,7 +627,7 @@ function App() {
             }
           />
           <Route
-            path="/sheets/:sheetName/:cardId"
+            path="/sheets/:sheetName/:recordId"
             element={
               <ProtectedRoute>
                 <Sheets
@@ -640,8 +640,8 @@ function App() {
                   onEditSheet={() => onEditSheet(modalUtilsProps)}
                   onFilter={() => onFilter(modalUtilsProps)}
                   onRowClick={() => {}}
-                  onCardSave={() => {}}
-                  onCardDelete={() => {}}
+                  onRecordSave={() => {}}
+                  onRecordDelete={() => {}}
                   onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                   onOpenTransportModal={(action, selectedRowIds, onComplete) =>
                     onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
@@ -710,7 +710,7 @@ function App() {
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
           setActiveOption={setActiveOption}
-          onOpenCardsTemplateModal={() => onOpenCardsTemplateModal(modalUtilsProps)}
+          onOpenRecordsTemplateModal={() => onOpenRecordsTemplateModal(modalUtilsProps)}
           onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
           onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
         />

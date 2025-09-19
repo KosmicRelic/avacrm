@@ -534,7 +534,7 @@ export default function Settings() {
             <span>{t('settings.manageTeamAccess')}</span>
             <FaChevronRight className={styles.arrowIcon} />
           </button>
-          {/* Pipeline Management moved to Actions → Card Templates */}
+          {/* Pipeline Management moved to Actions → Record Templates */}
         </div>
 
         <div
@@ -901,7 +901,7 @@ export default function Settings() {
               </div>
             )}
 
-            {/* Pipeline Management moved to Actions → Card Templates workflow */}
+            {/* Pipeline Management moved to Actions → Record Templates workflow */}
           </div>
         </div>
       </div>

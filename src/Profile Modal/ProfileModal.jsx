@@ -1,7 +1,7 @@
 // src/ProfileModal/ProfileModal.jsx
 import { useNavigate } from 'react-router-dom';
 import styles from "./ProfileModal.module.css";
-import { FaAddressCard, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
+import { FaAddressRecord, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
 import { useContext, useState, useRef, useEffect } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import PropTypes from "prop-types";
@@ -12,7 +12,7 @@ const ProfileModal = ({
   isOpen,
   onClose,
   setActiveOption,
-  onOpenCardsTemplateModal,
+  onOpenRecordsTemplateModal,
   onOpenSheetsModal,
   onOpenMetricsModal, // Added prop
 }) => {
@@ -45,8 +45,8 @@ const ProfileModal = ({
     handleClose();
   };
 
-  const handleCardsClick = () => {
-    handleButtonClick(onOpenCardsTemplateModal);
+  const handleRecordsClick = () => {
+    handleButtonClick(onOpenRecordsTemplateModal);
   };
 
   const handleSettingsClick = () => {
@@ -104,16 +104,16 @@ const ProfileModal = ({
               <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
               <button
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={handleCardsClick}
+                onClick={handleRecordsClick}
               >
-                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
-                Cards
+                <FaAddressRecord size={16} style={{ marginRight: "8px" }} />
+                Records
               </button>
               <button
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSignOut}
               >
-                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+                <FaAddressRecord size={16} style={{ marginRight: "8px" }} />
                 Sign Out
               </button>
             </>
@@ -122,7 +122,7 @@ const ProfileModal = ({
               className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               onClick={handleSignOut}
             >
-              <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+              <FaAddressRecord size={16} style={{ marginRight: "8px" }} />
               Sign Out
             </button>
           )}
@@ -136,7 +136,7 @@ ProfileModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   setActiveOption: PropTypes.func.isRequired,
-  onOpenCardsTemplateModal: PropTypes.func.isRequired,
+  onOpenRecordsTemplateModal: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,
   onOpenMetricsModal: PropTypes.func.isRequired,
 };

@@ -158,7 +158,7 @@
     margin: 0 0 16px 0;
   }
   
-  .cardTitle {
+  .recordTitle {
     font-size: 18px;
   }
   
@@ -190,8 +190,8 @@
   margin-top: 20px;
 }
 
-/* Configuration Cards */
-.configCard {
+/* Configuration Records */
+.configRecord {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 20px;
@@ -212,7 +212,7 @@
   min-height: 120px;
 }
 
-.configCard::before {
+.configRecord::before {
   content: '';
   position: absolute;
   top: 0;
@@ -223,42 +223,42 @@
   opacity: 0.8;
 }
 
-.configCard:hover {
+.configRecord:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 1);
 }
 
-.configCard.darkTheme {
+.configRecord.darkTheme {
   background: rgba(44, 44, 46, 0.9);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.configCard.darkTheme::before {
+.configRecord.darkTheme::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
 }
 
-.configCard.darkTheme:hover {
+.configRecord.darkTheme:hover {
   background: rgba(44, 44, 46, 1);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-.activeCard {
+.activeRecord {
   border-color: #007aff;
   background: rgba(0, 122, 255, 0.05);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12), 0 4px 16px rgba(0, 122, 255, 0.08);
   z-index: 10;
 }
 
-.activeCard.darkTheme {
+.activeRecord.darkTheme {
   border-color: #0a84ff;
   background: rgba(10, 132, 255, 0.08);
   box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15), 0 4px 16px rgba(10, 132, 255, 0.12);
 }
 
-/* Card Icon */
-.cardIcon {
+/* Record Icon */
+.recordIcon {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
@@ -272,13 +272,13 @@
   margin-bottom: 16px;
 }
 
-.cardIcon.darkTheme {
+.recordIcon.darkTheme {
   background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
   box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
 }
 
-/* Card Header - clickable area with arrow */
-.cardHeader {
+/* Record Header - clickable area with arrow */
+.recordHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -288,23 +288,23 @@
   border-radius: 12px;
 }
 
-.cardHeader:hover {
+.recordHeader:hover {
   background: rgba(0, 0, 0, 0.015);
 }
 
-.cardHeader.darkTheme:hover {
+.recordHeader.darkTheme:hover {
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* Card Content */
-.cardContent {
+/* Record Content */
+.recordContent {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.cardTitle {
+.recordTitle {
   font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
@@ -314,11 +314,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardTitle.darkTheme {
+.recordTitle.darkTheme {
   color: #ffffff;
 }
 
-.cardDescription {
+.recordDescription {
   font-size: 15px;
   color: #86868b;
   margin: 0;
@@ -328,11 +328,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardDescription.darkTheme {
+.recordDescription.darkTheme {
   color: #98989d;
 }
 
-.cardBadge {
+.recordBadge {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
   padding: 4px 12px;
@@ -345,13 +345,13 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardBadge.darkTheme {
+.recordBadge.darkTheme {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
 
-/* Card Arrow */
-.cardArrow {
+/* Record Arrow */
+.recordArrow {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,42 +365,42 @@
   flex-shrink: 0;
 }
 
-.cardArrow.darkTheme {
+.recordArrow.darkTheme {
   color: #8e8e93;
 }
 
-.cardArrow.expanded {
+.recordArrow.expanded {
   transform: rotate(180deg);
   color: #007aff;
 }
 
-.cardArrow.darkTheme.expanded {
+.recordArrow.darkTheme.expanded {
   color: #0a84ff;
 }
 
-.cardArrow:hover {
+.recordArrow:hover {
   background: rgba(0, 122, 255, 0.1);
   color: #007aff;
 }
 
-.cardArrow.darkTheme:hover {
+.recordArrow.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
 
-/* Card Divider */
-.cardDivider {
+/* Record Divider */
+.recordDivider {
   height: 0.5px;
   background: rgba(0, 0, 0, 0.06);
   margin: 0 20px;
   border: none;
 }
 
-.cardDivider.darkTheme {
+.recordDivider.darkTheme {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.cardTitle {
+.recordTitle {
   font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
@@ -410,11 +410,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardTitle.darkTheme {
+.recordTitle.darkTheme {
   color: #ffffff !important;
 }
 
-.cardDescription {
+.recordDescription {
   font-size: 15px;
   color: #86868b;
   margin: 0 0 12px 0;
@@ -424,11 +424,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardDescription.darkTheme {
+.recordDescription.darkTheme {
   color: #98989d;
 }
 
-.cardBadge {
+.recordBadge {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
@@ -443,7 +443,7 @@
   align-self: flex-start;
 }
 
-.cardBadge.darkTheme {
+.recordBadge.darkTheme {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
@@ -529,7 +529,7 @@
   color: #8e8e93;
 }
 
-/* Add header/card template buttons */
+/* Add header/record template buttons */
 .addHeaderButton {
   width: 100%;
   padding: 12px 16px;
@@ -860,8 +860,8 @@
   outline: 2px dashed #0a84ff;
 }
 
-/* Card type list */
-.cardTypeList {
+/* Record type list */
+.recordTypeList {
   margin-bottom: 20px;
   border-radius: 16px;
   overflow: hidden;
@@ -869,7 +869,7 @@
   transition: all 0.3s ease;
 }
 
-.cardTypeItem {
+.recordTypeItem {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 20px;
@@ -890,7 +890,7 @@
   min-height: 80px;
 }
 
-.cardTypeItem::before {
+.recordTypeItem::before {
   content: '';
   position: absolute;
   top: 0;
@@ -901,28 +901,28 @@
   opacity: 0.8;
 }
 
-.cardTypeItem:hover {
+.recordTypeItem:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 1);
 }
 
-.cardTypeItem.darkTheme {
+.recordTypeItem.darkTheme {
   background: rgba(44, 44, 46, 0.9);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.cardTypeItem.darkTheme::before {
+.recordTypeItem.darkTheme::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
 }
 
-.cardTypeItem.darkTheme:hover {
+.recordTypeItem.darkTheme:hover {
   background: rgba(44, 44, 46, 1);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-.cardTypeRow {
+.recordTypeRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -938,7 +938,7 @@
   gap: 8px;
 }
 
-.cardTypeName {
+.recordTypeName {
   flex: 1;
   font-weight: 600;
   font-size: 17px;
@@ -949,7 +949,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 
-.cardTypeItem.darkTheme .cardTypeName {
+.recordTypeItem.darkTheme .recordTypeName {
   color: #ffffff;
 }
 
@@ -1011,7 +1011,7 @@
   box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.noCards {
+.noRecords {
   padding: 20px;
   text-align: center;
   color: #1d1d1f;
@@ -1020,7 +1020,7 @@
   text-transform: capitalize;
 }
 
-.noCards.darkTheme {
+.noRecords.darkTheme {
   color: #ffffff;
 }
 
@@ -1037,8 +1037,8 @@
   background: rgba(56, 56, 60, 0.6);
 }
 
-/* User filter card - spans full width */
-.userFilterCard {
+/* User filter record - spans full width */
+.userFilterRecord {
   grid-column: 1 / -1;
 }
 
@@ -1047,14 +1047,14 @@
   grid-column: 1 / -1;
 }
 
-/* Responsive grid for filter cards */
+/* Responsive grid for filter records */
 @media (min-width: 768px) {
   .filterList {
     grid-template-columns: 1fr; /* Keep single column on desktop like mobile */
     gap: 20px;
   }
   
-  .configCard {
+  .configRecord {
     min-height: 140px;
   }
 }
@@ -1065,7 +1065,7 @@
     gap: 24px;
   }
   
-  .configCard {
+  .configRecord {
     min-height: 150px;
   }
 }
@@ -1076,7 +1076,7 @@
     gap: 12px;
   }
   
-  .configCard {
+  .configRecord {
     min-height: 100px;
     padding: 16px;
   }
@@ -1173,14 +1173,14 @@
   align-items: stretch;
 }
 
-.cardActions {
+.recordActions {
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.cardActions.darkTheme {
+.recordActions.darkTheme {
   border-top-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1522,7 +1522,7 @@
   box-shadow: 0 4px 16px rgba(255, 69, 58, 0.3), 0 8px 32px rgba(255, 69, 58, 0.2);
 }
 
-/* Cards fetch limit input - Apple style */
+/* Records fetch limit input - Apple style */
 .fetchLimitInput {
   width: 100%;
   padding: 18px 20px;

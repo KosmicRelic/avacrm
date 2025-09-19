@@ -177,8 +177,8 @@
   gap: 24px;
 }
 
-/* Pipeline Card */
-.pipelineCard {
+/* Pipeline Record */
+.pipelineRecord {
   background: white;
   border-radius: 12px;
   padding: 24px;
@@ -187,18 +187,18 @@
   transition: all 0.2s ease;
 }
 
-.pipelineCard:hover {
+.pipelineRecord:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }
 
-.pipelineCard.darkTheme {
+.pipelineRecord.darkTheme {
   background: #1e293b;
   border-color: #334155;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.pipelineCard.darkTheme:hover {
+.pipelineRecord.darkTheme:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 

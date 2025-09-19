@@ -66,11 +66,11 @@ const EditSheetsModal = ({
     return uniqueHeaders;
   });
   const [pinnedStates, setPinnedStates] = useState({});
-  const [selectedCardTypes, setSelectedCardTypes] = useState(tempData.typeOfCardsToDisplay || []);
+  const [selectedRecordTypes, setSelectedRecordTypes] = useState(tempData.typeOfRecordsToDisplay || []);
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
-  const [selectedCardTypeForFilter, setSelectedCardTypeForFilter] = useState(null);
-  const [cardsPerSearch, setCardsPerSearch] = useState(tempData.cardsPerSearch || '');
+  const [selectedRecordTypeForFilter, setSelectedRecordTypeForFilter] = useState(null);
+  const [recordsPerSearch, setRecordsPerSearch] = useState(tempData.recordsPerSearch || '');
   const [filterType, setFilterType] = useState(null);
   const [filterOrder, setFilterOrder] = useState(tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown']);
   const headerRefs = useRef(new Map());
@@ -81,13 +81,13 @@ const EditSheetsModal = ({
   const [draggedHeaderIndex, setDraggedHeaderIndex] = useState(null);
   const [dragOverHeaderIndex, setDragOverHeaderIndex] = useState(null);
 
-  // Ensure cardTypeFilters, cardsPerSearch, and filterOrder are initialized in tempData
+  // Ensure recordTypeFilters, recordsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
-    if (!tempData.cardTypeFilters || !('cardsPerSearch' in tempData) || !tempData.filterOrder) {
+    if (!tempData.recordTypeFilters || !('recordsPerSearch' in tempData) || !tempData.filterOrder) {
       setTempData({
         ...tempData,
-        cardTypeFilters: tempData.cardTypeFilters || {},
-        cardsPerSearch: tempData.cardsPerSearch || null,
+        recordTypeFilters: tempData.recordTypeFilters || {},
+        recordsPerSearch: tempData.recordsPerSearch || null,
         filterOrder: tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown'],
       });
     }
@@ -95,33 +95,33 @@ const EditSheetsModal = ({
 
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
-  // Ensure cardTypeFilters always has all headers for each selected card type
+  // Ensure recordTypeFilters always has all headers for each selected record type
   useEffect(() => {
-    if (!allTemplates || selectedCardTypes.length === 0) return;
+    if (!allTemplates || selectedRecordTypes.length === 0) return;
 
     let changed = false;
-    const updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
+    const updatedRecordTypeFilters = { ...(tempData.recordTypeFilters || {}) };
 
-    selectedCardTypes.forEach((typeOfCards) => {
-      const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
+    selectedRecordTypes.forEach((typeOfRecords) => {
+      const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
       if (!template) return;
-      if (!updatedCardTypeFilters[typeOfCards]) {
-        updatedCardTypeFilters[typeOfCards] = {};
+      if (!updatedRecordTypeFilters[typeOfRecords]) {
+        updatedRecordTypeFilters[typeOfRecords] = {};
         changed = true;
       }
       template.headers
         .filter((h) => h.key)
         .forEach((header) => {
-          if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
-            updatedCardTypeFilters[typeOfCards][header.key] = {};
+          if (!(header.key in updatedRecordTypeFilters[typeOfRecords])) {
+            updatedRecordTypeFilters[typeOfRecords][header.key] = {};
             changed = true;
           }
         });
     });
 
-    Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
-      if (!selectedCardTypes.includes(typeOfCards)) {
-        delete updatedCardTypeFilters[typeOfCards];
+    Object.keys(updatedRecordTypeFilters).forEach((typeOfRecords) => {
+      if (!selectedRecordTypes.includes(typeOfRecords)) {
+        delete updatedRecordTypeFilters[typeOfRecords];
         changed = true;
       }
     });
@@ -129,29 +129,29 @@ const EditSheetsModal = ({
     if (changed) {
       setTempData({
         ...tempData,
-        cardTypeFilters: updatedCardTypeFilters,
+        recordTypeFilters: updatedRecordTypeFilters,
       });
     }
-  }, [selectedCardTypes, allTemplates, tempData, setTempData]);
+  }, [selectedRecordTypes, allTemplates, tempData, setTempData]);
 
   // Compute filter summary for display
   const getFilterSummary = useCallback(
-    (cardType) => {
-      const filters = tempData.cardTypeFilters?.[cardType] || {};
+    (recordType) => {
+      const filters = tempData.recordTypeFilters?.[recordType] || {};
       const summaries = [];
 
       Object.entries(filters).forEach(([headerKey, filter]) => {
         if (headerKey === 'userFilter') {
           if (filter.headerKey) {
             const header = allTemplates
-              .find((t) => t.typeOfCards === cardType)
+              .find((t) => t.typeOfRecords === recordType)
               ?.headers.find((h) => h.key === filter.headerKey);
             summaries.push(`${header?.name || filter.headerKey} = Current User`);
           }
           return;
         }
         const header = allTemplates
-          .find((t) => t.typeOfCards === cardType)
+          .find((t) => t.typeOfRecords === recordType)
           ?.headers.find((h) => h.key === headerKey);
         if (!header) return;
 
@@ -180,32 +180,32 @@ const EditSheetsModal = ({
 
       return summaries.length > 0 ? summaries.join('; ') : 'None';
     },
-    [tempData.cardTypeFilters, allTemplates]
+    [tempData.recordTypeFilters, allTemplates]
   );
 
   // Handle save action
   const onDoneClick = useCallback(() => {
-    let updatedCardTypeFilters = { ...(tempData.cardTypeFilters || {}) };
-    selectedCardTypes.forEach((typeOfCards) => {
-      const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
+    let updatedRecordTypeFilters = { ...(tempData.recordTypeFilters || {}) };
+    selectedRecordTypes.forEach((typeOfRecords) => {
+      const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
       if (!template) return;
-      if (!updatedCardTypeFilters[typeOfCards]) updatedCardTypeFilters[typeOfCards] = {};
+      if (!updatedRecordTypeFilters[typeOfRecords]) updatedRecordTypeFilters[typeOfRecords] = {};
       template.headers
         .filter((h) => h.key)
         .forEach((header) => {
-          if (!(header.key in updatedCardTypeFilters[typeOfCards])) {
-            updatedCardTypeFilters[typeOfCards][header.key] = {};
+          if (!(header.key in updatedRecordTypeFilters[typeOfRecords])) {
+            updatedRecordTypeFilters[typeOfRecords][header.key] = {};
           }
         });
     });
-    Object.keys(updatedCardTypeFilters).forEach((typeOfCards) => {
-      if (!selectedCardTypes.includes(typeOfCards)) {
-        delete updatedCardTypeFilters[typeOfCards];
+    Object.keys(updatedRecordTypeFilters).forEach((typeOfRecords) => {
+      if (!selectedRecordTypes.includes(typeOfRecords)) {
+        delete updatedRecordTypeFilters[typeOfRecords];
       }
     });
 
-    const cleanedCardTypeFilters = {};
-    Object.entries(updatedCardTypeFilters).forEach(([cardType, filters]) => {
+    const cleanedRecordTypeFilters = {};
+    Object.entries(updatedRecordTypeFilters).forEach(([recordType, filters]) => {
       const cleanedFilters = {};
       Object.entries(filters).forEach(([key, filter]) => {
         const cleanedFilter = {};
@@ -219,26 +219,26 @@ const EditSheetsModal = ({
         }
       });
       if (Object.keys(cleanedFilters).length > 0) {
-        cleanedCardTypeFilters[cardType] = cleanedFilters;
+        cleanedRecordTypeFilters[recordType] = cleanedFilters;
       }
     });
 
     setTempData({
       sheetName,
       currentHeaders,
-      typeOfCardsToDisplay: selectedCardTypes,
-      cardTypeFilters: cleanedCardTypeFilters,
-      cardsPerSearch,
+      typeOfRecordsToDisplay: selectedRecordTypes,
+      recordTypeFilters: cleanedRecordTypeFilters,
+      recordsPerSearch,
       filterOrder,
     });
     
-    // Clear cache when sheet name changes or when typeOfCardsToDisplay changes
-    const typeOfCardsChanged = JSON.stringify(selectedCardTypes) !== JSON.stringify(tempData.typeOfCardsToDisplay);
+    // Clear cache when sheet name changes or when typeOfRecordsToDisplay changes
+    const typeOfRecordsChanged = JSON.stringify(selectedRecordTypes) !== JSON.stringify(tempData.typeOfRecordsToDisplay);
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
       clearFetchedSheets();
-    } else if (typeOfCardsChanged) {
-      // Clear cache for current sheet when card types change
+    } else if (typeOfRecordsChanged) {
+      // Clear cache for current sheet when record types change
       clearFetchedSheets(sheetId);
     }
     
@@ -246,12 +246,12 @@ const EditSheetsModal = ({
   }, [
     sheetName,
     currentHeaders,
-    selectedCardTypes,
-    cardsPerSearch,
+    selectedRecordTypes,
+    recordsPerSearch,
     filterOrder,
     setTempData,
     tempData.sheetName,
-    tempData.cardTypeFilters,
+    tempData.recordTypeFilters,
     setActiveSheetName,
     clearFetchedSheets,
     handleClose,
@@ -272,8 +272,8 @@ const EditSheetsModal = ({
         { title: 'Select Templates', rightButton: null },
         { title: 'Select Headers', rightButton: null },
         { title: 'Filters', rightButton: null },
-        { title: 'Select Card Templates', rightButton: null },
-        { title: 'Filters for Card Type', rightButton: null },
+        { title: 'Select Record Templates', rightButton: null },
+        { title: 'Filters for Record Type', rightButton: null },
         { title: 'Add Filter', rightButton: null },
       ];
       registerModalSteps({ steps });
@@ -348,7 +348,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 4) {
-      const templateName = allTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
+      const templateName = allTemplates.find((t) => t.typeOfRecords === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -384,7 +384,7 @@ const EditSheetsModal = ({
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: 'Select Card Templates',
+        title: 'Select Record Templates',
         backButtonTitle: step1Title,
         backButton: {
           label: `< ${step1Title}`,
@@ -394,16 +394,16 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 7) {
-      const cardTypeName = allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown';
+      const recordTypeName = allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
         showBackButton: true,
         allowClose: false,
-        title: `Filters for ${cardTypeName}`,
-        backButtonTitle: 'Select Card Templates',
+        title: `Filters for ${recordTypeName}`,
+        backButtonTitle: 'Select Record Templates',
         backButton: {
-          label: `< Select Card Templates`,
+          label: `< Select Record Templates`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -423,9 +423,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: filterTypeTitle,
-        backButtonTitle: `Filters for ${allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+        backButtonTitle: `Filters for ${allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
         backButton: {
-          label: `< Filters for ${allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.name || selectedCardTypeForFilter || 'Unknown'}`,
+          label: `< Filters for ${allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -437,36 +437,36 @@ const EditSheetsModal = ({
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedCardTypeForFilter, allTemplates, filterType]);
+  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedRecordTypeForFilter, allTemplates, filterType]);
 
   // Sync tempData with state changes
   useEffect(() => {
     const newTempData = {
       sheetName,
       currentHeaders,
-      typeOfCardsToDisplay: selectedCardTypes,
-      cardTypeFilters: tempData.cardTypeFilters || {},
-      cardsPerSearch,
+      typeOfRecordsToDisplay: selectedRecordTypes,
+      recordTypeFilters: tempData.recordTypeFilters || {},
+      recordsPerSearch,
       filterOrder,
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
-      JSON.stringify(newTempData.typeOfCardsToDisplay) !== JSON.stringify(tempData.typeOfCardsToDisplay) ||
-      JSON.stringify(newTempData.cardTypeFilters) !== JSON.stringify(tempData.cardTypeFilters) ||
-      newTempData.cardsPerSearch !== tempData.cardsPerSearch ||
+      JSON.stringify(newTempData.typeOfRecordsToDisplay) !== JSON.stringify(tempData.typeOfRecordsToDisplay) ||
+      JSON.stringify(newTempData.recordTypeFilters) !== JSON.stringify(tempData.recordTypeFilters) ||
+      newTempData.recordsPerSearch !== tempData.recordsPerSearch ||
       JSON.stringify(newTempData.filterOrder) !== JSON.stringify(tempData.filterOrder)
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedCardTypes, cardsPerSearch, filterOrder, tempData, setTempData]);
+  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, tempData, setTempData]);
 
-  const toggleCardTypeSelection = useCallback((type) => {
-    setSelectedCardTypes((prev) => {
+  const toggleRecordTypeSelection = useCallback((type) => {
+    setSelectedRecordTypes((prev) => {
       if (prev.includes(type)) {
-        const updatedFilters = { ...tempData.cardTypeFilters };
+        const updatedFilters = { ...tempData.recordTypeFilters };
         delete updatedFilters[type];
-        setTempData({ ...tempData, cardTypeFilters: updatedFilters });
+        setTempData({ ...tempData, recordTypeFilters: updatedFilters });
         return prev.filter((t) => t !== type);
       } else {
         return [...prev, type];
@@ -545,18 +545,18 @@ const EditSheetsModal = ({
   );
 
   const handleFilterClick = useCallback(
-    (typeOfCards) => {
-      if (!typeOfCards) return;
-      if (!tempData.cardTypeFilters?.[typeOfCards]) {
+    (typeOfRecords) => {
+      if (!typeOfRecords) return;
+      if (!tempData.recordTypeFilters?.[typeOfRecords]) {
         setTempData({
           ...tempData,
-          cardTypeFilters: {
-            ...tempData.cardTypeFilters,
-            [typeOfCards]: {},
+          recordTypeFilters: {
+            ...tempData.recordTypeFilters,
+            [typeOfRecords]: {},
           },
         });
       }
-      setSelectedCardTypeForFilter(typeOfCards);
+      setSelectedRecordTypeForFilter(typeOfRecords);
       setNavigationDirection('forward');
       goToStep(7);
     },
@@ -564,8 +564,8 @@ const EditSheetsModal = ({
   );
 
   const handleAddFilterClick = useCallback(
-    (typeOfCards, filterType) => {
-      setSelectedCardTypeForFilter(typeOfCards);
+    (typeOfRecords, filterType) => {
+      setSelectedRecordTypeForFilter(typeOfRecords);
       setFilterType(filterType);
       setNavigationDirection('forward');
       goToStep(8);
@@ -574,30 +574,30 @@ const EditSheetsModal = ({
   );
 
   const handleTemplateClick = useCallback(
-    (typeOfCards) => {
-      setSelectedTemplateForHeaders(typeOfCards);
+    (typeOfRecords) => {
+      setSelectedTemplateForHeaders(typeOfRecords);
       setNavigationDirection('forward');
       goToStep(4);
     },
     [goToStep]
   );
 
-  const handleAddCardTemplateClick = useCallback((e) => {
+  const handleAddRecordTemplateClick = useCallback((e) => {
     e.stopPropagation();
     setNavigationDirection('forward');
     goToStep(6);
   }, [goToStep]);
 
-  const handleCardsPerSearchChange = useCallback(
+  const handleRecordsPerSearchChange = useCallback(
     (e) => {
       const value = e.target.value;
       const numValue = value === '' ? null : parseInt(value, 10);
 
       if (value === '' || (numValue >= 1 && !isNaN(numValue))) {
-        setCardsPerSearch(value);
+        setRecordsPerSearch(value);
         setTempData((prev) => ({
           ...prev,
-          cardsPerSearch: numValue,
+          recordsPerSearch: numValue,
         }));
       }
     },
@@ -717,9 +717,9 @@ const EditSheetsModal = ({
                         setNavigationDirection('forward');
                         goToStep(6);
                       }}
-                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
                       role="button"
-                      aria-label="Select Card Templates"
+                      aria-label="Select Record Templates"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -728,14 +728,14 @@ const EditSheetsModal = ({
                         }
                       }}
                     >
-                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <IoMdOptions size={28} />
                       </div>
-                      <div className={styles.cardContent}>
-                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Data Types</h3>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which card templates to include</p>
-                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {selectedCardTypes.length} selected
+                      <div className={styles.recordContent}>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Data Types</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which record templates to include</p>
+                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {selectedRecordTypes.length} selected
                         </div>
                       </div>
                     </div>
@@ -744,7 +744,7 @@ const EditSheetsModal = ({
                         setNavigationDirection('forward');
                         goToStep(2);
                       }}
-                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
                       role="button"
                       aria-label="Manage Headers"
                       tabIndex={0}
@@ -755,13 +755,13 @@ const EditSheetsModal = ({
                         }
                       }}
                     >
-                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <IoMdList size={28} />
                       </div>
-                      <div className={styles.cardContent}>
-                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns</h3>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up and organize your data columns</p>
-                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={styles.recordContent}>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up and organize your data columns</p>
+                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           {currentHeaders.length} configured
                         </div>
                       </div>
@@ -771,7 +771,7 @@ const EditSheetsModal = ({
                         setNavigationDirection('forward');
                         goToStep(5);
                       }}
-                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
                       role="button"
                       aria-label="Manage Filters"
                       tabIndex={0}
@@ -782,13 +782,13 @@ const EditSheetsModal = ({
                         }
                       }}
                     >
-                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <IoMdFunnel size={28} />
                       </div>
-                      <div className={styles.cardContent}>
-                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h3>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Filter and refine your data display</p>
-                        <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={styles.recordContent}>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Filter and refine your data display</p>
+                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           Configure
                         </div>
                       </div>
@@ -917,30 +917,30 @@ const EditSheetsModal = ({
             {step === 3 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose a Template</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select a card template to add columns from. Templates define the structure of your data.</p>
-                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select a record template to add columns from. Templates define the structure of your data.</p>
+                <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {allTemplates.length === 0 ? (
-                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
-                  ) : allTemplates.filter((template) => selectedCardTypes.includes(template.typeOfCards)).length === 0 ? (
-                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No card types selected. Go back to "Data Types" to select templates first.
+                  ) : allTemplates.filter((template) => selectedRecordTypes.includes(template.typeOfRecords)).length === 0 ? (
+                    <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No record types selected. Go back to "Data Types" to select templates first.
                     </div>
                   ) : (
                     allTemplates
-                      .filter((template) => selectedCardTypes.includes(template.typeOfCards))
+                      .filter((template) => selectedRecordTypes.includes(template.typeOfRecords))
                       .map((template) => (
                       <div
-                        key={template.typeOfCards}
-                        className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => handleTemplateClick(template.typeOfCards)}
+                        key={template.typeOfRecords}
+                        className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => handleTemplateClick(template.typeOfRecords)}
                       >
                         <div className={styles.templateRow}>
-                          <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
+                          <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecords.charAt(0).toUpperCase() + template.typeOfRecords.slice(1).toLowerCase()}
                           </span>
-                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             <IoChevronForward size={16} />
                           </div>
                         </div>
@@ -954,9 +954,9 @@ const EditSheetsModal = ({
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Pick Your Columns</h2>
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which columns from this template to include in your sheet. You can reorder them later.</p>
-                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {(() => {
-                    const selectedTemplate = allTemplates.find((t) => t.typeOfCards === selectedTemplateForHeaders);
+                    const selectedTemplate = allTemplates.find((t) => t.typeOfRecords === selectedTemplateForHeaders);
                     const templateHeaders = selectedTemplate?.headers
                       .filter((header) => header.isUsed !== false)
                       .map((header) => ({
@@ -966,17 +966,17 @@ const EditSheetsModal = ({
                         options: header.options || [],
                       })) || [];
                     return templateHeaders.length === 0 ? (
-                      <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         No headers available for this template.
                       </div>
                     ) : (
                       templateHeaders.map((header) => (
                         <div
                           key={header.key}
-                          className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                           onClick={() => toggleHeaderSelection(header)}
                         >
-                          <div className={styles.cardTypeRow}>
+                          <div className={styles.recordTypeRow}>
                             <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               {currentHeaders.some((h) => h.key === header.key) ? (
                                 <FaRegCheckCircle size={18} className={`${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`} />
@@ -984,10 +984,10 @@ const EditSheetsModal = ({
                                 <FaRegCircle size={18} />
                               )}
                             </span>
-                            <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
                             </span>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               <IoChevronForward size={16} />
                             </div>
                           </div>
@@ -1001,38 +1001,38 @@ const EditSheetsModal = ({
             {step === 5 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure Data Filters</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected card templates. To add or remove templates, go back to the Card Templates section.</p>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected record templates. To add or remove templates, go back to the Record Templates section.</p>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {selectedCardTypes.length === 0 && (
+                  {selectedRecordTypes.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No card templates selected. Go back to Card Templates to add some first.
+                      No record templates selected. Go back to Record Templates to add some first.
                     </div>
                   )}
-                  {selectedCardTypes.map((typeOfCards) => {
-                    const template = allTemplates.find((t) => t.typeOfCards === typeOfCards);
+                  {selectedRecordTypes.map((typeOfRecords) => {
+                    const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
                     return (
                       <div
-                        key={typeOfCards}
-                        onClick={() => handleFilterClick(typeOfCards)}
+                        key={typeOfRecords}
+                        onClick={() => handleFilterClick(typeOfRecords)}
                         className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
                         role="button"
-                        aria-label={`Filters for ${template?.name || typeOfCards}`}
+                        aria-label={`Filters for ${template?.name || typeOfRecords}`}
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
-                            handleFilterClick(typeOfCards);
+                            handleFilterClick(typeOfRecords);
                           }
                         }}
                       >
                         <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           {template?.name
                             ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
-                            : typeOfCards.charAt(0).toUpperCase() + typeOfCards.slice(1).toLowerCase()}
+                            : typeOfRecords.charAt(0).toUpperCase() + typeOfRecords.slice(1).toLowerCase()}
                         </span>
                         <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {getFilterSummary(typeOfCards)}
+                          {getFilterSummary(typeOfRecords)}
                         </span>
-                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           <IoChevronForward size={16} />
                         </div>
                       </div>
@@ -1044,29 +1044,29 @@ const EditSheetsModal = ({
             {step === 6 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which card types to include in this sheet. Selected templates will be available for filtering and display.</p>
-                <div className={`${styles.cardTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which record types to include in this sheet. Selected templates will be available for filtering and display.</p>
+                <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {allTemplates.length === 0 ? (
-                    <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
                   ) : (
                     allTemplates.map((template) => (
                       <div
-                        key={template.typeOfCards}
-                        className={`${styles.cardTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleCardTypeSelection(template.typeOfCards)}
+                        key={template.typeOfRecords}
+                        className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => toggleRecordTypeSelection(template.typeOfRecords)}
                       >
-                        <div className={styles.cardTypeRow}>
+                        <div className={styles.recordTypeRow}>
                           <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {selectedCardTypes.includes(template.typeOfCards) ? (
+                            {selectedRecordTypes.includes(template.typeOfRecords) ? (
                               <FaRegCheckCircle size={18} className={styles.checked} />
                             ) : (
                               <FaRegCircle size={18} />
                             )}
                           </span>
-                          <span className={`${styles.cardTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfCards.charAt(0).toUpperCase() + template.typeOfCards.slice(1).toLowerCase()}
+                          <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecords.charAt(0).toUpperCase() + template.typeOfRecords.slice(1).toLowerCase()}
                           </span>
                         </div>
                       </div>
@@ -1076,35 +1076,35 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 7 && (
-              selectedCardTypeForFilter ? (
+              selectedRecordTypeForFilter ? (
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Set Up Filters</h2>
                   <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up filters to narrow down the data shown in this sheet. You can filter by text, numbers, dates, and more.</p>
                   
-                  {/* Cards per search - moved to top and made more prominent */}
-                  <div className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div className={styles.cardContent}>
-                      <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Cards per Search</div>
-                      <div className={styles.cardDescription}>Limit the number of cards displayed per search to improve performance</div>
+                  {/* Records per search - moved to top and made more prominent */}
+                  <div className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.recordContent}>
+                      <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Records per Search</div>
+                      <div className={styles.recordDescription}>Limit the number of records displayed per search to improve performance</div>
                       <div className={styles.inputContainer}>
                         <input
                           type="number"
-                          value={cardsPerSearch}
-                          onChange={handleCardsPerSearchChange}
+                          value={recordsPerSearch}
+                          onChange={handleRecordsPerSearchChange}
                           placeholder="Enter limit (optional)"
                           className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                           min="1"
                           step="1"
-                          aria-label="Cards Fetch Limit"
+                          aria-label="Records Fetch Limit"
                         />
                       </div>
                     </div>
                   </div>
                   
                   <div className={`${styles.filterListSection}`}>
-                    <CardTypeFilterLikeFilterModal
-                      cardType={selectedCardTypeForFilter}
-                      headers={allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                    <RecordTypeFilterLikeFilterModal
+                      recordType={selectedRecordTypeForFilter}
+                      headers={allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}
@@ -1117,22 +1117,22 @@ const EditSheetsModal = ({
                       onClick={() => {
                         setTempData({
                           ...tempData,
-                          cardTypeFilters: {
-                            ...tempData.cardTypeFilters,
-                            [selectedCardTypeForFilter]: {},
+                          recordTypeFilters: {
+                            ...tempData.recordTypeFilters,
+                            [selectedRecordTypeForFilter]: {},
                           },
-                          cardsPerSearch: null,
+                          recordsPerSearch: null,
                         });
-                        setCardsPerSearch('');
+                        setRecordsPerSearch('');
                       }}
                       className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       disabled={
-                        !Object.entries(tempData.cardTypeFilters?.[selectedCardTypeForFilter] || {}).some(
+                        !Object.entries(tempData.recordTypeFilters?.[selectedRecordTypeForFilter] || {}).some(
                           ([key, filter]) =>
                             Object.keys(filter).length > 0 &&
                             (key !== 'userFilter' || (key === 'userFilter' && filter.headerKey)) &&
                             !isFilterEmpty(filter)
-                        ) && !tempData.cardsPerSearch
+                        ) && !tempData.recordsPerSearch
                       }
                     >
                       Reset All
@@ -1140,20 +1140,20 @@ const EditSheetsModal = ({
                   </div>
                 </div>
               ) : (
-                <div className={`${styles.noCards} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  No card type selected for filtering
+                <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  No record type selected for filtering
                 </div>
               )
             )}
             {step === 8 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Customize Filter</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure a specific filter for this card type. Choose the field and set your criteria.</p>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure a specific filter for this record type. Choose the field and set your criteria.</p>
                 <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {selectedCardTypeForFilter && (
-                    <CardTypeFilterLikeFilterModal
-                      cardType={selectedCardTypeForFilter}
-                      headers={allTemplates.find((t) => t.typeOfCards === selectedCardTypeForFilter)?.headers || []}
+                  {selectedRecordTypeForFilter && (
+                    <RecordTypeFilterLikeFilterModal
+                      recordType={selectedRecordTypeForFilter}
+                      headers={allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}
@@ -1185,9 +1185,9 @@ EditSheetsModal.propTypes = {
         hidden: PropTypes.bool,
       })
     ),
-    typeOfCardsToDisplay: PropTypes.arrayOf(PropTypes.string),
-    cardTypeFilters: PropTypes.object,
-    cardsPerSearch: PropTypes.number,
+    typeOfRecordsToDisplay: PropTypes.arrayOf(PropTypes.string),
+    recordTypeFilters: PropTypes.object,
+    recordsPerSearch: PropTypes.number,
     filterOrder: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
@@ -1212,18 +1212,18 @@ EditSheetsModal.defaultProps = {
   handleClose: null,
 };
 
-function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempData, isDarkTheme, showOnlyUserFilter, filterType }) {
+function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTempData, isDarkTheme, showOnlyUserFilter, filterType }) {
   const { user } = useContext(MainContext);
   const [numberRangeMode, setNumberRangeMode] = useState(() => {
     const initial = {};
-    Object.entries(tempData.cardTypeFilters?.[cardType] || {}).forEach(([key, filter]) => {
+    Object.entries(tempData.recordTypeFilters?.[recordType] || {}).forEach(([key, filter]) => {
       if (filter.start || filter.end) initial[key] = true;
     });
     return initial;
   });
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
-  const filterValues = tempData.cardTypeFilters?.[cardType] || {};
+  const filterValues = tempData.recordTypeFilters?.[recordType] || {};
 
   // Build visibleHeaders for the main filter list (exclude user fields)
   const visibleHeaders = useMemo(() => {
@@ -1265,13 +1265,13 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
     (filters) => {
       setTempData({
         ...tempData,
-        cardTypeFilters: {
-          ...tempData.cardTypeFilters,
-          [cardType]: filters,
+        recordTypeFilters: {
+          ...tempData.recordTypeFilters,
+          [recordType]: filters,
         },
       });
     },
-    [setTempData, tempData, cardType]
+    [setTempData, tempData, recordType]
   );
 
   const handleFilterChange = useCallback(
@@ -1407,33 +1407,33 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
     <div className={`${styles.filterList} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {/* Always show Restrict by User filter at the top - spans full width */}
       <div
-        className={`${styles.configCard} ${styles.userFilterCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+        className={`${styles.configRecord} ${styles.userFilterRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
         onClick={() => setActiveFilterIndex('user')}
       >
-        <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === 'user' ? null : 'user'); }}>
-          <div className={styles.cardContent}>
-            <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Restrict by User</div>
-            <div className={styles.cardDescription}>
+        <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === 'user' ? null : 'user'); }}>
+          <div className={styles.recordContent}>
+            <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Restrict by User</div>
+            <div className={styles.recordDescription}>
               {filterValues.userFilter?.headerKey
                 ? `${
                     userHeaders.find((h) => h.key === filterValues.userFilter.headerKey)?.name ||
                     filterValues.userFilter.headerKey
                   } = Current User`
-                : 'Filter cards by user assignment'}
+                : 'Filter records by user assignment'}
             </div>
-            <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
               {filterValues.userFilter?.headerKey ? 'Active' : 'None'}
             </div>
           </div>
-          <div className={`${styles.cardArrow} ${activeFilterIndex === 'user' ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <div className={`${styles.recordArrow} ${activeFilterIndex === 'user' ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <IoMdArrowDropdown />
           </div>
         </div>
         {activeFilterIndex === 'user' && (
           <>
-            <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+            <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
             <div
-              className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+              className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={(e) => e.stopPropagation()}
             >
               <select
@@ -1464,37 +1464,37 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
       
       {/* Then show all other header filters in the grid */}
       {visibleHeaders.length === 0 ? (
-        <div className={`${styles.noCards} ${styles.gridSpan} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={`${styles.noRecords} ${styles.gridSpan} ${isDarkTheme ? styles.darkTheme : ''}`}>
           No {filterType || 'headers'} available
         </div>
       ) : (
         visibleHeaders.map((header, index) => (
           <div
             key={header.key}
-            className={`${styles.configCard} ${activeFilterIndex === index ? styles.activeCard : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.configRecord} ${activeFilterIndex === index ? styles.activeRecord : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
           >
-            <div className={styles.cardHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
-              <div className={styles.cardContent}>
-                <div className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
-                <div className={styles.cardDescription}>
+            <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
+              <div className={styles.recordContent}>
+                <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
+                <div className={styles.recordDescription}>
                   {header.type === 'text' && 'Filter by text content'}
                   {header.type === 'number' && 'Filter by numeric values'}
                   {header.type === 'date' && 'Filter by date ranges'}
                   {header.type === 'dropdown' && 'Filter by selected options'}
                 </div>
-                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {getFilterSummary(header) !== 'None' ? 'Active' : 'None'}
                 </div>
               </div>
-              <div className={`${styles.cardArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              <div className={`${styles.recordArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <IoMdArrowDropdown />
               </div>
             </div>
             {activeFilterIndex === index && (
               <>
-                <div className={`${styles.cardDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
                 <div
-                  className={`${styles.filterActions} ${styles.cardActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
                   ref={filterActionsRef}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -1620,8 +1620,8 @@ function CardTypeFilterLikeFilterModal({ cardType, headers, tempData, setTempDat
   );
 }
 
-CardTypeFilterLikeFilterModal.propTypes = {
-  cardType: PropTypes.string.isRequired,
+RecordTypeFilterLikeFilterModal.propTypes = {
+  recordType: PropTypes.string.isRequired,
   headers: PropTypes.arrayOf(
     PropTypes.shape({
       key: PropTypes.string.isRequired,
@@ -1632,7 +1632,7 @@ CardTypeFilterLikeFilterModal.propTypes = {
     })
   ).isRequired,
   tempData: PropTypes.shape({
-    cardTypeFilters: PropTypes.object,
+    recordTypeFilters: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   isDarkTheme: PropTypes.bool.isRequired,
@@ -1640,7 +1640,7 @@ CardTypeFilterLikeFilterModal.propTypes = {
   filterType: PropTypes.string,
 };
 
-CardTypeFilterLikeFilterModal.defaultProps = {
+RecordTypeFilterLikeFilterModal.defaultProps = {
   showOnlyUserFilter: false,
   filterType: null,
 };

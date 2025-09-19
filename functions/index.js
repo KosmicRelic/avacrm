@@ -20,7 +20,7 @@ const corsOptions = {
 };
 const corsMiddleware = cors(corsOptions);
 
-// CORS for createNewCard: allow all origins
+// CORS for createNewRecord: allow all origins
 const corsAllOrigins = cors({
   origin: true,
   methods: ['POST', 'OPTIONS'],
@@ -28,11 +28,11 @@ const corsAllOrigins = cors({
   credentials: false,
 });
 
-// Backend-safe helper to get headers for a given card template key
-function getHeaders(templateKey, cardTemplatesArr) {
-  if (!Array.isArray(cardTemplatesArr)) return [];
-  const template = cardTemplatesArr.find(
-    t => (t.name || t.typeOfCards) === templateKey
+// Backend-safe helper to get headers for a given record template key
+function getHeaders(templateKey, recordTemplatesArr) {
+  if (!Array.isArray(recordTemplatesArr)) return [];
+  const template = recordTemplatesArr.find(
+    t => (t.name || t.typeOfRecords) === templateKey
   );
   return template && Array.isArray(template.headers) ? template.headers : [];
 }
@@ -117,16 +117,16 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
       sheetName: 'Sheet 1',
       headers: [],
       pinnedHeaders: [],
-      typeOfCardsToDisplay: [],
-      cardTypeFilters: {},
+      typeOfRecordsToDisplay: [],
+      recordTypeFilters: {},
     };
     const sheetRef = db.collection('businesses').doc(businessId).collection('sheets').doc(sheet1.id);
     batch.set(sheetRef, sheet1);
     const structureRef = db.collection('businesses').doc(businessId).collection('sheetsStructure').doc('structure');
     batch.set(structureRef, { structure: [{ sheetName: 'Sheet 1' }] });
 
-    // Cards: do not add any initial cards
-    // Card Templates: do not add any initial templates
+    // Records: do not add any initial records
+    // Record Templates: do not add any initial templates
 
     // Commit batch
     functions.logger.info('Committing batch');
@@ -506,7 +506,7 @@ exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
   }
 });
 
-exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
+exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) => {
   corsMiddleware(req, res, async () => {
     if (req.method === 'OPTIONS') {
       functions.logger.info('Handling OPTIONS request for CORS preflight');
@@ -514,7 +514,7 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
     }
 
     try {
-      functions.logger.info('updateCardTemplatesAndCards called', {
+      functions.logger.info('updateRecordTemplatesAndRecords called', {
         method: req.method,
         headers: req.headers,
         rawBody: req.body,
@@ -614,7 +614,7 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       }
 
       const batch = admin.firestore().batch();
-      let totalUpdatedCards = 0;
+      let totalUpdatedRecords = 0;
       let totalUpdatedTemplates = 0;
       let totalUpdatedProfiles = 0;
       const messages = [];
@@ -675,9 +675,9 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
               profileNameChanged
             });
 
-            // If profile name changed, update typeOfProfile in all cards that use templates from this profile
+            // If profile name changed, update typeOfProfile in all records that use templates from this profile
             if (profileNameChanged && templates && Array.isArray(templates)) {
-              functions.logger.info('Profile name changed, updating typeOfProfile in cards:', { 
+              functions.logger.info('Profile name changed, updating typeOfProfile in records:', { 
                 profileId: id, 
                 previousName, 
                 newName: name,
@@ -685,40 +685,40 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
               });
 
               for (const template of templates) {
-                if (template.typeOfCards) {
-                  const cardsRef = admin
+                if (template.typeOfRecords) {
+                  const recordsRef = admin
                     .firestore()
                     .collection('businesses')
                     .doc(businessId)
-                    .collection('cards')
-                    .where('typeOfCards', '==', template.typeOfCards);
+                    .collection('records')
+                    .where('typeOfRecords', '==', template.typeOfRecords);
                   
                   try {
-                    const cardsSnapshot = await cardsRef.get();
-                    if (!cardsSnapshot.empty) {
-                      functions.logger.info('Updating typeOfProfile in cards:', {
-                        typeOfCards: template.typeOfCards,
-                        cardCount: cardsSnapshot.size,
+                    const recordsSnapshot = await recordsRef.get();
+                    if (!recordsSnapshot.empty) {
+                      functions.logger.info('Updating typeOfProfile in records:', {
+                        typeOfRecords: template.typeOfRecords,
+                        recordCount: recordsSnapshot.size,
                         from: previousName,
                         to: name
                       });
 
-                      cardsSnapshot.forEach((cardDoc) => {
-                        const cardData = cardDoc.data();
-                        // Only update if the card's typeOfProfile matches the previous profile name
-                        if (cardData.typeOfProfile === previousName) {
-                          batch.update(cardDoc.ref, {
+                      recordsSnapshot.forEach((recordDoc) => {
+                        const recordData = recordDoc.data();
+                        // Only update if the record's typeOfProfile matches the previous profile name
+                        if (recordData.typeOfProfile === previousName) {
+                          batch.update(recordDoc.ref, {
                             typeOfProfile: name
                           });
-                          totalUpdatedCards += 1;
+                          totalUpdatedRecords += 1;
                         }
                       });
 
-                      messages.push(`Updated typeOfProfile from "${previousName}" to "${name}" in ${cardsSnapshot.size} cards for template "${template.typeOfCards}"`);
+                      messages.push(`Updated typeOfProfile from "${previousName}" to "${name}" in ${recordsSnapshot.size} records for template "${template.typeOfRecords}"`);
                     }
                   } catch (error) {
-                    functions.logger.error('Error updating cards for template:', { 
-                      typeOfCards: template.typeOfCards, 
+                    functions.logger.error('Error updating records for template:', { 
+                      typeOfRecords: template.typeOfRecords, 
                       error: error.message 
                     });
                   }
@@ -742,11 +742,11 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       // Handle legacy template updates if updates are provided (for backward compatibility)
       if (updates && Array.isArray(updates)) {
         for (const update of updates) {
-          const { docId, typeOfCards, newTypeOfCards, deletedKeys, newTemplate, action } = update;
+          const { docId, typeOfRecords, newTypeOfRecords, deletedKeys, newTemplate, action } = update;
 
-          if (!docId || !typeOfCards) {
-            functions.logger.warn('Skipping update: Missing docId or typeOfCards', { docId, typeOfCards });
-            messages.push(`Skipping update: Missing docId or typeOfCards for ${docId || 'unknown'}`);
+          if (!docId || !typeOfRecords) {
+            functions.logger.warn('Skipping update: Missing docId or typeOfRecords', { docId, typeOfRecords });
+            messages.push(`Skipping update: Missing docId or typeOfRecords for ${docId || 'unknown'}`);
             continue;
           }
 
@@ -754,95 +754,95 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
             .firestore()
             .collection('businesses')
             .doc(businessId)
-            .collection('cardTemplates')
+            .collection('recordTemplates')
             .doc(docId);
 
           if (action === 'remove') {
-            functions.logger.info('Deleting cardTemplate:', { docId });
+            functions.logger.info('Deleting recordTemplate:', { docId });
             batch.delete(templateRef);
             totalUpdatedTemplates += 1;
-            messages.push(`Deleted cardTemplate: ${docId}`);
+            messages.push(`Deleted recordTemplate: ${docId}`);
             continue;
           }
 
-          const cardsRef = admin
+          const recordsRef = admin
             .firestore()
             .collection('businesses')
             .doc(businessId)
-            .collection('cards')
-            .where('typeOfCards', '==', typeOfCards);
-          const snapshot = await cardsRef.get();
+            .collection('records')
+            .where('typeOfRecords', '==', typeOfRecords);
+          const snapshot = await recordsRef.get();
 
           if (snapshot.empty) {
-            functions.logger.info('No cards found:', { typeOfCards });
-            messages.push(`No cards found for typeOfCards: ${typeOfCards}`);
+            functions.logger.info('No records found:', { typeOfRecords });
+            messages.push(`No records found for typeOfRecords: ${typeOfRecords}`);
           } else {
             snapshot.forEach((doc) => {
-              const cardData = doc.data();
+              const recordData = doc.data();
               const updateData = {};
 
               if (deletedKeys && Array.isArray(deletedKeys)) {
                 deletedKeys.forEach((key) => {
-                  if (key in cardData) {
+                  if (key in recordData) {
                     updateData[key] = admin.firestore.FieldValue.delete();
                   }
                 });
 
-                if (cardData.history && Array.isArray(cardData.history)) {
-                  const updatedHistory = cardData.history.filter(
+                if (recordData.history && Array.isArray(recordData.history)) {
+                  const updatedHistory = recordData.history.filter(
                     (entry) => !deletedKeys.includes(entry.field)
                   );
-                  if (updatedHistory.length !== cardData.history.length) {
+                  if (updatedHistory.length !== recordData.history.length) {
                     updateData.history = updatedHistory;
                   }
                 }
               }
 
-              if (newTypeOfCards && newTypeOfCards !== typeOfCards) {
-                updateData.typeOfCards = newTypeOfCards;
+              if (newTypeOfRecords && newTypeOfRecords !== typeOfRecords) {
+                updateData.typeOfRecords = newTypeOfRecords;
               }
 
               if (Object.keys(updateData).length > 0) {
-                functions.logger.info('Updating card:', { cardId: doc.id, updateData });
+                functions.logger.info('Updating record:', { recordId: doc.id, updateData });
                 batch.update(doc.ref, updateData);
               }
             });
 
-            totalUpdatedCards += snapshot.size;
+            totalUpdatedRecords += snapshot.size;
             messages.push(
-              `Processed ${snapshot.size} cards for typeOfCards: ${typeOfCards}${
+              `Processed ${snapshot.size} records for typeOfRecords: ${typeOfRecords}${
                 deletedKeys && deletedKeys.length > 0 ? `, deleted keys: ${deletedKeys.join(', ')}` : ''
-              }${newTypeOfCards ? `, updated to newTypeOfCards: ${newTypeOfCards}` : ''}`
+              }${newTypeOfRecords ? `, updated to newTypeOfRecords: ${newTypeOfRecords}` : ''}`
             );
           }
 
           if (newTemplate) {
-            functions.logger.info('Updating cardTemplate:', { docId, newTemplate });
+            functions.logger.info('Updating recordTemplate:', { docId, newTemplate });
             batch.set(templateRef, newTemplate);
             totalUpdatedTemplates += 1;
-            messages.push(`Updated cardTemplate: ${docId}, typeOfCards: ${newTemplate.typeOfCards}`);
-          } else if (newTypeOfCards) {
+            messages.push(`Updated recordTemplate: ${docId}, typeOfRecords: ${newTemplate.typeOfRecords}`);
+          } else if (newTypeOfRecords) {
             const updateData = {
-              typeOfCards: newTypeOfCards,
-              name: newTypeOfCards,
+              typeOfRecords: newTypeOfRecords,
+              name: newTypeOfRecords,
             };
-            functions.logger.info('Partially updating cardTemplate:', { docId, updateData });
+            functions.logger.info('Partially updating recordTemplate:', { docId, updateData });
             batch.update(templateRef, updateData);
             totalUpdatedTemplates += 1;
-            messages.push(`Partially updated cardTemplate: ${docId}`);
+            messages.push(`Partially updated recordTemplate: ${docId}`);
           }
         }
       }
 
       if (totalUpdatedProfiles > 0 || totalUpdatedTemplates > 0) {
         functions.logger.info('Committing batch with updates:', { 
-          totalUpdatedCards, 
+          totalUpdatedRecords, 
           totalUpdatedTemplates, 
           totalUpdatedProfiles 
         });
         await batch.commit();
         functions.logger.info('Batch committed successfully:', { 
-          totalUpdatedCards, 
+          totalUpdatedRecords, 
           totalUpdatedTemplates, 
           totalUpdatedProfiles 
         });
@@ -852,16 +852,16 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       return res.status(200).json({
         success: true,
         message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
-        updatedCardsCount: totalUpdatedCards,
+        updatedRecordsCount: totalUpdatedRecords,
         updatedTemplatesCount: totalUpdatedTemplates,
         updatedProfilesCount: totalUpdatedProfiles,
       });
     } catch (error) {
-      functions.logger.error('updateCardTemplatesAndCards failed', {
+      functions.logger.error('updateRecordTemplatesAndRecords failed', {
         error: error.message,
         stack: error.stack,
       });
-      return res.status(500).json({ error: `Failed to update templates and cards: ${error.message}` });
+      return res.status(500).json({ error: `Failed to update templates and records: ${error.message}` });
     }
   });
 });
@@ -954,7 +954,7 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
   }
 });
 
-exports.createNewCard = functions.https.onRequest((req, res) => {
+exports.createNewRecord = functions.https.onRequest((req, res) => {
   corsAllOrigins(req, res, async () => {
     if (req.method === 'OPTIONS') {
       return res.status(204).send('');
@@ -973,56 +973,56 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
       } else {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
       }
-      const { businessId, cardData, fieldsToConvertToTimeStamps } = body || {};
-      if (!businessId || !cardData || typeof cardData !== 'object') {
+      const { businessId, recordData, fieldsToConvertToTimeStamps } = body || {};
+      if (!businessId || !recordData || typeof recordData !== 'object') {
         return res.status(400).json({
-          error: `Missing or invalid required fields: ${!businessId ? 'businessId ' : ''}${!cardData ? 'cardData' : ''}`
+          error: `Missing or invalid required fields: ${!businessId ? 'businessId ' : ''}${!recordData ? 'recordData' : ''}`
         });
       }
 
-      // Check for required fields in cardData
-      if (!cardData.typeOfCards) {
+      // Check for required fields in recordData
+      if (!recordData.typeOfRecords) {
         return res.status(400).json({
-          error: 'Missing required cardData fields: typeOfCards is required.'
+          error: 'Missing required recordData fields: typeOfRecords is required.'
         });
       }
 
       // Convert specified fields to Firestore Timestamp if fieldsToConvertToTimeStamps is provided
       if (Array.isArray(fieldsToConvertToTimeStamps)) {
         fieldsToConvertToTimeStamps.forEach(key => {
-          if (cardData[key]) {
+          if (recordData[key]) {
             // Accept ISO string, JS timestamp, or {seconds, nanoseconds}
-            if (typeof cardData[key] === 'string' && !isNaN(Date.parse(cardData[key]))) {
-              cardData[key] = Timestamp.fromDate(new Date(cardData[key]));
+            if (typeof recordData[key] === 'string' && !isNaN(Date.parse(recordData[key]))) {
+              recordData[key] = Timestamp.fromDate(new Date(recordData[key]));
             } else if (
-              typeof cardData[key] === 'object' &&
-              typeof cardData[key].seconds === 'number' &&
-              typeof cardData[key].nanoseconds === 'number'
+              typeof recordData[key] === 'object' &&
+              typeof recordData[key].seconds === 'number' &&
+              typeof recordData[key].nanoseconds === 'number'
             ) {
-              cardData[key] = new Timestamp(cardData[key].seconds, cardData[key].nanoseconds);
-            } else if (typeof cardData[key] === 'number') {
+              recordData[key] = new Timestamp(recordData[key].seconds, recordData[key].nanoseconds);
+            } else if (typeof recordData[key] === 'number') {
               // If it's a JS timestamp (ms since epoch)
-              cardData[key] = Timestamp.fromDate(new Date(cardData[key]));
+              recordData[key] = Timestamp.fromDate(new Date(recordData[key]));
             }
           }
         });
       }
 
-      // Create history from cardData fields (excluding 'id' and 'history')
+      // Create history from recordData fields (excluding 'id' and 'history')
       const now = Timestamp.now();
-      const history = Object.keys(cardData)
+      const history = Object.keys(recordData)
         .filter((key) => key !== 'id' && key !== 'history')
         .map((key) => ({
           field: key,
-          value: cardData[key],
+          value: recordData[key],
           timestamp: now,
         }));
-      cardData.history = history;
+      recordData.history = history;
 
-      functions.logger.info('createNewCard payload', { cardData, fullBody: body });
+      functions.logger.info('createNewRecord payload', { recordData, fullBody: body });
 
-      const cardsCollectionRef = admin.firestore().collection('businesses').doc(businessId).collection('cards');
-      const newCardRef = await cardsCollectionRef.add(cardData);
+      const recordsCollectionRef = admin.firestore().collection('businesses').doc(businessId).collection('records');
+      const newRecordRef = await recordsCollectionRef.add(recordData);
 
       // Support both top-level and nested emailsToNotify
       const emailsToNotify = Array.isArray(body.emailsToNotify)
@@ -1030,8 +1030,8 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
         : (Array.isArray(body.data?.emailsToNotify) ? body.data.emailsToNotify : []);
 
       if (emailsToNotify.length > 0) {
-        const sheetName = cardData.sheetName || 'unknown';
-        const docId = newCardRef.id;
+        const sheetName = recordData.sheetName || 'unknown';
+        const docId = newRecordRef.id;
         const leadUrl = `https://www.apx.gr/sheets/${encodeURIComponent(sheetName)}/${docId}`;
         for (const notifyEmail of emailsToNotify) {
           try {
@@ -1056,15 +1056,15 @@ exports.createNewCard = functions.https.onRequest((req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'Card created successfully',
-        cardId: newCardRef.id,
+        message: 'Record created successfully',
+        recordId: newRecordRef.id,
       });
     } catch (error) {
-      functions.logger.error('createNewCard failed', {
+      functions.logger.error('createNewRecord failed', {
         error: error.message,
         stack: error.stack,
       });
-      return res.status(500).json({ error: `Failed to create new card: ${error.message}` });
+      return res.status(500).json({ error: `Failed to create new record: ${error.message}` });
     }
   });
 });

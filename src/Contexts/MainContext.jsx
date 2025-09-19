@@ -20,9 +20,9 @@ export const MainContextProvider = ({ children }) => {
   const [businessId, setBusinessId] = useState(null);
   const [userAuthChecked, setUserAuthChecked] = useState(false);
   const [sheets, setSheets] = useState({ allSheets: [], structure: [], deletedSheetId: null });
-  const [cards, setCards] = useState([]);
-  // Cache cards per sheetId: { [sheetId]: cardsArray }
-  const [cardsCache, setCardsCache] = useState({});
+  const [records, setRecords] = useState([]);
+  // Cache records per sheetId: { [sheetId]: recordsArray }
+  const [recordsCache, setRecordsCache] = useState({});
   const [templateProfiles, setTemplateProfiles] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
@@ -33,7 +33,7 @@ export const MainContextProvider = ({ children }) => {
   const [isSignup, setIsSignup] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(true); // UI loads immediately
   const [activeSheetName, setActiveSheetName] = useState(null);
-  const [sheetCardsFetched, setSheetCardsFetched] = useState({});
+  const [sheetRecordsFetched, setSheetRecordsFetched] = useState({});
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [teamMembers, setTeamMembers] = useState([]);
   const [bannerQueue, setBannerQueue] = useState([]);
@@ -45,11 +45,11 @@ export const MainContextProvider = ({ children }) => {
   const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
   const prevStates = useRef({
     sheets: { allSheets: [], structure: [], deletedSheetId: null },
-    cards: [],
+    records: [],
     metrics: [],
     dashboards: [],
   });
-  const isUpdatingCardsFromTemplate = useRef(false);
+  const isUpdatingRecordsFromTemplate = useRef(false);
   const isBatchProcessing = useRef(false);
   const processedTeamMembers = useRef(new Set());
   const displayedMessages = useRef(new Set());
@@ -58,7 +58,7 @@ export const MainContextProvider = ({ children }) => {
   const lastSheetNameFromClickRef = useRef(null);
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
-  const memoizedCards = useMemo(() => cards, [cards]);
+  const memoizedRecords = useMemo(() => records, [records]);
   const memoizedTemplateProfiles = useMemo(() => templateProfiles, [templateProfiles]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
@@ -196,12 +196,12 @@ export const MainContextProvider = ({ children }) => {
             const fetches = [];
             if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
               let sheetNameFromUrl = null;
-              let cardIdFromUrl = null;
+              let recordIdFromUrl = null;
               const match = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
               if (match) {
                 sheetNameFromUrl = decodeURIComponent(match[1]);
                 if (match[2]) {
-                  cardIdFromUrl = decodeURIComponent(match[2]);
+                  recordIdFromUrl = decodeURIComponent(match[2]);
                 }
               }
               if (sheetNameFromUrl) {
@@ -237,7 +237,7 @@ export const MainContextProvider = ({ children }) => {
                   businessId: fetchedBusinessId,
                   route: '/dashboard',
                   setSheets,
-                  setCards,
+                  setRecords,
                   setTemplateProfiles,
                   setMetrics,
                   setDashboards,
@@ -251,7 +251,7 @@ export const MainContextProvider = ({ children }) => {
                   businessId: fetchedBusinessId,
                   route: '/metrics',
                   setSheets,
-                  setCards,
+                  setRecords,
                   setTemplateProfiles,
                   setMetrics,
                   setDashboards,
@@ -286,7 +286,7 @@ export const MainContextProvider = ({ children }) => {
           setUser(null);
           setBusinessId(null);
           setSheets({ allSheets: [], structure: [], deletedSheetId: null });
-          setCards([]);
+          setRecords([]);
           setMetrics([]);
           setDashboards([]);
           setTeamMembers([]);
@@ -298,7 +298,7 @@ export const MainContextProvider = ({ children }) => {
           hasFetched.current = { sheets: false, dashboard: false, metrics: false };
           prevStates.current = {
             sheets: { allSheets: [], structure: [], deletedSheetId: null },
-            cards: [],
+            records: [],
             metrics: [],
             dashboards: [],
           };
@@ -419,17 +419,17 @@ export const MainContextProvider = ({ children }) => {
       const sheetId = sheetObj?.docId;
       if (!sheetId) return;
       // If already fetching or fetched, don't re-fetch
-      if (fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
+      if (fetchingSheetIdsRef.current.has(sheetId) || sheetRecordsFetched[sheetId]) {
         // Restore from cache if available
-        if (cardsCache[sheetId]) {
-          setCards(cardsCache[sheetId]);
+        if (recordsCache[sheetId]) {
+          setRecords(recordsCache[sheetId]);
         }
         return;
       }
-      // If we have cached cards for this sheet, use them instead of fetching
-      if (cardsCache[sheetId]) {
-        setCards(cardsCache[sheetId]);
-        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
+      // If we have cached records for this sheet, use them instead of fetching
+      if (recordsCache[sheetId]) {
+        setRecords(recordsCache[sheetId]);
+        setSheetRecordsFetched((prev) => ({ ...prev, [sheetId]: true }));
         return;
       }
       fetchingSheetIdsRef.current.add(sheetId);
@@ -437,16 +437,16 @@ export const MainContextProvider = ({ children }) => {
         businessId,
         route: '/sheets',
         setTemplateProfiles,
-        setCards: (fetchedCards) => {
-          setCards(fetchedCards);
-          setCardsCache((prev) => ({ ...prev, [sheetId]: fetchedCards }));
+        setRecords: (fetchedRecords) => {
+          setRecords(fetchedRecords);
+          setRecordsCache((prev) => ({ ...prev, [sheetId]: fetchedRecords }));
         },
         setMetrics,
         setDashboards,
         activeSheetName,
         updateSheets: false,
       }).then((unsubscribe) => {
-        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
+        setSheetRecordsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
         // Store the unsubscribe function
         if (typeof unsubscribe === 'function') {
@@ -456,9 +456,9 @@ export const MainContextProvider = ({ children }) => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetRecordsFetched]);
 
-  // Utility to normalize sheet names (replace dashes with spaces, ignore cardId if present)
+  // Utility to normalize sheet names (replace dashes with spaces, ignore recordId if present)
   const normalizeSheetName = (name) => {
     if (!name) return name;
     // If the name contains a slash, only use the first segment (the sheet name)
@@ -467,7 +467,7 @@ export const MainContextProvider = ({ children }) => {
     return normalized;
   };
 
-  // Update setActiveSheetNameWithRef to always normalize (ignore cardId)
+  // Update setActiveSheetNameWithRef to always normalize (ignore recordId)
   const setActiveSheetNameWithRef = (name) => {
     if (typeof name === 'string' && name.includes('/')) {
       console.warn('[setActiveSheetNameWithRef] Received sheet name with "/":', name);
@@ -504,27 +504,27 @@ export const MainContextProvider = ({ children }) => {
     if (!user || !businessId || !isDataLoaded) return;
 
     const currentSheet = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
-    const currentCardTypeFilters = currentSheet?.cardTypeFilters || {};
-    const currentTypeOfCardsToDisplay = currentSheet?.typeOfCardsToDisplay || [];
+    const currentRecordTypeFilters = currentSheet?.recordTypeFilters || {};
+    const currentTypeOfRecordsToDisplay = currentSheet?.typeOfRecordsToDisplay || [];
     
     const prevSheet = prevStates.current.sheets.allSheets.find(
       (s) => s.sheetName === activeSheetName
     );
-    const prevCardTypeFilters = prevSheet?.cardTypeFilters || {};
-    const prevTypeOfCardsToDisplay = prevSheet?.typeOfCardsToDisplay || [];
+    const prevRecordTypeFilters = prevSheet?.recordTypeFilters || {};
+    const prevTypeOfRecordsToDisplay = prevSheet?.typeOfRecordsToDisplay || [];
 
-    const cardTypeFiltersChanged = JSON.stringify(currentCardTypeFilters) !== JSON.stringify(prevCardTypeFilters);
-    const typeOfCardsToDisplayChanged = JSON.stringify(currentTypeOfCardsToDisplay) !== JSON.stringify(prevTypeOfCardsToDisplay);
+    const recordTypeFiltersChanged = JSON.stringify(currentRecordTypeFilters) !== JSON.stringify(prevRecordTypeFilters);
+    const typeOfRecordsToDisplayChanged = JSON.stringify(currentTypeOfRecordsToDisplay) !== JSON.stringify(prevTypeOfRecordsToDisplay);
 
-    if (cardTypeFiltersChanged || typeOfCardsToDisplayChanged) {
+    if (recordTypeFiltersChanged || typeOfRecordsToDisplayChanged) {
       if (currentSheet?.docId) {
-        setSheetCardsFetched((prev) => {
+        setSheetRecordsFetched((prev) => {
           const newFetched = { ...prev };
           delete newFetched[currentSheet.docId];
           return newFetched;
         });
-        // Also clear the cards cache for this sheet to force a fresh fetch
-        setCardsCache((prev) => {
+        // Also clear the records cache for this sheet to force a fresh fetch
+        setRecordsCache((prev) => {
           const newCache = { ...prev };
           delete newCache[currentSheet.docId];
           return newCache;
@@ -536,14 +536,14 @@ export const MainContextProvider = ({ children }) => {
   useEffect(() => {
     if (!user || !businessId || !isDataLoaded || isBatchProcessing.current) return;
 
-    if (isUpdatingCardsFromTemplate.current) {
-      isUpdatingCardsFromTemplate.current = false;
-      prevStates.current = { sheets, cards, metrics, dashboards };
+    if (isUpdatingRecordsFromTemplate.current) {
+      isUpdatingRecordsFromTemplate.current = false;
+      prevStates.current = { sheets, records, metrics, dashboards };
       return;
     }
 
     if (sheets.allSheets.length === 0 && sheets.structure.length === 0 && !sheets.deletedSheetId) {
-      prevStates.current = { sheets, cards, metrics, dashboards };
+      prevStates.current = { sheets, records, metrics, dashboards };
       return;
     }
 
@@ -568,8 +568,8 @@ export const MainContextProvider = ({ children }) => {
         getCollectionData: (state) => state.allSheets,
         setCollectionData: (state, data) => ({ ...state, allSheets: data }),
       },
-      cards: {
-        collectionPath: () => collection(db, 'businesses', businessId, 'cards'),
+      records: {
+        collectionPath: () => collection(db, 'businesses', businessId, 'records'),
         getCollectionData: (state) => state,
         setCollectionData: (state, data) => data,
       },
@@ -595,56 +595,56 @@ export const MainContextProvider = ({ children }) => {
         const isBusinessUser = user.uid === businessId;
 
         // Filtering and mapping
-        const modifiedCards = cards.filter((card) => card.isModified);
+        const modifiedRecords = records.filter((record) => record.isModified);
         const accessibleSheets = sheets.allSheets;
-        const accessibleCardTypes = new Set(
+        const accessibleRecordTypes = new Set(
           accessibleSheets.flatMap((sheet) =>
-            Array.isArray(sheet.typeOfCardsToDisplay) ? sheet.typeOfCardsToDisplay : []
+            Array.isArray(sheet.typeOfRecordsToDisplay) ? sheet.typeOfRecordsToDisplay : []
           )
         );
 
-        // Track added cards to assign docIds
-        const addedCardsMap = new Map();
+        // Track added records to assign docIds
+        const addedRecordsMap = new Map();
 
-        // Batch add for cards
-        for (const card of modifiedCards) {
-          const isCardAccessible = isBusinessUser || accessibleCardTypes.has(card.typeOfCards);
-          if (!isCardAccessible) {
+        // Batch add for records
+        for (const record of modifiedRecords) {
+          const isRecordAccessible = isBusinessUser || accessibleRecordTypes.has(record.typeOfRecords);
+          if (!isRecordAccessible) {
             continue;
           }
           let docRef;
-          if (card.action === 'add') {
-            docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
-            addedCardsMap.set(card, docRef.id); // Map original card to new Firestore ID
-            const { isModified, action, docId, sheetName, ...cardData } = card;
+          if (record.action === 'add') {
+            docRef = doc(stateConfig.records.collectionPath()); // Firestore will generate ID
+            addedRecordsMap.set(record, docRef.id); // Map original record to new Firestore ID
+            const { isModified, action, docId, sheetName, ...recordData } = record;
             
             // Clean up undefined values for Firestore
-            const cleanCardData = {};
-            Object.keys(cardData).forEach(key => {
-              if (cardData[key] !== undefined) {
-                cleanCardData[key] = cardData[key];
+            const cleanRecordData = {};
+            Object.keys(recordData).forEach(key => {
+              if (recordData[key] !== undefined) {
+                cleanRecordData[key] = recordData[key];
               }
             });
             
-            batch.set(docRef, cleanCardData);
+            batch.set(docRef, cleanRecordData);
             hasChanges = true;
-          } else if (card.action === 'remove') {
-            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
+          } else if (record.action === 'remove') {
+            docRef = doc(stateConfig.records.collectionPath(), record.docId);
             batch.delete(docRef);
             hasChanges = true;
-          } else if (card.action === 'update') {
-            docRef = doc(stateConfig.cards.collectionPath(), card.docId);
-            const { isModified, action, docId, sheetName, ...cardData } = card;
+          } else if (record.action === 'update') {
+            docRef = doc(stateConfig.records.collectionPath(), record.docId);
+            const { isModified, action, docId, sheetName, ...recordData } = record;
             
             // Clean up undefined values for Firestore
-            const cleanCardData = {};
-            Object.keys(cardData).forEach(key => {
-              if (cardData[key] !== undefined) {
-                cleanCardData[key] = cardData[key];
+            const cleanRecordData = {};
+            Object.keys(recordData).forEach(key => {
+              if (recordData[key] !== undefined) {
+                cleanRecordData[key] = recordData[key];
               }
             });
             
-            batch.set(docRef, cleanCardData);
+            batch.set(docRef, cleanRecordData);
             hasChanges = true;
           }
         }
@@ -665,10 +665,10 @@ export const MainContextProvider = ({ children }) => {
           }
 
           // NOTE: Template batch operations disabled - now handled via profile-based system in ModalUtils
-          // Templates are stored within templateProfiles and managed through CardsTemplate modal
-          // const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
-          // for (const template of modifiedCardTemplates) {
-          //   const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
+          // Templates are stored within templateProfiles and managed through RecordsTemplate modal
+          // const modifiedRecordTemplates = recordTemplates.filter((template) => template.isModified);
+          // for (const template of modifiedRecordTemplates) {
+          //   const docRef = doc(stateConfig.recordTemplates.collectionPath(), template.docId);
           //   if (template.action === 'remove') {
           //     batch.delete(docRef);
           //     hasChanges = true;
@@ -697,7 +697,7 @@ export const MainContextProvider = ({ children }) => {
           const collectionsToCheck = ['sheets'];
           for (const stateKey of collectionsToCheck) {
             const config = stateConfig[stateKey];
-            const currentState = { sheets, cards, metrics, dashboards }[stateKey];
+            const currentState = { sheets, records, metrics, dashboards }[stateKey];
             const prevState = prevStates.current[stateKey];
 
             const currentCollectionData = config.getCollectionData(currentState);
@@ -766,25 +766,25 @@ export const MainContextProvider = ({ children }) => {
           await batch.commit();
 
           // Update local state after commit
-          if (modifiedCards.length > 0) {
-            // Update cards state, ensuring isModified and action are cleared
-            const updatedCards = cards
-              .filter((card) => !(card.isModified && card.action === 'remove'))
-              .map((card) => {
-                if (card.isModified) {
-                  const newDocId = addedCardsMap.get(card) || card.docId;
-                  const { isModified, action, ...cleanCard } = card;
-                  return { ...cleanCard, docId: newDocId };
+          if (modifiedRecords.length > 0) {
+            // Update records state, ensuring isModified and action are cleared
+            const updatedRecords = records
+              .filter((record) => !(record.isModified && record.action === 'remove'))
+              .map((record) => {
+                if (record.isModified) {
+                  const newDocId = addedRecordsMap.get(record) || record.docId;
+                  const { isModified, action, ...cleanRecord } = record;
+                  return { ...cleanRecord, docId: newDocId };
                 }
-                return card;
+                return record;
               });
-            setCards(updatedCards);
+            setRecords(updatedRecords);
 
-            // Update cardsCache for the current sheet
+            // Update recordsCache for the current sheet
             const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
             const sheetId = sheetObj?.docId;
             if (sheetId) {
-              setCardsCache((prev) => ({ ...prev, [sheetId]: updatedCards }));
+              setRecordsCache((prev) => ({ ...prev, [sheetId]: updatedRecords }));
             }
           }
 
@@ -842,7 +842,7 @@ export const MainContextProvider = ({ children }) => {
         alert('Failed to save changes. Please try again.');
       } finally {
         isBatchProcessing.current = false;
-        prevStates.current = { sheets, cards, metrics, dashboards };
+        prevStates.current = { sheets, records, metrics, dashboards };
       }
     };
 
@@ -885,7 +885,7 @@ export const MainContextProvider = ({ children }) => {
     };
 
     processUpdates();
-  }, [user, businessId, memoizedSheets, memoizedCards, memoizedMetrics, memoizedDashboards, isDataLoaded]);
+  }, [user, businessId, memoizedSheets, memoizedRecords, memoizedMetrics, memoizedDashboards, isDataLoaded]);
 
   // Utility: shallow compare for arrays/objects
   const shallowEqual = (a, b) => {
@@ -919,21 +919,21 @@ export const MainContextProvider = ({ children }) => {
       }
       setSheets(newSheets);
     },
-    cards,
-    setCards: (newCards) => {
-      if (shallowEqual(cards, newCards)) {
+    records,
+    setRecords: (newRecords) => {
+      if (shallowEqual(records, newRecords)) {
         return;
       }
-      setCards(newCards);
+      setRecords(newRecords);
       // Also update cache for current sheet if possible
       const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
       const sheetId = sheetObj?.docId;
       if (sheetId) {
-        setCardsCache((prev) => ({ ...prev, [sheetId]: newCards }));
+        setRecordsCache((prev) => ({ ...prev, [sheetId]: newRecords }));
       }
     },
-    cardsCache,
-    setCardsCache,
+    recordsCache,
+    setRecordsCache,
     isDarkTheme,
     setIsDarkTheme,
     themeRef,
@@ -944,7 +944,7 @@ export const MainContextProvider = ({ children }) => {
       }
       setTemplateProfiles(newProfiles);
     },
-    cardTemplates: templateProfiles?.flatMap(profile => 
+    recordTemplates: templateProfiles?.flatMap(profile => 
       (profile.templates || []).map(template => ({
         ...template,
         profileId: profile.id,
@@ -981,8 +981,8 @@ export const MainContextProvider = ({ children }) => {
     setIsSignup,
     activeSheetName,
     setActiveSheetName: setActiveSheetNameWithRef,
-    sheetCardsFetched,
-    setSheetCardsFetched,
+    sheetRecordsFetched,
+    setSheetRecordsFetched,
     businessId,
     pendingInvitations,
     teamMembers,
@@ -993,15 +993,15 @@ export const MainContextProvider = ({ children }) => {
     actions,
     setActions,
     dataLoading, // New: expose loading state for Firestore data
-  }), [sheets, cards, isDarkTheme, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetCardsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
+  }), [sheets, records, isDarkTheme, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetRecordsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
 
-  // Debounce for sheet card fetches
+  // Debounce for sheet record fetches
   const debounceRef = useRef();
   useEffect(() => {
     if (!user || !businessId || location.pathname !== '/sheets' || !activeSheetName) return;
     const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const sheetId = sheetObj?.docId;
-    if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetCardsFetched[sheetId]) {
+    if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetRecordsFetched[sheetId]) {
       return;
     }
     if (debounceRef.current) {
@@ -1012,14 +1012,14 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
-        setCards,
+        setRecords,
         setTemplateProfiles,
         setMetrics,
         setDashboards,
         activeSheetName,
         updateSheets: false,
       }).then((unsubscribe) => {
-        setSheetCardsFetched((prev) => ({ ...prev, [sheetId]: true }));
+        setSheetRecordsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
         // Store the unsubscribe function
         if (typeof unsubscribe === 'function') {
@@ -1030,7 +1030,7 @@ export const MainContextProvider = ({ children }) => {
       });
     }, 200); // 200ms debounce
     return () => clearTimeout(debounceRef.current);
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetCardsFetched]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetRecordsFetched]);
 
   return (
     <MainContext.Provider value={contextValue}>

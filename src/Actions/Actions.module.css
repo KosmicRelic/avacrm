@@ -82,7 +82,7 @@
   transition: background 0.3s ease;
 }
 .sectionGroup.darkTheme {
-  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark cards/containers */
+  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark records/containers */
 }
 
 .sectionTitle {
@@ -101,7 +101,7 @@
   transition: background 0.3s ease;
 }
 .headerConfig.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css cardDetailsContainer.darkTheme */
+  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css recordDetailsContainer.darkTheme */
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
@@ -326,7 +326,7 @@
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
-.cardDetailsContainer {
+.recordDetailsContainer {
   width: 70%;
   height: 100%;
   background: rgb(255, 255, 255);
@@ -340,11 +340,11 @@
   transition: background 0.3s ease, box-shadow 0.3s ease;
   padding: 20px;
 }
-.cardDetailsContainer.darkTheme {
+.recordDetailsContainer.darkTheme {
   background: rgb(28,28,30);
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-.cardDetailsMobile {
+.recordDetailsMobile {
   position: absolute;
   top: 0;
   left: 0;
@@ -356,23 +356,23 @@
   z-index: 40;
   transition: background 0.3s;
 }
-.cardDetailsMobile .formContent {
+.recordDetailsMobile .formContent {
   background: #fff;
   border-radius: 24px 24px 0 0;
   min-height: 100vh;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   padding-bottom: 32px;
 }
-.cardDetailsMobile.darkTheme .formContent {
+.recordDetailsMobile.darkTheme .formContent {
   background: #1c1c1e;
 }
-.cardOpen {
-  animation: slideInCard 0.3s ease-out forwards;
+.recordOpen {
+  animation: slideInRecord 0.3s ease-out forwards;
 }
-.cardClosed {
-  animation: slideOutCard 0.3s ease-out forwards;
+.recordClosed {
+  animation: slideOutRecord 0.3s ease-out forwards;
 }
-@keyframes slideInCard {
+@keyframes slideInRecord {
   from {
     transform: translateX(100%);
   }
@@ -380,7 +380,7 @@
     transform: translateX(0);
   }
 }
-@keyframes slideOutCard {
+@keyframes slideOutRecord {
   from {
     transform: translateX(0);
   }
@@ -480,7 +480,7 @@
 }
 
 .sectionGroup.darkTheme {
-  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark cards/containers */
+  background: rgba(58, 58, 60, 0.9); /* matches Sheets.module.css dark records/containers */
 }
 
 .sectionTitle.darkTheme {
@@ -488,7 +488,7 @@
 }
 
 .headerConfig.darkTheme {
-  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css cardDetailsContainer.darkTheme */
+  background: rgba(44, 44, 46, 0.95); /* matches Sheets.module.css recordDetailsContainer.darkTheme */
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
@@ -541,11 +541,11 @@
   color: #0a84ff;
 }
 
-.cardDetailsContainer.darkTheme {
+.recordDetailsContainer.darkTheme {
   background: rgb(28,28,30);
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-.cardDetailsMobile.darkTheme .formContent {
+.recordDetailsMobile.darkTheme .formContent {
   background: #1c1c1e;
 }
 
@@ -642,10 +642,10 @@
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
   }
-  .cardDetailsContainer {
+  .recordDetailsContainer {
     display: none;
   }
-  .cardDetailsMobile {
+  .recordDetailsMobile {
     width: 100%;
     height: 100%;
     z-index: 40;

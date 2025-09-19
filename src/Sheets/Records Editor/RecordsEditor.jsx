@@ -1,10 +1,10 @@
 import React, { useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import styles from './CardsEditor.module.css';
+import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, formatHistoryEntry, getCardCreator, getLastModifier } from '../../Utils/assignedToUtils';
+import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier } from '../../Utils/assignedToUtils';
 
 // Utility function to format field names
 const formatFieldName = (key) => {
@@ -53,21 +53,21 @@ function parseLocalDate(dateString) {
   return new Date(year, month - 1, day);
 }
 
-const CardsEditor = ({
+const RecordsEditor = ({
   onClose,
   onSave,
-  onOpenNewCard, // New prop for opening a new card after pipeline execution
+  onOpenNewRecord, // New prop for opening a new record after pipeline execution
   initialRowData,
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, templateProfiles, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
+  const { sheets, recordTemplates, templateProfiles, headers, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
-  const initialTemplate = initialRowData?.typeOfCards
-    ? cardTemplates?.find((t) => t.name === initialRowData.typeOfCards)
+  const initialTemplate = initialRowData?.typeOfRecords
+    ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecords)
     : null;
-  const [selectedCardType, setSelectedCardType] = useState(initialTemplate?.name || '');
+  const [selectedRecordType, setSelectedRecordType] = useState(initialTemplate?.name || '');
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
   const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId);
   const [openSections, setOpenSections] = useState([]);
@@ -79,9 +79,9 @@ const CardsEditor = ({
   const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
-    // Use formData.typeOfCards first (for pipeline conversions), then fall back to other sources
-    const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
-    const template = cardTemplates?.find((t) => t.name === templateName);
+    // Use formData.typeOfRecords first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfRecords || (isEditing ? initialRowData?.typeOfRecords : selectedRecordType);
+    const template = recordTemplates?.find((t) => t.name === templateName);
     
     if (!template || !template.sections) return [];
     return template.sections.map((section) => ({
@@ -97,19 +97,19 @@ const CardsEditor = ({
           };
         }),
     }));
-  }, [selectedCardType, cardTemplates, isEditing, initialRowData, formData.typeOfCards]);
+  }, [selectedRecordType, recordTemplates, isEditing, initialRowData, formData.typeOfRecords]);
 
   // Ensure formData has all required fields properly initialized
   useEffect(() => {
-    if (!isEditing && selectedCardType && !formData.linkId) {
+    if (!isEditing && selectedRecordType && !formData.linkId) {
       setFormData(prev => ({
         ...prev,
         linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         assignedTo: prev.assignedTo || user?.email || '',
-        typeOfCards: selectedCardType
+        typeOfRecords: selectedRecordType
       }));
     }
-  }, [selectedCardType, isEditing, formData.linkId, user?.email]);
+  }, [selectedRecordType, isEditing, formData.linkId, user?.email]);
 
   const historicalFormData = useMemo(() => {
     if (!isViewingHistory || !selectedHistoryDate || !formData.history) {
@@ -169,10 +169,10 @@ const CardsEditor = ({
   const isBusinessUser = user && user.businessId === user.uid;
 
   const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
-  const cardTypeOptions = useMemo(() => {
+  const recordTypeOptions = useMemo(() => {
     if (!selectedSheet) return [];
     const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-    return sheet?.typeOfCardsToDisplay || [];
+    return sheet?.typeOfRecordsToDisplay || [];
   }, [selectedSheet, sheets]);
 
   // Helper to get display name from uid
@@ -204,10 +204,10 @@ const CardsEditor = ({
   useEffect(() => {
     if (selectedSheet && !isEditing) {
       const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-      if (sheet?.typeOfCardsToDisplay?.length === 1) {
-        setSelectedCardType(sheet.typeOfCardsToDisplay[0]);
+      if (sheet?.typeOfRecordsToDisplay?.length === 1) {
+        setSelectedRecordType(sheet.typeOfRecordsToDisplay[0]);
       } else {
-        setSelectedCardType('');
+        setSelectedRecordType('');
       }
     }
   }, [selectedSheet, sheets, isEditing]);
@@ -215,45 +215,45 @@ const CardsEditor = ({
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
     if (initialRowData) {
-      const newTemplate = initialRowData.typeOfCards
-        ? cardTemplates?.find((t) => t.name === initialRowData.typeOfCards)
+      const newTemplate = initialRowData.typeOfRecords
+        ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecords)
         : null;
       
       setSelectedSheet(initialRowData.sheetName || preSelectedSheet || '');
-      setSelectedCardType(newTemplate?.name || '');
+      setSelectedRecordType(newTemplate?.name || '');
       setFormData({ ...initialRowData });
       setIsEditing(!!initialRowData.docId);
       setView('editor');
       
-      // Reset other states for the new card
+      // Reset other states for the new record
       setIsViewingHistory(false);
       setSelectedHistoryDate(null);
       setIsHistoryModalOpen(false);
       setShowInputsMap({});
     }
-  }, [initialRowData, cardTemplates, preSelectedSheet]);
+  }, [initialRowData, recordTemplates, preSelectedSheet]);
 
   const handleSelectionNext = useCallback(() => {
     if (!selectedSheet) {
       alert('Please select a sheet.');
       return;
     }
-    if (!selectedCardType) {
-      alert('Please select a card type.');
+    if (!selectedRecordType) {
+      alert('Please select a record type.');
       return;
     }
-    const template = cardTemplates?.find((t) => t.name === selectedCardType);
+    const template = recordTemplates?.find((t) => t.name === selectedRecordType);
     if (!template) {
-      alert('Invalid card type selected.');
+      alert('Invalid record type selected.');
       return;
     }
     setFormData((prev) => ({
       ...prev,
       sheetName: selectedSheet,
-      typeOfCards: template.name,
+      typeOfRecords: template.name,
     }));
     setView('editor');
-  }, [selectedSheet, selectedCardType, cardTemplates]);
+  }, [selectedSheet, selectedRecordType, recordTemplates]);
 
   const handleClose = useCallback(() => {
     setIsViewingHistory(false);
@@ -264,7 +264,7 @@ const CardsEditor = ({
 
   const handleInputChange = useCallback(
     (key, value, fieldType, extra) => {
-      if (key === 'docId' || key === 'typeOfCards') {
+      if (key === 'docId' || key === 'typeOfRecords') {
         return;
       }
       if (!isViewingHistory) {
@@ -329,11 +329,11 @@ const CardsEditor = ({
     [isViewingHistory, formData]
   );
 
-  // Get available pipelines for current card type (filter out already used ones)
+  // Get available pipelines for current record type (filter out already used ones)
   const getAvailablePipelines = useCallback(() => {
-    // Use formData.typeOfCards first (for pipeline conversions), then fall back to other sources
-    const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
-    const currentTemplate = cardTemplates?.find((t) => t.name === templateName);
+    // Use formData.typeOfRecords first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfRecords || (isEditing ? initialRowData?.typeOfRecords : selectedRecordType);
+    const currentTemplate = recordTemplates?.find((t) => t.name === templateName);
     
     if (!currentTemplate || !templateProfiles) {
       return [];
@@ -348,28 +348,28 @@ const CardsEditor = ({
       pipeline.sourceTemplateId === currentTemplate.docId
     );
     
-    // Filter out pipelines that have already been used for this card
+    // Filter out pipelines that have already been used for this record
     const usedPipelineIds = formData.usedPipelines || [];
     return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
-  }, [cardTemplates, templateProfiles, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
+  }, [recordTemplates, templateProfiles, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecords]);
 
-  // Execute pipeline to convert card to another type
+  // Execute pipeline to convert record to another type
   const executePipeline = useCallback((pipeline) => {
     if (!pipeline || !formData.linkId) {
       alert('Unable to execute pipeline: missing required data.');
       return;
     }
 
-    const targetTemplate = cardTemplates?.find((t) => t.docId === pipeline.targetTemplateId);
+    const targetTemplate = recordTemplates?.find((t) => t.docId === pipeline.targetTemplateId);
     if (!targetTemplate) {
       alert('Target template not found.');
       return;
     }
 
-    // Create new card data with mapped fields
-    const newCardData = {
+    // Create new record data with mapped fields
+    const newRecordData = {
       linkId: formData.linkId, // Keep the same linkId to maintain connection
-      typeOfCards: targetTemplate.name, // Use template name for consistency
+      typeOfRecords: targetTemplate.name, // Use template name for consistency
       typeOfProfile: (() => {
         // Find the profile for target template to set typeOfProfile
         if (targetTemplate.profileId && templateProfiles) {
@@ -379,7 +379,7 @@ const CardsEditor = ({
         return '';
       })(),
       assignedTo: formData.assignedTo || user?.email || '', // Always carry over assignedTo with fallback
-      history: [], // Start fresh history for new card type
+      history: [], // Start fresh history for new record type
       isModified: true,
       action: 'add',
     };
@@ -388,14 +388,14 @@ const CardsEditor = ({
     if (pipeline.fieldMappings && Array.isArray(pipeline.fieldMappings)) {
       pipeline.fieldMappings.forEach(mapping => {
         if (mapping.source && mapping.target && formData[mapping.source] !== undefined) {
-          newCardData[mapping.target] = formData[mapping.source];
+          newRecordData[mapping.target] = formData[mapping.source];
         }
       });
     }
 
     // Confirm the conversion
-    if (window.confirm(`Convert this ${formData.typeOfCards} to ${targetTemplate.name}? This will save the current card and open the new card for immediate editing.`)) {
-      // Mark this pipeline as used in the current card
+    if (window.confirm(`Convert this ${formData.typeOfRecords} to ${targetTemplate.name}? This will save the current record and open the new record for immediate editing.`)) {
+      // Mark this pipeline as used in the current record
       const updatedUsedPipelines = [...(formData.usedPipelines || []), pipeline.id];
       const updatedFormData = {
         ...formData,
@@ -404,36 +404,36 @@ const CardsEditor = ({
         action: 'update'
       };
       
-      // Save the updated source card first (to mark pipeline as used)
+      // Save the updated source record first (to mark pipeline as used)
       onSave(updatedFormData, true);
       
-      // Then create and open the new target card for immediate editing
-      if (onOpenNewCard) {
-        onOpenNewCard(newCardData);
+      // Then create and open the new target record for immediate editing
+      if (onOpenNewRecord) {
+        onOpenNewRecord(newRecordData);
       } else {
-        // Fallback: create the card and close editor
-        onSave(newCardData, false);
-        alert(`Successfully created ${targetTemplate.name} card with Link ID: ${formData.linkId}`);
+        // Fallback: create the record and close editor
+        onSave(newRecordData, false);
+        alert(`Successfully created ${targetTemplate.name} record with Link ID: ${formData.linkId}`);
         onClose();
       }
     }
-  }, [formData, cardTemplates, onSave, onClose, onOpenNewCard, user]);
+  }, [formData, recordTemplates, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
     if (!selectedSheet) {
       alert('No sheet selected.');
       return;
     }
-    const template = cardTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfCards : selectedCardType));
+    const template = recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecords : selectedRecordType));
     if (!template) {
-      alert('Invalid card type selected.');
+      alert('Invalid record type selected.');
       return;
     }
     const hasData = Object.keys(formData).some(
-      (key) => key !== 'sheetName' && key !== 'typeOfCards' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
+      (key) => key !== 'sheetName' && key !== 'typeOfRecords' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
-      alert('Please fill in at least one field to create a card.');
+      alert('Please fill in at least one field to create a record.');
       return;
     }
 
@@ -441,7 +441,7 @@ const CardsEditor = ({
       ...formData,
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
-      typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
+      typeOfRecords: isEditing ? initialRowData?.typeOfRecords : template.name,
       typeOfProfile: (() => {
         // Find the profile for this template to set typeOfProfile
         if (template.profileId && templateProfiles) {
@@ -456,7 +456,7 @@ const CardsEditor = ({
       action: isEditing ? 'update' : 'add',
     };
 
-    const requiredFields = ['docId', 'linkId', 'typeOfCards', 'history', 'isModified', 'action'];
+    const requiredFields = ['docId', 'linkId', 'typeOfRecords', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];
@@ -467,14 +467,14 @@ const CardsEditor = ({
     const timestamp = Timestamp.now();
 
     if (isViewingHistory && selectedHistoryDate) {
-      const existingCard = cards.find((card) => card.docId === initialRowData.docId);
+      const existingRecord = records.find((record) => record.docId === initialRowData.docId);
       Object.keys(historicalFormData).forEach((key) => {
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfCards' &&
+          key !== 'typeOfRecords' &&
           key !== 'history' &&
-          historicalFormData[key] !== existingCard[key]
+          historicalFormData[key] !== existingRecord[key]
         ) {
           newHistory.push({
             field: key,
@@ -489,15 +489,15 @@ const CardsEditor = ({
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      const existingCard = cards.find((card) => card.docId === initialRowData.docId);
-      if (existingCard) {
+      const existingRecord = records.find((record) => record.docId === initialRowData.docId);
+      if (existingRecord) {
         Object.keys(formData).forEach((key) => {
           if (
             key !== 'docId' &&
             key !== 'sheetName' &&
-            key !== 'typeOfCards' &&
+            key !== 'typeOfRecords' &&
             key !== 'history' &&
-            formData[key] !== existingCard[key]
+            formData[key] !== existingRecord[key]
           ) {
             newHistory.push({
               field: key,
@@ -514,7 +514,7 @@ const CardsEditor = ({
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfCards' &&
+          key !== 'typeOfRecords' &&
           key !== 'history' &&
           formData[key] &&
           formData[key].toString().trim() !== ''
@@ -539,33 +539,33 @@ const CardsEditor = ({
     formData,
     historicalFormData,
     selectedSheet,
-    selectedCardType,
+    selectedRecordType,
     onSave,
-    cardTemplates,
+    recordTemplates,
     initialRowData,
     isEditing,
     isViewingHistory,
     selectedHistoryDate,
     onClose,
-    cards,
+    records,
   ]);
 
   const handleDelete = useCallback(() => {
     if (!isEditing || !initialRowData?.docId) {
-      alert('No card to delete.');
+      alert('No record to delete.');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this card? This action will remove it from all sheets.')) {
-      setCards((prev) =>
-        prev.map((card) =>
-          card.docId === initialRowData.docId
-            ? { ...card, isModified: true, action: 'remove' }
-            : card
+    if (window.confirm('Are you sure you want to delete this record? This action will remove it from all sheets.')) {
+      setRecords((prev) =>
+        prev.map((record) =>
+          record.docId === initialRowData.docId
+            ? { ...record, isModified: true, action: 'remove' }
+            : record
         )
       );
       onClose();
     }
-  }, [isEditing, initialRowData, setCards, onClose]);
+  }, [isEditing, initialRowData, setRecords, onClose]);
 
   const toggleSection = useCallback((sectionName) => {
     setOpenSections((prev) =>
@@ -577,7 +577,7 @@ const CardsEditor = ({
 
   const handleViewHistory = useCallback(() => {
     if (!formData.history || formData.history.length === 0) {
-      alert('No history available for this card.');
+      alert('No history available for this record.');
       return;
     }
     setIsHistoryModalOpen(true);
@@ -598,21 +598,21 @@ const CardsEditor = ({
 
   const HistoryModal = () => {
     const formattedHistory = getFormattedHistory(formData, user, teamMembers);
-    const cardCreator = getCardCreator(formData, user, teamMembers);
+    const recordCreator = getRecordCreator(formData, user, teamMembers);
     const lastModifier = getLastModifier(formData, user, teamMembers);
     
     return (
       <div className={`${styles.historyModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={styles.historyModalContent}>
-          <h2>Card History</h2>
+          <h2>Record History</h2>
           
-          {/* Card Summary */}
+          {/* Record Summary */}
           <div className={`${styles.historySummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <div className={styles.historyInfo}>
-              <strong>Created by:</strong> {cardCreator.name}
-              {cardCreator.timestamp && (
+              <strong>Created by:</strong> {recordCreator.name}
+              {recordCreator.timestamp && (
                 <span className={styles.historyTimestamp}>
-                  {' '}on {formatFirestoreTimestamp(cardCreator.timestamp)}
+                  {' '}on {formatFirestoreTimestamp(recordCreator.timestamp)}
                 </span>
               )}
             </div>
@@ -655,7 +655,7 @@ const CardsEditor = ({
                       </div>
                     </div>
                     
-                    {/* Allow viewing card state at this point in time */}
+                    {/* Allow viewing record state at this point in time */}
                     <button
                       className={`${styles.viewAtTimeButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={() => handleHistoryDateSelect({
@@ -663,7 +663,7 @@ const CardsEditor = ({
                         _nanoseconds: entry.timestamp._nanoseconds,
                         date: formatFirestoreTimestamp(entry.timestamp)
                       })}
-                      title="View card as it was at this time"
+                      title="View record as it was at this time"
                     >
                       View
                     </button>
@@ -852,7 +852,7 @@ const CardsEditor = ({
               </svg>
             </button>
             <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {isEditing ? (isViewingHistory ? 'View Card History' : 'Edit Card') : view === 'selection' ? 'Create a New Card' : 'New Card'}
+              {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'selection' ? 'Create a New Record' : 'New Record'}
             </h1>
             <button
               className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -885,16 +885,16 @@ const CardsEditor = ({
                   </div>
                   <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      Card Type
+                      Record Type
                     </span>
                     <select
-                      value={selectedCardType}
-                      onChange={(e) => setSelectedCardType(e.target.value)}
-                      className={`${styles.fieldSelect} ${styles.cardTypeSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      aria-label="Select a card type"
+                      value={selectedRecordType}
+                      onChange={(e) => setSelectedRecordType(e.target.value)}
+                      className={`${styles.fieldSelect} ${styles.recordTypeSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      aria-label="Select a record type"
                     >
-                      <option value="">Select a card type</option>
-                      {cardTypeOptions.map((type) => (
+                      <option value="">Select a record type</option>
+                      {recordTypeOptions.map((type) => (
                         <option key={type} value={type}>
                           {type}
                         </option>
@@ -1049,7 +1049,7 @@ const CardsEditor = ({
                                           placeholder={`Enter ${field.name}`}
                                           aria-label={`Enter ${field.name} date`}
                                           readOnly={isViewingHistory}
-                                          disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                          disabled={field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                         <input
                                           type="time"
@@ -1063,7 +1063,7 @@ const CardsEditor = ({
                                           className={`${styles.fieldInput} ${styles.timeInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                                           aria-label={`Enter ${field.name} time`}
                                           readOnly={isViewingHistory}
-                                          disabled={isViewingHistory || field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                          disabled={isViewingHistory || field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                       </div>
                                     </div>
@@ -1078,7 +1078,7 @@ const CardsEditor = ({
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
                                   readOnly={isViewingHistory || field.key === 'assignedTo'}
-                                  disabled={field.key === 'typeOfCards' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                  disabled={field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                 />
                               )}
                             </div>
@@ -1094,47 +1094,47 @@ const CardsEditor = ({
                   ))
                 ) : (
                   <p className={`${styles.emptySection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    No sections defined for this card type.
+                    No sections defined for this record type.
                   </p>
                 )}
                 
-                {/* Card Info Section for existing cards */}
+                {/* Record Info Section for existing records */}
                 {isEditing && formData.history && formData.history.length > 0 && (
-                  <div className={`${styles.cardInfoSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div className={styles.cardInfoHeader}>
-                      <h3>Card Information</h3>
+                  <div className={`${styles.recordInfoSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.recordInfoHeader}>
+                      <h3>Record Information</h3>
                     </div>
-                    <div className={styles.cardInfoContent}>
+                    <div className={styles.recordInfoContent}>
                       {(() => {
-                        const creator = getCardCreator(formData, user, teamMembers);
+                        const creator = getRecordCreator(formData, user, teamMembers);
                         const lastModifier = getLastModifier(formData, user, teamMembers);
                         return (
                           <>
-                            <div className={styles.cardInfoItem}>
-                              <span className={styles.cardInfoLabel}>Created by:</span>
-                              <span className={styles.cardInfoValue}>
+                            <div className={styles.recordInfoItem}>
+                              <span className={styles.recordInfoLabel}>Created by:</span>
+                              <span className={styles.recordInfoValue}>
                                 {creator.name}
                                 {creator.timestamp && (
-                                  <span className={styles.cardInfoTimestamp}>
+                                  <span className={styles.recordInfoTimestamp}>
                                     {' '}on {formatFirestoreTimestamp(creator.timestamp)}
                                   </span>
                                 )}
                               </span>
                             </div>
                             {lastModifier.timestamp && creator.timestamp !== lastModifier.timestamp && (
-                              <div className={styles.cardInfoItem}>
-                                <span className={styles.cardInfoLabel}>Last modified by:</span>
-                                <span className={styles.cardInfoValue}>
+                              <div className={styles.recordInfoItem}>
+                                <span className={styles.recordInfoLabel}>Last modified by:</span>
+                                <span className={styles.recordInfoValue}>
                                   {lastModifier.name}
-                                  <span className={styles.cardInfoTimestamp}>
+                                  <span className={styles.recordInfoTimestamp}>
                                     {' '}on {formatFirestoreTimestamp(lastModifier.timestamp)}
                                   </span>
                                 </span>
                               </div>
                             )}
-                            <div className={styles.cardInfoItem}>
-                              <span className={styles.cardInfoLabel}>Total changes:</span>
-                              <span className={styles.cardInfoValue}>
+                            <div className={styles.recordInfoItem}>
+                              <span className={styles.recordInfoLabel}>Total changes:</span>
+                              <span className={styles.recordInfoValue}>
                                 {formData.history.length} modification{formData.history.length !== 1 ? 's' : ''}
                               </span>
                             </div>
@@ -1145,7 +1145,7 @@ const CardsEditor = ({
                   </div>
                 )}
                 
-                {/* Pipeline Section - Only show for saved cards with docId */}
+                {/* Pipeline Section - Only show for saved records with docId */}
                 {view === 'editor' && formData.docId && isEditing && formData.linkId && (() => {
                   const availablePipelines = getAvailablePipelines();
                   return availablePipelines.length > 0 && (
@@ -1153,11 +1153,11 @@ const CardsEditor = ({
                       <div className={styles.sectionWrapper}>
                         <div className={styles.sectionHeader}>
                           <h3>Available Conversions</h3>
-                          <p>Convert this card to another type using predefined pipelines</p>
+                          <p>Convert this record to another type using predefined pipelines</p>
                         </div>
                         <div className={styles.pipelineList}>
                           {availablePipelines.map((pipeline) => (
-                            <div key={pipeline.id} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <div key={pipeline.id} className={`${styles.pipelineRecord} ${isDarkTheme ? styles.darkTheme : ''}`}>
                               <div className={`${styles.pipelineInfo} ${isDarkTheme ? styles.darkTheme : ''}`}>
                                 <h4>{pipeline.name}</h4>
                                 <p>Convert to {pipeline.targetTemplate}</p>
@@ -1203,9 +1203,9 @@ const CardsEditor = ({
                       <button
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                         onClick={handleDelete}
-                        aria-label="Delete card"
+                        aria-label="Delete record"
                       >
-                        Delete Card
+                        Delete Record
                       </button>
                     )}
                   </div>
@@ -1220,14 +1220,14 @@ const CardsEditor = ({
   );
 };
 
-CardsEditor.propTypes = {
+RecordsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
-  onOpenNewCard: PropTypes.func, // Optional callback for opening new cards
+  onOpenNewRecord: PropTypes.func, // Optional callback for opening new records
   initialRowData: PropTypes.shape({
     docId: PropTypes.string,
     sheetName: PropTypes.string,
-    typeOfCards: PropTypes.string,
+    typeOfRecords: PropTypes.string,
     history: PropTypes.arrayOf(
       PropTypes.shape({
         field: PropTypes.string,
@@ -1246,12 +1246,12 @@ CardsEditor.propTypes = {
   preSelectedSheet: PropTypes.string,
 };
 
-CardsEditor.defaultProps = {
+RecordsEditor.defaultProps = {
   startInEditMode: false,
-  onOpenNewCard: null,
+  onOpenNewRecord: null,
 };
 
-export default CardsEditor;
+export default RecordsEditor;
 
 // .customTimePicker .react-time-picker__wrapper { border: none !important; box-shadow: none !important; background: transparent !important; }
 // .customTimePicker .react-time-picker__inputGroup { border: none !important; background: transparent !important; }

@@ -85,7 +85,7 @@ const Metrics = ({ selectedMetricData, onEditMetrics, onMetricDataChange }) => {
         </div>
       </div>
       {!isMobile && (
-        <div className={`${styles.cardDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <div className={`${styles.recordDetailsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <MetricsContent
             selectedCategory={selectedCategory}
             selectedMetric={selectedMetricData?.metric || null}
@@ -96,8 +96,8 @@ const Metrics = ({ selectedMetricData, onEditMetrics, onMetricDataChange }) => {
       )}
       {isMobile && (
         <div
-          className={`${styles.cardDetailsMobile} ${isDarkTheme ? styles.darkTheme : ''} ${
-            selectedCategory && !isClosing ? styles.cardOpen : styles.cardClosed
+          className={`${styles.recordDetailsMobile} ${isDarkTheme ? styles.darkTheme : ''} ${
+            selectedCategory && !isClosing ? styles.recordOpen : styles.recordClosed
           }`}
         >
           <MetricsContent

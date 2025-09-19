@@ -124,7 +124,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
 
   const handleDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.configCard}`);
+    dragItemRef.current = e.target.closest(`.${styles.configRecord}`);
     e.dataTransfer.effectAllowed = "move";
     dragItemRef.current?.classList.add(styles.dragging);
   }, []);
@@ -158,7 +158,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
-      dragItemRef.current = e.target.closest(`.${styles.configCard}`);
+      dragItemRef.current = e.target.closest(`.${styles.configRecord}`);
       dragItemRef.current?.classList.add(styles.dragging);
     }
   }, []);
@@ -208,7 +208,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
 
   const handleFolderSheetDragStart = useCallback((e, index) => {
     setDraggedIndex(index);
-    dragItemRef.current = e.target.closest(`.${styles.configCard}`);
+    dragItemRef.current = e.target.closest(`.${styles.configRecord}`);
     e.dataTransfer.effectAllowed = "move";
     dragItemRef.current?.classList.add(styles.dragging);
   }, []);
@@ -243,7 +243,7 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
       setDraggedIndex(index);
       setTouchStartY(e.touches[0].clientY);
       setTouchTargetIndex(index);
-      dragItemRef.current = e.target.closest(`.${styles.configCard}`);
+      dragItemRef.current = e.target.closest(`.${styles.configRecord}`);
       dragItemRef.current?.classList.add(styles.dragging);
     }
   }, []);
@@ -307,23 +307,23 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                 {orderedItems.map((item, index) => (
                   <div
                     key={item.id}
-                    className={`${styles.configCard} ${draggedIndex === index ? styles.dragging : ""} ${
+                    className={`${styles.configRecord} ${draggedIndex === index ? styles.dragging : ""} ${
                       isDarkTheme ? styles.darkTheme : ""
                     }`}
                     onDragOver={(e) => handleDragOver(e, index)}
                   >
-                    <div className={styles.cardIcon}>
+                    <div className={styles.recordIcon}>
                       {item.folderName ? (
                         <FaFolder size={16} />
                       ) : (
                         <BiSolidSpreadsheet size={16} />
                       )}
                     </div>
-                    <div className={styles.cardContent}>
-                      <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <div className={styles.recordContent}>
+                      <h4 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         {item.displayName}
                       </h4>
-                      <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         {item.folderName ? "Contains multiple sheets" : "Individual sheet"}
                       </p>
                     </div>
@@ -363,19 +363,19 @@ const ReOrderModal = ({ sheets, tempData, setTempData }) => {
                   orderedFolderSheets.map((sheet, index) => (
                     <div
                       key={sheet.sheetName || `sheet-${index}`}
-                      className={`${styles.configCard} ${draggedIndex === index ? styles.dragging : ""} ${
+                      className={`${styles.configRecord} ${draggedIndex === index ? styles.dragging : ""} ${
                         isDarkTheme ? styles.darkTheme : ""
                       }`}
                       onDragOver={(e) => handleFolderSheetDragOver(e, index)}
                     >
-                      <div className={styles.cardIcon}>
+                      <div className={styles.recordIcon}>
                         <BiSolidSpreadsheet size={16} />
                       </div>
-                      <div className={styles.cardContent}>
-                        <h4 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div className={styles.recordContent}>
+                        <h4 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {sheet.displayName || sheet.sheetName}
                         </h4>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           Sheet in {selectedFolder}
                         </p>
                       </div>

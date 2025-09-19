@@ -2,8 +2,8 @@ import React from 'react';
 import EditSheetsModal from '../Modal/Edit Sheets Modal/EditSheetsModal';
 import FilterModal from '../Modal/FilterModal/FilterModal';
 import ReOrderModal from '../Modal/Re Order Modal/ReOrderModal';
-import TransportModal from '../Modal/Cards Transportaion Modal/TransportModal';
-import CardsTemplate from '../Modal/Cards Template/CardsTemplate';
+import TransportModal from '../Modal/Records Transportaion Modal/RecordsTransportModal';
+import RecordsTemplate from '../Modal/Records Template/RecordsTemplate';
 import CreateSheetsAndFolders from '../Modal/Create Sheets And Folders/CreateSheetsAndFolders';
 import FolderModal from '../Modal/Folder Modal/FolderModal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
@@ -11,7 +11,7 @@ import MetricsCategories from '../Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from '../Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from '../Modal/MetricsModal/MetricsModal';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { updateCardTemplatesAndCardsFunction } from '../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
+import { updateRecordTemplatesAndRecordsFunction } from '../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
 // Utility function to recursively clean objects and arrays, converting undefined to null and removing null if desired
 const cleanObject = (obj, convertUndefinedToNull = true) => {
@@ -58,8 +58,8 @@ export const handleModalSave = async ({
   setActiveModal,
   templateProfiles,
   businessId,
-  cards,
-  setCards,
+  records,
+  setRecords,
 }) => {
   switch (modalType) {
     case 'headers':
@@ -78,8 +78,8 @@ export const handleModalSave = async ({
       break;
     case 'sheet':
       if (data?.sheetName && data.currentHeaders && sheets) {
-        const cleanedCardTypeFilters = {};
-        Object.entries(data.cardTypeFilters || {}).forEach(([cardType, filters]) => {
+        const cleanedRecordTypeFilters = {};
+        Object.entries(data.recordTypeFilters || {}).forEach(([recordType, filters]) => {
           const cleanedFilters = {};
           Object.entries(filters).forEach(([key, filter]) => {
             const cleanedFilter = {};
@@ -93,7 +93,7 @@ export const handleModalSave = async ({
             }
           });
           if (Object.keys(cleanedFilters).length > 0) {
-            cleanedCardTypeFilters[cardType] = cleanedFilters;
+            cleanedRecordTypeFilters[recordType] = cleanedFilters;
           }
         });
 
@@ -105,9 +105,9 @@ export const handleModalSave = async ({
                   ...sheet,
                   sheetName: data.sheetName,
                   headers: data.currentHeaders,
-                  typeOfCardsToDisplay: data.typeOfCardsToDisplay || [],
-                  cardTypeFilters: cleanedCardTypeFilters,
-                  cardsPerSearch: data.cardsPerSearch ?? sheet.cardsPerSearch,
+                  typeOfRecordsToDisplay: data.typeOfRecordsToDisplay || [],
+                  recordTypeFilters: cleanedRecordTypeFilters,
+                  recordsPerSearch: data.recordsPerSearch ?? sheet.recordsPerSearch,
                   isModified: true,
                   action: 'update',
                 }
@@ -214,11 +214,11 @@ export const handleModalSave = async ({
         data.onComplete();
       }
       break;
-      case 'cardsTemplate':
+      case 'recordsTemplate':
       if (data?.templateProfiles && Array.isArray(data.templateProfiles)) {
         // Profile-based system
         if (!businessId) {
-          console.warn('Cannot update templates and cards: businessId is missing');
+          console.warn('Cannot update templates and records: businessId is missing');
           alert('Error: Business ID is missing. Please ensure your account is properly configured.');
           return;
         }
@@ -267,7 +267,7 @@ export const handleModalSave = async ({
 
           const totalPipelines = profilesWithTemplates.reduce((total, profile) => total + (profile.pipelines?.length || 0), 0);
 
-          const result = await updateCardTemplatesAndCardsFunction({
+          const result = await updateRecordTemplatesAndRecordsFunction({
             businessId,
             profiles: profilesWithTemplates,
           });
@@ -560,7 +560,7 @@ export const handleModalClose = ({
   filterModal,
   sheetsModal,
   transportModal,
-  cardsTemplateModal,
+  recordsTemplateModal,
   sheetFolderModal,
   widgetSizeModal,
   widgetViewModal,
@@ -609,7 +609,7 @@ export const handleModalClose = ({
   filterModal?.close();
   sheetsModal?.close();
   transportModal?.close();
-  cardsTemplateModal?.close();
+  recordsTemplateModal?.close();
   sheetFolderModal?.close();
   widgetSizeModal?.close();
   widgetViewModal?.close();
@@ -651,9 +651,9 @@ export const renderModalContent = ({
             activeModal.data || {
               sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders || [],
-              typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
-              cardTypeFilters: activeSheet?.cardTypeFilters || {},
-              cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
+              typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
+              recordTypeFilters: activeSheet?.recordTypeFilters || {},
+              recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
             }
           }
           setTempData={setActiveModalData}
@@ -697,9 +697,9 @@ export const renderModalContent = ({
           handleClose={handleModalClose}
         />
       );
-    case 'cardsTemplate':
+    case 'recordsTemplate':
       return (
-        <CardsTemplate
+        <RecordsTemplate
           tempData={activeModal.data || {
             templateProfiles: [...(templateProfiles || [])],
             deletedHeaderKeys: [],
@@ -777,7 +777,7 @@ export const renderModalContent = ({
           handleClose={handleModalClose}
         />
       );
-    // pipelineManagement removed - now integrated into Card Templates workflow
+    // pipelineManagement removed - now integrated into Record Templates workflow
     default:
       return null;
   }
@@ -800,9 +800,9 @@ export const onEditSheet = ({
     data: {
       sheetName: activeSheetName,
       currentHeaders: resolvedHeaders || [],
-      typeOfCardsToDisplay: activeSheet?.typeOfCardsToDisplay || [],
-      cardTypeFilters: activeSheet?.cardTypeFilters || {},
-      cardsPerSearch: activeSheet?.cardsPerSearch ?? null,
+      typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
+      recordTypeFilters: activeSheet?.recordTypeFilters || {},
+      recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
     },
   });
   sheetModal?.open();
@@ -862,23 +862,23 @@ export const onOpenTransportModal = ({
   transportModal?.open();
 };
 
-export const onOpenCardsTemplateModal = ({
+export const onOpenRecordsTemplateModal = ({
   templateProfiles,
   setEditMode,
   setActiveModal,
-  cardsTemplateModal,
+  recordsTemplateModal,
 }) => {
   if (!templateProfiles) return;
   setEditMode(false);
   setActiveModal({
-    type: 'cardsTemplate',
+    type: 'recordsTemplate',
     data: {
       templateProfiles: [...(templateProfiles || [])],
       deletedHeaderKeys: [],
       hasProfileChanges: false
     },
   });
-  cardsTemplateModal?.open();
+  recordsTemplateModal?.open();
 };
 
 export const onOpenSheetFolderModal = ({
@@ -919,4 +919,4 @@ export const onOpenFolderModal = ({
   folderModal?.open();
 };
 
-// onOpenPipelineManagementModal removed - pipeline management now integrated into Card Templates workflow
+// onOpenPipelineManagementModal removed - pipeline management now integrated into Record Templates workflow

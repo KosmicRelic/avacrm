@@ -1,4 +1,4 @@
-/* Updated CardsTemplate.module.css to match FilterModal and EditSheetsModal styles */
+/* Updated RecordsTemplate.module.css to match FilterModal and EditSheetsModal styles */
 
 .templateWrapper {
   background: transparent;
@@ -491,7 +491,7 @@
   box-shadow: 0 12px 48px rgba(10, 132, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(10, 132, 255, 0.4);
 }
 
-.configCard.dragging {
+.configRecord.dragging {
   background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.15) 100%);
   opacity: 0.95;
   transform: scale(1.03) rotate(2deg);
@@ -502,7 +502,7 @@
   -webkit-backdrop-filter: blur(30px);
 }
 
-.configCard.darkTheme.dragging {
+.configRecord.darkTheme.dragging {
   background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(10, 132, 255, 0.2) 100%);
   box-shadow: 0 12px 48px rgba(10, 132, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(10, 132, 255, 0.4);
 }
@@ -1647,8 +1647,8 @@
   margin-top: 16px;
 }
 
-/* Configuration Cards */
-.configCard {
+/* Configuration Records */
+.configRecord {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
@@ -1667,7 +1667,7 @@
   transform-origin: center;
 }
 
-.configCard::after {
+.configRecord::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1681,17 +1681,17 @@
   pointer-events: none;
 }
 
-.configCard:active::after {
+.configRecord:active::after {
   width: 300px;
   height: 300px;
 }
 
-.configCard:focus-visible {
+.configRecord:focus-visible {
   outline: 2px solid #007aff;
   outline-offset: 2px;
 }
 
-.configCard::before {
+.configRecord::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1703,48 +1703,48 @@
   transition: opacity 0.3s ease;
 }
 
-.configCard:hover::before,
-.configCard:focus-visible::before {
+.configRecord:hover::before,
+.configRecord:focus-visible::before {
   opacity: 1;
 }
 
-.configCard:hover {
+.configRecord:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 16px 64px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 122, 255, 0.2);
 }
 
-.configCard:active {
+.configRecord:active {
   transform: translateY(-2px) scale(1.01);
   transition: all 0.1s ease;
 }
 
-.configCard.darkTheme {
+.configRecord.darkTheme {
   background: rgba(44, 44, 46, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.configCard.darkTheme::after {
+.configRecord.darkTheme::after {
   background: rgba(10, 132, 255, 0.15);
 }
 
-.configCard.darkTheme:focus-visible {
+.configRecord.darkTheme:focus-visible {
   outline-color: #0a84ff;
 }
 
-.configCard.darkTheme::before {
+.configRecord.darkTheme::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-.configCard.darkTheme:hover {
+.configRecord.darkTheme:hover {
   background: rgba(44, 44, 46, 0.95);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 16px 64px rgba(0, 0, 0, 0.3);
   border-color: rgba(10, 132, 255, 0.3);
 }
 
-.activeCard {
+.activeRecord {
   border-color: #007aff;
   background: rgba(0, 122, 255, 0.06);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15), 0 4px 16px rgba(0, 122, 255, 0.12);
@@ -1752,27 +1752,27 @@
   animation: activePulse 2s ease-in-out infinite;
 }
 
-.activeCard .cardIcon {
+.activeRecord .recordIcon {
   background: linear-gradient(135deg, #007aff 0%, #34c759 50%, #ff9500 100%);
   box-shadow: 0 6px 20px rgba(0, 122, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.activeCard .cardTitle {
+.activeRecord .recordTitle {
   color: #007aff;
 }
 
-.activeCard.darkTheme {
+.activeRecord.darkTheme {
   border-color: #0a84ff;
   background: rgba(10, 132, 255, 0.08);
   box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2), 0 4px 16px rgba(10, 132, 255, 0.15);
 }
 
-.activeCard.darkTheme .cardIcon {
+.activeRecord.darkTheme .recordIcon {
   background: linear-gradient(135deg, #0a84ff 0%, #30d158 50%, #ff9f0a 100%);
   box-shadow: 0 6px 20px rgba(10, 132, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.activeCard.darkTheme .cardTitle {
+.activeRecord.darkTheme .recordTitle {
   color: #0a84ff !important;
 }
 
@@ -1785,7 +1785,7 @@
   }
 }
 
-.activeCard.darkTheme {
+.activeRecord.darkTheme {
   animation: activePulseDark 2s ease-in-out infinite;
 }
 
@@ -1798,8 +1798,8 @@
   }
 }
 
-/* Card Icon */
-.cardIcon {
+/* Record Icon */
+.recordIcon {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
@@ -1816,7 +1816,7 @@
   z-index: 1;
 }
 
-.cardIcon::before {
+.recordIcon::before {
   content: '';
   position: absolute;
   inset: -3px;
@@ -1828,7 +1828,7 @@
   filter: blur(1px);
 }
 
-.cardIcon::after {
+.recordIcon::after {
   content: '';
   position: absolute;
   inset: -2px;
@@ -1839,31 +1839,31 @@
   transition: opacity 0.4s ease;
 }
 
-.configCard:hover .cardIcon {
+.configRecord:hover .recordIcon {
   transform: scale(1.1) rotate(5deg);
   box-shadow: 0 6px 24px rgba(0, 122, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.configCard:hover .cardIcon::before {
+.configRecord:hover .recordIcon::before {
   opacity: 0.8;
   filter: blur(2px);
 }
 
-.configCard:hover .cardIcon::after {
+.configRecord:hover .recordIcon::after {
   opacity: 1;
 }
 
-.configCard:active .cardIcon {
+.configRecord:active .recordIcon {
   transform: scale(1.05) rotate(2deg);
 }
 
-.cardIcon.darkTheme {
+.recordIcon.darkTheme {
   background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 50%, #ff453a 100%);
   box-shadow: 0 4px 16px rgba(10, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Card Content */
-.cardContent {
+/* Record Content */
+.recordContent {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1871,7 +1871,7 @@
   padding: 16px 20px 16px 20px;
 }
 
-.cardTitle {
+.recordTitle {
   font-size: 18px;
   font-weight: 700;
   color: #1d1d1f;
@@ -1882,19 +1882,19 @@
   transition: color 0.3s ease;
 }
 
-.configCard:hover .cardTitle {
+.configRecord:hover .recordTitle {
   color: #007aff;
 }
 
-.cardTitle.darkTheme {
+.recordTitle.darkTheme {
   color: #ffffff !important;
 }
 
-.configCard.darkTheme:hover .cardTitle {
+.configRecord.darkTheme:hover .recordTitle {
   color: #0a84ff !important;
 }
 
-.cardDescription {
+.recordDescription {
   font-size: 14px;
   color: #86868b;
   margin: 0 0 16px 0;
@@ -1905,19 +1905,19 @@
   transition: color 0.3s ease;
 }
 
-.configCard:hover .cardDescription {
+.configRecord:hover .recordDescription {
   color: #636366;
 }
 
-.cardDescription.darkTheme {
+.recordDescription.darkTheme {
   color: #98989d;
 }
 
-.configCard.darkTheme:hover .cardDescription {
+.configRecord.darkTheme:hover .recordDescription {
   color: #c7c7cc;
 }
 
-.cardBadge {
+.recordBadge {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
@@ -1932,7 +1932,7 @@
   align-self: flex-start;
 }
 
-.cardBadge.darkTheme {
+.recordBadge.darkTheme {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
 }
@@ -1986,24 +1986,24 @@
   opacity: 0.85;
 }
 
-/* Danger Card Styles */
-.dangerCard {
+/* Danger Record Styles */
+.dangerRecord {
   border-color: #ff453a;
   background: rgba(255, 69, 58, 0.04);
 }
 
-.dangerCard.darkTheme {
+.dangerRecord.darkTheme {
   border-color: #ff453a;
   background: rgba(255, 69, 58, 0.08);
 }
 
-.dangerCard:hover {
+.dangerRecord:hover {
   background: rgba(255, 69, 58, 0.08);
   border-color: #ff453a;
   box-shadow: 0 4px 16px rgba(255, 69, 58, 0.2);
 }
 
-.dangerCard.darkTheme:hover {
+.dangerRecord.darkTheme:hover {
   background: rgba(255, 69, 58, 0.12);
 }
 
@@ -2025,8 +2025,8 @@
   color: #ff6b5a !important;
 }
 
-/* Card Arrow Styles */
-.cardArrow {
+/* Record Arrow Styles */
+.recordArrow {
   position: absolute;
   top: 50%;
   right: 20px;
@@ -2046,7 +2046,7 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.cardArrow::before {
+.recordArrow::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -2056,32 +2056,32 @@
   transition: opacity 0.3s ease;
 }
 
-.configCard:hover .cardArrow {
+.configRecord:hover .recordArrow {
   background: rgba(0, 122, 255, 0.15);
   color: #007aff;
   transform: translateY(-50%) translateX(2px) scale(1.1);
   border-color: rgba(0, 122, 255, 0.2);
 }
 
-.configCard:hover .cardArrow::before {
+.configRecord:hover .recordArrow::before {
   opacity: 1;
 }
 
-.configCard:active .cardArrow {
+.configRecord:active .recordArrow {
   transform: translateY(-50%) translateX(1px) scale(1.05);
 }
 
-.cardArrow.darkTheme {
+.recordArrow.darkTheme {
   color: #8e8e93;
   background: rgba(44, 44, 46, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.cardArrow.darkTheme::before {
+.recordArrow.darkTheme::before {
   background: linear-gradient(135deg, rgba(10, 132, 255, 0.15), rgba(94, 92, 230, 0.15));
 }
 
-.cardArrow.darkTheme:hover {
+.recordArrow.darkTheme:hover {
   background: rgba(10, 132, 255, 0.2);
   color: #0a84ff;
   border-color: rgba(10, 132, 255, 0.3);
@@ -2095,7 +2095,7 @@
   margin-top: 12px;
 }
 
-.pipelineCard {
+.pipelineRecord {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
@@ -2103,22 +2103,22 @@
   transition: all 0.3s ease;
 }
 
-.pipelineCard.darkTheme {
+.pipelineRecord.darkTheme {
   background: #1c1c1e;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.pipelineCard:hover {
+.pipelineRecord:hover {
   border-color: #007aff;
   box-shadow: 0 4px 16px rgba(0, 122, 255, 0.1);
 }
 
-.pipelineCard.darkTheme:hover {
+.pipelineRecord.darkTheme:hover {
   border-color: #0a84ff;
   box-shadow: 0 4px 16px rgba(10, 132, 255, 0.2);
 }
 
-.pipelineCardContent {
+.pipelineRecordContent {
   width: 100%;
 }
 

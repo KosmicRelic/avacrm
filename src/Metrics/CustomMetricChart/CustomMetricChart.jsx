@@ -58,7 +58,7 @@ class ChartErrorBoundary extends Component {
 
 const CustomMetricChart = ({
   visualizationType,
-  cards,
+  records,
   templateKey,
   selectedHeaderKey,
   header,
@@ -97,19 +97,19 @@ const CustomMetricChart = ({
   }, []);
 
   // Helper function to get latest field value and timestamp
-  const getLatestFieldValueAndTimestamp = (card, fieldKey, dateHeaderKey) => {
-    let value = card[fieldKey];
+  const getLatestFieldValueAndTimestamp = (record, fieldKey, dateHeaderKey) => {
+    let value = record[fieldKey];
     let timestamp = null;
-    if (value === undefined && Array.isArray(card.history)) {
-      const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+    if (value === undefined && Array.isArray(record.history)) {
+      const entries = record.history.filter(h => h.field === fieldKey && h.timestamp);
       if (entries.length > 0) {
         const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
         value = latest.value;
         timestamp = latest.timestamp;
       }
     } else if (value !== undefined) {
-      if (Array.isArray(card.history)) {
-        const entries = card.history.filter(h => h.field === fieldKey && h.timestamp);
+      if (Array.isArray(record.history)) {
+        const entries = record.history.filter(h => h.field === fieldKey && h.timestamp);
         if (entries.length > 0) {
           const latest = entries.reduce((a, b) => (a.timestamp.seconds > b.timestamp.seconds ? a : b));
           // Use the timestamp from the history entry if the header is a date field
@@ -120,18 +120,18 @@ const CustomMetricChart = ({
           }
         }
       }
-      if (!timestamp && dateHeaderKey && card[dateHeaderKey]) {
-        timestamp = card[dateHeaderKey];
+      if (!timestamp && dateHeaderKey && record[dateHeaderKey]) {
+        timestamp = record[dateHeaderKey];
       }
     }
     // If the header is a date field and we have a history entry for it, use its timestamp
-    if (!timestamp && dateHeaderKey && Array.isArray(card.history)) {
-      const dateHistory = card.history.find(h => h.field === dateHeaderKey && h.timestamp);
+    if (!timestamp && dateHeaderKey && Array.isArray(record.history)) {
+      const dateHistory = record.history.find(h => h.field === dateHeaderKey && h.timestamp);
       if (dateHistory) {
         timestamp = dateHistory.timestamp;
       }
     }
-    if (!timestamp) timestamp = card.id || card.docId;
+    if (!timestamp) timestamp = record.id || record.docId;
     return { value, timestamp };
   };
 
@@ -151,10 +151,10 @@ const CustomMetricChart = ({
   };
 
   // Generate categorical chart data (for pie and bar charts)
-  const generateCategoricalChartData = (cardsForTemplate, selectedHeaderKey, header) => {
+  const generateCategoricalChartData = (recordsForTemplate, selectedHeaderKey, header) => {
     const valueCounts = {};
-    cardsForTemplate.forEach(card => {
-      const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, null);
+    recordsForTemplate.forEach(record => {
+      const { value } = getLatestFieldValueAndTimestamp(record, selectedHeaderKey, null);
       if (value !== undefined && value !== null) {
         const stringValue = String(value).trim();
         valueCounts[stringValue] = (valueCounts[stringValue] || 0) + 1;
@@ -184,23 +184,23 @@ const CustomMetricChart = ({
 
   // Generate chart data based on visualization type
   const generateChartData = () => {
-    // Use metric.records if present (passed as cards), fallback to cards
-    const dataSource = Array.isArray(cards) && cards.length && cards[0]?.records ? cards[0].records : cards;
+    // Use metric.records if present (passed as records), fallback to records
+    const dataSource = Array.isArray(records) && records.length && records[0]?.records ? records[0].records : records;
     if (!dataSource || !templateKey || !selectedHeaderKey) return null;
 
-    const cardsForTemplate = dataSource.filter(card => card.typeOfCards === templateKey);
-    if (!cardsForTemplate.length) return null;
+    const recordsForTemplate = dataSource.filter(record => record.typeOfRecords === templateKey);
+    if (!recordsForTemplate.length) return null;
 
-    const dateHeader = header?.type === 'date' ? header : cardsForTemplate[0]?.headers?.find(h => h.type === 'date');
+    const dateHeader = header?.type === 'date' ? header : recordsForTemplate[0]?.headers?.find(h => h.type === 'date');
 
     if (visualizationType === 'pie' || visualizationType === 'bar') {
-      return generateCategoricalChartData(cardsForTemplate, selectedHeaderKey, header);
+      return generateCategoricalChartData(recordsForTemplate, selectedHeaderKey, header);
     }
 
     if (visualizationType === 'number') {
-      const values = cardsForTemplate
-        .map(card => {
-          const { value } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+      const values = recordsForTemplate
+        .map(record => {
+          const { value } = getLatestFieldValueAndTimestamp(record, selectedHeaderKey, dateHeader?.key);
           return value;
         })
         .filter(v => v !== undefined && v !== null && !isNaN(Number(v)))
@@ -226,8 +226,8 @@ const CustomMetricChart = ({
       if (granularity === 'daily') {
         // Collect all unique dates (as Date objects) from the data
         const dateSet = new Set();
-        cardsForTemplate.forEach(card => {
-          const ts = card[`${selectedHeaderKey}_timestamp`];
+        recordsForTemplate.forEach(record => {
+          const ts = record[`${selectedHeaderKey}_timestamp`];
           if (ts && typeof ts === 'object' && (ts.seconds || ts._seconds)) {
             const d = new Date((ts.seconds || ts._seconds) * 1000);
             // Use ISO string for uniqueness
@@ -251,9 +251,9 @@ const CustomMetricChart = ({
         });
       }
       // Aggregate values by label
-      cardsForTemplate.forEach(card => {
-        const value = card[selectedHeaderKey];
-        const ts = card[`${selectedHeaderKey}_timestamp`];
+      recordsForTemplate.forEach(record => {
+        const value = record[selectedHeaderKey];
+        const ts = record[`${selectedHeaderKey}_timestamp`];
         let xLabel = '';
         if (ts && typeof ts === 'object' && (ts.seconds || ts._seconds)) {
           const date = new Date((ts.seconds || ts._seconds) * 1000);
@@ -349,8 +349,8 @@ const CustomMetricChart = ({
 
     if (header?.type === 'text' || header?.type === 'dropdown') {
       const countsByValueAndDate = {};
-      cardsForTemplate.forEach(card => {
-        const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+      recordsForTemplate.forEach(record => {
+        const { value, timestamp } = getLatestFieldValueAndTimestamp(record, selectedHeaderKey, dateHeader?.key);
         let xLabel = formatTimestamp(timestamp);
         if (!xLabel || value === undefined || value === null) return;
         if (!countsByValueAndDate[value]) countsByValueAndDate[value] = {};
@@ -370,8 +370,8 @@ const CustomMetricChart = ({
       return { labels: allDates, datasets };
     }
 
-    const points = cardsForTemplate.map(card => {
-      const { value, timestamp } = getLatestFieldValueAndTimestamp(card, selectedHeaderKey, dateHeader?.key);
+    const points = recordsForTemplate.map(record => {
+      const { value, timestamp } = getLatestFieldValueAndTimestamp(record, selectedHeaderKey, dateHeader?.key);
       let xLabel = formatTimestamp(timestamp);
       if (header?.type === 'date' && value) {
         let yValue = null;
@@ -615,7 +615,7 @@ const CustomMetricChart = ({
 
 CustomMetricChart.propTypes = {
   visualizationType: PropTypes.oneOf(['line', 'pie', 'bar', 'number']).isRequired,
-  cards: PropTypes.arrayOf(PropTypes.object), // Now optional, can be []
+  records: PropTypes.arrayOf(PropTypes.object), // Now optional, can be []
   templateKey: PropTypes.string.isRequired,
   selectedHeaderKey: PropTypes.string.isRequired,
   header: PropTypes.shape({

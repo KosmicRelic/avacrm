@@ -1,6 +1,6 @@
 import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import styles from "./CardsTemplate.module.css";
+import styles from "./RecordsTemplate.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
 import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
@@ -12,10 +12,10 @@ import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual"; // Import lodash for deep comparison
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
-import { updateCardTemplatesAndCardsFunction } from '../../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
+import { updateRecordTemplatesAndRecordsFunction } from '../../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 import fetchUserData from '../../Firebase/Firebase Functions/User Functions/FetchUserData';
 
-const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
+const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) => {
   const { 
     isDarkTheme, 
     businessId: businessIdContext,
@@ -69,11 +69,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           ...t,
           headers: uniqueHeaders.map((h) => ({
             ...h,
-            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfCards" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecords" || h.key === "assignedTo" ? true : h.isUsed ?? false,
           })),
           sections: t.sections.map((s) => ({
             ...s,
-            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfCards") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecords") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
           })),
           isModified: t.isModified || false,
           action: t.action || null,
@@ -249,8 +249,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const profile = templateProfiles[selectedProfileIndex];
       const template = profile.templates[selectedTemplateIndex];
       const header = template.headers[index];
-      if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfCards" || header.key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deleted.");
+      if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfRecords" || header.key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deleted.");
         return;
       }
       const headerName = header.name;
@@ -288,13 +288,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const profile = templateProfiles[selectedProfileIndex];
       const template = profile.templates[selectedTemplateIndex];
       const section = template.sections[index];
-      if (section.name === "Card Data") {
-        alert("The 'Card Data' section cannot be deleted as it contains critical fields.");
+      if (section.name === "Record Data") {
+        alert("The 'Record Data' section cannot be deleted as it contains critical fields.");
         return;
       }
-      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo");
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo");
       if (sectionContainsProtectedKey) {
-        alert("This section cannot be deleted because it contains the 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field.");
+        alert("This section cannot be deleted because it contains the 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field.");
         return;
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
@@ -354,8 +354,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       alert("Please select a section for the field.");
       return;
     }
-    if (newHeaderSection === "Card Data") {
-      alert("The 'Card Data' section is reserved for 'ID', 'Type of Cards', 'Type of Profile' and 'Assigned To' fields.");
+    if (newHeaderSection === "Record Data") {
+      alert("The 'Record Data' section is reserved for 'ID', 'Type of Records', 'Type of Profile' and 'Assigned To' fields.");
       return;
     }
 
@@ -418,10 +418,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       }
 
       const currentHeader = template.headers[index];
-      const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfCards" || currentHeader.key === "assignedTo";
+      const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfRecords" || currentHeader.key === "assignedTo";
 
-      if (isProtected && newHeaderSection !== "Card Data") {
-        alert("The 'ID', 'Type of Cards' and 'Assigned To' fields must remain in the 'Card Data' section.");
+      if (isProtected && newHeaderSection !== "Record Data") {
+        alert("The 'ID', 'Type of Records' and 'Assigned To' fields must remain in the 'Record Data' section.");
         return;
       }
 
@@ -519,7 +519,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       hasInitialized.current = true;
       const steps = [
         { title: "Template Profiles", rightButton: null },
-        { title: "Card Templates", rightButton: null },
+        { title: "Record Templates", rightButton: null },
         {
           title: () =>
             selectedProfileIndex !== null && selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex]
@@ -564,7 +564,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: "Card Templates",
+        title: "Record Templates",
         rightButton: null,
         leftButton: null,
       });
@@ -588,7 +588,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: true,
         showBackButton: true,
-        title: "Card Templates",
+        title: "Record Templates",
         backButtonTitle: "Template Profiles",
         backButton: { label: "Template Profiles", onClick: handleBack },
         leftButton: null,
@@ -599,8 +599,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         showTitle: true,
         showDoneButton: false,
         showBackButton: !editMode,
-        backButtonTitle: "Card Templates",
-        backButton: editMode ? null : { label: "Card Templates", onClick: handleBack },
+        backButtonTitle: "Record Templates",
+        backButton: editMode ? null : { label: "Record Templates", onClick: handleBack },
         title: selectedProfileIndex !== null && selectedTemplateIndex !== null && templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex] ? templateProfiles[selectedProfileIndex].templates[selectedTemplateIndex].name || "New Template" : "New Template",
         leftButton: editMode
           ? {
@@ -723,42 +723,42 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const newTemplate = {
       docId: timestampId,
       name: newTemplateName.trim(),
-      typeOfCards: newTemplateName.trim(),
+      typeOfRecords: newTemplateName.trim(),
       profileId: templateProfiles[selectedProfileIndex].id,
       headers: [
         {
           key: "docId",
           name: "ID",
           type: "text",
-          section: "Card Data",
+          section: "Record Data",
           isUsed: true,
         },
         {
           key: "linkId",
           name: "Link ID",
           type: "text",
-          section: "Card Data",
+          section: "Record Data",
           isUsed: true,
         },
         {
-          key: "typeOfCards",
-          name: "Type of Cards",
+          key: "typeOfRecords",
+          name: "Type of Records",
           type: "text",
-          section: "Card Data",
+          section: "Record Data",
           isUsed: true,
         },
         {
           key: "typeOfProfile",
           name: "Type of Profile",
           type: "text",
-          section: "Card Data",
+          section: "Record Data",
           isUsed: true,
         },
         {
           key: "assignedTo",
           name: "Assigned To",
           type: "text",
-          section: "Card Data",
+          section: "Record Data",
           isUsed: true,
         },
       ],
@@ -768,8 +768,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
           keys: [],
         },
         {
-          name: "Card Data",
-          keys: ["docId", "linkId", "typeOfCards", "typeOfProfile", "assignedTo"],
+          name: "Record Data",
+          keys: ["docId", "linkId", "typeOfRecords", "typeOfProfile", "assignedTo"],
         },
       ],
       isModified: true,
@@ -823,8 +823,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         const currentTemplate = { ...currentProfile.templates[selectedTemplateIndex] };
         const currentSection = currentTemplate.sections[index];
         
-        if (currentSection.name === "Card Data") {
-          alert("The 'Card Data' section cannot be renamed.");
+        if (currentSection.name === "Record Data") {
+          alert("The 'Record Data' section cannot be renamed.");
           return prev;
         }
 
@@ -860,7 +860,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const profile = templateProfiles[selectedProfileIndex];
     const template = profile.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -876,7 +876,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const profile = templateProfiles[selectedProfileIndex];
     const template = profile.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -1487,7 +1487,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         }
         
         currentTemplate.name = newName.trim();
-        currentTemplate.typeOfCards = newName.trim();
+        currentTemplate.typeOfRecords = newName.trim();
         currentTemplate.isModified = true;
         currentTemplate.action = currentTemplate.action || "update";
         
@@ -1513,8 +1513,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
       if (selectedProfileIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be deselected from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
       setTemplateProfiles((prev) => {
@@ -1548,8 +1548,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedProfileIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "linkId" || key === "typeOfCards" || key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Cards' or 'Assigned To' field cannot be removed from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
@@ -1655,31 +1655,31 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
     const profile = templateProfiles[selectedProfileIndex];
     const template = profile.templates[selectedTemplateIndex];
     const currentSectionName = template.sections[currentSectionIndex].name;
-    setNewHeaderSection(currentSectionName !== "Card Data" ? currentSectionName : "Primary Section");
+    setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
     setNavigationDirection("forward");
     goToStep(6);
   }, [resetHeaderForm, goToStep, templateProfiles, selectedProfileIndex, selectedTemplateIndex, currentSectionIndex]);
 
-  // Export cards for the current template
-  const exportCards = useCallback(async () => {
+  // Export records for the current template
+  const exportRecords = useCallback(async () => {
     if (selectedProfileIndex === null || selectedTemplateIndex === null) {
       alert('No template selected.');
       return;
     }
     const profile = templateProfiles[selectedProfileIndex];
     const template = profile.templates[selectedTemplateIndex];
-    const typeOfCards = template.name;
-    if (!typeOfCards || !businessId) {
+    const typeOfRecords = template.name;
+    if (!typeOfRecords || !businessId) {
       alert('Missing template name or business ID.');
       return;
     }
     try {
-      const cardsRef = collection(db, 'businesses', businessId, 'cards');
-      const q = query(cardsRef, where('typeOfCards', '==', typeOfCards));
+      const recordsRef = collection(db, 'businesses', businessId, 'records');
+      const q = query(recordsRef, where('typeOfRecords', '==', typeOfRecords));
       const snapshot = await getDocs(q);
-      const rawCards = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })); // changed id to docId
-      if (!rawCards.length) {
-        alert('No cards found for this template.');
+      const rawRecords = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })); // changed id to docId
+      if (!rawRecords.length) {
+        alert('No records found for this template.');
         return;
       }
 
@@ -1695,9 +1695,9 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
         if (type === 'date') {
           csvHeaders.push(name);
           dataMapping.push({ key, type, hasTime: false });
-          // Check if any card has time in this date field
-          const hasTime = rawCards.some(card => {
-            const value = card[key];
+          // Check if any record has time in this date field
+          const hasTime = rawRecords.some(record => {
+            const value = record[key];
             if (value && typeof value.toDate === 'function') {
               const date = value.toDate();
               return date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0;
@@ -1715,10 +1715,10 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       });
 
       // Prepare CSV rows
-      const csvRows = rawCards.map(card => {
+      const csvRows = rawRecords.map(record => {
         const row = [];
         dataMapping.forEach(({ key, type, hasTime }) => {
-          let value = card[key];
+          let value = record[key];
           if (value === null || value === undefined) {
             row.push('');
             if (hasTime) row.push('');
@@ -1801,14 +1801,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${typeOfCards}_cards_export.csv`;
+      link.download = `${typeOfRecords}_records_export.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
     } catch (err) {
       console.error('Export error:', err);
-      alert('Failed to export cards.');
+      alert('Failed to export records.');
     }
   }, [selectedProfileIndex, selectedTemplateIndex, templateProfiles, businessId]);
 
@@ -1836,11 +1836,11 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Profile</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Profiles help organize your card templates into logical groups.</p>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Profiles help organize your record templates into logical groups.</p>
                   <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                     <div
                       onClick={() => setShowProfileForm(true)}
-                      className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                       role="button"
                       aria-label="Add New Profile"
                       tabIndex={0}
@@ -1850,14 +1850,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         }
                       }}
                     >
-                      <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <FaPlus size={24} />
                       </div>
-                      <div className={styles.cardContent}>
-                        <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Profile</h3>
-                        <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new profile to group your templates</p>
+                      <div className={styles.recordContent}>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Profile</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new profile to group your templates</p>
                       </div>
-                      <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <IoChevronForward size={16} />
                       </div>
                     </div>
@@ -1907,16 +1907,16 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         .map(({ profile, originalIndex }) => (
                         <div
                           key={profile.id}
-                          className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                           role="button"
                           aria-label={`Open ${profile.name}`}
                           tabIndex={0}
                         >
-                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <FaLayerGroup size={24} />
                           </div>
                           <div 
-                            className={styles.cardContent}
+                            className={styles.recordContent}
                             onClick={() => editingProfileIndex !== originalIndex && selectProfile(originalIndex)}
                             onKeyDown={(e) => {
                               if ((e.key === "Enter" || e.key === " ") && editingProfileIndex !== originalIndex) {
@@ -1966,8 +1966,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               </div>
                             ) : (
                               <>
-                                <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{profile.name}</h3>
-                                <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{profile.name}</h3>
+                                <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                   {getProfileTemplates(originalIndex).length} template{getProfileTemplates(originalIndex).length !== 1 ? 's' : ''}
                                 </p>
                               </>
@@ -1975,7 +1975,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                           </div>
                           {editingProfileIndex !== originalIndex && (
                             <>
-                              <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                 <IoChevronForward size={16} />
                               </div>
                               <div className={styles.profileActions}>
@@ -2014,13 +2014,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your card data structure in {templateProfiles[selectedProfileIndex].name}.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record data structure in {templateProfiles[selectedProfileIndex].name}.</p>
                       <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <div
                           onClick={() => handleOpenEditor()}
-                          className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                           role="button"
-                          aria-label="Add New Card Template"
+                          aria-label="Add New Record Template"
                           tabIndex={0}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
@@ -2028,14 +2028,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             }
                           }}
                         >
-                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <FaPlus size={24} />
                           </div>
-                          <div className={styles.cardContent}>
-                            <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Template</h3>
-                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your cards</p>
+                          <div className={styles.recordContent}>
+                            <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Template</h3>
+                            <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your records</p>
                           </div>
-                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <IoChevronForward size={16} />
                           </div>
                         </div>
@@ -2045,13 +2045,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     {getProfileTemplates(selectedProfileIndex).length > 0 && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Templates</h2>
-                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing card templates in {templateProfiles[selectedProfileIndex].name}.</p>
+                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing record templates in {templateProfiles[selectedProfileIndex].name}.</p>
                         <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {getProfileTemplates(selectedProfileIndex).map((template, index) => (
                             <div
                               key={template.name || `template-${index}`}
                               onClick={() => handleOpenEditor(template)}
-                              className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                               role="button"
                               aria-label={`Edit ${template.name || "Unnamed Template"}`}
                               tabIndex={0}
@@ -2061,17 +2061,17 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                 }
                               }}
                             >
-                              <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                 <FaRegCircle size={24} />
                               </div>
-                              <div className={styles.cardContent}>
-                                <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
-                                <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
-                                <div className={`${styles.cardBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <div className={styles.recordContent}>
+                                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
+                                <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
+                                <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                   {template.sections?.length || 0} sections
                                 </div>
                               </div>
-                              <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                 <IoChevronForward size={16} />
                               </div>
                             </div>
@@ -2083,13 +2083,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     {/* Pipelines Section */}
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Profile Pipelines</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move cards between templates in {templateProfiles[selectedProfileIndex].name}.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move records between templates in {templateProfiles[selectedProfileIndex].name}.</p>
                       
                       {/* Add Pipeline Button */}
                       <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <div
                           onClick={() => setShowPipelineForm(true)}
-                          className={`${styles.configCard} ${styles.createCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          className={`${styles.configRecord} ${styles.createRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                           role="button"
                           aria-label="Create new pipeline"
                           tabIndex={0}
@@ -2099,14 +2099,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             }
                           }}
                         >
-                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <IoAdd size={24} />
                           </div>
-                          <div className={styles.cardContent}>
-                            <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Pipeline</h3>
-                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automatic card movement between templates</p>
+                          <div className={styles.recordContent}>
+                            <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Pipeline</h3>
+                            <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automatic record movement between templates</p>
                           </div>
-                          <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <IoChevronForward size={16} />
                           </div>
                         </div>
@@ -2268,14 +2268,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               return (
                                 <div
                                   key={pipeline.id}
-                                  className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                                  className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                                 >
-                                  <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                     <IoGitBranch size={24} />
                                   </div>
-                                  <div className={styles.cardContent}>
-                                    <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h3>
-                                    <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                  <div className={styles.recordContent}>
+                                    <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h3>
+                                    <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                       {sourceTemplate?.name || 'Unknown'} → {targetTemplate?.name || 'Unknown'}
                                     </p>
                                     <div className={`${styles.mappingInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -2284,7 +2284,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                       </span>
                                     </div>
                                   </div>
-                                  <div className={styles.cardActions}>
+                                  <div className={styles.recordActions}>
                                     <button
                                       onClick={() => editProfilePipeline(index)}
                                       className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
@@ -2340,7 +2340,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <div
                             onClick={addSection}
-                            className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                             role="button"
                             aria-label="Add New Section"
                             tabIndex={0}
@@ -2350,37 +2350,37 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                               }
                             }}
                           >
-                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <FaPlus size={24} />
                             </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Section</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new section for your template</p>
+                            <div className={styles.recordContent}>
+                              <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Section</h3>
+                              <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new section for your template</p>
                             </div>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <IoChevronForward size={16} />
                             </div>
                           </div>
                           <div
-                            onClick={exportCards}
-                            className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onClick={exportRecords}
+                            className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                             role="button"
-                            aria-label="Export Cards"
+                            aria-label="Export Records"
                             tabIndex={0}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
-                                exportCards();
+                                exportRecords();
                               }
                             }}
                           >
-                            <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <FaDownload size={24} />
                             </div>
-                            <div className={styles.cardContent}>
-                              <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Export Cards</h3>
-                              <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Download your card data as CSV</p>
+                            <div className={styles.recordContent}>
+                              <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Export Records</h3>
+                              <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Download your record data as CSV</p>
                             </div>
-                            <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <IoChevronForward size={16} />
                             </div>
                           </div>
@@ -2390,13 +2390,13 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     )}
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Organize your card data into logical sections.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Organize your record data into logical sections.</p>
                       <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections.map((section, index) => (
                         <div
                           ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
                           key={section.name || `section-${index}`}
-                          className={`${styles.configCard} ${
+                          className={`${styles.configRecord} ${
                             draggedSectionOrderIndex === index ? styles.dragging : ""
                           } ${isDarkTheme ? styles.darkTheme : ""}`}
                           draggable={editMode}
@@ -2416,26 +2416,26 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                             }
                           }}
                         >
-                          <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {section.name === "Card Data" ? (
+                          <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {section.name === "Record Data" ? (
                               <FaDatabase size={24} />
                             ) : (
                               <FaLayerGroup size={24} />
                             )}
                           </div>
-                          <div className={styles.cardContent}>
+                          <div className={styles.recordContent}>
                             <div className={styles.headerRow}>
                               <div className={styles.headerMain}>
-                                <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
+                                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
                               </div>
                               {!editMode && (
-                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                   <IoChevronForward size={16} />
                                 </div>
                               )}
                             </div>
-                            <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              {section.name === "Card Data" ? "Core system fields" : "Custom section"} • {section.keys?.length || 0} fields
+                            <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {section.name === "Record Data" ? "Core system fields" : "Custom section"} • {section.keys?.length || 0} fields
                             </p>
                           </div>
                           {editMode && (
@@ -2468,7 +2468,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your card template structure.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record template structure.</p>
                       <input
                         type="text"
                         value={newTemplateName}
@@ -2502,7 +2502,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                     placeholder="Section Name"
-                    disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data" || !editMode}
+                    disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data" || !editMode}
                   />
                 </div>
                 {!editMode && (
@@ -2512,7 +2512,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                       <div
                         onClick={() => handleCreateHeader()}
-                        className={`${styles.configCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
                         role="button"
                         aria-label="Add New Field"
                         tabIndex={0}
@@ -2522,14 +2522,14 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                           }
                         }}
                       >
-                        <div className={`${styles.cardIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <FaPlus size={24} />
                         </div>
-                        <div className={styles.cardContent}>
-                          <h3 className={`${styles.cardTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Field</h3>
-                          <p className={`${styles.cardDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for this section</p>
+                        <div className={styles.recordContent}>
+                          <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Field</h3>
+                          <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for this section</p>
                         </div>
-                        <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <IoChevronForward size={16} />
                         </div>
                       </div>
@@ -2547,7 +2547,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         type: "text",
                       };
                       const headerIndex = templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
-                      const isProtected = header.key === "docId" || header.key === "typeOfCards" || header.key === "assignedTo";
+                      const isProtected = header.key === "docId" || header.key === "typeOfRecords" || header.key === "assignedTo";
                       return (
                         <div
                           ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
@@ -2592,7 +2592,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                   </span>
                                 </div>
                               ) : (
-                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                   <IoChevronForward size={16} />
                                 </div>
                               )}
@@ -2652,7 +2652,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                                 <span className={styles.headerName}>{header.name}</span>
                               </div>
                               {!editMode && (
-                                <div className={`${styles.cardArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                                   <IoChevronForward size={16} />
                                 </div>
                               )}
@@ -2670,7 +2670,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     <button
                       className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                       onClick={() => handleDeleteSection(currentSectionIndex)}
-                      disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Card Data"}
+                      disabled={templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections[currentSectionIndex].name === "Record Data"}
                     >
                       Delete Section
                     </button>
@@ -2691,7 +2691,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Prevent focus/edit for id, typeOfCards, typeOfProfile and assignedTo */}
+                    {/* Prevent focus/edit for id, typeOfRecords, typeOfProfile and assignedTo */}
                     <input
                       type="text"
                       value={newHeaderName}
@@ -2699,8 +2699,8 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                       onKeyPress={handleKeyPress}
                       placeholder="Field Name"
                       className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      disabled={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
-                      tabIndex={['docId', 'typeOfCards', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
+                      disabled={['docId', 'typeOfRecords', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                      tabIndex={['docId', 'typeOfRecords', 'typeOfProfile', 'assignedTo'].includes(templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                     />
                     <div className={styles.fieldContainer}>
                       <select
@@ -2770,7 +2770,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                         {copiedHeaderId ? "Copied!" : "Copy Header Key"}
                       </button>
                       {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
-                        templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfCards" &&
+                        templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfRecords" &&
                         templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
                           <button
                             onClick={() => deleteHeader(activeHeaderIndex)}
@@ -2790,7 +2790,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
               <>
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add New Field</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for your card template.</p>
+                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for your record template.</p>
                   <div
                     className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => e.stopPropagation()}
@@ -2822,7 +2822,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
                     >
                       <option value="">Select Section</option>
                       {templateProfiles[selectedProfileIndex]?.templates[selectedTemplateIndex].sections
-                        .filter((section) => section.name !== "Card Data")
+                        .filter((section) => section.name !== "Record Data")
                         .map((section, index) => (
                           <option key={index} value={section.name}>
                             {section.name}
@@ -2873,7 +2873,7 @@ const CardsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) =>
   );
 };
 
-CardsTemplate.propTypes = {
+RecordsTemplate.propTypes = {
   tempData: PropTypes.shape({
     templateProfiles: PropTypes.arrayOf(
       PropTypes.shape({
@@ -2882,7 +2882,7 @@ CardsTemplate.propTypes = {
         templates: PropTypes.arrayOf(
           PropTypes.shape({
             name: PropTypes.string,
-            typeOfCards: PropTypes.string,
+            typeOfRecords: PropTypes.string,
             headers: PropTypes.arrayOf(
               PropTypes.shape({
                 key: PropTypes.string,
@@ -2915,7 +2915,7 @@ CardsTemplate.propTypes = {
   businessId: PropTypes.string,
 };
 
-export default CardsTemplate;
+export default RecordsTemplate;
 
-// Reminder: In exportCards and any other card export logic, ensure to use 'docId' instead of 'id' for the unique identifier.
+// Reminder: In exportRecords and any other record export logic, ensure to use 'docId' instead of 'id' for the unique identifier.
 // If you see any mapping like { id: doc.id, ...doc.data() }, change it to { docId: doc.id, ...doc.data() }

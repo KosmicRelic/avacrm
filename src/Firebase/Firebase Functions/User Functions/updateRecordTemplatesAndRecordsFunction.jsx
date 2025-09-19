@@ -1,7 +1,7 @@
 import { getAuth } from 'firebase/auth';
-import { app } from '../../../firebase';
+import { app } from '../../../firebase'; // Adjust path to your Firebase config
 
-export const UpdateCardsDeleteHeadersFunction = async ({ businessId, updates }) => {
+export const updateRecordTemplatesAndRecordsFunction = async ({ businessId, profiles, updates }) => {
   try {
     const auth = getAuth(app);
     const token = await auth.currentUser?.getIdToken();
@@ -11,19 +11,19 @@ export const UpdateCardsDeleteHeadersFunction = async ({ businessId, updates }) 
     }
 
     const response = await fetch(
-      'https://updatecardsdeleteheaders-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL
+      'https://updaterecordtemplatesandrecords-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL for updateRecordTemplatesAndRecords
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ businessId, updates }),
+        body: JSON.stringify({ businessId, profiles, updates }),
       }
     );
 
     if (!response.ok) {
-      let errorMessage = 'Failed to update cards';
+      let errorMessage = 'Failed to update templates and records';
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
@@ -36,10 +36,10 @@ export const UpdateCardsDeleteHeadersFunction = async ({ businessId, updates }) 
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('UpdateCardsDeleteHeaders error:', {
+    console.error('updateRecordTemplatesAndRecords error:', {
       message: error.message,
       details: error.details,
     });
-    throw new Error(error.message || 'Failed to update cards');
+    throw new Error(error.message || 'Failed to update templates and records');
   }
 };
