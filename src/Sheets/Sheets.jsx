@@ -98,14 +98,11 @@ const Sheets = ({
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheet = activeSheet?.id === 'primarySheet';
 
-  // Get filtered records (excluding the "Add New" row)
-  const filteredRecords = useMemo(() => 
-    finalRows.filter(rowData => rowData.docId), 
-    [finalRows]
-  );
-
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
+    
+    // Create a Set for O(1) lookup of record types
+    const sheetRecordTypesSet = new Set(sheetRecordTypes);
     
     // Pre-filter by record types first (usually eliminates most records quickly)
     // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
@@ -177,7 +174,7 @@ const Sheets = ({
           }
         });
       });
-  }, [records, sheetRecordTypesSet, recordTypeFilters, headers, user.uid]);
+  }, [records, sheetRecordTypes, recordTypeFilters, headers, user.uid]);
 
   const filteredWithGlobalFilters = useMemo(() => {
     return sheetRecords.filter((row) =>
@@ -364,6 +361,12 @@ const Sheets = ({
   }, [filteredRows, globalFilters, headers, activeSheetName]);
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
+
+  // Get filtered records (excluding the "Add New" row)
+  const filteredRecords = useMemo(() => 
+    finalRows.filter(rowData => rowData.docId), 
+    [finalRows]
+  );
 
   const isBusinessUser = user && user.uid === businessId;
 
@@ -686,7 +689,17 @@ const Sheets = ({
           ))}
         </div>
         {spinnerVisible ? (
-          <SkeletonLoader type="record" count={8} />
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '200px',
+            fontSize: '18px',
+            color: isDarkTheme ? '#ffffff' : '#666'
+          }}>
+            <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
+            Loading records...
+          </div>
         ) : !activeSheet ? (
           <div className={styles.selectSheetMessage + (isDarkTheme ? ' ' + styles.darkTheme : '')}>
             <div className={styles.selectSheetTitle}>Select a sheet</div>

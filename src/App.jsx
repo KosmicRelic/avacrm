@@ -56,7 +56,7 @@ ProtectedRoute.propTypes = {
 };
 
 // Lazy load major components for code splitting
-const Sheets = lazy(() => import('./Sheets/Sheets'));
+import Sheets from './Sheets/Sheets';
 const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
 const Metrics = lazy(() => import('./Metrics/Metrics'));
 const Settings = lazy(() => import('./Settings/Settings'));
@@ -578,21 +578,8 @@ function App() {
         </ProtectedRoute>
       )}
       <div className={styles.contentWrapper}>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
+        <Routes>
           <Route path="/" element={<Navigate to="/sheets" replace />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard
-                  onWidgetClick={handleWidgetClick}
-                  activeDashboardId={activeDashboardId}
-                  onDashboardChange={handleDashboardChange}
-                />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/sheets"
             element={
@@ -671,37 +658,52 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/metrics"
-            element={
-              <ProtectedRoute>
-                <Metrics
-                  selectedMetricData={selectedMetricData}
-                  onEditMetrics={() => onManageMetrics(modalUtilsProps)}
-                  onMetricDataChange={handleMetricDataChange}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/actions"
-            element={
-              <ProtectedRoute>
-                <Actions />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup/business" element={<BusinessSignUp />} />
-                      <Route path="/signup/:businessName/teammember/:code" element={<TeamMemberSignUp />} />
+        </Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard
+                    onWidgetClick={handleWidgetClick}
+                    activeDashboardId={activeDashboardId}
+                    onDashboardChange={handleDashboardChange}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/metrics"
+              element={
+                <ProtectedRoute>
+                  <Metrics
+                    selectedMetricData={selectedMetricData}
+                    onEditMetrics={() => onManageMetrics(modalUtilsProps)}
+                    onMetricDataChange={handleMetricDataChange}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/actions"
+              element={
+                <ProtectedRoute>
+                  <Actions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup/business" element={<BusinessSignUp />} />
+            <Route path="/signup/:businessName/teammember/:code" element={<TeamMemberSignUp />} />
           </Routes>
         </Suspense>
         {activeModal && (
