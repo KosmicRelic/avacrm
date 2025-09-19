@@ -115,7 +115,7 @@ const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboar
     const config = metric.config || {};
     const templateKey = config.recordTemplates?.[0] || '';
     const selectedHeaderKey = config.fields?.[templateKey]?.[0] || '';
-    const template = recordTemplates?.find((t) => (t.name || t.typeOfRecords) === templateKey);
+    const template = recordTemplates?.find((t) => (t.name || t.typeOfRecord) === templateKey);
     const header = template?.headers?.find((h) => h.key === selectedHeaderKey);
     let filteredRecords = metric.records || [];
     if (isLineChart) {

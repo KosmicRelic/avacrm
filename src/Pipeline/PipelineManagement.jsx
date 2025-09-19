@@ -16,7 +16,7 @@ const PipelineManagement = ({
   const [sourceTemplate, setSourceTemplate] = useState("");
   const [targetTemplate, setTargetTemplate] = useState("");
   const [fieldMappings, setFieldMappings] = useState([]);
-  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [selectedObjectId, setSelectedObjectId] = useState("");
 
   // Save changes to backend
   const saveObjectsToBackend = useCallback(async (updatedObjects) => {
@@ -96,15 +96,15 @@ const PipelineManagement = ({
   // Get source template headers
   const getSourceTemplateHeaders = useCallback(() => {
     if (!sourceTemplate) return [];
-    const template = allTemplates.find(t => t.typeOfRecords === sourceTemplate);
-    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecords') || [];
+    const template = allTemplates.find(t => t.typeOfRecord === sourceTemplate);
+    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecord') || [];
   }, [sourceTemplate, allTemplates]);
 
   // Get target template headers
   const getTargetTemplateHeaders = useCallback(() => {
     if (!targetTemplate) return [];
-    const template = allTemplates.find(t => t.typeOfRecords === targetTemplate);
-    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecords') || [];
+    const template = allTemplates.find(t => t.typeOfRecord === targetTemplate);
+    return template?.headers?.filter(h => h.key !== 'docId' && h.key !== 'typeOfRecord') || [];
   }, [targetTemplate, allTemplates]);
 
   // Reset form
@@ -113,14 +113,14 @@ const PipelineManagement = ({
     setSourceTemplate("");
     setTargetTemplate("");
     setFieldMappings([]);
-    setSelectedProfileId("");
+    setSelectedObjectId("");
     setShowCreateForm(false);
     setEditingPipelineId(null);
   }, []);
 
   // Handle create/edit pipeline
   const handleSavePipeline = useCallback(async () => {
-    if (!newPipelineName.trim() || !sourceTemplate || !targetTemplate || !selectedProfileId) {
+    if (!newPipelineName.trim() || !sourceTemplate || !targetTemplate || !selectedObjectId) {
       alert("Please fill in all required fields (name, source template, target template, and object).");
       return;
     }
@@ -153,7 +153,7 @@ const PipelineManagement = ({
     };
 
     const updatedObjects = templateObjects.map(object => {
-      if (object.id === selectedProfileId) {
+      if (object.id === selectedObjectId) {
         const pipelines = object.pipelines || [];
         
         if (editingPipelineId) {
@@ -182,7 +182,7 @@ const PipelineManagement = ({
     newPipelineName, 
     sourceTemplate, 
     targetTemplate, 
-    selectedProfileId, 
+    selectedObjectId, 
     fieldMappings, 
     editingPipelineId, 
     templateObjects,
@@ -198,7 +198,7 @@ const PipelineManagement = ({
     setSourceTemplate(pipeline.sourceTemplate);
     setTargetTemplate(pipeline.targetTemplate);
     setFieldMappings(pipeline.fieldMappings || []);
-    setSelectedProfileId(pipeline.objectId);
+    setSelectedObjectId(pipeline.objectId);
     setShowCreateForm(true);
   }, []);
 
@@ -277,8 +277,8 @@ const PipelineManagement = ({
         ) : (
           <div className={styles.pipelineGrid}>
             {allPipelines.map((pipeline) => {
-              const sourceTemplateObj = allTemplates.find(t => t.typeOfRecords === pipeline.sourceTemplate);
-              const targetTemplateObj = allTemplates.find(t => t.typeOfRecords === pipeline.targetTemplate);
+              const sourceTemplateObj = allTemplates.find(t => t.typeOfRecord === pipeline.sourceTemplate);
+              const targetTemplateObj = allTemplates.find(t => t.typeOfRecord === pipeline.targetTemplate);
               
               return (
                 <div key={pipeline.id} className={`${styles.pipelineRecord} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -371,11 +371,11 @@ const PipelineManagement = ({
 
                 <div className={styles.inputGroup}>
                   <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    Profile *
+                    Object *
                   </label>
                   <select
-                    value={selectedProfileId}
-                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    value={selectedObjectId}
+                    onChange={(e) => setSelectedObjectId(e.target.value)}
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
                     <option value="">Select object...</option>
@@ -398,7 +398,7 @@ const PipelineManagement = ({
                   >
                     <option value="">Select source template...</option>
                     {allTemplates.map((template) => (
-                      <option key={template.docId} value={template.typeOfRecords}>
+                      <option key={template.docId} value={template.typeOfRecord}>
                         {template.name} ({template.objectName})
                       </option>
                     ))}
@@ -416,9 +416,9 @@ const PipelineManagement = ({
                   >
                     <option value="">Select target template...</option>
                     {allTemplates
-                      .filter(template => template.typeOfRecords !== sourceTemplate)
+                      .filter(template => template.typeOfRecord !== sourceTemplate)
                       .map((template) => (
-                        <option key={template.docId} value={template.typeOfRecords}>
+                        <option key={template.docId} value={template.typeOfRecord}>
                           {template.name} ({template.objectName})
                         </option>
                       ))}

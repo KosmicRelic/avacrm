@@ -106,11 +106,11 @@ const Sheets = ({
     
     // Pre-filter by record types first (usually eliminates most records quickly)
     // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
-    const relevantRecords = records.filter((record) => sheetRecordTypesSet.has(record.typeOfRecords));
+    const relevantRecords = records.filter((record) => sheetRecordTypesSet.has(record.typeOfRecord));
     
     // Then apply record type filters (only on relevant records)
     return relevantRecords.filter((record) => {
-      const filters = recordTypeFilters[record.typeOfRecords] || {};
+      const filters = recordTypeFilters[record.typeOfRecord] || {};
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
             if (filter.headerKey && filter.condition === 'equals') {

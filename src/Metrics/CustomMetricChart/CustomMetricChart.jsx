@@ -188,7 +188,7 @@ const CustomMetricChart = ({
     const dataSource = Array.isArray(records) && records.length && records[0]?.records ? records[0].records : records;
     if (!dataSource || !templateKey || !selectedHeaderKey) return null;
 
-    const recordsForTemplate = dataSource.filter(record => record.typeOfRecords === templateKey);
+    const recordsForTemplate = dataSource.filter(record => record.typeOfRecord === templateKey);
     if (!recordsForTemplate.length) return null;
 
     const dateHeader = header?.type === 'date' ? header : recordsForTemplate[0]?.headers?.find(h => h.type === 'date');

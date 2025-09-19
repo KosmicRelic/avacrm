@@ -168,7 +168,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       // Build a map of templateKey -> headers from mainContext.recordTemplates
       const templateHeaderMap = {};
       (mainContext.recordTemplates || []).forEach(tpl => {
-        const key = (tpl.name || tpl.typeOfRecords || '').toString().trim();
+        const key = (tpl.name || tpl.typeOfRecord || '').toString().trim();
         templateHeaderMap[key] = tpl.headers || [];
       });
 
@@ -280,7 +280,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     if (templateKey) {
       yField = formToSave.fields[templateKey]?.[0];
       template = mainContext.recordTemplates.find(
-        (t) => (t.typeOfRecords || t.name) === templateKey
+        (t) => (t.typeOfRecord || t.name) === templateKey
       );
       if (template && yField) {
         header = template.headers?.find((h) => h.key === yField);
@@ -299,7 +299,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     const config = { recordTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, comparisonFields };
 
     const templateObj = mainContext.recordTemplates.find(
-      (t) => (t.name || t.typeOfRecords) === recordTemplates[0]
+      (t) => (t.name || t.typeOfRecord) === recordTemplates[0]
     );
     if (!templateObj) {
       alert('Cannot add metric: Selected template not found.');
@@ -316,14 +316,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     const chartData = computeMetricData(records, config, templateObj.headers || []);
     let value;
     if (formToSave.visualizationType === 'number' && Array.isArray(formToSave.formula) && formToSave.formula.length > 0) {
-      const recordsForTemplate = records.filter(record => record.typeOfRecords === templateKey);
+      const recordsForTemplate = records.filter(record => record.typeOfRecord === templateKey);
       value = evaluateNumberFormula(formToSave.formula, recordsForTemplate, templateKey, templateObj.headers || []);
     } else if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
       value = chartData.value;
     }
     // Store only the fields used from relevant records, and for date fields, also store the latest timestamp from history if available
     const relevantRecords = records.filter(record => {
-      if (!recordTemplates.includes(record.typeOfRecords)) return false;
+      if (!recordTemplates.includes(record.typeOfRecord)) return false;
       return Object.keys(filterValues || {}).every(key => {
         const filter = filterValues[key];
         if (!filter || Object.keys(filter).length === 0) return true;
@@ -350,7 +350,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
     });
     const selectedFields = fields[templateKey] || [];
     const records = relevantRecords.map(record => {
-      const obj = { id: record.id, typeOfRecords: record.typeOfRecords };
+      const obj = { id: record.id, typeOfRecord: record.typeOfRecord };
       selectedFields.forEach(field => {
         obj[field] = record[field];
         // For line charts, always store the latest timestamp from history for every field if available
@@ -415,7 +415,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       if (templateKey) {
         yField = formToSave.fields[templateKey]?.[0];
         template = mainContext.recordTemplates.find(
-          (t) => (t.typeOfRecords || t.name) === templateKey
+          (t) => (t.typeOfRecord || t.name) === templateKey
         );
         if (template && yField) {
           header = template.headers?.find((h) => h.key === yField);
@@ -434,7 +434,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const config = { recordTemplates, fields, aggregation, dateRange, filterValues, groupBy, visualizationType, includeHistory, comparisonFields };
 
       const templateObj = mainContext.recordTemplates.find(
-        (t) => (t.name || t.typeOfRecords) === recordTemplates[0]
+        (t) => (t.name || t.typeOfRecord) === recordTemplates[0]
       );
       if (!templateObj) {
         alert('Cannot update metric: Selected template not found.');
@@ -451,14 +451,14 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       const chartData = computeMetricData(records, config, templateObj.headers || []);
       let value;
       if (formToSave.visualizationType === 'number' && Array.isArray(formToSave.formula) && formToSave.formula.length > 0) {
-        const recordsForTemplate = records.filter(record => record.typeOfRecords === templateKey);
+        const recordsForTemplate = records.filter(record => record.typeOfRecord === templateKey);
         value = evaluateNumberFormula(formToSave.formula, recordsForTemplate, templateKey, templateObj.headers || []);
       } else if (visualizationType === 'number' && chartData && typeof chartData.value !== 'undefined') {
         value = chartData.value;
       }
       // Store only the fields used from relevant records, and for date fields, also store the latest timestamp from history if available
       const relevantRecords = records.filter(record => {
-        if (!recordTemplates.includes(record.typeOfRecords)) return false;
+        if (!recordTemplates.includes(record.typeOfRecord)) return false;
         return Object.keys(filterValues || {}).every(key => {
           const filter = filterValues[key];
           if (!filter || Object.keys(filter).length === 0) return true;
@@ -485,7 +485,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
       });
       const selectedFields = fields[templateKey] || [];
       const records = relevantRecords.map(record => {
-        const obj = { id: record.id, typeOfRecords: record.typeOfRecords };
+        const obj = { id: record.id, typeOfRecord: record.typeOfRecord };
         selectedFields.forEach(field => {
           obj[field] = record[field];
           // For line charts, always store the latest timestamp from history for every field if available
@@ -1132,9 +1132,9 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         <span className={styles.filterSummary}>
                           {(() => {
                             const template = recordTemplates.find(
-                              (t) => (t.typeOfRecords || t.name) === metricForm.recordTemplates[0]
+                              (t) => (t.typeOfRecord || t.name) === metricForm.recordTemplates[0]
                             );
-                            return template ? (template.name || template.typeOfRecords) : 'Select Template';
+                            return template ? (template.name || template.typeOfRecord) : 'Select Template';
                           })()}
                         </span>
                         <span className={styles.chevronIcon + (templateDropdownOpen ? ' ' + styles.chevronOpen : '')}>
@@ -1160,7 +1160,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                       }}>
                         {(recordTemplates && recordTemplates.length > 0) ? (
                           recordTemplates.map((template, idx) => {
-                            const templateKey = template.name || template.typeOfRecords || idx;
+                            const templateKey = template.name || template.typeOfRecord || idx;
                             return (
                               <div
                                 key={templateKey}
@@ -1177,7 +1177,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                                   setTemplateDropdownOpen(false);
                                 }}
                               >
-                                {template.name || template.typeOfRecords}
+                                {template.name || template.typeOfRecord}
                               </div>
                             );
                           })
@@ -1204,7 +1204,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                             {(() => {
                               const yField = metricForm.fields[metricForm.recordTemplates[0]]?.[0];
                               const template = recordTemplates.find(
-                                (t) => (t.typeOfRecords || t.name) === metricForm.recordTemplates[0]
+                                (t) => (t.typeOfRecord || t.name) === metricForm.recordTemplates[0]
                               );
                               const header = template?.headers?.find((h) => h.key === yField);
                               return header ? header.name : 'Select Header';
@@ -1234,7 +1234,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                           {(() => {
                             const templateKey = metricForm.recordTemplates[0];
                             const template = recordTemplates.find(
-                              (t) => (t.name || t.typeOfRecords) === templateKey
+                              (t) => (t.name || t.typeOfRecord) === templateKey
                             );
                             if (!template) {
                               return <div style={{ color: '#888', padding: '8px 12px' }}>No template selected.</div>;
@@ -1307,7 +1307,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                                   autoFocus={part.header === ''}
                                 >
                                   <option value="">Select Header</option>
-                                  {(recordTemplates.find(t => (t.name || t.typeOfRecords) === metricForm.recordTemplates[0])?.headers || []).map(h => (
+                                  {(recordTemplates.find(t => (t.name || t.typeOfRecord) === metricForm.recordTemplates[0])?.headers || []).map(h => (
                                     <option key={h.key} value={h.key}>{h.name}</option>
                                   ))}
                                 </select>
@@ -1379,15 +1379,15 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         </div>
                         {/* Formula preview */}
                         <div style={{ marginTop: 8, color: isDarkTheme ? '#fff' : '#222', fontWeight: 500 }}>
-                          Formula: {Array.isArray(metricForm.formula) && metricForm.formula.length > 0 ? metricForm.formula.map((part, idx) => ('header' in part) ? `${recordTemplates.find(t => (t.name || t.typeOfRecords) === metricForm.recordTemplates[0])?.headers?.find(h => h.key === part.header)?.name || 'Select Header'} (${part.calc})` : part.op).join(' ') : '—'}
+                          Formula: {Array.isArray(metricForm.formula) && metricForm.formula.length > 0 ? metricForm.formula.map((part, idx) => ('header' in part) ? `${recordTemplates.find(t => (t.name || t.typeOfRecord) === metricForm.recordTemplates[0])?.headers?.find(h => h.key === part.header)?.name || 'Select Header'} (${part.calc})` : part.op).join(' ') : '—'}
                         </div>
                         {/* Result preview */}
                         <div style={{ marginTop: 4, color: '#888', fontSize: 13 }}>
                           {(() => {
                             const templateKey = metricForm.recordTemplates[0];
-                            const template = recordTemplates.find(t => (t.name || t.typeOfRecords) === templateKey);
+                            const template = recordTemplates.find(t => (t.name || t.typeOfRecord) === templateKey);
                             if (!template || !Array.isArray(metricForm.formula) || metricForm.formula.length === 0) return 'Result preview will appear here';
-                            const recordsForTemplate = records.filter(record => record.typeOfRecords === templateKey);
+                            const recordsForTemplate = records.filter(record => record.typeOfRecord === templateKey);
                             const result = evaluateNumberFormula(metricForm.formula, recordsForTemplate, templateKey, template.headers || []);
                             return result === '' ? 'Result preview will appear here' : `Result: ${result}`;
                           })()}
@@ -1402,11 +1402,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   const selectedHeaderKey = metricForm.fields[templateKey]?.[0];
                   if (!selectedHeaderKey || !templateKey) return null;
                   const template = recordTemplates.find(
-                    (t) => (t.name || t.typeOfRecords) === templateKey
+                    (t) => (t.name || t.typeOfRecord) === templateKey
                   );
                   const header = template?.headers?.find(h => h.key === selectedHeaderKey);
                   const recordsForTemplate = records.filter(
-                    (record) => record.typeOfRecords === templateKey
+                    (record) => record.typeOfRecord === templateKey
                   );
                   if (!recordsForTemplate.length) return (
                     <div className={styles.filterItem} style={{ color: '#888', marginTop: 16 }}>No records found for this template.</div>
@@ -1458,11 +1458,11 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                   {(() => {
                     const templateKey = selectedRecordTemplate || metricForm.recordTemplates[0];
                     const template = recordTemplates.find(
-                      (t) => (t.name || t.typeOfRecords) === templateKey
+                      (t) => (t.name || t.typeOfRecord) === templateKey
                     );
                     const templateHeaders = template?.headers?.filter(
                       (header) => {
-                        if (header.key === 'id' || header.key === 'typeOfRecords') return false;
+                        if (header.key === 'id' || header.key === 'typeOfRecord') return false;
                         if (metricForm.visualizationType === 'pie' || metricForm.visualizationType === 'bar') {
                           return header.type === 'text' || header.type === 'dropdown';
                         }

@@ -1,7 +1,7 @@
 // src/ProfileModal/ProfileModal.jsx
 import { useNavigate } from 'react-router-dom';
 import styles from "./ProfileModal.module.css";
-import { FaAddressCard, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
+import { FaUser, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
 import { useContext, useState, useRef, useEffect } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import PropTypes from "prop-types";
@@ -106,14 +106,14 @@ const ProfileModal = ({
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleRecordsClick}
               >
-                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+                <FaUser size={16} style={{ marginRight: "8px" }} />
                 Records
               </button>
               <button
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSignOut}
               >
-                <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+                <FaUser size={16} style={{ marginRight: "8px" }} />
                 Sign Out
               </button>
             </>
@@ -122,7 +122,7 @@ const ProfileModal = ({
               className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               onClick={handleSignOut}
             >
-              <FaAddressCard size={16} style={{ marginRight: "8px" }} />
+              <FaUser size={16} style={{ marginRight: "8px" }} />
               Sign Out
             </button>
           )}

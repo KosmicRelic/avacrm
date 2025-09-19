@@ -69,11 +69,11 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           ...t,
           headers: uniqueHeaders.map((h) => ({
             ...h,
-            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecords" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecord" || h.key === "typeOfObject" || h.key === "assignedTo" ? true : h.isUsed ?? false,
           })),
           sections: t.sections.map((s) => ({
             ...s,
-            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecords") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecord") || s.keys.includes("typeOfObject") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
           })),
           isModified: t.isModified || false,
           action: t.action || null,
@@ -249,8 +249,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       const object = templateObjects[selectedObjectIndex];
       const template = object.templates[selectedTemplateIndex];
       const header = template.headers[index];
-      if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfRecords" || header.key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deleted.");
+      if (header.key === "docId" || header.key === "linkId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Records', 'Type of Object' or 'Assigned To' field cannot be deleted.");
         return;
       }
       const headerName = header.name;
@@ -292,9 +292,9 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         alert("The 'Record Data' section cannot be deleted as it contains critical fields.");
         return;
       }
-      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo");
+      const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo");
       if (sectionContainsProtectedKey) {
-        alert("This section cannot be deleted because it contains the 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field.");
+        alert("This section cannot be deleted because it contains the 'ID', 'Link ID', 'Type of Records', 'Type of Object' or 'Assigned To' field.");
         return;
       }
       if (window.confirm(`Are you sure you want to delete the section "${section.name}"?`)) {
@@ -418,10 +418,10 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       }
 
       const currentHeader = template.headers[index];
-      const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfRecords" || currentHeader.key === "assignedTo";
+      const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfRecord" || currentHeader.key === "typeOfObject" || currentHeader.key === "assignedTo";
 
       if (isProtected && newHeaderSection !== "Record Data") {
-        alert("The 'ID', 'Type of Records' and 'Assigned To' fields must remain in the 'Record Data' section.");
+        alert("The 'ID', 'Type of Records', 'Type of Object' and 'Assigned To' fields must remain in the 'Record Data' section.");
         return;
       }
 
@@ -723,7 +723,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     const newTemplate = {
       docId: timestampId,
       name: newTemplateName.trim(),
-      typeOfRecords: newTemplateName.trim(),
+      typeOfRecord: newTemplateName.trim(),
       objectId: templateObjects[selectedObjectIndex].id,
       headers: [
         {
@@ -741,8 +741,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           isUsed: true,
         },
         {
-          key: "typeOfRecords",
-          name: "Type of Records",
+          key: "typeOfRecord",
+          name: "Type of Record",
           type: "text",
           section: "Record Data",
           isUsed: true,
@@ -769,7 +769,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         },
         {
           name: "Record Data",
-          keys: ["docId", "linkId", "typeOfRecords", "typeOfObject", "assignedTo"],
+          keys: ["docId", "linkId", "typeOfRecord", "typeOfObject", "assignedTo"],
         },
       ],
       isModified: true,
@@ -860,7 +860,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     const object = templateObjects[selectedObjectIndex];
     const template = object.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -876,7 +876,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     const object = templateObjects[selectedObjectIndex];
     const template = object.templates[selectedTemplateIndex];
     const key = template.sections[sectionIndex].keys[index];
-    if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
+    if (key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo") {
       e.preventDefault();
       return;
     }
@@ -1487,7 +1487,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         }
         
         currentTemplate.name = newName.trim();
-        currentTemplate.typeOfRecords = newName.trim();
+        currentTemplate.typeOfRecord = newName.trim();
         currentTemplate.isModified = true;
         currentTemplate.action = currentTemplate.action || "update";
         
@@ -1513,8 +1513,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   const toggleKeySelection = useCallback(
     (sectionIndex, key) => {
       if (selectedObjectIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be deselected from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Record', 'Type of Object' or 'Assigned To' field cannot be deselected from the section.");
         return;
       }
       setTemplateObjects((prev) => {
@@ -1548,8 +1548,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   const handleDeleteKey = useCallback(
     (sectionIndex, key) => {
       if (selectedObjectIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "linkId" || key === "typeOfRecords" || key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Records' or 'Assigned To' field cannot be removed from the section.");
+      if (key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo") {
+        alert("The 'ID', 'Link ID', 'Type of Record', 'Type of Object' or 'Assigned To' field cannot be removed from the section.");
         return;
       }
       if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
@@ -1668,14 +1668,14 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     }
     const object = templateObjects[selectedObjectIndex];
     const template = object.templates[selectedTemplateIndex];
-    const typeOfRecords = template.name;
-    if (!typeOfRecords || !businessId) {
+    const typeOfRecord = template.name;
+    if (!typeOfRecord || !businessId) {
       alert('Missing template name or business ID.');
       return;
     }
     try {
       const recordsRef = collection(db, 'businesses', businessId, 'records');
-      const q = query(recordsRef, where('typeOfRecords', '==', typeOfRecords));
+      const q = query(recordsRef, where('typeOfRecord', '==', typeOfRecord));
       const snapshot = await getDocs(q);
       const rawRecords = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })); // changed id to docId
       if (!rawRecords.length) {
@@ -1801,7 +1801,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${typeOfRecords}_records_export.csv`;
+      link.download = `${typeOfRecord}_records_export.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -2547,7 +2547,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                         type: "text",
                       };
                       const headerIndex = templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers.findIndex((h) => h.key === key);
-                      const isProtected = header.key === "docId" || header.key === "typeOfRecords" || header.key === "assignedTo";
+                      const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
                       return (
                         <div
                           ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
@@ -2691,7 +2691,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     className={`${styles.editActions} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Prevent focus/edit for id, typeOfRecords, typeOfObject and assignedTo */}
+                    {/* Prevent focus/edit for id, typeOfRecord, typeOfObject and assignedTo */}
                     <input
                       type="text"
                       value={newHeaderName}
@@ -2699,8 +2699,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       onKeyPress={handleKeyPress}
                       placeholder="Field Name"
                       className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      disabled={['docId', 'typeOfRecords', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
-                      tabIndex={['docId', 'typeOfRecords', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
+                      disabled={['docId', 'typeOfRecord', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key)}
+                      tabIndex={['docId', 'typeOfRecord', 'typeOfObject', 'assignedTo'].includes(templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key) ? -1 : 0}
                     />
                     <div className={styles.fieldContainer}>
                       <select
@@ -2770,7 +2770,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                         {copiedHeaderId ? "Copied!" : "Copy Header Key"}
                       </button>
                       {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "docId" &&
-                        templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfRecords" &&
+                        templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "typeOfRecord" &&
                         templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].headers[activeHeaderIndex].key !== "assignedTo" && (
                           <button
                             onClick={() => deleteHeader(activeHeaderIndex)}
@@ -2882,7 +2882,7 @@ RecordsTemplate.propTypes = {
         templates: PropTypes.arrayOf(
           PropTypes.shape({
             name: PropTypes.string,
-            typeOfRecords: PropTypes.string,
+            typeOfRecord: PropTypes.string,
             headers: PropTypes.arrayOf(
               PropTypes.shape({
                 key: PropTypes.string,

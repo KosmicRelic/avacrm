@@ -2,7 +2,7 @@ import { collection, doc, getDocs, getDoc, query, where, onSnapshot } from 'fire
 import { db, auth } from '../../../firebase';
 
 // Module-level cache to track fetched sheets and current businessId
-const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfRecords to { filters }
+const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfRecord to { filters }
 let currentBusinessId = null;
 
 // Helper: Derive structure from sheets
@@ -429,7 +429,7 @@ const fetchUserData = async ({
 
         let recordQuery = query(
           collection(db, 'businesses', businessId, 'records'),
-          where('typeOfRecords', '==', type)
+          where('typeOfRecord', '==', type)
         );
 
         // Apply recordTypeFilters for this record type

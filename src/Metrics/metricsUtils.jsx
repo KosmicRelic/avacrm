@@ -51,7 +51,7 @@ export const getFieldChanges = (
 
   // Filter records based on recordTemplates and filterValues
   const filteredRecords = records.filter((record) => {
-    if (!recordTemplates.includes(record.typeOfRecords)) return false;
+    if (!recordTemplates.includes(record.typeOfRecord)) return false;
 
     // Apply filterValues
     return Object.keys(filterValues).every((key) => {
@@ -110,7 +110,7 @@ export const getFieldChanges = (
     const templateFields = fields[template] || [];
     if (templateFields.length === 0) return;
 
-    const templateRecords = filteredRecords.filter((record) => record.typeOfRecords === template);
+    const templateRecords = filteredRecords.filter((record) => record.typeOfRecord === template);
 
     // Include history entries if enabled
     if (includeHistory) {
@@ -128,7 +128,7 @@ export const getFieldChanges = (
                 )
                 .map((entry) => ({
                   recordId: record.id,
-                  recordType: record.typeOfRecords,
+                  recordType: record.typeOfRecord,
                   field: entry.field,
                   oldValue: entry.oldValue || null,
                   newValue: entry.value || entry.newValue,
@@ -154,7 +154,7 @@ export const getFieldChanges = (
           })
           .map((field) => ({
             recordId: record.id,
-            recordType: record.typeOfRecords,
+            recordType: record.typeOfRecord,
             field,
             oldValue: null,
             newValue: record[field]?.toString(),

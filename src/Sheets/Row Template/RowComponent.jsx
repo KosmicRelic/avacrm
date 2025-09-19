@@ -44,7 +44,7 @@ const RowComponent = ({ rowData, headers, onClick, isSelected, onAddRow, isSelec
 
   // Helper function to determine if a field is read-only
   const isFieldReadOnly = (fieldKey) => {
-    const readOnlyFields = ['typeOfProfile', 'typeOfRecords', 'docId', 'linkId'];
+    const readOnlyFields = ['typeOfRecord', 'typeOfRecords', 'docId', 'linkId', 'typeOfObject'];
     return readOnlyFields.includes(fieldKey);
   };
 

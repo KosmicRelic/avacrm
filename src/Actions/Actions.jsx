@@ -848,7 +848,7 @@ const Actions = () => {
                             <div className={styles.inputGroup}>
                               <label className={styles.label}>Type of Records for this Template</label>
                               <div className={styles.typeOfRecordsDisplay}>
-                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecords || 'N/A'}
+                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecord || 'N/A'}
                               </div>
                             </div>
                           )}
@@ -1413,7 +1413,7 @@ const Actions = () => {
                             <div className={styles.inputGroup}>
                               <label className={styles.label}>Type of Records for this Template</label>
                               <div className={styles.typeOfRecordsDisplay}>
-                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecords || 'N/A'}
+                                {recordTemplates.find(t => t.name === selectedTemplate)?.typeOfRecord || 'N/A'}
                               </div>
                             </div>
                           )}

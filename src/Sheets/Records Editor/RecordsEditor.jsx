@@ -64,8 +64,8 @@ const RecordsEditor = ({
   const { sheets, recordTemplates, templateObjects, headers, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
-  const initialTemplate = initialRowData?.typeOfRecords
-    ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecords)
+  const initialTemplate = initialRowData?.typeOfRecord
+    ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
     : null;
   const [selectedRecordType, setSelectedRecordType] = useState(initialTemplate?.name || '');
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
@@ -79,8 +79,8 @@ const RecordsEditor = ({
   const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
-    // Use formData.typeOfRecords first (for pipeline conversions), then fall back to other sources
-    const templateName = formData.typeOfRecords || (isEditing ? initialRowData?.typeOfRecords : selectedRecordType);
+    // Use formData.typeOfRecord first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
     const template = recordTemplates?.find((t) => t.name === templateName);
     
     if (!template || !template.sections) return [];
@@ -97,19 +97,28 @@ const RecordsEditor = ({
           };
         }),
     }));
-  }, [selectedRecordType, recordTemplates, isEditing, initialRowData, formData.typeOfRecords]);
+  }, [selectedRecordType, recordTemplates, isEditing, initialRowData, formData.typeOfRecord]);
 
   // Ensure formData has all required fields properly initialized
   useEffect(() => {
     if (!isEditing && selectedRecordType && !formData.linkId) {
+      const template = recordTemplates?.find((t) => t.name === selectedRecordType);
       setFormData(prev => ({
         ...prev,
         linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         assignedTo: prev.assignedTo || user?.email || '',
-        typeOfRecords: selectedRecordType
+        typeOfRecord: selectedRecordType,
+        typeOfObject: (() => {
+          // Find the object for this template to set typeOfObject
+          if (template?.objectId && templateObjects) {
+            const object = templateObjects.find(e => e.id === template.objectId);
+            return object ? object.name : '';
+          }
+          return '';
+        })(),
       }));
     }
-  }, [selectedRecordType, isEditing, formData.linkId, user?.email]);
+  }, [selectedRecordType, isEditing, formData.linkId, user?.email, recordTemplates, templateObjects]);
 
   const historicalFormData = useMemo(() => {
     if (!isViewingHistory || !selectedHistoryDate || !formData.history) {
@@ -215,8 +224,8 @@ const RecordsEditor = ({
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
     if (initialRowData) {
-      const newTemplate = initialRowData.typeOfRecords
-        ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecords)
+      const newTemplate = initialRowData.typeOfRecord
+        ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
         : null;
       
       setSelectedSheet(initialRowData.sheetName || preSelectedSheet || '');
@@ -232,6 +241,22 @@ const RecordsEditor = ({
       setShowInputsMap({});
     }
   }, [initialRowData, recordTemplates, preSelectedSheet]);
+
+  // Ensure typeOfObject is set for existing records that might be missing it
+  useEffect(() => {
+    if (isEditing && formData.typeOfRecord && !formData.typeOfObject) {
+      const template = recordTemplates?.find((t) => t.name === formData.typeOfRecord);
+      if (template?.objectId && templateObjects) {
+        const object = templateObjects.find(e => e.id === template.objectId);
+        if (object) {
+          setFormData(prev => ({
+            ...prev,
+            typeOfObject: object.name
+          }));
+        }
+      }
+    }
+  }, [isEditing, formData.typeOfRecord, formData.typeOfObject, recordTemplates, templateObjects]);
 
   const handleSelectionNext = useCallback(() => {
     if (!selectedSheet) {
@@ -250,7 +275,15 @@ const RecordsEditor = ({
     setFormData((prev) => ({
       ...prev,
       sheetName: selectedSheet,
-      typeOfRecords: template.name,
+      typeOfRecord: template.name,
+      typeOfObject: (() => {
+        // Find the object for this template to set typeOfObject
+        if (template.objectId && templateObjects) {
+          const object = templateObjects.find(e => e.id === template.objectId);
+          return object ? object.name : '';
+        }
+        return '';
+      })(),
     }));
     setView('editor');
   }, [selectedSheet, selectedRecordType, recordTemplates]);
@@ -264,7 +297,7 @@ const RecordsEditor = ({
 
   const handleInputChange = useCallback(
     (key, value, fieldType, extra) => {
-      if (key === 'docId' || key === 'typeOfRecords') {
+      if (key === 'docId' || key === 'typeOfRecord' || key === 'typeOfObject') {
         return;
       }
       if (!isViewingHistory) {
@@ -331,8 +364,8 @@ const RecordsEditor = ({
 
   // Get available pipelines for current record type (filter out already used ones)
   const getAvailablePipelines = useCallback(() => {
-    // Use formData.typeOfRecords first (for pipeline conversions), then fall back to other sources
-    const templateName = formData.typeOfRecords || (isEditing ? initialRowData?.typeOfRecords : selectedRecordType);
+    // Use formData.typeOfRecord first (for pipeline conversions), then fall back to other sources
+    const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
     const currentTemplate = recordTemplates?.find((t) => t.name === templateName);
     
     if (!currentTemplate || !templateObjects) {
@@ -351,7 +384,7 @@ const RecordsEditor = ({
     // Filter out pipelines that have already been used for this record
     const usedPipelineIds = formData.usedPipelines || [];
     return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
-  }, [recordTemplates, templateObjects, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecords]);
+  }, [recordTemplates, templateObjects, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecord]);
 
   // Execute pipeline to convert record to another type
   const executePipeline = useCallback((pipeline) => {
@@ -369,9 +402,9 @@ const RecordsEditor = ({
     // Create new record data with mapped fields
     const newRecordData = {
       linkId: formData.linkId, // Keep the same linkId to maintain connection
-      typeOfRecords: targetTemplate.name, // Use template name for consistency
-      typeOfProfile: (() => {
-        // Find the object for target template to set typeOfProfile
+      typeOfRecord: targetTemplate.name, // Use template name for consistency
+      typeOfObject: (() => {
+        // Find the object for target template to set typeOfObject
         if (targetTemplate.objectId && templateObjects) {
           const object = templateObjects.find(e => e.id === targetTemplate.objectId);
           return object ? object.name : '';
@@ -394,7 +427,7 @@ const RecordsEditor = ({
     }
 
     // Confirm the conversion
-    if (window.confirm(`Convert this ${formData.typeOfRecords} to ${targetTemplate.name}? This will save the current record and open the new record for immediate editing.`)) {
+    if (window.confirm(`Convert this ${formData.typeOfRecord} to ${targetTemplate.name}? This will save the current record and open the new record for immediate editing.`)) {
       // Mark this pipeline as used in the current record
       const updatedUsedPipelines = [...(formData.usedPipelines || []), pipeline.id];
       const updatedFormData = {
@@ -424,13 +457,13 @@ const RecordsEditor = ({
       alert('No sheet selected.');
       return;
     }
-    const template = recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecords : selectedRecordType));
+    const template = recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecord : selectedRecordType));
     if (!template) {
       alert('Invalid record type selected.');
       return;
     }
     const hasData = Object.keys(formData).some(
-      (key) => key !== 'sheetName' && key !== 'typeOfRecords' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
+      (key) => key !== 'sheetName' && key !== 'typeOfRecord' && key !== 'typeOfObject' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
       alert('Please fill in at least one field to create a record.');
@@ -441,14 +474,14 @@ const RecordsEditor = ({
       ...formData,
       docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
-      typeOfRecords: isEditing ? initialRowData?.typeOfRecords : template.name,
-      typeOfProfile: (() => {
-        // Find the object for this template to set typeOfProfile
+      typeOfRecord: isEditing ? initialRowData?.typeOfRecord : template.name,
+      typeOfObject: (() => {
+        // Find the object for this template to set typeOfObject
         if (template.objectId && templateObjects) {
           const object = templateObjects.find(e => e.id === template.objectId);
           return object ? object.name : '';
         }
-        return formData.typeOfProfile || '';
+        return formData.typeOfObject || '';
       })(),
       assignedTo: formData.assignedTo || user?.email || '',
       history: formData.history || [],
@@ -456,7 +489,7 @@ const RecordsEditor = ({
       action: isEditing ? 'update' : 'add',
     };
 
-    const requiredFields = ['docId', 'linkId', 'typeOfRecords', 'history', 'isModified', 'action'];
+    const requiredFields = ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];
@@ -472,7 +505,7 @@ const RecordsEditor = ({
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfRecords' &&
+          key !== 'typeOfRecord' &&
           key !== 'history' &&
           historicalFormData[key] !== existingRecord[key]
         ) {
@@ -495,7 +528,7 @@ const RecordsEditor = ({
           if (
             key !== 'docId' &&
             key !== 'sheetName' &&
-            key !== 'typeOfRecords' &&
+            key !== 'typeOfRecord' &&
             key !== 'history' &&
             formData[key] !== existingRecord[key]
           ) {
@@ -514,7 +547,7 @@ const RecordsEditor = ({
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfRecords' &&
+          key !== 'typeOfRecord' &&
           key !== 'history' &&
           formData[key] &&
           formData[key].toString().trim() !== ''
@@ -1049,7 +1082,7 @@ const RecordsEditor = ({
                                           placeholder={`Enter ${field.name}`}
                                           aria-label={`Enter ${field.name} date`}
                                           readOnly={isViewingHistory}
-                                          disabled={field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                          disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                         <input
                                           type="time"
@@ -1063,7 +1096,7 @@ const RecordsEditor = ({
                                           className={`${styles.fieldInput} ${styles.timeInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                                           aria-label={`Enter ${field.name} time`}
                                           readOnly={isViewingHistory}
-                                          disabled={isViewingHistory || field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                          disabled={isViewingHistory || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                       </div>
                                     </div>
@@ -1077,8 +1110,8 @@ const RecordsEditor = ({
                                   className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
                                   placeholder={`Enter ${field.name}`}
                                   aria-label={`Enter ${field.name}`}
-                                  readOnly={isViewingHistory || field.key === 'assignedTo'}
-                                  disabled={field.key === 'typeOfRecords' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                  readOnly={isViewingHistory || field.key === 'assignedTo' || field.key === 'typeOfObject'}
+                                  disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                 />
                               )}
                             </div>
@@ -1227,7 +1260,7 @@ RecordsEditor.propTypes = {
   initialRowData: PropTypes.shape({
     docId: PropTypes.string,
     sheetName: PropTypes.string,
-    typeOfRecords: PropTypes.string,
+    typeOfRecord: PropTypes.string,
     history: PropTypes.arrayOf(
       PropTypes.shape({
         field: PropTypes.string,

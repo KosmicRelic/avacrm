@@ -103,7 +103,7 @@ const EditSheetsModal = ({
     const updatedRecordTypeFilters = { ...(tempData.recordTypeFilters || {}) };
 
     selectedRecordTypes.forEach((typeOfRecords) => {
-      const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
+      const template = allTemplates.find((t) => t.typeOfRecord === typeOfRecords);
       if (!template) return;
       if (!updatedRecordTypeFilters[typeOfRecords]) {
         updatedRecordTypeFilters[typeOfRecords] = {};
@@ -144,14 +144,14 @@ const EditSheetsModal = ({
         if (headerKey === 'userFilter') {
           if (filter.headerKey) {
             const header = allTemplates
-              .find((t) => t.typeOfRecords === recordType)
+              .find((t) => t.typeOfRecord === recordType)
               ?.headers.find((h) => h.key === filter.headerKey);
             summaries.push(`${header?.name || filter.headerKey} = Current User`);
           }
           return;
         }
         const header = allTemplates
-          .find((t) => t.typeOfRecords === recordType)
+          .find((t) => t.typeOfRecord === recordType)
           ?.headers.find((h) => h.key === headerKey);
         if (!header) return;
 
@@ -187,7 +187,7 @@ const EditSheetsModal = ({
   const onDoneClick = useCallback(() => {
     let updatedRecordTypeFilters = { ...(tempData.recordTypeFilters || {}) };
     selectedRecordTypes.forEach((typeOfRecords) => {
-      const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
+      const template = allTemplates.find((t) => t.typeOfRecord === typeOfRecords);
       if (!template) return;
       if (!updatedRecordTypeFilters[typeOfRecords]) updatedRecordTypeFilters[typeOfRecords] = {};
       template.headers
@@ -348,7 +348,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 4) {
-      const templateName = allTemplates.find((t) => t.typeOfRecords === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
+      const templateName = allTemplates.find((t) => t.typeOfRecord === selectedTemplateForHeaders)?.name || selectedTemplateForHeaders || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -394,7 +394,7 @@ const EditSheetsModal = ({
         rightButton: null,
       };
     } else if (currentStep === 7) {
-      const recordTypeName = allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown';
+      const recordTypeName = allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown';
       config = {
         showTitle: true,
         showDoneButton: false,
@@ -423,9 +423,9 @@ const EditSheetsModal = ({
         showBackButton: true,
         allowClose: false,
         title: filterTypeTitle,
-        backButtonTitle: `Filters for ${allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
+        backButtonTitle: `Filters for ${allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
         backButton: {
-          label: `< Filters for ${allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
+          label: `< Filters for ${allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.name || selectedRecordTypeForFilter || 'Unknown'}`,
           onClick: handleBackClick,
         },
         leftButton: null,
@@ -923,22 +923,22 @@ const EditSheetsModal = ({
                     <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No templates available. Create templates first in the main app.
                     </div>
-                  ) : allTemplates.filter((template) => selectedRecordTypes.includes(template.typeOfRecords)).length === 0 ? (
+                  ) : allTemplates.filter((template) => selectedRecordTypes.includes(template.typeOfRecord)).length === 0 ? (
                     <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       No record types selected. Go back to "Data Types" to select templates first.
                     </div>
                   ) : (
                     allTemplates
-                      .filter((template) => selectedRecordTypes.includes(template.typeOfRecords))
+                      .filter((template) => selectedRecordTypes.includes(template.typeOfRecord))
                       .map((template) => (
                       <div
-                        key={template.typeOfRecords}
+                        key={template.typeOfRecord}
                         className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => handleTemplateClick(template.typeOfRecords)}
+                        onClick={() => handleTemplateClick(template.typeOfRecord)}
                       >
                         <div className={styles.templateRow}>
                           <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecords.charAt(0).toUpperCase() + template.typeOfRecords.slice(1).toLowerCase()}
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecord.charAt(0).toUpperCase() + template.typeOfRecord.slice(1).toLowerCase()}
                           </span>
                           <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             <IoChevronForward size={16} />
@@ -956,7 +956,7 @@ const EditSheetsModal = ({
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which columns from this template to include in your sheet. You can reorder them later.</p>
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {(() => {
-                    const selectedTemplate = allTemplates.find((t) => t.typeOfRecords === selectedTemplateForHeaders);
+                    const selectedTemplate = allTemplates.find((t) => t.typeOfRecord === selectedTemplateForHeaders);
                     const templateHeaders = selectedTemplate?.headers
                       .filter((header) => header.isUsed !== false)
                       .map((header) => ({
@@ -1009,7 +1009,7 @@ const EditSheetsModal = ({
                     </div>
                   )}
                   {selectedRecordTypes.map((typeOfRecords) => {
-                    const template = allTemplates.find((t) => t.typeOfRecords === typeOfRecords);
+                    const template = allTemplates.find((t) => t.typeOfRecord === typeOfRecords);
                     return (
                       <div
                         key={typeOfRecords}
@@ -1053,20 +1053,20 @@ const EditSheetsModal = ({
                   ) : (
                     allTemplates.map((template) => (
                       <div
-                        key={template.typeOfRecords}
+                        key={template.typeOfRecord}
                         className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleRecordTypeSelection(template.typeOfRecords)}
+                        onClick={() => toggleRecordTypeSelection(template.typeOfRecord)}
                       >
                         <div className={styles.recordTypeRow}>
                           <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {selectedRecordTypes.includes(template.typeOfRecords) ? (
+                            {selectedRecordTypes.includes(template.typeOfRecord) ? (
                               <FaRegCheckCircle size={18} className={styles.checked} />
                             ) : (
                               <FaRegCircle size={18} />
                             )}
                           </span>
                           <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecords.charAt(0).toUpperCase() + template.typeOfRecords.slice(1).toLowerCase()}
+                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecord.charAt(0).toUpperCase() + template.typeOfRecord.slice(1).toLowerCase()}
                           </span>
                         </div>
                       </div>
@@ -1104,7 +1104,7 @@ const EditSheetsModal = ({
                   <div className={`${styles.filterListSection}`}>
                     <RecordTypeFilterLikeFilterModal
                       recordType={selectedRecordTypeForFilter}
-                      headers={allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.headers || []}
+                      headers={allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}
@@ -1153,7 +1153,7 @@ const EditSheetsModal = ({
                   {selectedRecordTypeForFilter && (
                     <RecordTypeFilterLikeFilterModal
                       recordType={selectedRecordTypeForFilter}
-                      headers={allTemplates.find((t) => t.typeOfRecords === selectedRecordTypeForFilter)?.headers || []}
+                      headers={allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.headers || []}
                       tempData={tempData}
                       setTempData={setTempData}
                       isDarkTheme={isDarkTheme}

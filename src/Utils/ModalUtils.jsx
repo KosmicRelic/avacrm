@@ -216,7 +216,7 @@ export const handleModalSave = async ({
       break;
       case 'recordsTemplate':
       if (data?.templateObjects && Array.isArray(data.templateObjects)) {
-        // Profile-based system
+        // Object-based system
         if (!businessId) {
           console.warn('Cannot update templates and records: businessId is missing');
           alert('Error: Business ID is missing. Please ensure your account is properly configured.');
@@ -248,7 +248,7 @@ export const handleModalSave = async ({
           });
 
           // Check if there are any actual changes
-          const hasProfileChanges = data.hasProfileChanges === true || 
+          const hasObjectChanges = data.hasObjectChanges === true || 
             (data.templateObjects && data.templateObjects.some(object => 
               object.isModified || object.action === 'add' || object.action === 'update' || object.action === 'remove'
             ));
@@ -259,7 +259,7 @@ export const handleModalSave = async ({
             )
           );
           
-          const hasActualChanges = hasTemplateChanges || hasProfileChanges || (data.deletedHeaderKeys?.length > 0);
+          const hasActualChanges = hasTemplateChanges || hasObjectChanges || (data.deletedHeaderKeys?.length > 0);
 
           if (!hasActualChanges) {
             return;
@@ -289,10 +289,10 @@ export const handleModalSave = async ({
             setTempData({
               templateObjects: objectsForContext,
               deletedHeaderKeys: data.deletedHeaderKeys || [],
-              hasProfileChanges: false, // Reset since we just saved
+              hasObjectChanges: false, // Reset since we just saved
               // Reset editing state so UI shows updated names
-              editingProfileIndex: null,
-              editingProfileName: ""
+              editingObjectIndex: null,
+              editingObjectName: ""
             });
           }
         } catch (error) {
@@ -703,7 +703,7 @@ export const renderModalContent = ({
           tempData={activeModal.data || {
             templateObjects: [...(templateObjects || [])],
             deletedHeaderKeys: [],
-            hasProfileChanges: false
+            hasObjectChanges: false
           }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
@@ -875,7 +875,7 @@ export const onOpenRecordsTemplateModal = ({
     data: {
       templateObjects: [...(templateObjects || [])],
       deletedHeaderKeys: [],
-      hasProfileChanges: false
+      hasObjectChanges: false
     },
   });
   recordsTemplateModal?.open();

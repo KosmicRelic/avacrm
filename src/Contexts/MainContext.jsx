@@ -608,7 +608,7 @@ export const MainContextProvider = ({ children }) => {
 
         // Batch add for records
         for (const record of modifiedRecords) {
-          const isRecordAccessible = isBusinessUser || accessibleRecordTypes.has(record.typeOfRecords);
+          const isRecordAccessible = isBusinessUser || accessibleRecordTypes.has(record.typeOfRecord);
           if (!isRecordAccessible) {
             continue;
           }
