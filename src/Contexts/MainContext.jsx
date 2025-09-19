@@ -23,7 +23,7 @@ export const MainContextProvider = ({ children }) => {
   const [cards, setCards] = useState([]);
   // Cache cards per sheetId: { [sheetId]: cardsArray }
   const [cardsCache, setCardsCache] = useState({});
-  const [templateEntities, setTemplateEntities] = useState([]);
+  const [templateProfiles, setTemplateProfiles] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
   const [tempData, setTempData] = useState(null);
@@ -59,7 +59,7 @@ export const MainContextProvider = ({ children }) => {
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedCards = useMemo(() => cards, [cards]);
-  const memoizedTemplateEntities = useMemo(() => templateEntities, [templateEntities]);
+  const memoizedTemplateProfiles = useMemo(() => templateProfiles, [templateProfiles]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
@@ -210,7 +210,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setTemplateEntities,
+                    setTemplateProfiles,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
                   })
@@ -222,7 +222,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
-                    setTemplateEntities,
+                    setTemplateProfiles,
                     updateSheets: true,
                   })
                 );
@@ -238,7 +238,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/dashboard',
                   setSheets,
                   setCards,
-                  setTemplateEntities,
+                  setTemplateProfiles,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -252,7 +252,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/metrics',
                   setSheets,
                   setCards,
-                  setTemplateEntities,
+                  setTemplateProfiles,
                   setMetrics,
                   setDashboards,
                   updateSheets: false,
@@ -265,7 +265,7 @@ export const MainContextProvider = ({ children }) => {
                   businessId: fetchedBusinessId,
                   route: '/actions',
                   setActions,
-                  setTemplateEntities,
+                  setTemplateProfiles,
                 })
               );
             }
@@ -436,7 +436,7 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
-        setTemplateEntities,
+        setTemplateProfiles,
         setCards: (fetchedCards) => {
           setCards(fetchedCards);
           setCardsCache((prev) => ({ ...prev, [sheetId]: fetchedCards }));
@@ -614,7 +614,6 @@ export const MainContextProvider = ({ children }) => {
           }
           let docRef;
           if (card.action === 'add') {
-            console.log("adding card");
             docRef = doc(stateConfig.cards.collectionPath()); // Firestore will generate ID
             addedCardsMap.set(card, docRef.id); // Map original card to new Firestore ID
             const { isModified, action, docId, sheetName, ...cardData } = card;
@@ -665,8 +664,8 @@ export const MainContextProvider = ({ children }) => {
             }
           }
 
-          // NOTE: Template batch operations disabled - now handled via entity-based system in ModalUtils
-          // Templates are stored within templateEntities and managed through CardsTemplate modal
+          // NOTE: Template batch operations disabled - now handled via profile-based system in ModalUtils
+          // Templates are stored within templateProfiles and managed through CardsTemplate modal
           // const modifiedCardTemplates = cardTemplates.filter((template) => template.isModified);
           // for (const template of modifiedCardTemplates) {
           //   const docRef = doc(stateConfig.cardTemplates.collectionPath(), template.docId);
@@ -938,18 +937,18 @@ export const MainContextProvider = ({ children }) => {
     isDarkTheme,
     setIsDarkTheme,
     themeRef,
-    templateEntities,
-    setTemplateEntities: (newEntities) => {
-      if (shallowEqual(templateEntities, newEntities)) {
+    templateProfiles,
+    setTemplateProfiles: (newProfiles) => {
+      if (shallowEqual(templateProfiles, newProfiles)) {
         return;
       }
-      setTemplateEntities(newEntities);
+      setTemplateProfiles(newProfiles);
     },
-    cardTemplates: templateEntities?.flatMap(entity => 
-      (entity.templates || []).map(template => ({
+    cardTemplates: templateProfiles?.flatMap(profile => 
+      (profile.templates || []).map(template => ({
         ...template,
-        entityId: entity.id,
-        entityName: entity.name
+        profileId: profile.id,
+        profileName: profile.name
       }))
     ) || [],
     tempData,
@@ -1014,7 +1013,7 @@ export const MainContextProvider = ({ children }) => {
         businessId,
         route: '/sheets',
         setCards,
-        setTemplateEntities,
+        setTemplateProfiles,
         setMetrics,
         setDashboards,
         activeSheetName,

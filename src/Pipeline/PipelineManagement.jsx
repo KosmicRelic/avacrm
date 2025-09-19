@@ -5,8 +5,8 @@ import { IoAdd, IoGitBranch, IoCreate, IoTrash, IoCheckmark, IoClose } from 'rea
 import { updateCardTemplatesAndCardsFunction } from '../Firebase/Firebase Functions/User Functions/updateCardTemplatesAndCardsFunction';
 
 const PipelineManagement = ({ 
-  templateEntities, 
-  setTemplateEntities, 
+  templateProfiles, 
+  setTemplateProfiles, 
   isDarkTheme, 
   businessId 
 }) => {
@@ -16,10 +16,10 @@ const PipelineManagement = ({
   const [sourceTemplate, setSourceTemplate] = useState("");
   const [targetTemplate, setTargetTemplate] = useState("");
   const [fieldMappings, setFieldMappings] = useState([]);
-  const [selectedEntityId, setSelectedEntityId] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState("");
 
   // Save changes to backend
-  const saveEntitiesToBackend = useCallback(async (updatedEntities) => {
+  const saveProfilesToBackend = useCallback(async (updatedProfiles) => {
     if (!businessId) {
       console.error('No business ID provided');
       return false;
@@ -28,51 +28,51 @@ const PipelineManagement = ({
     try {
       await updateCardTemplatesAndCardsFunction({
         businessId,
-        entities: updatedEntities,
+        profiles: updatedProfiles,
       });
       return true;
     } catch (error) {
-      console.error('Failed to save entities to backend:', error);
+      console.error('Failed to save profiles to backend:', error);
       alert('Failed to save changes. Please try again.');
       return false;
     }
   }, [businessId]);
 
-  // Get all templates across all entities for dropdown selection
+  // Get all templates across all profiles for dropdown selection
   const getAllTemplates = useCallback(() => {
     const templates = [];
-    templateEntities.forEach(entity => {
-      if (entity.templates && Array.isArray(entity.templates)) {
-        entity.templates.forEach(template => {
+    templateProfiles.forEach(profile => {
+      if (profile.templates && Array.isArray(profile.templates)) {
+        profile.templates.forEach(template => {
           templates.push({
             ...template,
-            entityName: entity.name,
-            entityId: entity.id
+            profileName: profile.name,
+            profileId: profile.id
           });
         });
       }
     });
     return templates;
-  }, [templateEntities]);
+  }, [templateProfiles]);
 
   const allTemplates = getAllTemplates();
 
-  // Get all pipelines across all entities
+  // Get all pipelines across all profiles
   const getAllPipelines = useCallback(() => {
     const pipelines = [];
-    templateEntities.forEach(entity => {
-      if (entity.pipelines && Array.isArray(entity.pipelines)) {
-        entity.pipelines.forEach(pipeline => {
+    templateProfiles.forEach(profile => {
+      if (profile.pipelines && Array.isArray(profile.pipelines)) {
+        profile.pipelines.forEach(pipeline => {
           pipelines.push({
             ...pipeline,
-            entityName: entity.name,
-            entityId: entity.id
+            profileName: profile.name,
+            profileId: profile.id
           });
         });
       }
     });
     return pipelines;
-  }, [templateEntities]);
+  }, [templateProfiles]);
 
   const allPipelines = getAllPipelines();
 
@@ -113,15 +113,15 @@ const PipelineManagement = ({
     setSourceTemplate("");
     setTargetTemplate("");
     setFieldMappings([]);
-    setSelectedEntityId("");
+    setSelectedProfileId("");
     setShowCreateForm(false);
     setEditingPipelineId(null);
   }, []);
 
   // Handle create/edit pipeline
   const handleSavePipeline = useCallback(async () => {
-    if (!newPipelineName.trim() || !sourceTemplate || !targetTemplate || !selectedEntityId) {
-      alert("Please fill in all required fields (name, source template, target template, and entity).");
+    if (!newPipelineName.trim() || !sourceTemplate || !targetTemplate || !selectedProfileId) {
+      alert("Please fill in all required fields (name, source template, target template, and profile).");
       return;
     }
 
@@ -152,29 +152,29 @@ const PipelineManagement = ({
       updatedAt: new Date().toISOString()
     };
 
-    const updatedEntities = templateEntities.map(entity => {
-      if (entity.id === selectedEntityId) {
-        const pipelines = entity.pipelines || [];
+    const updatedProfiles = templateProfiles.map(profile => {
+      if (profile.id === selectedProfileId) {
+        const pipelines = profile.pipelines || [];
         
         if (editingPipelineId) {
           // Edit existing pipeline
           const updatedPipelines = pipelines.map(p => 
             p.id === editingPipelineId ? pipelineData : p
           );
-          return { ...entity, pipelines: updatedPipelines };
+          return { ...profile, pipelines: updatedPipelines };
         } else {
           // Add new pipeline
-          return { ...entity, pipelines: [...pipelines, pipelineData] };
+          return { ...profile, pipelines: [...pipelines, pipelineData] };
         }
       }
-      return entity;
+      return profile;
     });
 
     // Save to backend
-    const saveSuccess = await saveEntitiesToBackend(updatedEntities);
+    const saveSuccess = await saveProfilesToBackend(updatedProfiles);
     
     if (saveSuccess) {
-      setTemplateEntities(updatedEntities);
+      setTemplateProfiles(updatedProfiles);
       resetForm();
       alert(editingPipelineId ? "Pipeline updated successfully!" : "Pipeline created successfully!");
     }
@@ -182,12 +182,12 @@ const PipelineManagement = ({
     newPipelineName, 
     sourceTemplate, 
     targetTemplate, 
-    selectedEntityId, 
+    selectedProfileId, 
     fieldMappings, 
     editingPipelineId, 
-    templateEntities,
-    saveEntitiesToBackend,
-    setTemplateEntities, 
+    templateProfiles,
+    saveProfilesToBackend,
+    setTemplateProfiles, 
     resetForm
   ]);
 
@@ -198,30 +198,30 @@ const PipelineManagement = ({
     setSourceTemplate(pipeline.sourceTemplate);
     setTargetTemplate(pipeline.targetTemplate);
     setFieldMappings(pipeline.fieldMappings || []);
-    setSelectedEntityId(pipeline.entityId);
+    setSelectedProfileId(pipeline.profileId);
     setShowCreateForm(true);
   }, []);
 
   // Handle delete pipeline
-  const handleDeletePipeline = useCallback(async (pipelineId, entityId, pipelineName) => {
+  const handleDeletePipeline = useCallback(async (pipelineId, profileId, pipelineName) => {
     if (window.confirm(`Are you sure you want to delete the pipeline "${pipelineName}"? This action cannot be undone.`)) {
-      const updatedEntities = templateEntities.map(entity => {
-        if (entity.id === entityId) {
-          const updatedPipelines = (entity.pipelines || []).filter(p => p.id !== pipelineId);
-          return { ...entity, pipelines: updatedPipelines };
+      const updatedProfiles = templateProfiles.map(profile => {
+        if (profile.id === profileId) {
+          const updatedPipelines = (profile.pipelines || []).filter(p => p.id !== pipelineId);
+          return { ...profile, pipelines: updatedPipelines };
         }
-        return entity;
+        return profile;
       });
 
       // Save to backend
-      const saveSuccess = await saveEntitiesToBackend(updatedEntities);
+      const saveSuccess = await saveProfilesToBackend(updatedProfiles);
       
       if (saveSuccess) {
-        setTemplateEntities(updatedEntities);
+        setTemplateProfiles(updatedProfiles);
         alert("Pipeline deleted successfully!");
       }
     }
-  }, [templateEntities, saveEntitiesToBackend, setTemplateEntities]);
+  }, [templateProfiles, saveProfilesToBackend, setTemplateProfiles]);
 
   // Update field mappings when templates change
   useEffect(() => {
@@ -295,7 +295,7 @@ const PipelineManagement = ({
                         <IoCreate size={16} />
                       </button>
                       <button
-                        onClick={() => handleDeletePipeline(pipeline.id, pipeline.entityId, pipeline.name)}
+                        onClick={() => handleDeletePipeline(pipeline.id, pipeline.profileId, pipeline.name)}
                         className={`${styles.actionButton} ${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                         title="Delete Pipeline"
                       >
@@ -309,8 +309,8 @@ const PipelineManagement = ({
                       <span className={styles.templateName}>
                         {sourceTemplateObj?.name || pipeline.sourceTemplate}
                       </span>
-                      <span className={styles.entityTag}>
-                        {pipeline.entityName}
+                      <span className={styles.profileTag}>
+                        {pipeline.profileName}
                       </span>
                     </div>
                     <div className={`${styles.flowArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -320,8 +320,8 @@ const PipelineManagement = ({
                       <span className={styles.templateName}>
                         {targetTemplateObj?.name || pipeline.targetTemplate}
                       </span>
-                      <span className={styles.entityTag}>
-                        {targetTemplateObj?.entityName || 'Unknown'}
+                      <span className={styles.profileTag}>
+                        {targetTemplateObj?.profileName || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -371,17 +371,17 @@ const PipelineManagement = ({
 
                 <div className={styles.inputGroup}>
                   <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    Entity *
+                    Profile *
                   </label>
                   <select
-                    value={selectedEntityId}
-                    onChange={(e) => setSelectedEntityId(e.target.value)}
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
                     className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
                   >
-                    <option value="">Select entity...</option>
-                    {templateEntities.map((entity) => (
-                      <option key={entity.id} value={entity.id}>
-                        {entity.name}
+                    <option value="">Select profile...</option>
+                    {templateProfiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
                       </option>
                     ))}
                   </select>
@@ -399,7 +399,7 @@ const PipelineManagement = ({
                     <option value="">Select source template...</option>
                     {allTemplates.map((template) => (
                       <option key={template.docId} value={template.typeOfCards}>
-                        {template.name} ({template.entityName})
+                        {template.name} ({template.profileName})
                       </option>
                     ))}
                   </select>
@@ -419,7 +419,7 @@ const PipelineManagement = ({
                       .filter(template => template.typeOfCards !== sourceTemplate)
                       .map((template) => (
                         <option key={template.docId} value={template.typeOfCards}>
-                          {template.name} ({template.entityName})
+                          {template.name} ({template.profileName})
                         </option>
                       ))}
                   </select>
@@ -513,7 +513,7 @@ const PipelineManagement = ({
 };
 
 PipelineManagement.propTypes = {
-  templateEntities: PropTypes.arrayOf(
+  templateProfiles: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
@@ -521,7 +521,7 @@ PipelineManagement.propTypes = {
       pipelines: PropTypes.array,
     })
   ).isRequired,
-  setTemplateEntities: PropTypes.func.isRequired,
+  setTemplateProfiles: PropTypes.func.isRequired,
   isDarkTheme: PropTypes.bool,
   businessId: PropTypes.string,
 };

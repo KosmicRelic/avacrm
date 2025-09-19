@@ -61,7 +61,7 @@ const CardsEditor = ({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, cardTemplates, templateEntities, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
+  const { sheets, cardTemplates, templateProfiles, headers, isDarkTheme, cards, setCards, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfCards
@@ -335,13 +335,13 @@ const CardsEditor = ({
     const templateName = formData.typeOfCards || (isEditing ? initialRowData?.typeOfCards : selectedCardType);
     const currentTemplate = cardTemplates?.find((t) => t.name === templateName);
     
-    if (!currentTemplate || !templateEntities) {
+    if (!currentTemplate || !templateProfiles) {
       return [];
     }
     
-    // Find the entity that contains this template
-    const entity = templateEntities.find(e => e.id === currentTemplate.entityId);
-    const allPipelines = entity?.pipelines || [];
+    // Find the profile that contains this template
+    const profile = templateProfiles.find(e => e.id === currentTemplate.profileId);
+    const allPipelines = profile?.pipelines || [];
     
     // Filter pipelines that have this template as source
     const sourcePipelines = allPipelines.filter(pipeline => 
@@ -351,7 +351,7 @@ const CardsEditor = ({
     // Filter out pipelines that have already been used for this card
     const usedPipelineIds = formData.usedPipelines || [];
     return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
-  }, [cardTemplates, templateEntities, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
+  }, [cardTemplates, templateProfiles, isEditing, initialRowData, selectedCardType, formData.usedPipelines, formData.typeOfCards]);
 
   // Execute pipeline to convert card to another type
   const executePipeline = useCallback((pipeline) => {
@@ -371,10 +371,10 @@ const CardsEditor = ({
       linkId: formData.linkId, // Keep the same linkId to maintain connection
       typeOfCards: targetTemplate.name, // Use template name for consistency
       typeOfProfile: (() => {
-        // Find the entity for target template to set typeOfProfile
-        if (targetTemplate.entityId && templateEntities) {
-          const entity = templateEntities.find(e => e.id === targetTemplate.entityId);
-          return entity ? entity.name : '';
+        // Find the profile for target template to set typeOfProfile
+        if (targetTemplate.profileId && templateProfiles) {
+          const profile = templateProfiles.find(e => e.id === targetTemplate.profileId);
+          return profile ? profile.name : '';
         }
         return '';
       })(),
@@ -443,10 +443,10 @@ const CardsEditor = ({
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       typeOfCards: isEditing ? initialRowData?.typeOfCards : template.name,
       typeOfProfile: (() => {
-        // Find the entity for this template to set typeOfProfile
-        if (template.entityId && templateEntities) {
-          const entity = templateEntities.find(e => e.id === template.entityId);
-          return entity ? entity.name : '';
+        // Find the profile for this template to set typeOfProfile
+        if (template.profileId && templateProfiles) {
+          const profile = templateProfiles.find(e => e.id === template.profileId);
+          return profile ? profile.name : '';
         }
         return formData.typeOfProfile || '';
       })(),

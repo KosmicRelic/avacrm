@@ -105,7 +105,6 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
           : null,
       };
 
-      console.log('Initial Modal Config:', initialConfig); // Debug log
       setModalConfig(initialConfig);
       setCurrentStep(initialStep);
       hasInitialized.current = true;
@@ -148,7 +147,6 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
             : null,
         };
 
-    console.log('Updated Modal Config:', config); // Debug log
     setModalConfig(config);
   }, [isEditMode, selectedCategories, handleDeleteCategories, setModalConfig, localWidget?.category, handleClose, currentStep, localTempData]);
 

@@ -315,13 +315,13 @@
   color: #e2e8f0;
 }
 
-.entityTag {
+.profileTag {
   font-size: 12px;
   color: #6b7280;
   font-weight: 500;
 }
 
-.entityTag.darkTheme {
+.profileTag.darkTheme {
   color: #9ca3af;
 }
 

@@ -405,10 +405,6 @@ export default function Settings() {
         financials: { role: invitationPermissions.financials === 'none' ? false : invitationPermissions.financials },
       };
 
-      // Log permissions for debugging
-      console.log('invitationPermissions:', JSON.stringify(invitationPermissions, null, 2));
-      console.log('backendPermissions:', JSON.stringify(backendPermissions, null, 2));
-
       const maxRetries = 3;
       let attempt = 0;
       while (attempt < maxRetries) {

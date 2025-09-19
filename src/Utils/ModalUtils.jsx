@@ -43,7 +43,7 @@ export const handleModalSave = async ({
   setSheets,
   activeSheetName,
   isSheetModalEditMode,
-  setTemplateEntities,
+  setTemplateProfiles,
   setEditMode,
   setSelectedTemplateIndex,
   setCurrentSectionIndex,
@@ -56,7 +56,7 @@ export const handleModalSave = async ({
   metrics,
   dashboards,
   setActiveModal,
-  templateEntities,
+  templateProfiles,
   businessId,
   cards,
   setCards,
@@ -215,9 +215,8 @@ export const handleModalSave = async ({
       }
       break;
       case 'cardsTemplate':
-      console.log('CardsTemplate modal save - received data:', data);
-      if (data?.templateEntities && Array.isArray(data.templateEntities)) {
-        // Entity-based system
+      if (data?.templateProfiles && Array.isArray(data.templateProfiles)) {
+        // Profile-based system
         if (!businessId) {
           console.warn('Cannot update templates and cards: businessId is missing');
           alert('Error: Business ID is missing. Please ensure your account is properly configured.');
@@ -225,99 +224,85 @@ export const handleModalSave = async ({
         }
 
         try {
-          // Prepare entities with their templates - include ALL entities, even those marked for deletion
+          // Prepare profiles with their templates - include ALL profiles, even those marked for deletion
           // The backend will handle deletion based on the action flag
-          const entitiesWithTemplates = data.templateEntities.map(entity => {
-            console.log('Processing entity:', entity.name, 'with templates:', entity.templates);
-            console.log('Entity pipelines:', entity.pipelines);
-            console.log('Entity action:', entity.action);
+          const profilesWithTemplates = data.templateProfiles.map(profile => {
             
-            // Use the templates from the entity (they already reflect the user's changes)
-            const entityTemplates = (entity.templates || []).filter(template => 
+            // Use the templates from the profile (they already reflect the user's changes)
+            const profileTemplates = (profile.templates || []).filter(template => 
               template.action !== "remove"
             ).map(template => {
               const { isModified, action, ...cleanTemplate } = template;
               return cleanTemplate;
             });
             
-            console.log('Final templates for entity', entity.name, ':', entityTemplates);
-            console.log('Including pipelines for entity', entity.name, ':', entity.pipelines);
-            
             // Include action and isModified flags so backend knows what to do
             return {
-              id: entity.id,
-              name: entity.name,
-              templates: entityTemplates,
-              pipelines: entity.pipelines || [],
-              action: entity.action,
-              isModified: entity.isModified
+              id: profile.id,
+              name: profile.name,
+              templates: profileTemplates,
+              pipelines: profile.pipelines || [],
+              action: profile.action,
+              isModified: profile.isModified
             };
           });
 
           // Check if there are any actual changes
-          const hasEntityChanges = data.hasEntityChanges === true || 
-            (data.templateEntities && data.templateEntities.some(entity => 
-              entity.isModified || entity.action === 'add' || entity.action === 'update' || entity.action === 'remove'
+          const hasProfileChanges = data.hasProfileChanges === true || 
+            (data.templateProfiles && data.templateProfiles.some(profile => 
+              profile.isModified || profile.action === 'add' || profile.action === 'update' || profile.action === 'remove'
             ));
           
-          const hasTemplateChanges = data.templateEntities.some(entity =>
-            entity.templates?.some(template => 
+          const hasTemplateChanges = data.templateProfiles.some(profile =>
+            profile.templates?.some(template => 
               template.isModified || template.action === 'add' || template.action === 'remove'
             )
           );
           
-          const hasActualChanges = hasTemplateChanges || hasEntityChanges || (data.deletedHeaderKeys?.length > 0);
+          const hasActualChanges = hasTemplateChanges || hasProfileChanges || (data.deletedHeaderKeys?.length > 0);
 
           if (!hasActualChanges) {
-            console.log('[ModalUtils] No changes detected, skipping backend update');
-            console.log('Template entities saved successfully (no changes)');
             return;
           }
 
-          console.log('[ModalUtils] Changes detected, proceeding with backend update');
-
-          const totalPipelines = entitiesWithTemplates.reduce((total, entity) => total + (entity.pipelines?.length || 0), 0);
-          console.log(`Sending ${entitiesWithTemplates.length} entities with total ${totalPipelines} pipelines to backend`);
-          console.log('Sending entities to backend:', { businessId, entities: entitiesWithTemplates });
+          const totalPipelines = profilesWithTemplates.reduce((total, profile) => total + (profile.pipelines?.length || 0), 0);
 
           const result = await updateCardTemplatesAndCardsFunction({
             businessId,
-            entities: entitiesWithTemplates,
+            profiles: profilesWithTemplates,
           });
 
           if (!result.success) {
-            throw new Error(result.error || 'Failed to update template entities');
+            throw new Error(result.error || 'Failed to update template profiles');
           }
 
-          // Update templateEntities in context to ensure immediate UI update
-          // Filter out entities marked for deletion since they will be deleted from Firestore
-          const entitiesForContext = entitiesWithTemplates.filter(entity => entity.action !== "remove");
+          // Update templateProfiles in context to ensure immediate UI update
+          // Filter out profiles marked for deletion since they will be deleted from Firestore
+          const profilesForContext = profilesWithTemplates.filter(profile => profile.action !== "remove");
           
-          if (setTemplateEntities) {
-            setTemplateEntities(entitiesForContext);
+          if (setTemplateProfiles) {
+            setTemplateProfiles(profilesForContext);
           }
 
           // Update tempData to reflect the latest changes and reset editing state
           if (setTempData) {
             setTempData({
-              templateEntities: entitiesForContext,
+              templateProfiles: profilesForContext,
               deletedHeaderKeys: data.deletedHeaderKeys || [],
-              hasEntityChanges: false, // Reset since we just saved
+              hasProfileChanges: false, // Reset since we just saved
               // Reset editing state so UI shows updated names
-              editingEntityIndex: null,
-              editingEntityName: ""
+              editingProfileIndex: null,
+              editingProfileName: ""
             });
           }
-
-          console.log('Template entities saved successfully');
         } catch (error) {
-          console.error('Error updating template entities:', error);
-          alert(`Failed to update template entities. Error: ${error.message}`);
+          console.error('Error updating template profiles:', error);
+          alert(`Failed to update template profiles. Error: ${error.message}`);
           return;
         }
       } else {
-        console.warn('No template entities found to save. Data received:', {
-          templateEntities: data?.templateEntities,
+        console.warn('No template profiles found to save. Data received:', {
+          templateProfiles: data?.templateProfiles,
           dataKeys: Object.keys(data || {})
         });
       }
@@ -645,7 +630,7 @@ export const renderModalContent = ({
   handleDeleteSheet,
   handleModalClose,
   resolvedRows,
-  templateEntities,
+  templateProfiles,
   handleSheetChange,
   handleSheetSave,
   handleFolderSave,
@@ -716,9 +701,9 @@ export const renderModalContent = ({
       return (
         <CardsTemplate
           tempData={activeModal.data || {
-            templateEntities: [...(templateEntities || [])],
+            templateProfiles: [...(templateProfiles || [])],
             deletedHeaderKeys: [],
-            hasEntityChanges: false
+            hasProfileChanges: false
           }}
           setTempData={setActiveModalData}
           handleClose={handleModalClose}
@@ -878,19 +863,19 @@ export const onOpenTransportModal = ({
 };
 
 export const onOpenCardsTemplateModal = ({
-  templateEntities,
+  templateProfiles,
   setEditMode,
   setActiveModal,
   cardsTemplateModal,
 }) => {
-  if (!templateEntities) return;
+  if (!templateProfiles) return;
   setEditMode(false);
   setActiveModal({
     type: 'cardsTemplate',
     data: {
-      templateEntities: [...(templateEntities || [])],
+      templateProfiles: [...(templateProfiles || [])],
       deletedHeaderKeys: [],
-      hasEntityChanges: false
+      hasProfileChanges: false
     },
   });
   cardsTemplateModal?.open();

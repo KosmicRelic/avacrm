@@ -554,14 +554,14 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
       }
 
-      const { businessId, entities, updates } = body || {};
+      const { businessId, profiles, updates } = body || {};
 
       functions.logger.info('Parsed body with detailed types', { 
         businessId, 
-        entities, 
+        profiles, 
         updates,
-        entitiesType: typeof entities,
-        entitiesIsArray: Array.isArray(entities),
+        profilesType: typeof profiles,
+        profilesIsArray: Array.isArray(profiles),
         updatesType: typeof updates,
         updatesIsArray: Array.isArray(updates),
         bodyKeys: Object.keys(body || {}),
@@ -575,24 +575,24 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
         });
       }
 
-      // Validate that at least entities or updates are provided
-      const hasEntities = entities && Array.isArray(entities);
+      // Validate that at least profiles or updates are provided
+      const hasProfiles = profiles && Array.isArray(profiles);
       const hasUpdates = updates && Array.isArray(updates);
       
       functions.logger.info('Validation check', { 
-        hasEntities, 
+        hasProfiles, 
         hasUpdates,
-        entitiesLength: hasEntities ? entities.length : 'N/A',
+        profilesLength: hasProfiles ? profiles.length : 'N/A',
         updatesLength: hasUpdates ? updates.length : 'N/A'
       });
       
-      if (!hasEntities && !hasUpdates) {
-        functions.logger.error('Neither entities nor updates provided', { 
-          entities, 
+      if (!hasProfiles && !hasUpdates) {
+        functions.logger.error('Neither profiles nor updates provided', { 
+          profiles, 
           updates, 
-          hasEntities, 
+          hasProfiles, 
           hasUpdates,
-          entitiesType: typeof entities,
+          profilesType: typeof profiles,
           updatesType: typeof updates
         });
         return res.status(400).json({
@@ -601,8 +601,8 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       }
 
       functions.logger.info('Validation passed:', { 
-        hasEntities, 
-        entitiesLength: hasEntities ? entities.length : 0,
+        hasProfiles, 
+        profilesLength: hasProfiles ? profiles.length : 0,
         hasUpdates, 
         updatesLength: hasUpdates ? updates.length : 0 
       });
@@ -616,69 +616,69 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
       const batch = admin.firestore().batch();
       let totalUpdatedCards = 0;
       let totalUpdatedTemplates = 0;
-      let totalUpdatedEntities = 0;
+      let totalUpdatedProfiles = 0;
       const messages = [];
 
-      // Handle entity updates if entities are provided
-      if (entities && Array.isArray(entities)) {
-        for (const entity of entities) {
-          const { id, name, templates, pipelines, action } = entity;
+      // Handle profile updates if profiles are provided
+      if (profiles && Array.isArray(profiles)) {
+        for (const profile of profiles) {
+          const { id, name, templates, pipelines, action } = profile;
 
           if (!id || !name) {
-            functions.logger.warn('Skipping entity: Missing id or name', { id, name });
+            functions.logger.warn('Skipping profile: Missing id or name', { id, name });
             continue;
           }
 
-          const entityRef = admin
+          const profileRef = admin
             .firestore()
             .collection('businesses')
             .doc(businessId)
-            .collection('templateEntities')
+            .collection('templateProfiles')
             .doc(id);
 
           if (action === 'remove') {
-            functions.logger.info('Deleting templateEntity:', { id });
-            batch.delete(entityRef);
-            messages.push(`Deleted entity: ${name}`);
+            functions.logger.info('Deleting templateProfile:', { id });
+            batch.delete(profileRef);
+            messages.push(`Deleted profile: ${name}`);
           } else {
-            // Check if entity name has changed by comparing with existing entity
-            let entityNameChanged = false;
+            // Check if profile name has changed by comparing with existing profile
+            let profileNameChanged = false;
             let previousName = null;
             
             try {
-              const existingEntityDoc = await entityRef.get();
-              if (existingEntityDoc.exists) {
-                const existingData = existingEntityDoc.data();
+              const existingProfileDoc = await profileRef.get();
+              if (existingProfileDoc.exists) {
+                const existingData = existingProfileDoc.data();
                 previousName = existingData.name;
-                entityNameChanged = previousName && previousName !== name;
+                profileNameChanged = previousName && previousName !== name;
               }
             } catch (error) {
-              functions.logger.warn('Error checking existing entity:', { error: error.message });
+              functions.logger.warn('Error checking existing profile:', { error: error.message });
             }
 
-            functions.logger.info('Upserting templateEntity:', { 
+            functions.logger.info('Upserting templateProfile:', { 
               id, 
               name, 
               previousName,
-              entityNameChanged,
+              profileNameChanged,
               templateCount: templates?.length || 0, 
               pipelineCount: pipelines?.length || 0 
             });
 
             // Debug: Log the comparison details
-            functions.logger.info('Entity name change detection:', {
-              entityId: id,
+            functions.logger.info('Profile name change detection:', {
+              profileId: id,
               incomingName: name,
               existingName: previousName,
               namesAreDifferent: previousName !== name,
               hasTemplates: templates && Array.isArray(templates) && templates.length > 0,
-              entityNameChanged
+              profileNameChanged
             });
 
-            // If entity name changed, update typeOfProfile in all cards that use templates from this entity
-            if (entityNameChanged && templates && Array.isArray(templates)) {
-              functions.logger.info('Entity name changed, updating typeOfProfile in cards:', { 
-                entityId: id, 
+            // If profile name changed, update typeOfProfile in all cards that use templates from this profile
+            if (profileNameChanged && templates && Array.isArray(templates)) {
+              functions.logger.info('Profile name changed, updating typeOfProfile in cards:', { 
+                profileId: id, 
                 previousName, 
                 newName: name,
                 templateCount: templates.length
@@ -705,7 +705,7 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
 
                       cardsSnapshot.forEach((cardDoc) => {
                         const cardData = cardDoc.data();
-                        // Only update if the card's typeOfProfile matches the previous entity name
+                        // Only update if the card's typeOfProfile matches the previous profile name
                         if (cardData.typeOfProfile === previousName) {
                           batch.update(cardDoc.ref, {
                             typeOfProfile: name
@@ -726,16 +726,16 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
               }
             }
 
-            batch.set(entityRef, {
+            batch.set(profileRef, {
               id,
               name,
               templates: templates || [],
               pipelines: pipelines || [],
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
-            messages.push(`Updated entity: ${name} with ${templates?.length || 0} templates and ${pipelines?.length || 0} pipelines`);
+            messages.push(`Updated profile: ${name} with ${templates?.length || 0} templates and ${pipelines?.length || 0} pipelines`);
           }
-          totalUpdatedEntities += 1;
+          totalUpdatedProfiles += 1;
         }
       }
 
@@ -834,27 +834,27 @@ exports.updateCardTemplatesAndCards = functions.https.onRequest((req, res) => {
         }
       }
 
-      if (totalUpdatedEntities > 0 || totalUpdatedTemplates > 0) {
+      if (totalUpdatedProfiles > 0 || totalUpdatedTemplates > 0) {
         functions.logger.info('Committing batch with updates:', { 
           totalUpdatedCards, 
           totalUpdatedTemplates, 
-          totalUpdatedEntities 
+          totalUpdatedProfiles 
         });
         await batch.commit();
         functions.logger.info('Batch committed successfully:', { 
           totalUpdatedCards, 
           totalUpdatedTemplates, 
-          totalUpdatedEntities 
+          totalUpdatedProfiles 
         });
       } else {
-        functions.logger.info('No batch operations to commit - this is normal for empty entity arrays');
+        functions.logger.info('No batch operations to commit - this is normal for empty profile arrays');
       }
       return res.status(200).json({
         success: true,
         message: messages.length > 0 ? messages.join('; ') : 'No updates performed',
         updatedCardsCount: totalUpdatedCards,
         updatedTemplatesCount: totalUpdatedTemplates,
-        updatedEntitiesCount: totalUpdatedEntities,
+        updatedProfilesCount: totalUpdatedProfiles,
       });
     } catch (error) {
       functions.logger.error('updateCardTemplatesAndCards failed', {
