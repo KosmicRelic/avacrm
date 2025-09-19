@@ -27,6 +27,34 @@ import {
 import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
 import ErrorBoundary from './Utils/ErrorBoundary';
 
+// Memoized ProtectedRoute to prevent unnecessary re-renders
+const ProtectedRoute = React.memo(({ children }) => {
+  const { user, userAuthChecked } = useContext(MainContext);
+  const location = useLocation();
+
+  if (!userAuthChecked) {
+    return null; // Wait for auth check to complete
+  }
+
+  // Check if the path is for team member signup
+  const isTeamMemberSignup = location.pathname.match(/^\/signup\/[^/]+\/teammember\/[^/]+$/);
+
+  if (
+    !user &&
+    userAuthChecked &&
+    !['/signup/business', '/signin'].includes(location.pathname) &&
+    !isTeamMemberSignup
+  ) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  return children;
+});
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
 // Lazy load major components for code splitting
 const Sheets = lazy(() => import('./Sheets/Sheets'));
 const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
@@ -47,10 +75,6 @@ const LoadingSpinner = () => (
     <div>Loading...</div>
   </div>
 );
-
-ProtectedRoute.propTypes = {
-  children: PropTypes.node.isRequired,
-};
 
 function hasDashboardAccess(user) {
   if (!user) return false;
