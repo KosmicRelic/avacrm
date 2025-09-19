@@ -523,8 +523,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         {
           title: () =>
             selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]
-              ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Template"
-              : "New Template",
+              ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Record Template"
+              : "New Record Template",
           rightButton: null,
         },
         {
@@ -601,7 +601,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showBackButton: !editMode,
         backButtonTitle: "Record Templates",
         backButton: editMode ? null : { label: "Record Templates", onClick: handleBack },
-        title: selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex] ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Template" : "New Template",
+        title: selectedObjectIndex !== null && selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex] ? templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name || "New Record Template" : "New Record Template",
         leftButton: editMode
           ? {
               label: "Cancel",
@@ -634,8 +634,8 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
         showTitle: true,
         showDoneButton: false,
         showBackButton: !editMode,
-        backButtonTitle: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Template",
-        backButton: editMode ? null : { label: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Template", onClick: handleBack },
+        backButtonTitle: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Record Template",
+        backButton: editMode ? null : { label: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.name || "New Record Template", onClick: handleBack },
         title: templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]?.name || "Section",
         leftButton: editMode
           ? {
@@ -705,7 +705,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
   // Confirm new template
   const confirmNewTemplate = useCallback(() => {
     if (!newTemplateName.trim()) {
-      alert("Please enter a template name.");
+      alert("Please enter a record template name.");
       return;
     }
     if (selectedObjectIndex === null) {
@@ -715,7 +715,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     // Check for duplicate names across all templates
     const allTemplates = getAllTemplates();
     if (allTemplates.some((t) => t.name.toLowerCase() === newTemplateName.trim().toLowerCase())) {
-      alert("A template with this name already exists. Please choose a unique name.");
+      alert("A record template with this name already exists. Please choose a unique name.");
       return;
     }
 
@@ -1482,7 +1482,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
           newName.trim() &&
           allTemplates.some((t) => t.name.toLowerCase() === newName.trim().toLowerCase() && t !== currentTemplate)
         ) {
-          alert("A template with this name already exists. Please choose a unique name.");
+          alert("A record template with this name already exists. Please choose a unique name.");
           return prev;
         }
         
@@ -1610,7 +1610,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
     const object = templateObjects[selectedObjectIndex];
     const template = object.templates[selectedTemplateIndex];
     const templateName = template.name;
-    if (window.confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
+    if (window.confirm(`Are you sure you want to delete the "${templateName}" record template?`)) {
       setTemplateObjects((prev) => {
         const newObjects = [...prev];
         const currentObject = { ...newObjects[selectedObjectIndex] };
@@ -1855,7 +1855,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                       </div>
                       <div className={styles.recordContent}>
                         <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Object</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new object to group your templates</p>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new object to group your record templates</p>
                       </div>
                       <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <IoChevronForward size={16} />
@@ -2013,7 +2013,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                 {selectedObjectIndex !== null && templateObjects[selectedObjectIndex] && templateObjects[selectedObjectIndex].action !== "remove" ? (
                   <>
                     <div className={styles.section}>
-                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
+                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Record Template</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record data structure in {templateObjects[selectedObjectIndex].name}.</p>
                       <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <div
@@ -2032,7 +2032,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                             <FaPlus size={24} />
                           </div>
                           <div className={styles.recordContent}>
-                            <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Template</h3>
+                            <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Record Template</h3>
                             <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your records</p>
                           </div>
                           <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -2044,7 +2044,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     
                     {getObjectTemplates(selectedObjectIndex).length > 0 && (
                       <div className={styles.section}>
-                        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Templates</h2>
+                        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Your Record Templates</h2>
                         <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing record templates in {templateObjects[selectedObjectIndex].name}.</p>
                         <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           {getObjectTemplates(selectedObjectIndex).map((template, index) => (
@@ -2323,12 +2323,12 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                   <>
                     <div className={styles.section}>
                       <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Template Details</h2>
-                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your template name and structure.</p>
+                      <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your record template name and structure.</p>
                       <input
                         type="text"
                         value={templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].name || ""}
                         onChange={(e) => updateTemplateName(e.target.value)}
-                        placeholder="Template Name"
+                        placeholder="Record Template Name"
                         className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                         disabled={!editMode}
                       />
@@ -2336,7 +2336,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                     {!editMode && (
                       <div className={styles.section}>
                         <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Actions</h2>
-                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your template and data.</p>
+                        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your record template and data.</p>
                         <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
                           <div
                             onClick={addSection}
@@ -2355,7 +2355,7 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                             </div>
                             <div className={styles.recordContent}>
                               <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Section</h3>
-                              <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new section for your template</p>
+                              <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new section for your record template</p>
                             </div>
                             <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                               <IoChevronForward size={16} />
@@ -2467,13 +2467,13 @@ const RecordsTemplate = ({ tempData, setTempData, businessId: businessIdProp }) 
                 ) : (
                   <>
                     <div className={styles.section}>
-                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Template</h2>
+                      <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Record Template</h2>
                       <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Start building your record template structure.</p>
                       <input
                         type="text"
                         value={newTemplateName}
                         onChange={(e) => setNewTemplateName(e.target.value)}
-                        placeholder="Template Name"
+                        placeholder="Record Template Name"
                         className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
                       />
                       <button
