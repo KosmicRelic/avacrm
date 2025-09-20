@@ -20,6 +20,7 @@ export default function Settings() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [sheets, setSheets] = useState([]);
   const [selectedTeamMemberUids, setSelectedTeamMemberUids] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [invitationPermissions, setInvitationPermissions] = useState({
     dashboard: 'none',
     metrics: 'none',

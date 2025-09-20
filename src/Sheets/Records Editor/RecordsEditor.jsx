@@ -4,7 +4,7 @@ import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
+import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution

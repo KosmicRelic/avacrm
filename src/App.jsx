@@ -6,8 +6,10 @@ import { MainContext } from './Contexts/MainContext';
 import styles from './App.module.css';
 import useModal from './Modal/Hooks/UseModal';
 import useSheets from './Modal/Hooks/UseSheets';
-import Modal from './Modal/Modal';
-import ProfileModal from './Profile Modal/ProfileModal';
+
+// Lazy load modal components
+const Modal = lazy(() => import('./Modal/Modal'));
+const ProfileModal = lazy(() => import('./Profile Modal/ProfileModal'));
 import BusinessSignUp from './Account Componenets/SignUp/BusinessSignUp';
 import TeamMemberSignUp from './Account Componenets/SignUp/TeamMemberSignUp.jsx';
 import SignIn from './Account Componenets/SignIn/SignIn.jsx';
@@ -56,7 +58,7 @@ ProtectedRoute.propTypes = {
 };
 
 // Lazy load major components for code splitting
-import Sheets from './Sheets/Sheets';
+const Sheets = lazy(() => import('./Sheets/Sheets'));
 const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
 const Metrics = lazy(() => import('./Metrics/Metrics'));
 const Settings = lazy(() => import('./Settings/Settings'));

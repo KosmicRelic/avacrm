@@ -167,3 +167,81 @@ export const getRecordPermissions = (record, userUid, businessId) => {
     viewHistory: isBusinessOwner // Only business owner can view full history
   };
 };
+
+/**
+ * Format a date value for HTML date input
+ * @param {Date|string|Timestamp} dateValue - The date value to format
+ * @returns {string} - Formatted date string (YYYY-MM-DD)
+ */
+export const formatDateForInput = (dateValue) => {
+  if (!dateValue) return '';
+
+  let date;
+  if (dateValue instanceof Date) {
+    date = dateValue;
+  } else if (dateValue?.toDate) {
+    // Firestore Timestamp
+    date = dateValue.toDate();
+  } else if (typeof dateValue === 'string') {
+    date = new Date(dateValue);
+  } else if (dateValue?._seconds) {
+    // Firestore Timestamp object
+    date = new Date(dateValue._seconds * 1000);
+  } else {
+    return '';
+  }
+
+  if (isNaN(date.getTime())) return '';
+
+  return date.toISOString().split('T')[0];
+};
+
+/**
+ * Format a time value for HTML time input
+ * @param {Date|string|Timestamp} dateValue - The date value to format
+ * @returns {string} - Formatted time string (HH:MM)
+ */
+export const formatTimeForInput = (dateValue) => {
+  if (!dateValue) return '';
+
+  let date;
+  if (dateValue instanceof Date) {
+    date = dateValue;
+  } else if (dateValue?.toDate) {
+    // Firestore Timestamp
+    date = dateValue.toDate();
+  } else if (typeof dateValue === 'string') {
+    date = new Date(dateValue);
+  } else if (dateValue?._seconds) {
+    // Firestore Timestamp object
+    date = new Date(dateValue._seconds * 1000);
+  } else {
+    return '';
+  }
+
+  if (isNaN(date.getTime())) return '';
+
+  return date.toTimeString().slice(0, 5);
+};
+
+/**
+ * Parse a local date string into a Date object
+ * @param {string} dateString - Date string in YYYY-MM-DD format
+ * @param {string} timeString - Time string in HH:MM format
+ * @returns {Date|null} - Parsed Date object or null if invalid
+ */
+export const parseLocalDate = (dateString, timeString = '00:00') => {
+  if (!dateString) return null;
+
+  try {
+    const dateTimeString = `${dateString}T${timeString}:00`;
+    const date = new Date(dateTimeString);
+
+    if (isNaN(date.getTime())) return null;
+
+    return date;
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return null;
+  }
+};

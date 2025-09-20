@@ -1,52 +1,27 @@
 import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import styles from './Sheets.module.css';
-import RowComponent from './Row Template/RowComponent';
-import RecordsEditor from './Records Editor/RecordsEditor';
+import { useParams, useNavigate } from 'react-router-dom';
+
+// Third-party libraries
 import { IoCloseCircle } from 'react-icons/io5';
 import { FaFolder } from 'react-icons/fa';
 import { MdFilterAlt } from 'react-icons/md';
 import { FiEdit } from 'react-icons/fi';
-import { MainContext } from '../Contexts/MainContext';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
-import { useParams, useNavigate } from 'react-router-dom';
+
+// Local components
+import RowComponent from './Row Template/RowComponent';
+import RecordsEditor from './Records Editor/RecordsEditor';
+
+// Context and utilities
+import { MainContext } from '../Contexts/MainContext';
 import { filterRowsLocally } from '../Modal/FilterModal/FilterModal';
+import { decodeSheetName, toMillis, isPrimarySheet, getSheetLoadingState } from './sheetsUtils';
 
-// Utility to decode dashes to spaces for sheet names from URL, and ignore recordId if present
-function decodeSheetName(name) {
-  if (!name) return '';
-  return name.split('/')[0].replace(/-/g, ' ');
-}
-
-// Utility function to robustly convert any date value to milliseconds
-function toMillis(dateValue) {
-  // Firestore Timestamp object
-  if (
-    dateValue &&
-    typeof dateValue === 'object' &&
-    typeof dateValue.seconds === 'number' &&
-    typeof dateValue.nanoseconds === 'number'
-  ) {
-    return dateValue.seconds * 1000 + Math.floor(dateValue.nanoseconds / 1e6);
-  }
-  // Firestore Timestamp with toDate()
-  if (dateValue && typeof dateValue.toDate === 'function') {
-    return dateValue.toDate().getTime();
-  }
-  // JS Date object
-  if (dateValue instanceof Date) {
-    return dateValue.getTime();
-  }
-  // ISO string or date string
-  if (typeof dateValue === 'string') {
-    const parsed = Date.parse(dateValue);
-    if (!isNaN(parsed)) return parsed;
-  }
-  // null/undefined/invalid
-  return NaN;
-}
+// Styles
+import styles from './Sheets.module.css';
 
 const Sheets = ({
   headers,
@@ -74,7 +49,7 @@ const Sheets = ({
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
 
   const sheetId = activeSheet?.docId;
-  const isLoading = sheetId && !sheetRecordsFetched[sheetId];
+  const isLoading = useMemo(() => getSheetLoadingState(sheetId, sheetRecordsFetched), [sheetId, sheetRecordsFetched]);
 
   const [spinnerVisible, setSpinnerVisible] = useState(false);
   const [spinnerFading, setSpinnerFading] = useState(false);
@@ -96,7 +71,7 @@ const Sheets = ({
   const sheetRecordTypes = useMemo(() => activeSheet?.typeOfRecordsToDisplay || [], [activeSheet]);
   const recordTypeFilters = useMemo(() => activeSheet?.recordTypeFilters || {}, [activeSheet]);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
-  const isPrimarySheet = activeSheet?.id === 'primarySheet';
+  const isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
 
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
