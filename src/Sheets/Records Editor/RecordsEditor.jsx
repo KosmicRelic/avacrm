@@ -4,7 +4,8 @@ import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
+import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
+import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -892,32 +893,23 @@ import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModif
               <>
                 {selectedSections.length > 0 ? (
                   selectedSections.map((section, index) => (
-                    <div key={`${section.name}-${index}`} className={styles.sectionWrapper}>
+                    <div key={`${section.name}-${index}`} className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${
+                      openSections.includes(section.name) ? styles.active : ''
+                    }`}>
                       <button
-                        className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ''} ${
-                          openSections.includes(section.name) ? styles.active : ''
-                        }`}
+                        className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                         onClick={() => toggleSection(section.name)}
                         aria-expanded={openSections.includes(section.name)}
                         aria-controls={`section-content-${index}`}
                       >
-                        <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
-                        <svg
-                          className={styles.chevron}
-                          width="12"
-                          height="12"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d={openSections.includes(section.name) ? 'M2 8L6 4L10 8' : 'M2 4L6 8L10 4'}
-                            stroke={isDarkTheme ? '#a1a1a6' : '#6e6e73'}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <div className={styles.sectionHeader}>
+                          <div className={styles.sectionText}>
+                            <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
+                          </div>
+                        </div>
+                        <div className={`${styles.chevron} ${openSections.includes(section.name) ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoMdArrowDropdown />
+                        </div>
                       </button>
                       <div
                         id={`section-content-${index}`}
