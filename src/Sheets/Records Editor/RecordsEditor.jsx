@@ -4,8 +4,9 @@ import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, formatHistoryEntry, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
-import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
+import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
+import { IoMdArrowDropdown } from 'react-icons/io';
+import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -13,7 +14,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
   startInEditMode,
   preSelectedSheet,
 }) => {
-  const { sheets, recordTemplates, templateObjects, headers, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
+  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
@@ -23,9 +24,11 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
   const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId);
   const [openSections, setOpenSections] = useState([]);
+  const [hasUserToggledSections, setHasUserToggledSections] = useState(false);
   const [isViewingHistory, setIsViewingHistory] = useState(false);
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [fieldHistoryPopup, setFieldHistoryPopup] = useState({ isOpen: false, field: null, position: null });
 
   // --- FIX: Manage showInputs state for each date field at the top level ---
   const [showInputsMap, setShowInputsMap] = useState({});
@@ -144,23 +147,16 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
     return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
   };
 
-  const historyDates = useMemo(() => {
-    if (!formData.history) return [];
-    const timestamps = [...new Set(formData.history.map((entry) => entry.timestamp._seconds))];
-    return timestamps
-      .map((seconds) => ({
-        _seconds: seconds,
-        _nanoseconds: 0,
-        date: formatFirestoreTimestamp({ _seconds: seconds, _nanoseconds: 0 }),
-      }))
-      .sort((a, b) => b._seconds - a._seconds);
-  }, [formData.history]);
-
   useEffect(() => {
-    if (view === 'editor' && selectedSections.length > 0 && openSections.length === 0) {
+    if (view === 'editor' && selectedSections.length > 0 && openSections.length === 0 && !hasUserToggledSections) {
       setOpenSections([selectedSections[0].name]);
     }
-  }, [view, selectedSections]);
+  }, [view, selectedSections, openSections.length, hasUserToggledSections]);
+
+  // Reset user toggled flag when switching views or record types
+  useEffect(() => {
+    setHasUserToggledSections(false);
+  }, [view, selectedRecordType]);
 
   useEffect(() => {
     if (selectedSheet && !isEditing) {
@@ -402,7 +398,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
         onClose();
       }
     }
-  }, [formData, recordTemplates, onSave, onClose, onOpenNewRecord, user]);
+  }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
     if (!selectedSheet) {
@@ -527,12 +523,14 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
     selectedRecordType,
     onSave,
     recordTemplates,
+    templateObjects,
     initialRowData,
     isEditing,
     isViewingHistory,
     selectedHistoryDate,
     onClose,
     records,
+    user,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -553,6 +551,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
   }, [isEditing, initialRowData, setRecords, onClose]);
 
   const toggleSection = useCallback((sectionName) => {
+    setHasUserToggledSections(true);
     setOpenSections((prev) =>
       prev.includes(sectionName)
         ? prev.filter((name) => name !== sectionName)
@@ -580,6 +579,54 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
     setIsHistoryModalOpen(false);
     setFormData(initialRowData || {});
   }, [initialRowData]);
+
+  // Check if a field has history
+  const hasFieldHistory = useCallback((fieldKey) => {
+    return formData.history && formData.history.some(entry => entry.field === fieldKey);
+  }, [formData.history]);
+
+  // Get history for a specific field
+  const getFieldHistory = useCallback((fieldKey) => {
+    if (!formData.history) return [];
+    return formData.history
+      .filter(entry => entry.field === fieldKey)
+      .sort((a, b) => b.timestamp._seconds - a.timestamp._seconds);
+  }, [formData.history]);
+
+  // Handle field history icon click
+  const handleFieldHistoryClick = useCallback((fieldKey, event) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setFieldHistoryPopup({
+      isOpen: true,
+      field: fieldKey,
+      position: {
+        top: rect.bottom + 8,
+        left: rect.left,
+        right: rect.right
+      }
+    });
+  }, []);
+
+  // Close field history popup
+  const closeFieldHistoryPopup = useCallback(() => {
+    setFieldHistoryPopup({ isOpen: false, field: null, position: null });
+  }, []);
+
+  // Handle click outside to close field history popup
+  useEffect(() => {
+    if (!fieldHistoryPopup.isOpen) return;
+
+    const handleClickOutside = (event) => {
+      const popup = document.querySelector(`.${styles.fieldHistoryPopup}`);
+      if (popup && !popup.contains(event.target)) {
+        closeFieldHistoryPopup();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [fieldHistoryPopup.isOpen, closeFieldHistoryPopup]);
 
   const HistoryModal = () => {
     const formattedHistory = getFormattedHistory(formData, user, teamMembers);
@@ -667,6 +714,53 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
             >
               Close
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const FieldHistoryPopup = () => {
+    const fieldHistory = getFieldHistory(fieldHistoryPopup.field);
+    const fieldName = selectedSections
+      .flatMap(section => section.fields)
+      .find(field => field.key === fieldHistoryPopup.field)?.name || formatFieldName(fieldHistoryPopup.field);
+
+    return (
+      <div 
+        className={`${styles.fieldHistoryPopup} ${isDarkTheme ? styles.darkTheme : ''}`}
+        style={{
+          top: fieldHistoryPopup.position?.top || 0,
+          left: Math.min(fieldHistoryPopup.position?.left || 0, window.innerWidth - 320),
+        }}
+      >
+        <div className={styles.fieldHistoryContent}>
+          <div className={styles.fieldHistoryHeader}>
+            <h4>Field History</h4>
+            <span className={styles.fieldHistoryFieldName}>{fieldName}</span>
+          </div>
+          <div className={styles.fieldHistoryList}>
+            {fieldHistory.length > 0 ? (
+              fieldHistory.map((entry, index) => (
+                <div key={`${entry.timestamp._seconds}-${index}`} className={styles.fieldHistoryItem}>
+                  <div className={styles.fieldHistoryValue}>
+                    "{entry.value || '(empty)'}"
+                  </div>
+                  <div className={styles.fieldHistoryMeta}>
+                    <span className={styles.fieldHistoryUser}>
+                      {getTeamMemberName(entry.modifiedBy)}
+                    </span>
+                    <span className={styles.fieldHistoryDate}>
+                      {formatFirestoreTimestamp(entry.timestamp)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={styles.fieldHistoryEmpty}>
+                No history available for this field.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -848,7 +942,11 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
           </div>
           <div className={styles.contentWrapper}>
             {view === 'selection' && (
-              <div className={styles.sectionWrapper}>
+              <div className={`${styles.sectionWrapper} ${styles.selectionView} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.selectionHeader}>
+                  <h2 className={styles.selectionTitle}>Create New Record</h2>
+                  <p className={styles.selectionSubtitle}>Choose a sheet and record type to get started</p>
+                </div>
                 <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
                   <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -923,6 +1021,17 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
                               <div key={field.key} className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
                                 <div className={styles.fieldHeader}>
                                   <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>{field.name}</span>
+                                  {hasFieldHistory(field.key) && (
+                                    <button
+                                      type="button"
+                                      className={`${styles.fieldHistoryIcon} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                      onClick={(e) => handleFieldHistoryClick(field.key, e)}
+                                      aria-label={`View history for ${field.name}`}
+                                      title={`View history for ${field.name}`}
+                                    >
+                                      <MdHistory size={14} />
+                                    </button>
+                                  )}
                                   {field.type === 'date' && (() => {
                                     const dateValue = formatDateForInput(historicalFormData[field.key]);
                                     const timeValue = formatTimeForInput(historicalFormData[field.key]);
@@ -1074,53 +1183,6 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
                   </p>
                 )}
                 
-                {/* Record Info Section for existing records */}
-                {isEditing && formData.history && formData.history.length > 0 && (
-                  <div className={`${styles.recordInfoSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div className={styles.recordInfoHeader}>
-                      <h3>Record Information</h3>
-                    </div>
-                    <div className={styles.recordInfoContent}>
-                      {(() => {
-                        const creator = getRecordCreator(formData, user, teamMembers);
-                        const lastModifier = getLastModifier(formData, user, teamMembers);
-                        return (
-                          <>
-                            <div className={styles.recordInfoItem}>
-                              <span className={styles.recordInfoLabel}>Created by:</span>
-                              <span className={styles.recordInfoValue}>
-                                {creator.name}
-                                {creator.timestamp && (
-                                  <span className={styles.recordInfoTimestamp}>
-                                    {' '}on {formatFirestoreTimestamp(creator.timestamp)}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            {lastModifier.timestamp && creator.timestamp !== lastModifier.timestamp && (
-                              <div className={styles.recordInfoItem}>
-                                <span className={styles.recordInfoLabel}>Last modified by:</span>
-                                <span className={styles.recordInfoValue}>
-                                  {lastModifier.name}
-                                  <span className={styles.recordInfoTimestamp}>
-                                    {' '}on {formatFirestoreTimestamp(lastModifier.timestamp)}
-                                  </span>
-                                </span>
-                              </div>
-                            )}
-                            <div className={styles.recordInfoItem}>
-                              <span className={styles.recordInfoLabel}>Total changes:</span>
-                              <span className={styles.recordInfoValue}>
-                                {formData.history.length} modification{formData.history.length !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-                
                 {/* Pipeline Section - Only show for saved records with docId */}
                 {view === 'editor' && formData.docId && isEditing && formData.linkId && (() => {
                   const availablePipelines = getAvailablePipelines();
@@ -1172,6 +1234,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
                         onClick={handleViewHistory}
                         aria-label="View history"
                       >
+                        <MdHistory size={18} />
                         View History
                       </button>
                     )}
@@ -1181,6 +1244,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
                         onClick={handleDelete}
                         aria-label="Delete record"
                       >
+                        <MdDelete size={18} />
                         Delete Record
                       </button>
                     )}
@@ -1192,6 +1256,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';const RecordsEditor = memo(({
         </div>
       </div>
       {isHistoryModalOpen && <HistoryModal />}
+      {fieldHistoryPopup.isOpen && <FieldHistoryPopup />}
     </div>
   );
 });
