@@ -580,89 +580,87 @@ function App() {
         </ProtectedRoute>
       )}
       <div className={styles.contentWrapper}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/sheets" replace />} />
-          <Route
-            path="/sheets"
-            element={
-              <ProtectedRoute>
-                <Sheets
-                  headers={resolvedHeaders}
-                  rows={resolvedRows}
-                  sheets={sheets}
-                  setSheets={setSheets}
-                  activeSheetName={activeSheetName}
-                  onSheetChange={handleSheetChange}
-                  onEditSheet={() => onEditSheet(modalUtilsProps)}
-                  onFilter={() => onFilter(modalUtilsProps)}
-                  onRowClick={() => {}}
-                  onRecordSave={() => {}}
-                  onRecordDelete={() => {}}
-                  onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
-                  onOpenTransportModal={(action, selectedRowIds, onComplete) =>
-                    onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
-                  }
-                  onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
-                  onOpenFolderModal={handleOpenFolderModal}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sheets/:sheetName"
-            element={
-              <ProtectedRoute>
-                <Sheets
-                  headers={resolvedHeaders}
-                  rows={resolvedRows}
-                  sheets={sheets}
-                  setSheets={setSheets}
-                  activeSheetName={activeSheetName}
-                  onSheetChange={handleSheetChange}
-                  onEditSheet={() => onEditSheet(modalUtilsProps)}
-                  onFilter={() => onFilter(modalUtilsProps)}
-                  onRowClick={() => {}}
-                  onRecordSave={() => {}}
-                  onRecordDelete={() => {}}
-                  onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
-                  onOpenTransportModal={(action, selectedRowIds, onComplete) =>
-                    onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
-                  }
-                  onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
-                  onOpenFolderModal={handleOpenFolderModal}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sheets/:sheetName/:recordId"
-            element={
-              <ProtectedRoute>
-                <Sheets
-                  headers={resolvedHeaders}
-                  rows={resolvedRows}
-                  sheets={sheets}
-                  setSheets={setSheets}
-                  activeSheetName={activeSheetName}
-                  onSheetChange={handleSheetChange}
-                  onEditSheet={() => onEditSheet(modalUtilsProps)}
-                  onFilter={() => onFilter(modalUtilsProps)}
-                  onRowClick={() => {}}
-                  onRecordSave={() => {}}
-                  onRecordDelete={() => {}}
-                  onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
-                  onOpenTransportModal={(action, selectedRowIds, onComplete) =>
-                    onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
-                  }
-                  onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
-                  onOpenFolderModal={handleOpenFolderModal}
-                />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
+            <Route path="/" element={<Navigate to="/sheets" replace />} />
+            <Route
+              path="/sheets"
+              element={
+                <ProtectedRoute>
+                  <Sheets
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                    activeSheetName={activeSheetName}
+                    onSheetChange={handleSheetChange}
+                    onEditSheet={() => onEditSheet(modalUtilsProps)}
+                    onFilter={() => onFilter(modalUtilsProps)}
+                    onRowClick={() => {}}
+                    onRecordSave={() => {}}
+                    onRecordDelete={() => {}}
+                    onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                    onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                      onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                    }
+                    onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenFolderModal={handleOpenFolderModal}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sheets/:sheetName"
+              element={
+                <ProtectedRoute>
+                  <Sheets
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                    activeSheetName={activeSheetName}
+                    onSheetChange={handleSheetChange}
+                    onEditSheet={() => onEditSheet(modalUtilsProps)}
+                    onFilter={() => onFilter(modalUtilsProps)}
+                    onRowClick={() => {}}
+                    onRecordSave={() => {}}
+                    onRecordDelete={() => {}}
+                    onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                    onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                      onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                    }
+                    onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenFolderModal={handleOpenFolderModal}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sheets/:sheetName/:recordId"
+              element={
+                <ProtectedRoute>
+                  <Sheets
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                    activeSheetName={activeSheetName}
+                    onSheetChange={handleSheetChange}
+                    onEditSheet={() => onEditSheet(modalUtilsProps)}
+                    onFilter={() => onFilter(modalUtilsProps)}
+                    onRowClick={() => {}}
+                    onRecordSave={() => {}}
+                    onRecordDelete={() => {}}
+                    onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                    onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                      onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                    }
+                    onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenFolderModal={handleOpenFolderModal}
+                  />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
