@@ -1,13 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
-import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash } from 'react-icons/fa';
+import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash, FaCheck } from 'react-icons/fa';
 import { IoGitBranch } from 'react-icons/io5';
 import { getAuth } from 'firebase/auth';
 import { DeleteTeamMemberFunction } from '../Firebase/Firebase Functions/User Functions/DeleteTeamMemberFunction';
+import DataModels from './DataModels/DataModels';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -37,6 +38,8 @@ export default function Settings() {
   });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [dataModelsHasUnsavedChanges, setDataModelsHasUnsavedChanges] = useState(false);
+  const dataModelsRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -499,6 +502,16 @@ export default function Settings() {
     setEmail('');
   };
 
+  // DataModels callbacks
+  const handleDataModelsUnsavedChanges = (hasChanges) => {
+    setDataModelsHasUnsavedChanges(hasChanges);
+  };
+
+  const handleDataModelsSave = () => {
+    // This will be called when DataModels saves successfully
+    setDataModelsHasUnsavedChanges(false);
+  };
+
   return (
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -535,6 +548,34 @@ export default function Settings() {
             <span>{t('settings.manageTeamAccess')}</span>
             <FaChevronRight className={styles.arrowIcon} />
           </button>
+          <div className={styles.stepButtonContainer}>
+            <button
+              onClick={() => handleStepChange('dataModels')}
+              className={`${styles.stepButton} ${isDarkTheme ? styles.darkTheme : ''} ${
+                currentStep === 'dataModels' ? styles.selected : ''
+              }`}
+              aria-label="Data Models"
+            >
+              <span>Data Models</span>
+              <FaChevronRight className={styles.arrowIcon} />
+            </button>
+            {dataModelsHasUnsavedChanges && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Trigger save in DataModels component
+                  if (dataModelsRef.current && dataModelsRef.current.saveDataModels) {
+                    dataModelsRef.current.saveDataModels();
+                  }
+                }}
+                className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                aria-label="Save Data Models"
+                title="Save changes"
+              >
+                <FaCheck size={14} />
+              </button>
+            )}
+          </div>
           {/* Pipeline Management moved to Actions → Record Templates */}
         </div>
 
@@ -900,6 +941,14 @@ export default function Settings() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {currentStep === 'dataModels' && (
+              <DataModels
+                ref={dataModelsRef}
+                onUnsavedChanges={handleDataModelsUnsavedChanges}
+                onSave={handleDataModelsSave}
+              />
             )}
 
             {/* Pipeline Management moved to Actions → Record Templates workflow */}

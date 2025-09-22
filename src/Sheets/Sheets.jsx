@@ -716,57 +716,61 @@ const Sheets = ({
           </div>
         )}
       </div>
-      <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
-        {isBusinessUser && (
-          <button
-            className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={onOpenSheetsModal}
-          >
-            <CgArrowsExchangeAlt />
-          </button>
-        )}
-        {isBusinessUser && (
-          <button
-            className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={onOpenSheetFolderModal}
-          >
-            +
-          </button>
-        )}
-        {sheets.structure.map((item, index) =>
-          item.folderName ? (
-            <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+    </div>
+  );
+
+  // Define SheetTabs component separately
+  const SheetTabs = (
+    <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
+      {isBusinessUser && (
+        <button
+          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={onOpenSheetsModal}
+        >
+          <CgArrowsExchangeAlt />
+        </button>
+      )}
+      {isBusinessUser && (
+        <button
+          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={onOpenSheetFolderModal}
+        >
+          +
+        </button>
+      )}
+      {sheets.structure.map((item, index) =>
+        item.folderName ? (
+          <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+            <button
+              className={`${styles.tabButton} ${
+                item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
+              } ${isDarkTheme ? styles.darkTheme : ''}`}
+              data-folder-name={item.folderName}
+              onClick={() => handleFolderClick(item.folderName)}
+            >
+              <FaFolder className={styles.folderIcon} />
+              {item.sheets.includes(decodedActiveSheetName)
+                ? `${item.folderName} > ${decodedActiveSheetName}`
+                : item.folderName}
+            </button>
+          </div>
+        ) : (
+          !folderSheets.includes(item.sheetName) && (
+            <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
               <button
                 className={`${styles.tabButton} ${
-                  item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
+                  item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
                 } ${isDarkTheme ? styles.darkTheme : ''}`}
-                data-folder-name={item.folderName}
-                onClick={() => handleFolderClick(item.folderName)}
+                data-sheet-name={item.sheetName}
+                onClick={() => handleSheetClick(item.sheetName)}
               >
-                <FaFolder className={styles.folderIcon} />
-                {item.sheets.includes(decodedActiveSheetName)
-                  ? `${item.folderName} > ${decodedActiveSheetName}`
-                  : item.folderName}
+                <BiSolidSpreadsheet className={styles.folderIcon} />
+                {item.sheetName}
               </button>
             </div>
-          ) : (
-            !folderSheets.includes(item.sheetName) && (
-              <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
-                <button
-                  className={`${styles.tabButton} ${
-                    item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                  } ${isDarkTheme ? styles.darkTheme : ''}`}
-                  data-sheet-name={item.sheetName}
-                  onClick={() => handleSheetClick(item.sheetName)}
-                >
-                  <BiSolidSpreadsheet className={styles.folderIcon} />
-                  {item.sheetName}
-                </button>
-              </div>
-            )
           )
-        )}
-      </div>
+        )
+      )}
     </div>
   );
 
@@ -774,6 +778,7 @@ const Sheets = ({
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {TableContent}
+        {SheetTabs}
         {isMobile && isEditorOpen && (
           <div
             className={`${styles.recordDetailsMobile} ${

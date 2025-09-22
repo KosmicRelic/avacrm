@@ -1,14 +1,17 @@
 .bodyRow {
   display: flex;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 16px;
-  transition: all 0.2s ease-in-out;
-  min-width: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  min-width: calc(100% - 2em);
   width: max-content;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
-  margin: 8px 0px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  margin: 6px 0px;
   cursor: pointer;
   position: relative;
   left: 1em;
@@ -17,66 +20,85 @@
 }
 
 .bodyRow.darkTheme {
-  background: rgba(44, 44, 46, 0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: rgba(44, 44, 46, 0.6);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.06);
 }
 
 .bodyRow:hover {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.08),
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transform: translateY(-1px);
-  border-color: rgba(0, 122, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.06);
 }
 
 .bodyRow.darkTheme:hover {
-  background: rgba(44, 44, 46, 0.9);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15);
-  border-color: rgba(10, 132, 255, 0.1);
+  background: rgba(44, 44, 46, 0.75);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.25),
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.08);
 }
 
 .addNewRow {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.15) 100%);
+  background: rgba(0, 122, 255, 0.06);
   color: #007aff;
-  font-weight: 600;
-  border: 2px solid rgba(0, 122, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.08);
+  font-weight: 500;
+  border: 1px solid rgba(0, 122, 255, 0.12);
+  box-shadow:
+    0 1px 3px rgba(0, 122, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .addNewRow.darkTheme {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(10, 132, 255, 0.2) 100%);
+  background: rgba(10, 132, 255, 0.08);
   color: #0a84ff;
-  border-color: rgba(10, 132, 255, 0.3);
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.15);
+  box-shadow:
+    0 1px 3px rgba(10, 132, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .addNewRow:hover {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.25) 100%);
-  border-color: rgba(0, 122, 255, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15), 0 8px 32px rgba(0, 122, 255, 0.08);
-  transform: translateY(-2px) scale(1.01);
+  background: rgba(0, 122, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.18);
+  box-shadow:
+    0 2px 8px rgba(0, 122, 255, 0.1),
+    0 4px 16px rgba(0, 122, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .addNewRow.darkTheme:hover {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.25) 0%, rgba(10, 132, 255, 0.3) 100%);
-  border-color: rgba(10, 132, 255, 0.4);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.2), 0 8px 32px rgba(10, 132, 255, 0.12);
+  background: rgba(10, 132, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.2);
+  box-shadow:
+    0 2px 8px rgba(10, 132, 255, 0.12),
+    0 4px 16px rgba(10, 132, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .bodyCell {
-  padding: 16px 14px;
+  padding: 14px 16px;
   width: 150px;
   text-align: center;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 400;
   color: #1d1d1f;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background-color 0.15s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  letter-spacing: -0.008em;
-  line-height: 1.2;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
   will-change: background-color;
 }
 
@@ -87,14 +109,14 @@
 
 /* Hover effect for cells in selected rows */
 .selectedRow .bodyCell:hover {
-  background: rgba(0, 122, 255, 0.06);
-  border-radius: 6px;
+  background: rgba(0, 122, 255, 0.04);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .selectedRow.darkTheme .bodyCell:hover {
-  background: rgba(10, 132, 255, 0.08);
+  background: rgba(10, 132, 255, 0.06);
 }
 
 .bodyCell.selectMode {
@@ -565,11 +587,15 @@
 }
 
 .selectedRow {
-  background: rgba(0, 122, 255, 0.08);
-  box-shadow: 0 2px 12px rgba(0, 122, 255, 0.12);
-  border: 1px solid rgba(0, 122, 255, 0.2);
+  background: rgba(0, 122, 255, 0.06);
+  box-shadow:
+    0 1px 3px rgba(0, 122, 255, 0.08),
+    0 2px 8px rgba(0, 122, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 122, 255, 0.15);
   transform: none;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .selectedRow::before {
@@ -579,30 +605,39 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: rgba(0, 122, 255, 0.6);
+  background: linear-gradient(180deg, rgba(0, 122, 255, 0.8) 0%, rgba(0, 122, 255, 0.6) 100%);
   border-radius: 0 2px 2px 0;
 }
 
 .selectedRow.darkTheme {
-  background: rgba(10, 132, 255, 0.12);
-  box-shadow: 0 2px 12px rgba(10, 132, 255, 0.15);
-  border: 1px solid rgba(10, 132, 255, 0.25);
+  background: rgba(10, 132, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(10, 132, 255, 0.1),
+    0 2px 8px rgba(10, 132, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(10, 132, 255, 0.18);
 }
 
 .selectedRow.darkTheme::before {
-  background: rgba(10, 132, 255, 0.7);
+  background: linear-gradient(180deg, rgba(10, 132, 255, 0.9) 0%, rgba(10, 132, 255, 0.7) 100%);
 }
 
 .selectedRow:hover {
-  background: rgba(0, 122, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
-  border-color: rgba(0, 122, 255, 0.25);
+  background: rgba(0, 122, 255, 0.08);
+  box-shadow:
+    0 2px 8px rgba(0, 122, 255, 0.12),
+    0 4px 16px rgba(0, 122, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 122, 255, 0.2);
 }
 
 .selectedRow.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.18);
-  border-color: rgba(10, 132, 255, 0.3);
+  background: rgba(10, 132, 255, 0.1);
+  box-shadow:
+    0 2px 8px rgba(10, 132, 255, 0.15),
+    0 4px 16px rgba(10, 132, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.22);
 }
 
 @media (max-width: 1024px) {
