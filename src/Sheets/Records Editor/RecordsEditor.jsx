@@ -511,6 +511,29 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       newRow.history = [...newRow.history, ...newHistory];
     }
 
+    // Determine if we should save based on whether there are actual changes
+    let shouldSave = false;
+    
+    if (isViewingHistory && selectedHistoryDate) {
+      // When viewing history, save if changes were made to historical data
+      shouldSave = newHistory.length > 0;
+    } else if (isEditing) {
+      // For existing records, only save if there are changes
+      shouldSave = newHistory.length > 0;
+    } else {
+      // For new records, always save (validation already checked hasData)
+      shouldSave = true;
+    }
+
+    if (!shouldSave) {
+      // No changes detected, just close without saving
+      setIsViewingHistory(false);
+      setSelectedHistoryDate(null);
+      setIsHistoryModalOpen(false);
+      onClose();
+      return;
+    }
+
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
