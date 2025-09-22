@@ -194,3 +194,19 @@
     opacity: 0;
   }
 }
+
+.buildInfo {
+  padding: 15px 0 5px 0;
+  text-align: center;
+}
+
+.buildNumber {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6e6e73;
+  transition: color 0.3s ease;
+}
+
+.buildNumber.darkTheme {
+  color: #c7c7cc;
+}

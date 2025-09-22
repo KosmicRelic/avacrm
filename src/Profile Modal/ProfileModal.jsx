@@ -127,6 +127,11 @@ const ProfileModal = ({
             </button>
           )}
         </div>
+        <div className={styles.buildInfo}>
+          <span className={`${styles.buildNumber} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            Build v0.0.0 - {new Date().toLocaleDateString()}
+          </span>
+        </div>
       </div>
     </div>
   );
