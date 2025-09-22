@@ -79,6 +79,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // For HTML requests, try network first, then cache
+  if (request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (!response.ok) return response;
+
+          const responseClone = response.clone();
+          caches.open(DYNAMIC_CACHE)
+            .then((cache) => cache.put(request, responseClone));
+
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request) || caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
   // For static assets, try cache first, then network
   event.respondWith(
     caches.match(request)
