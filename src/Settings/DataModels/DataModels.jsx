@@ -369,26 +369,34 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     }
 
     try {
-      // Prepare objects with their templates - exact same pattern as ModalUtils
-      const objectsWithTemplates = templateObjects.map(object => {
-        // Use the templates from the object (they already reflect the user's changes)
-        const objectTemplates = (object.templates || []).filter(template => 
-          template.action !== "remove"
-        ).map(template => {
-          const { isModified, action, ...cleanTemplate } = template;
-          return cleanTemplate;
+      // Prepare objects with their templates - only include objects with changes
+      const objectsWithTemplates = templateObjects
+        .filter(object => 
+          object.isModified || object.action === 'add' || object.action === 'update' || object.action === 'remove' ||
+          object.templates?.some(template => template.isModified || template.action === 'add' || template.action === 'remove')
+        )
+        .map(object => {
+          // Use the templates from the object (they already reflect the user's changes)
+          const objectTemplates = (object.templates || [])
+            .filter(template => 
+              template.action !== "remove" &&
+              (template.isModified || template.action === 'add' || template.action === 'update')
+            )
+            .map(template => {
+              const { isModified, action, ...cleanTemplate } = template;
+              return cleanTemplate;
+            });
+          
+          // Include action and isModified flags so backend knows what to do
+          return {
+            id: object.id,
+            name: object.name,
+            templates: objectTemplates,
+            pipelines: object.pipelines || [],
+            action: object.action,
+            isModified: object.isModified
+          };
         });
-        
-        // Include action and isModified flags so backend knows what to do
-        return {
-          id: object.id,
-          name: object.name,
-          templates: objectTemplates,
-          pipelines: object.pipelines || [],
-          action: object.action,
-          isModified: object.isModified
-        };
-      });
 
       // Check if there are any actual changes - exact same logic as ModalUtils
       const hasObjectChanges = templateObjects.some(object => 
@@ -419,20 +427,36 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       }
 
       // Update templateObjects in context to ensure immediate UI update
-      // Filter out objects marked for deletion since they will be deleted from Firestore
-      const objectsForContext = objectsWithTemplates.filter(object => object.action !== "remove");
+      // Mark saved objects as no longer modified
+      const updatedTemplateObjects = templateObjects.map(object => {
+        const wasSaved = objectsWithTemplates.some(savedObj => savedObj.id === object.id);
+        if (wasSaved) {
+          // Object was saved, mark it and its templates as no longer modified
+          return {
+            ...object,
+            isModified: false,
+            action: null,
+            templates: object.templates?.map(template => ({
+              ...template,
+              isModified: false,
+              action: null
+            }))
+          };
+        }
+        return object;
+      });
       
       // Update context
-      contextSetTemplateObjects(objectsForContext);
+      contextSetTemplateObjects(updatedTemplateObjects);
 
       // Update local state to match saved state 
-      setTemplateObjects(objectsForContext);
+      setTemplateObjects(updatedTemplateObjects);
       setDeletedHeaderKeys([]);
 
       // Reset initial state to current saved state
       initialStateRef.current = {
         deletedHeaderKeys: [],
-        templateObjects: JSON.parse(JSON.stringify(objectsForContext))
+        templateObjects: JSON.parse(JSON.stringify(updatedTemplateObjects))
       };
 
       console.log('Data models saved successfully to backend');
@@ -1617,6 +1641,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     setNewOption("");
     setDeletedHeaderKeys([]);
     setCopiedHeaderId(false);
+    setActiveHeaderIndex(null);
   }, []);
 
   // Create new header
@@ -1627,6 +1652,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     const template = object.templates[selectedTemplateIndex];
     const currentSectionName = template.sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
+    setActiveHeaderIndex(-1); // Set to -1 to indicate we're creating a new field
     setShowFieldForm(true);
   }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
 
@@ -1805,23 +1831,25 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <button
-            onClick={onBack}
-            className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            aria-label="Back to Settings"
-          >
-            <FaArrowLeft size={16} />
-            <span>Back</span>
-          </button>
-          {hasChanges() && (
+          <div className={styles.headerTopLeft}>
             <button
-              onClick={saveChanges}
-              className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              onClick={onBack}
+              className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              aria-label="Back to Settings"
             >
-              <FaSave size={14} />
-              <span>Save Changes</span>
+              <FaArrowLeft size={16} />
+              <span>Back</span>
             </button>
-          )}
+            {hasChanges() && (
+              <button
+                onClick={saveChanges}
+                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaSave size={14} />
+                <span>Save Changes</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className={styles.headerBreadcrumbs}>
           {renderBreadcrumbs()}
@@ -2050,23 +2078,25 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
         <div className={styles.header}>
           <div className={styles.headerTop}>
-            <button
-              onClick={goBack}
-              className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              aria-label="Back to Objects"
-            >
-              <FaArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-            {hasChanges() && (
+            <div className={styles.headerTopLeft}>
               <button
-                onClick={saveChanges}
-                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                onClick={goBack}
+                className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                aria-label="Back to Objects"
               >
-                <FaSave size={14} />
-                <span>Save Changes</span>
+                <FaArrowLeft size={16} />
+                <span>Back</span>
               </button>
-            )}
+              {hasChanges() && (
+                <button
+                  onClick={saveChanges}
+                  className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaSave size={14} />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className={styles.headerBreadcrumbs}>
             {renderBreadcrumbs()}
@@ -2768,19 +2798,21 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
         <div className={styles.header}>
           <div className={styles.headerTop}>
-            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <FaArrowLeft size={16} />
-              Back to Template
-            </button>
-            {hasChanges() && (
-              <button
-                onClick={saveChanges}
-                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              >
-                <FaSave size={14} />
-                <span>Save Changes</span>
+            <div className={styles.headerTopLeft}>
+              <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaArrowLeft size={16} />
+                Back to Template
               </button>
-            )}
+              {hasChanges() && (
+                <button
+                  onClick={saveChanges}
+                  className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaSave size={14} />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className={styles.headerBreadcrumbs}>
             {renderBreadcrumbs()}
@@ -2947,14 +2979,14 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                 </div>
               ) : (
                 <div
-                  onClick={() => setShowFieldForm(true)}
+                  onClick={handleCreateHeader}
                   className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
                   role="button"
                   aria-label="Create new field"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      setShowFieldForm(true);
+                      handleCreateHeader();
                     }
                   }}
                 >
@@ -3115,19 +3147,21 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
         <div className={styles.header}>
           <div className={styles.headerTop}>
-            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <FaArrowLeft size={16} />
-              Back to Section
-            </button>
-            {hasChanges() && (
-              <button
-                onClick={saveChanges}
-                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              >
-                <FaSave size={14} />
-                <span>Save Changes</span>
+            <div className={styles.headerTopLeft}>
+              <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaArrowLeft size={16} />
+                Back to Section
               </button>
-            )}
+              {hasChanges() && (
+                <button
+                  onClick={saveChanges}
+                  className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaSave size={14} />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className={styles.headerBreadcrumbs}>
             {renderBreadcrumbs()}
@@ -3418,19 +3452,21 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
         <div className={styles.header}>
           <div className={styles.headerTop}>
-            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <FaArrowLeft size={16} />
-              Back to Section
-            </button>
-            {hasChanges() && (
-              <button
-                onClick={saveChanges}
-                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              >
-                <FaSave size={14} />
-                <span>Save Changes</span>
+            <div className={styles.headerTopLeft}>
+              <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaArrowLeft size={16} />
+                Back to Section
               </button>
-            )}
+              {hasChanges() && (
+                <button
+                  onClick={saveChanges}
+                  className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaSave size={14} />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className={styles.headerBreadcrumbs}>
             {renderBreadcrumbs()}

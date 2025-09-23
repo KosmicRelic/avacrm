@@ -56,6 +56,27 @@ export default defineConfig({
   },
   // Performance optimizations
   server: {
+    proxy: {
+      // Proxy API requests to avoid CORS issues
+      '/api': {
+        target: 'https://updaterecordtemplatesandrecords-lsdm7txq6q-uc.a.run.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: true
+      },
+      '/api/invite': {
+        target: 'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/invite/, ''),
+        secure: true
+      },
+      '/api/delete-headers': {
+        target: 'https://updaterecordsdeleteheaders-lsdm7txq6q-uc.a.run.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/delete-headers/, ''),
+        secure: true
+      }
+    },
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..']

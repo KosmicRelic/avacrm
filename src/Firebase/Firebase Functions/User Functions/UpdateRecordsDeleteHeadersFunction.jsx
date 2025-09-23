@@ -11,7 +11,7 @@ export const UpdateRecordsDeleteHeadersFunction = async ({ businessId, updates }
     }
 
     const response = await fetch(
-      'https://updaterecordsdeleteheaders-lsdm7txq6q-uc.a.run.app', // Replace with your actual Firebase Functions URL
+      '/api/delete-headers', // Use proxy to avoid CORS issues in development
       {
         method: 'POST',
         headers: {

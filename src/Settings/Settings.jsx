@@ -412,7 +412,7 @@ export default function Settings() {
       while (attempt < maxRetries) {
         try {
           const response = await fetch(
-            'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app',
+            '/api/invite',
             {
               method: 'POST',
               headers: {
