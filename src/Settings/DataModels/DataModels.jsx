@@ -2,7 +2,7 @@ import { useState, useContext, useCallback, useEffect, useRef, forwardRef, useIm
 import PropTypes from "prop-types";
 import styles from "./DataModels.module.css";
 import { MainContext } from "../../Contexts/MainContext";
-import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup, FaEdit, FaCheck, FaTimes, FaArrowLeft } from "react-icons/fa";
+import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup, FaEdit, FaCheck, FaTimes, FaArrowLeft, FaSave, FaFileAlt } from "react-icons/fa";
 import { IoChevronForward, IoAdd, IoGitBranch, IoCreate, IoTrash } from "react-icons/io5";
 import { BsDashCircle } from "react-icons/bs";
 import { MdDragIndicator } from "react-icons/md";
@@ -10,11 +10,14 @@ import { MdDragIndicator } from "react-icons/md";
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual";
 import { db } from '../../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { updateRecordTemplatesAndRecordsFunction } from '../../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
-import fetchUserData from '../../Firebase/Firebase Functions/User Functions/FetchUserData';
 
-const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
+const DataModels = forwardRef(({ onSave, onBack }, ref) => {
+  return <DataModelsInner onSave={onSave} onBack={onBack} ref={ref} />;
+});
+
+const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   const {
     isDarkTheme,
     businessId,
@@ -86,6 +89,11 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   const [editingObjectIndex, setEditingObjectIndex] = useState(null);
   const [editingObjectName, setEditingObjectName] = useState("");
 
+  // Template management state
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplateIndex, setEditingTemplateIndex] = useState(null);
+  const [editingTemplateName, setEditingTemplateName] = useState("");
+
   // Pipeline management state
   const [newPipelineName, setNewPipelineName] = useState("");
   const [pipelineSourceTemplate, setPipelineSourceTemplate] = useState("");
@@ -94,12 +102,18 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   const [showPipelineForm, setShowPipelineForm] = useState(false);
   const [editingPipelineIndex, setEditingPipelineIndex] = useState(null);
 
+  // Section editing state
+  const [editingSectionIndex, setEditingSectionIndex] = useState(null);
+  const [editingSectionName, setEditingSectionName] = useState("");
+  const [newSectionName, setNewSectionName] = useState("");
+  const [showSectionForm, setShowSectionForm] = useState(false);
+
+  // Field creation state
+  const [showFieldForm, setShowFieldForm] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const keyRefs = useRef(new Map());
   const sectionRefs = useRef(new Map());
-  const hasInitialized = useRef(false);
-
-  // Track unsaved changes
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Helper function to get all templates flattened
   const getAllTemplates = useCallback(() => {
@@ -126,7 +140,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     }
   }, [deletedHeaderKeys, templateObjects, contextSetTemplateObjects]);
 
-  // Initialize initial state and detect changes
+  // Initialize initial state and detect changes - NO DEPENDENCIES to avoid resetting
   useEffect(() => {
     if (!initialStateRef.current) {
       // Store initial state when component mounts
@@ -135,33 +149,67 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         templateObjects: JSON.parse(JSON.stringify(templateObjects))
       };
     }
-  }, []); // Only run once on mount
+  }, []); // No dependencies - only set initial state once on mount
 
-  // Function to detect if there are any changes from initial state
+  // Function to detect if there are any changes from initial state (excluding updatedAt)
   const hasChanges = useCallback(() => {
     if (!initialStateRef.current) return false;
 
-    return (
-      !isEqual(initialStateRef.current.deletedHeaderKeys, deletedHeaderKeys) ||
-      !isEqual(initialStateRef.current.templateObjects, templateObjects)
-    );
+    // Check deletedHeaderKeys
+    if (!isEqual(initialStateRef.current.deletedHeaderKeys, deletedHeaderKeys)) {
+      return true;
+    }
+
+    // Check templateObjects but exclude updatedAt fields
+    const cleanInitialObjects = JSON.parse(JSON.stringify(initialStateRef.current.templateObjects)).map(obj => ({
+      ...obj,
+      updatedAt: undefined,
+      templates: obj.templates?.map(template => ({
+        ...template,
+        updatedAt: undefined,
+        headers: template.headers?.map(header => ({
+          ...header,
+          updatedAt: undefined
+        }))
+      }))
+    }));
+
+    const cleanCurrentObjects = JSON.parse(JSON.stringify(templateObjects)).map(obj => ({
+      ...obj,
+      updatedAt: undefined,
+      templates: obj.templates?.map(template => ({
+        ...template,
+        updatedAt: undefined,
+        headers: template.headers?.map(header => ({
+          ...header,
+          updatedAt: undefined
+        }))
+      }))
+    }));
+
+    return !isEqual(cleanInitialObjects, cleanCurrentObjects);
   }, [deletedHeaderKeys, templateObjects]);
 
   // Sync local templateObjects with context on initial load
   useEffect(() => {
     if (contextTemplateObjects && contextTemplateObjects.length > 0 && templateObjects.length === 0) {
       setTemplateObjects(contextTemplateObjects);
+      
+      // Update initial state when templateObjects are first loaded from context
+      if (!initialStateRef.current) {
+        initialStateRef.current = {
+          deletedHeaderKeys: [...deletedHeaderKeys],
+          templateObjects: JSON.parse(JSON.stringify(contextTemplateObjects))
+        };
+      }
     }
-  }, [contextTemplateObjects, templateObjects.length, setTemplateObjects]);
+  }, [contextTemplateObjects, templateObjects.length, setTemplateObjects, deletedHeaderKeys]);
 
   // Track unsaved changes
   useEffect(() => {
     const changes = hasChanges();
     setHasUnsavedChanges(changes);
-    if (onUnsavedChanges) {
-      onUnsavedChanges(changes);
-    }
-  }, [hasChanges, onUnsavedChanges]);
+  }, [hasChanges]);
 
   // Navigation functions
   const navigateToView = useCallback((view, params = {}) => {
@@ -175,6 +223,14 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     if (params.activeHeaderIndex !== undefined) setActiveHeaderIndex(params.activeHeaderIndex);
     if (params.editMode !== undefined) setEditMode(params.editMode);
   }, []);
+
+  const selectObject = useCallback((objectIndex) => {
+    navigateToView('templates', { selectedObjectIndex: objectIndex });
+  }, [navigateToView]);
+
+  const selectTemplate = useCallback((templateIndex) => {
+    navigateToView('template-detail', { selectedTemplateIndex: templateIndex });
+  }, [navigateToView]);
 
   const goBack = useCallback(() => {
     if (viewHistory.length > 1) {
@@ -212,6 +268,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     // Always show Data Models as the root
     breadcrumbs.push({
       label: 'Data Models',
+      type: '',
       level: 0,
       onClick: () => navigateToView('objects')
     });
@@ -220,6 +277,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     if (currentView !== 'objects' && selectedObjectIndex !== null && templateObjects[selectedObjectIndex]) {
       breadcrumbs.push({
         label: templateObjects[selectedObjectIndex].name,
+        type: 'Object',
         level: 1,
         onClick: () => navigateToView('templates', { selectedObjectIndex })
       });
@@ -230,6 +288,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         selectedTemplateIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]) {
       breadcrumbs.push({
         label: templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].name,
+        type: 'Record',
         level: 2,
         onClick: () => navigateToView('template-detail', { selectedTemplateIndex, editMode: false })
       });
@@ -240,6 +299,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         currentSectionIndex !== null && templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]) {
       breadcrumbs.push({
         label: templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].sections[currentSectionIndex].name,
+        type: 'Section',
         level: 3,
         onClick: () => navigateToView('section-detail', { currentSectionIndex })
       });
@@ -250,6 +310,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]) {
       breadcrumbs.push({
         label: templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex].name,
+        type: 'Field',
         level: 4,
         onClick: () => navigateToView('field-edit', { activeHeaderIndex })
       });
@@ -261,14 +322,37 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       <div className={`${styles.breadcrumbs} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {breadcrumbs.map((crumb, index) => (
           <div key={index} className={styles.breadcrumbItem}>
-            {index > 0 && <span className={styles.breadcrumbSeparator}>/</span>}
+            {index > 0 && (
+              <svg
+                className={styles.breadcrumbChevron}
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4.5 9L7.5 6L4.5 3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
             <button
               onClick={crumb.onClick}
-              className={`${styles.breadcrumbButton} ${styles[`level${crumb.level}`]} ${isDarkTheme ? styles.darkTheme : ''}`}
+              className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
               disabled={index === breadcrumbs.length - 1} // Disable the current page
             >
-              <span className={`${styles.levelIndicator} ${styles[`level${crumb.level}`]}`}>{crumb.level}</span>
-              {crumb.label}
+              <div className={styles.breadcrumbLabel}>
+                {crumb.label}
+              </div>
+              {crumb.type && (
+                <div className={`${styles.breadcrumbType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {crumb.type}
+                </div>
+              )}
             </button>
           </div>
         ))}
@@ -276,42 +360,82 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     );
   };
 
-  // Save changes to Firestore
+  // Save changes to backend using exact same pattern as RecordsTemplate/ModalUtils
   const saveChanges = useCallback(async () => {
     if (!businessId) {
-      console.error('No business ID available');
-      return;
+      console.warn('Cannot update templates and records: businessId is missing');
+      alert('Error: Business ID is missing. Please ensure your account is properly configured.');
+      return false;
     }
 
     try {
-      // Update the context with local changes
-      contextSetTemplateObjects(templateObjects);
-
-      // Save to Firestore
-      const businessRef = doc(db, 'businesses', businessId);
-      await updateDoc(businessRef, {
-        templateObjects: templateObjects,
-        updatedAt: Timestamp.now()
+      // Prepare objects with their templates - exact same pattern as ModalUtils
+      const objectsWithTemplates = templateObjects.map(object => {
+        // Use the templates from the object (they already reflect the user's changes)
+        const objectTemplates = (object.templates || []).filter(template => 
+          template.action !== "remove"
+        ).map(template => {
+          const { isModified, action, ...cleanTemplate } = template;
+          return cleanTemplate;
+        });
+        
+        // Include action and isModified flags so backend knows what to do
+        return {
+          id: object.id,
+          name: object.name,
+          templates: objectTemplates,
+          pipelines: object.pipelines || [],
+          action: object.action,
+          isModified: object.isModified
+        };
       });
 
-      // Clear isModified flags after successful save
-      const clearedTemplateObjects = templateObjects.map(obj => ({
-        ...obj,
-        templates: obj.templates?.map(template => ({
-          ...template,
-          isModified: false
-        })) || []
-      }));
+      // Check if there are any actual changes - exact same logic as ModalUtils
+      const hasObjectChanges = templateObjects.some(object => 
+        object.isModified || object.action === 'add' || object.action === 'update' || object.action === 'remove'
+      );
+      
+      const hasTemplateChanges = templateObjects.some(object =>
+        object.templates?.some(template => 
+          template.isModified || template.action === 'add' || template.action === 'remove'
+        )
+      );
+      
+      const hasActualChanges = hasTemplateChanges || hasObjectChanges || (deletedHeaderKeys?.length > 0);
 
-      setTemplateObjects(clearedTemplateObjects);
+      if (!hasActualChanges) {
+        console.log('No changes detected, skipping save');
+        return true;
+      }
 
-      console.log('Data models saved successfully');
+      // Use the same backend function as RecordsTemplate
+      const result = await updateRecordTemplatesAndRecordsFunction({
+        businessId,
+        objects: objectsWithTemplates,
+      });
 
-      // Reset initial state to current state (with cleared flags)
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update template objects');
+      }
+
+      // Update templateObjects in context to ensure immediate UI update
+      // Filter out objects marked for deletion since they will be deleted from Firestore
+      const objectsForContext = objectsWithTemplates.filter(object => object.action !== "remove");
+      
+      // Update context
+      contextSetTemplateObjects(objectsForContext);
+
+      // Update local state to match saved state 
+      setTemplateObjects(objectsForContext);
+      setDeletedHeaderKeys([]);
+
+      // Reset initial state to current saved state
       initialStateRef.current = {
-        deletedHeaderKeys: [...deletedHeaderKeys],
-        templateObjects: JSON.parse(JSON.stringify(clearedTemplateObjects))
+        deletedHeaderKeys: [],
+        templateObjects: JSON.parse(JSON.stringify(objectsForContext))
       };
+
+      console.log('Data models saved successfully to backend');
 
       if (onSave) {
         onSave();
@@ -320,9 +444,10 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       return true;
     } catch (error) {
       console.error('Error saving data models:', error);
+      alert('Failed to save data models. Please try again.');
       return false;
     }
-  }, [businessId, templateObjects, contextSetTemplateObjects]);
+  }, [businessId, templateObjects, deletedHeaderKeys, contextSetTemplateObjects, onSave]);
 
   const deleteHeader = useCallback(
     (index) => {
@@ -468,7 +593,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     });
     resetHeaderForm();
     setActiveHeaderIndex(null);
-    goBack();
+    setShowFieldForm(false);
   }, [
     newHeaderName,
     newHeaderType,
@@ -663,13 +788,19 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       const newObjects = [...prev];
       const currentObject = { ...newObjects[selectedObjectIndex] };
       currentObject.templates = [...currentObject.templates, newTemplate];
+      
+      // Mark the object as modified since we're adding a template
+      currentObject.isModified = true;
+      currentObject.action = currentObject.action || "update";
+      
       newObjects[selectedObjectIndex] = currentObject;
       return newObjects;
     });
-    setSelectedTemplateIndex(templateObjects[selectedObjectIndex].templates.length);
-    setEditMode(false);
-    navigateToView('template-detail', { selectedTemplateIndex: templateObjects[selectedObjectIndex].templates.length });
-  }, [newTemplateName, getAllTemplates, selectedObjectIndex, templateObjects, navigateToView]);
+    
+    // Close the inline form and reset
+    setShowTemplateForm(false);
+    setNewTemplateName("");
+  }, [newTemplateName, getAllTemplates, selectedObjectIndex, templateObjects]);
 
   // Add new section
   const addSection = useCallback(() => {
@@ -735,6 +866,67 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     [selectedObjectIndex, selectedTemplateIndex, templateObjects]
   );
 
+  // Section editing functions
+  const startEditingSection = useCallback((sectionIndex) => {
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    const object = templateObjects[selectedObjectIndex];
+    const template = object.templates[selectedTemplateIndex];
+    const section = template.sections[sectionIndex];
+    
+    if (section.name === "Record Data") {
+      alert("The 'Record Data' section cannot be renamed as it contains core system fields.");
+      return;
+    }
+    
+    setEditingSectionIndex(sectionIndex);
+    setEditingSectionName(section.name);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects]);
+
+  const cancelEditingSection = useCallback(() => {
+    setEditingSectionIndex(null);
+    setEditingSectionName("");
+  }, []);
+
+  const saveEditingSection = useCallback(() => {
+    if (editingSectionIndex !== null && editingSectionName.trim()) {
+      updateSectionName(editingSectionIndex, editingSectionName.trim());
+      setEditingSectionIndex(null);
+      setEditingSectionName("");
+    }
+  }, [editingSectionIndex, editingSectionName, updateSectionName]);
+
+  // Add new section with custom name
+  const addSectionWithName = useCallback(() => {
+    if (!newSectionName.trim()) {
+      alert("Please enter a section name.");
+      return;
+    }
+    
+    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    
+    setTemplateObjects((prev) => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[selectedObjectIndex] };
+      const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
+      
+      if (currentTemplate.sections.some((s) => s.name.toLowerCase() === newSectionName.trim().toLowerCase())) {
+        alert(`Section name "${newSectionName.trim()}" already exists. Please use a unique name.`);
+        return prev;
+      }
+      
+      currentTemplate.sections = [...currentTemplate.sections, { name: newSectionName.trim(), keys: [] }];
+      currentObject.templates[selectedTemplateIndex] = {
+        ...currentTemplate,
+        isModified: true,
+        action: currentTemplate.action || "update",
+      };
+      newObjects[selectedObjectIndex] = currentObject;
+      return newObjects;
+    });
+    
+    setNewSectionName("");
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, newSectionName]);
+
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
     if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
@@ -776,9 +968,9 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, styles.dragIcon]);
 
   const handleDragOver = useCallback(
-    (e, sectionIndex, index) => {
+    (e, sectionIndex, targetIndex) => {
       e.preventDefault();
-      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === index || selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      if (draggedIndex === null || draggedSectionIndex !== sectionIndex || draggedIndex === targetIndex || selectedObjectIndex === null || selectedTemplateIndex === null) return;
 
       setTemplateObjects((prev) => {
         const newObjects = [...prev];
@@ -787,7 +979,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         const newSections = [...currentTemplate.sections];
         const sectionKeys = [...newSections[sectionIndex].keys];
         const [draggedItem] = sectionKeys.splice(draggedIndex, 1);
-        sectionKeys.splice(index, 0, draggedItem);
+        sectionKeys.splice(targetIndex, 0, draggedItem);
         newSections[sectionIndex] = { ...newSections[sectionIndex], keys: sectionKeys };
         currentTemplate.sections = newSections;
         currentObject.templates[selectedTemplateIndex] = {
@@ -798,13 +990,13 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
         newObjects[selectedObjectIndex] = currentObject;
         return newObjects;
       });
-      setTimeout(() => setDraggedIndex(index), 0);
+      setTimeout(() => setDraggedIndex(targetIndex), 0);
     },
-    [draggedIndex, draggedSectionIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]
+    [draggedIndex, draggedSectionIndex, selectedObjectIndex, selectedTemplateIndex]
   );
 
   const handleTouchMove = useCallback(
-    (e, sectionIndex, index) => {
+    (e, sectionIndex) => {
       if (draggedIndex === null || touchStartY === null || draggedSectionIndex !== sectionIndex) return;
       e.preventDefault();
 
@@ -901,7 +1093,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     setDraggedSectionOrderIndex(index);
   }, [draggedSectionOrderIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]);
 
-  const handleSectionTouchMove = useCallback((e, index) => {
+  const handleSectionTouchMove = useCallback((e) => {
     if (draggedSectionOrderIndex === null || sectionTouchStartY === null || selectedObjectIndex === null || selectedTemplateIndex === null) return;
     e.preventDefault();
     const touchY = e.touches[0].clientY;
@@ -989,7 +1181,9 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       id: uuidv4(),
       name: newObjectName.trim(),
       templates: [],
-      pipelines: []
+      pipelines: [],
+      isModified: true,
+      action: "add"
     };
 
     const updatedObjects = [...templateObjects, newObject];
@@ -997,10 +1191,6 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     setNewObjectName("");
     setShowObjectForm(false);
   }, [newObjectName, templateObjects]);
-
-  const selectObject = useCallback((objectIndex) => {
-    navigateToView('templates', { selectedObjectIndex: objectIndex });
-  }, [navigateToView]);
 
   const deleteObject = useCallback(async (objectIndex) => {
     const object = templateObjects[objectIndex];
@@ -1347,35 +1537,6 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   );
 
   // Delete key from section
-  const handleDeleteKey = useCallback(
-    (sectionIndex, key) => {
-      if (selectedObjectIndex === null || selectedTemplateIndex === null || sectionIndex === null) return;
-      if (key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo") {
-        alert("The 'ID', 'Link ID', 'Type of Record', 'Type of Object' or 'Assigned To' field cannot be removed from the section.");
-        return;
-      }
-      if (window.confirm(`Are you sure you want to remove this field from the section?`)) {
-        setTemplateObjects((prev) => {
-          const newObjects = [...prev];
-          const currentObject = { ...newObjects[selectedObjectIndex] };
-          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex], headers: [...currentObject.templates[selectedTemplateIndex].headers] };
-          const newSections = [...currentTemplate.sections];
-          newSections[sectionIndex].keys = newSections[sectionIndex].keys.filter((k) => k !== key);
-          currentTemplate.sections = newSections;
-          currentTemplate.headers = currentTemplate.headers.map((h) =>
-            h.key === key ? { ...h, isUsed: false } : h
-          );
-          currentTemplate.isModified = true;
-          currentTemplate.action = currentTemplate.action || "update";
-          currentObject.templates[selectedTemplateIndex] = currentTemplate;
-          newObjects[selectedObjectIndex] = currentObject;
-          return newObjects;
-        });
-      }
-    },
-    [selectedObjectIndex, selectedTemplateIndex]
-  );
-
   // Filter headers for search
   const filteredHeaders = useCallback(() => {
     if (selectedObjectIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return [];
@@ -1420,6 +1581,11 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
             ? { ...template, isModified: true, action: "remove" }
             : template
         );
+        
+        // Mark the parent object as modified since we're removing a template
+        currentObject.isModified = true;
+        currentObject.action = currentObject.action || "update";
+        
         newObjects[selectedObjectIndex] = currentObject;
         return newObjects;
       });
@@ -1461,38 +1627,66 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
     const template = object.templates[selectedTemplateIndex];
     const currentSectionName = template.sections[currentSectionIndex].name;
     setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
-    navigateToView('field-create', { activeHeaderIndex: -1 });
-  }, [navigateToView, templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
+    setShowFieldForm(true);
+  }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
 
   // Export records for the current template
   const exportRecords = useCallback(async () => {
-    if (selectedObjectIndex === null || selectedTemplateIndex === null) {
-      alert('No template selected.');
+    if (selectedObjectIndex === null) {
+      alert('No object selected.');
       return;
     }
+
     const object = templateObjects[selectedObjectIndex];
-    const template = object.templates[selectedTemplateIndex];
-    const typeOfRecord = template.name;
-    if (!typeOfRecord || !businessId) {
-      alert('Missing template name or business ID.');
+    const templates = object.templates || [];
+
+    if (templates.length === 0) {
+      alert('No templates found in this object.');
       return;
     }
+
+    if (!businessId) {
+      alert('Missing business ID.');
+      return;
+    }
+
     try {
       const recordsRef = collection(db, 'businesses', businessId, 'records');
-      const q = query(recordsRef, where('typeOfRecord', '==', typeOfRecord));
+      const objectName = object.name;
+
+      // Get all records for this object
+      const q = query(recordsRef, where('typeOfObject', '==', objectName));
       const snapshot = await getDocs(q);
       const rawRecords = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+
       if (!rawRecords.length) {
-        alert('No records found for this template.');
+        alert('No records found for this object.');
         return;
       }
 
-      const headers = template.headers.filter(h => h.isUsed);
+      // Create a comprehensive CSV with all fields from all templates
+      const allHeaders = new Map();
+
+      // Collect all unique headers from all templates
+      templates.forEach(template => {
+        template.headers?.forEach(header => {
+          if (header.isUsed && !allHeaders.has(header.key)) {
+            allHeaders.set(header.key, {
+              key: header.key,
+              name: header.name,
+              type: header.type,
+              template: template.name
+            });
+          }
+        });
+      });
+
+      const headersArray = Array.from(allHeaders.values());
 
       const csvHeaders = [];
       const dataMapping = [];
 
-      headers.forEach(header => {
+      headersArray.forEach(header => {
         const { key, name, type } = header;
         if (type === 'date') {
           csvHeaders.push(name);
@@ -1595,7 +1789,7 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${typeOfRecord}_records_export.csv`;
+      link.download = `${objectName}_all_records_export.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1604,198 +1798,231 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       console.error('Export error:', err);
       alert('Failed to export records.');
     }
-  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, businessId]);
+  }, [selectedObjectIndex, templateObjects, businessId]);
 
   // Render functions for different views
   const renderObjectsView = () => (
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-      {renderBreadcrumbs()}
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <button
             onClick={onBack}
-            className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
             aria-label="Back to Settings"
           >
             <FaArrowLeft size={16} />
             <span>Back</span>
           </button>
+          {hasChanges() && (
+            <button
+              onClick={saveChanges}
+              className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            >
+              <FaSave size={14} />
+              <span>Save Changes</span>
+            </button>
+          )}
         </div>
-        <h1 className={styles.title}>Data Models</h1>
-        <p className={styles.subtitle}>Manage your record templates and data structures</p>
+        <div className={styles.headerBreadcrumbs}>
+          {renderBreadcrumbs()}
+        </div>
+        <div className={styles.headerMain}>
+          <h1 className={`${styles.title} ${styles.headerTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Data Models</h1>
+        </div>
+        <div className={styles.headerContent}>
+          <p className={`${styles.subtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your record templates and data structures</p>
+        </div>
       </div>
 
-      <div className={styles.section}>
-        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📁 Create New Category</h2>
-        <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Categories help organize your record templates into logical groups. For example: "Customers", "Projects", "Inventory".</p>
-        <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <div
-            onClick={() => setShowObjectForm(true)}
-            className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-            role="button"
-            aria-label="Add New Category"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                setShowObjectForm(true);
-              }
-            }}
-          >
-            <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <FaPlus size={24} />
-            </div>
-            <div className={styles.recordContent}>
-              <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Category</h3>
-              <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new category to group your record templates</p>
-            </div>
-            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <IoChevronForward size={16} />
-            </div>
-          </div>
-        </div>
-
-        {showObjectForm && (
-          <div className={`${styles.formSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Object</h3>
-            <input
-              type="text"
-              value={newObjectName}
-              onChange={(e) => setNewObjectName(e.target.value)}
-              placeholder="Object Name"
-              className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-              autoFocus
-            />
-            <div className={styles.formActions}>
-              <button
-                onClick={() => {
-                  setShowObjectForm(false);
-                  setNewObjectName("");
-                }}
-                className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createNewObject}
-                className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                disabled={!newObjectName.trim()}
-              >
-                Create Object
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {templateObjects.length > 0 && (
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📂 Your Categories</h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Select a category to manage its record templates.</p>
-          <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            {templateObjects
-              .map((object, originalIndex) => ({ object, originalIndex }))
-              .filter(({ object }) => object.action !== "remove")
-              .map(({ object, originalIndex }) => (
-              <div
-                key={object.id}
-                className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                role="button"
-                aria-label={`Open ${object.name}`}
-                tabIndex={0}
-              >
-                <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <FaLayerGroup size={24} />
+      <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+        <div className={`${styles.unifiedGrid} ${showObjectForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          {/* New Category Card / Form */}
+          {showObjectForm ? (
+            <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              <div className={styles.expandedFormHeader}>
+                <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaPlus size={22} />
                 </div>
-                <div
-                  className={styles.recordContent}
-                  onClick={() => editingObjectIndex !== originalIndex && selectObject(originalIndex)}
-                  onKeyDown={(e) => {
-                    if ((e.key === "Enter" || e.key === " ") && editingObjectIndex !== originalIndex) {
-                      selectObject(originalIndex);
-                    }
+                <div className={styles.expandedFormContent}>
+                  <h3 className={`${styles.expandedFormTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Category</h3>
+                  <p className={`${styles.expandedFormSubtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add a new category to organize your templates</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowObjectForm(false);
+                    setNewObjectName("");
                   }}
+                  className={`${styles.closeExpandedForm} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  aria-label="Cancel"
                 >
-                  {editingObjectIndex === originalIndex ? (
-                    <div className={styles.editingContent}>
-                      <input
-                        type="text"
-                        value={editingObjectName}
-                        onChange={(e) => setEditingObjectName(e.target.value)}
-                        className={`${styles.objectNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === 'Enter') {
-                            saveObjectName();
-                          } else if (e.key === 'Escape') {
-                            cancelEditingObject();
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <div className={styles.editActions}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            saveObjectName();
-                          }}
-                          className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          disabled={!editingObjectName.trim()}
-                        >
-                          <FaCheck size={12} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelEditingObject();
-                          }}
-                          className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        >
-                          <FaTimes size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{object.name}</h3>
-                      <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        {getObjectTemplates(originalIndex).length} template{getObjectTemplates(originalIndex).length !== 1 ? 's' : ''}
-                      </p>
-                    </>
-                  )}
+                  <FaTimes size={16} />
+                </button>
+              </div>
+
+              <div className={styles.expandedFormBody}>
+                <div className={styles.inputGroup}>
+                  <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Category Name</label>
+                  <input
+                    type="text"
+                    value={newObjectName}
+                    onChange={(e) => setNewObjectName(e.target.value)}
+                    placeholder="Enter category name..."
+                    className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newObjectName.trim()) {
+                        createNewObject();
+                      } else if (e.key === 'Escape') {
+                        setShowObjectForm(false);
+                        setNewObjectName("");
+                      }
+                    }}
+                  />
                 </div>
-                {editingObjectIndex !== originalIndex && (
+
+                <div className={styles.expandedFormActions}>
+                  <button
+                    onClick={() => {
+                      setShowObjectForm(false);
+                      setNewObjectName("");
+                    }}
+                    className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={createNewObject}
+                    className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    disabled={!newObjectName.trim()}
+                  >
+                    <FaPlus size={14} />
+                    <span>Create</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => setShowObjectForm(true)}
+              className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+              role="button"
+              aria-label="Add New Category"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setShowObjectForm(true);
+                }
+              }}
+            >
+              <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaPlus size={22} />
+              </div>
+              <div className={styles.recordContent}>
+                <h3 className={`${styles.recordTitle} ${styles.newCategoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Category</h3>
+                <p className={`${styles.recordDescription} ${styles.newCategoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new category</p>
+              </div>
+            </div>
+          )}
+
+          {/* Existing Categories */}
+          {templateObjects
+            .map((object, originalIndex) => ({ object, originalIndex }))
+            .filter(({ object }) => object.action !== "remove")
+            .map(({ object, originalIndex }) => (
+            <div
+              key={object.id}
+              className={`${styles.configRecord} ${styles.categoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+              role="button"
+              aria-label={`Open ${object.name}`}
+              tabIndex={0}
+            >
+              <div className={`${styles.recordIcon} ${styles.categoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaLayerGroup size={22} />
+              </div>
+              <div
+                className={styles.recordContent}
+                onClick={() => editingObjectIndex !== originalIndex && selectObject(originalIndex)}
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" || e.key === " ") && editingObjectIndex !== originalIndex) {
+                    selectObject(originalIndex);
+                  }
+                }}
+              >
+                {editingObjectIndex === originalIndex ? (
+                  <div className={styles.editingContent}>
+                    <input
+                      type="text"
+                      value={editingObjectName}
+                      onChange={(e) => setEditingObjectName(e.target.value)}
+                      className={`${styles.objectNameInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === 'Enter') {
+                          saveObjectName();
+                        } else if (e.key === 'Escape') {
+                          cancelEditingObject();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <div className={styles.editActions}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          saveObjectName();
+                        }}
+                        className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        disabled={!editingObjectName.trim()}
+                      >
+                        <FaCheck size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cancelEditingObject();
+                        }}
+                        className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        <FaTimes size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <>
-                    <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      <IoChevronForward size={16} />
-                    </div>
-                    <div className={styles.objectActions}>
-                      <div
-                        className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditingObject(originalIndex);
-                        }}
-                      >
-                        <FaEdit size={12} />
-                      </div>
-                      <div
-                        className={`${styles.objectDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteObject(originalIndex);
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </div>
-                    </div>
+                    <h3 className={`${styles.recordTitle} ${styles.categoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{object.name}</h3>
+                    <p className={`${styles.recordDescription} ${styles.categoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      {getObjectTemplates(originalIndex).length} template{getObjectTemplates(originalIndex).length !== 1 ? 's' : ''}
+                    </p>
                   </>
                 )}
               </div>
-            ))}
-          </div>
+              {editingObjectIndex !== originalIndex && (
+                <div className={styles.objectActions}>
+                  <div
+                    className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditingObject(originalIndex);
+                    }}
+                  >
+                    <FaEdit size={12} />
+                  </div>
+                  <div
+                    className={`${styles.objectDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteObject(originalIndex);
+                    }}
+                  >
+                    <FaTrash size={12} />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 
@@ -1804,12 +2031,16 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
       return (
         <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <div className={styles.header}>
-            <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <FaArrowLeft size={16} />
-              Back to Objects
-            </button>
-            <h1 className={styles.title}>No Object Selected</h1>
-            <p className={styles.subtitle}>Please select a object first to manage templates.</p>
+            <div className={styles.headerTop}>
+              <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaArrowLeft size={16} />
+                Back to Objects
+              </button>
+            </div>
+            <div className={styles.headerMain}>
+              <h1 className={styles.title}>No Object Selected</h1>
+              <p className={styles.subtitle}>Please select a object first to manage templates.</p>
+            </div>
           </div>
         </div>
       );
@@ -1817,311 +2048,391 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {renderBreadcrumbs()}
         <div className={styles.header}>
-          <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <FaArrowLeft size={16} />
-            Back to Objects
-          </button>
-          <h1 className={styles.title}>{templateObjects[selectedObjectIndex].name}</h1>
-          <p className={styles.subtitle}>Manage record templates in this object</p>
-        </div>
-
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📋 Create New Template</h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Templates define the structure and fields for your records in the {templateObjects[selectedObjectIndex].name} category.</p>
-          <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <div
-              onClick={() => handleOpenEditor()}
-              className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-              role="button"
-              aria-label="Add New Record Template"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleOpenEditor();
-                }
-              }}
+          <div className={styles.headerTop}>
+            <button
+              onClick={goBack}
+              className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              aria-label="Back to Objects"
             >
-              <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <FaPlus size={24} />
-              </div>
-              <div className={styles.recordContent}>
-                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Record Template</h3>
-                <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your records</p>
-              </div>
-              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <IoChevronForward size={16} />
-              </div>
-            </div>
+              <FaArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+            {hasChanges() && (
+              <button
+                onClick={saveChanges}
+                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaSave size={14} />
+                <span>Save Changes</span>
+              </button>
+            )}
+          </div>
+          <div className={styles.headerBreadcrumbs}>
+            {renderBreadcrumbs()}
+          </div>
+          <div className={styles.headerMain}>
+            <h1 className={`${styles.title} ${styles.headerTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{templateObjects[selectedObjectIndex].name}</h1>
+          </div>
+          <div className={styles.headerContent}>
+            <p className={`${styles.subtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage record templates in this object</p>
           </div>
         </div>
 
-        {getObjectTemplates(selectedObjectIndex).length > 0 && (
-          <div className={styles.section}>
-            <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📄 Your Templates</h2>
-            <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage and edit your existing record templates in {templateObjects[selectedObjectIndex].name}.</p>
-            <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              {getObjectTemplates(selectedObjectIndex).map((template, index) => (
+        <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          <div className={`${styles.unifiedGrid} ${showTemplateForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            {/* New Template Card / Form */}
+            {showTemplateForm ? (
+              <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <div className={styles.expandedFormHeader}>
+                  <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <FaPlus size={22} />
+                  </div>
+                  <div className={styles.expandedFormContent}>
+                    <h3 className={`${styles.expandedFormTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create New Record Template</h3>
+                    <p className={`${styles.expandedFormSubtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add a new template to organize your records</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowTemplateForm(false);
+                      setNewTemplateName("");
+                    }}
+                    className={`${styles.closeExpandedForm} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    aria-label="Cancel"
+                  >
+                    <FaTimes size={16} />
+                  </button>
+                </div>
+
+                <div className={styles.expandedFormBody}>
+                  <div className={styles.inputGroup}>
+                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Template Name</label>
+                    <input
+                      type="text"
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      placeholder="Enter template name..."
+                      className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newTemplateName.trim()) {
+                          confirmNewTemplate();
+                        } else if (e.key === 'Escape') {
+                          setShowTemplateForm(false);
+                          setNewTemplateName("");
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className={styles.expandedFormActions}>
+                    <button
+                      onClick={() => {
+                        setShowTemplateForm(false);
+                        setNewTemplateName("");
+                      }}
+                      className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmNewTemplate}
+                      className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      disabled={!newTemplateName.trim()}
+                    >
+                      <FaPlus size={14} />
+                      <span>Create</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => setShowTemplateForm(true)}
+                className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                role="button"
+                aria-label="Add New Record Template"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setShowTemplateForm(true);
+                  }
+                }}
+              >
+                <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaPlus size={22} />
+                </div>
+                <div className={styles.recordContent}>
+                  <h3 className={`${styles.recordTitle} ${styles.newCategoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>New Record Template</h3>
+                  <p className={`${styles.recordDescription} ${styles.newCategoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a custom template for your records</p>
+                </div>
+              </div>
+            )}
+
+            {/* Existing Templates */}
+            {getObjectTemplates(selectedObjectIndex).map((template, index) => (
+              <div
+                key={template.name || `template-${index}`}
+                onClick={() => selectTemplate(index)}
+                className={`${styles.configRecord} ${styles.categoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                role="button"
+                aria-label={`Edit ${template.name || "Unnamed Template"}`}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    selectTemplate(index);
+                  }
+                }}
+              >
+                <div className={`${styles.recordIcon} ${styles.categoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaFileAlt size={22} />
+                </div>
+                <div className={styles.recordContent}>
+                  <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
+                  <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
+                  <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    {template.sections?.length || 0} sections
+                  </div>
+                </div>
+                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <IoChevronForward size={16} />
+                </div>
+              </div>
+            ))}
+
+          </div>
+        </div>
+
+        {/* Pipelines Section */}
+        <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          <div className={`${styles.unifiedGrid} ${showPipelineForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            {/* Create Pipeline Card / Expanded Form */}
+            {showPipelineForm ? (
+              <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <div className={styles.expandedFormHeader}>
+                  <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <IoGitBranch size={22} />
+                  </div>
+                  <div className={styles.expandedFormTitle}>
+                    <h3 className={`${styles.expandedFormTitleText} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      {editingPipelineIndex !== null ? 'Edit Pipeline' : 'Create New Pipeline'}
+                    </h3>
+                    <p className={`${styles.expandedFormSubtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      Set up automatic record movement between templates
+                    </p>
+                  </div>
+                </div>
+
+                <div className={styles.expandedFormBody}>
+                  <div className={styles.inputGroup}>
+                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
+                    <input
+                      type="text"
+                      value={newPipelineName}
+                      onChange={(e) => setNewPipelineName(e.target.value)}
+                      placeholder="Enter pipeline name..."
+                      className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newPipelineName.trim()) {
+                          editingPipelineIndex !== null ? updateObjectPipeline() : addObjectPipeline();
+                        } else if (e.key === 'Escape') {
+                          cancelPipelineForm();
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Source Template</label>
+                    <select
+                      value={pipelineSourceTemplate}
+                      onChange={(e) => setPipelineSourceTemplate(e.target.value)}
+                      className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="">Select source template...</option>
+                      {getObjectTemplates(selectedObjectIndex).map((template) => (
+                        <option key={template.docId} value={template.docId}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
+                    <select
+                      value={pipelineTargetTemplate}
+                      onChange={(e) => setPipelineTargetTemplate(e.target.value)}
+                      className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="">Select target template...</option>
+                      {getObjectTemplates(selectedObjectIndex).map((template) => (
+                        <option key={template.docId} value={template.docId}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Field Mappings Section */}
+                  {pipelineSourceTemplate && pipelineTargetTemplate && (
+                    <div className={styles.fieldMappingsSection}>
+                      <div className={styles.fieldMappingsHeader}>
+                        <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                          Field Mappings
+                        </label>
+                        <button
+                          type="button"
+                          onClick={addFieldMapping}
+                          className={`${styles.addMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        >
+                          <IoAdd size={16} />
+                          Add Mapping
+                        </button>
+                      </div>
+
+                      <div className={styles.fieldMappings}>
+                        {pipelineFieldMappings.map((mapping, index) => (
+                          <div key={index} className={`${styles.mappingRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <select
+                              value={mapping.source}
+                              onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
+                              className={`${styles.expandedSelect} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Source field...</option>
+                              {getSourceTemplateHeaders().map((header) => (
+                                <option key={header.key} value={header.key}>
+                                  {header.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <span className={`${styles.mappingArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              →
+                            </span>
+
+                            <select
+                              value={mapping.target}
+                              onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
+                              className={`${styles.expandedSelect} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <option value="">Target field...</option>
+                              {getTargetTemplateHeaders().map((header) => (
+                                <option key={header.key} value={header.key}>
+                                  {header.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <button
+                              type="button"
+                              onClick={() => removeFieldMapping(index)}
+                              className={`${styles.removeMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <IoTrash size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={styles.expandedFormActions}>
+                    <button
+                      onClick={cancelPipelineForm}
+                      className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={editingPipelineIndex !== null ? updateObjectPipeline : addObjectPipeline}
+                      className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      disabled={
+                        !newPipelineName.trim() ||
+                        !pipelineSourceTemplate ||
+                        !pipelineTargetTemplate ||
+                        pipelineFieldMappings.length === 0 ||
+                        !pipelineFieldMappings.every(mapping => mapping.source && mapping.target)
+                      }
+                    >
+                      {editingPipelineIndex !== null ? 'Update Pipeline' : 'Create Pipeline'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => setShowPipelineForm(true)}
+                className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                role="button"
+                aria-label="Create new pipeline"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setShowPipelineForm(true);
+                  }
+                }}
+              >
+                <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <IoGitBranch size={22} />
+                </div>
+                <div className={styles.recordContent}>
+                  <h3 className={`${styles.recordTitle} ${styles.newCategoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Pipeline</h3>
+                  <p className={`${styles.recordDescription} ${styles.newCategoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automatic record movement between templates</p>
+                </div>
+              </div>
+            )}
+
+            {/* Existing Pipelines */}
+            {getObjectPipelines(selectedObjectIndex).map((pipeline, index) => {
+              const sourceTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.sourceTemplateId);
+              const targetTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.targetTemplateId);
+              return (
                 <div
-                  key={template.name || `template-${index}`}
-                  onClick={() => handleOpenEditor(template)}
-                  className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  key={pipeline.id}
+                  onClick={() => editObjectPipeline(index)}
+                  className={`${styles.configRecord} ${styles.categoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
                   role="button"
-                  aria-label={`Edit ${template.name || "Unnamed Template"}`}
+                  aria-label={`Edit ${pipeline.name}`}
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      handleOpenEditor(template);
+                      editObjectPipeline(index);
                     }
                   }}
                 >
-                  <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                    <FaRegCircle size={24} />
+                  <div className={`${styles.recordIcon} ${styles.categoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <IoGitBranch size={22} />
                   </div>
                   <div className={styles.recordContent}>
-                    <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name || "Unnamed Template"}</h3>
-                    <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure sections and fields</p>
+                    <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h3>
+                    <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      {sourceTemplate?.name || 'Unknown'} → {targetTemplate?.name || 'Unknown'}
+                    </p>
                     <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      {template.sections?.length || 0} sections
+                      {pipeline.fieldMappings?.length || 0} mappings
                     </div>
                   </div>
                   <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                     <IoChevronForward size={16} />
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
-
-        {/* Pipelines Section */}
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Object Pipelines</h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create pipelines to automatically move records between templates in {templateObjects[selectedObjectIndex].name}.</p>
-
-          {/* Add Pipeline Button */}
-          <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <div
-              onClick={() => setShowPipelineForm(true)}
-              className={`${styles.configRecord} ${styles.createRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-              role="button"
-              aria-label="Create new pipeline"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  setShowPipelineForm(true);
-                }
-              }}
-            >
-              <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <IoAdd size={24} />
-              </div>
-              <div className={styles.recordContent}>
-                <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Pipeline</h3>
-                <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Set up automatic record movement between templates</p>
-              </div>
-              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                <IoChevronForward size={16} />
-              </div>
-            </div>
-          </div>
-
-          {/* Pipeline Form */}
-          {showPipelineForm && (
-            <div className={`${styles.pipelineForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                {editingPipelineIndex !== null ? 'Edit Pipeline' : 'Create New Pipeline'}
-              </h3>
-
-              <div className={styles.inputGroup}>
-                <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
-                <input
-                  type="text"
-                  value={newPipelineName}
-                  onChange={(e) => setNewPipelineName(e.target.value)}
-                  placeholder="Enter pipeline name"
-                  className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                />
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Source Template</label>
-                <select
-                  value={pipelineSourceTemplate}
-                  onChange={(e) => setPipelineSourceTemplate(e.target.value)}
-                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                >
-                  <option value="">Select source template...</option>
-                  {getObjectTemplates(selectedObjectIndex).map((template) => (
-                    <option key={template.docId} value={template.docId}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
-                <select
-                  value={pipelineTargetTemplate}
-                  onChange={(e) => setPipelineTargetTemplate(e.target.value)}
-                  className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
-                >
-                  <option value="">Select target template...</option>
-                  {getObjectTemplates(selectedObjectIndex).map((template) => (
-                    <option key={template.docId} value={template.docId}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Field Mappings Section */}
-              {pipelineSourceTemplate && pipelineTargetTemplate && (
-                <div className={styles.fieldMappingsSection}>
-                  <div className={styles.fieldMappingsHeader}>
-                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                      Field Mappings
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addFieldMapping}
-                      className={`${styles.addMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    >
-                      <IoAdd size={16} />
-                      Add Mapping
-                    </button>
-                  </div>
-
-                  <div className={styles.fieldMappings}>
-                    {pipelineFieldMappings.map((mapping, index) => (
-                      <div key={index} className={`${styles.mappingRow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        <select
-                          value={mapping.source}
-                          onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
-                          className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        >
-                          <option value="">Source field...</option>
-                          {getSourceTemplateHeaders().map((header) => (
-                            <option key={header.key} value={header.key}>
-                              {header.name}
-                            </option>
-                          ))}
-                        </select>
-
-                        <span className={`${styles.mappingArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          →
-                        </span>
-
-                        <select
-                          value={mapping.target}
-                          onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
-                          className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        >
-                          <option value="">Target field...</option>
-                          {getTargetTemplateHeaders().map((header) => (
-                            <option key={header.key} value={header.key}>
-                              {header.name}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => removeFieldMapping(index)}
-                          className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          title="Remove mapping"
-                        >
-                          <IoTrash size={14} />
-                        </button>
-                      </div>
-                    ))}
-
-                    {pipelineFieldMappings.length === 0 && (
-                      <div className={`${styles.emptyMappings} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        <p>No field mappings yet. Add mappings to specify how data transfers between templates.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.formActions}>
-                <button
-                  onClick={cancelPipelineForm}
-                  className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingPipelineIndex !== null ? updateObjectPipeline : addObjectPipeline}
-                  className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  disabled={
-                    !newPipelineName.trim() ||
-                    !pipelineSourceTemplate ||
-                    !pipelineTargetTemplate ||
-                    pipelineFieldMappings.length === 0 ||
-                    !pipelineFieldMappings.every(mapping => mapping.source && mapping.target)
-                  }
-                >
-                  {editingPipelineIndex !== null ? 'Update Pipeline' : 'Create Pipeline'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Existing Pipelines */}
-          {getObjectPipelines(selectedObjectIndex).length > 0 && (
-            <div className={styles.existingPipelines}>
-              <h3 className={`${styles.subsectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h3>
-              <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                {getObjectPipelines(selectedObjectIndex).map((pipeline, index) => {
-                  const sourceTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.sourceTemplateId);
-                  const targetTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.targetTemplateId);
-
-                  return (
-                    <div
-                      key={pipeline.id}
-                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                    >
-                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                        <IoGitBranch size={24} />
-                      </div>
-                      <div className={styles.recordContent}>
-                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {sourceTemplate?.name || 'Unknown'} → {targetTemplate?.name || 'Unknown'}
-                        </p>
-                        <div className={`${styles.mappingInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <span className={`${styles.mappingCount} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {pipeline.fieldMappings?.length || 0} field mapping{(pipeline.fieldMappings?.length || 0) !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.recordActions}>
-                        <button
-                          onClick={() => editObjectPipeline(index)}
-                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          aria-label="Edit pipeline"
-                        >
-                          <IoCreate size={16} />
-                        </button>
-                        <button
-                          onClick={() => deleteObjectPipeline(index)}
-                          className={`${styles.actionButton} ${styles.dangerButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          aria-label="Delete pipeline"
-                        >
-                          <IoTrash size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
+
+        <div className={styles.section}>
+          <button
+            onClick={exportRecords}
+            className={`${styles.exportRecordsButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+          >
+            <FaDownload size={16} />
+            <span>Export Records</span>
+          </button>
+        </div>
+
       </div>
     );
   };
@@ -2161,121 +2472,158 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {renderBreadcrumbs()}
         <div className={styles.header}>
-          <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <FaArrowLeft size={16} />
-            Back to Templates
-          </button>
-          <div className={styles.headerContent}>
-            <h1 className={styles.title}>{template.name}</h1>
-            <p className={styles.subtitle}>Configure your record template name and structure.</p>
-          </div>
-          {editMode && (
-            <button
-              onClick={() => setEditMode(false)}
-              className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-            >
-              Done Editing
-            </button>
-          )}
-        </div>
-
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📝 Template Details</h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your template name and structure.</p>
-          <input
-            type="text"
-            value={template.name || ""}
-            onChange={(e) => updateTemplateName(e.target.value)}
-            placeholder="Record Template Name"
-            className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-            disabled={!editMode}
-          />
-        </div>
-
-        {!editMode && (
-          <div className={styles.section}>
-            <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Actions</h2>
-            <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage your record template and data.</p>
-            <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <div
-                onClick={() => setEditMode(true)}
-                className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                role="button"
-                aria-label="Edit Template"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    setEditMode(true);
-                  }
-                }}
-              >
-                <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <FaEdit size={24} />
-                </div>
-                <div className={styles.recordContent}>
-                  <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Edit Template</h3>
-                  <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Modify template name and structure</p>
-                </div>
-                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <IoChevronForward size={16} />
-                </div>
-              </div>
-              <div
-                onClick={addSection}
-                className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                role="button"
-                aria-label="Add New Section"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    addSection();
-                  }
-                }}
-              >
-                <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <FaPlus size={24} />
-                </div>
-                <div className={styles.recordContent}>
-                  <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Section</h3>
-                  <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new section for your record template</p>
-                </div>
-                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <IoChevronForward size={16} />
-                </div>
-              </div>
-              <div
-                onClick={exportRecords}
-                className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                role="button"
-                aria-label="Export Records"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    exportRecords();
-                  }
-                }}
-              >
-                <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <FaDownload size={24} />
-                </div>
-                <div className={styles.recordContent}>
-                  <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Export Records</h3>
-                  <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Download your record data as CSV</p>
-                </div>
-                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <IoChevronForward size={16} />
-                </div>
-              </div>
+          <div className={styles.headerTop}>
+            <div className={styles.headerTopLeft}>
+              <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+              {hasChanges() && (
+                <button
+                  onClick={saveChanges}
+                  className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaSave size={14} />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
+            <div className={styles.headerTopRight}>
+              {!editMode && (
+                <button
+                  onClick={() => setEditMode(true)}
+                  className={`${styles.editTemplateButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaEdit size={16} />
+                  <span>Edit</span>
+                </button>
+              )}
+              {editMode && (
+                <button
+                  onClick={() => setEditMode(false)}
+                  className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  Done Editing
+                </button>
+              )}
             </div>
           </div>
-        )}
+          <div className={styles.headerBreadcrumbs}>
+            {renderBreadcrumbs()}
+          </div>
+          <div className={styles.headerMain}>
+            {editMode ? (
+              <input
+                type="text"
+                value={template.name || ""}
+                onChange={(e) => updateTemplateName(e.target.value)}
+                placeholder="Record Template Name"
+                className={`${styles.editableTitle} ${isDarkTheme ? styles.darkTheme : ""}`}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setEditMode(false);
+                  } else if (e.key === 'Escape') {
+                    setEditMode(false);
+                  }
+                }}
+              />
+            ) : (
+              <h1 className={`${styles.title} ${styles.headerTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{template.name}</h1>
+            )}
+          </div>
+          <div className={styles.headerContent}>
+            <p className={`${styles.subtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Configure your record template name and structure.</p>
+          </div>
+        </div>
 
         <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>📚 Sections</h2>
+          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}> Sections</h2>
           <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Sections organize your fields into logical groups within the template.</p>
-          <div className={`${styles.sectionsGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+
+          <div className={`${styles.unifiedGrid} ${showSectionForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            {/* Create Section Card / Expanded Form */}
+            {showSectionForm ? (
+              <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <div className={styles.expandedFormHeader}>
+                  <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <FaPlus size={22} />
+                  </div>
+                  <div className={styles.expandedFormTitle}>
+                    <h3 className={`${styles.expandedFormTitleText} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      Create New Section
+                    </h3>
+                    <p className={`${styles.expandedFormSubtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      Add a new section to organize your template fields
+                    </p>
+                  </div>
+                </div>
+
+                <div className={styles.expandedFormBody}>
+                  <div className={styles.inputGroup}>
+                    <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Section Name</label>
+                    <input
+                      type="text"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      placeholder="Enter section name..."
+                      className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newSectionName.trim()) {
+                          addSectionWithName();
+                        } else if (e.key === 'Escape') {
+                          setShowSectionForm(false);
+                          setNewSectionName("");
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className={styles.expandedFormActions}>
+                    <button
+                      onClick={() => {
+                        setShowSectionForm(false);
+                        setNewSectionName("");
+                      }}
+                      className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={addSectionWithName}
+                      className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      disabled={!newSectionName.trim()}
+                    >
+                      <FaPlus size={14} />
+                      <span>Create Section</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => setShowSectionForm(true)}
+                className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                role="button"
+                aria-label="Create new section"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setShowSectionForm(true);
+                  }
+                }}
+              >
+                <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <FaPlus size={22} />
+                </div>
+                <div className={styles.recordContent}>
+                  <h3 className={`${styles.recordTitle} ${styles.newCategoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Section</h3>
+                  <p className={`${styles.recordDescription} ${styles.newCategoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>Add a new section to organize your fields</p>
+                </div>
+              </div>
+            )}
             {template.sections.map((section, index) => (
               <div
                 ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
@@ -2310,11 +2658,68 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
                 <div className={styles.recordContent}>
                   <div className={styles.headerRow}>
                     <div className={styles.headerMain}>
-                      <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
+                      {editMode && editingSectionIndex === index ? (
+                        <div className={styles.editSectionForm}>
+                          <input
+                            type="text"
+                            value={editingSectionName}
+                            onChange={(e) => setEditingSectionName(e.target.value)}
+                            className={`${styles.editInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveEditingSection();
+                              } else if (e.key === "Escape") {
+                                cancelEditingSection();
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <div className={styles.editButtons}>
+                            <button
+                              onClick={saveEditingSection}
+                              className={`${styles.saveEditButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <FaCheck size={12} />
+                            </button>
+                            <button
+                              onClick={cancelEditingSection}
+                              className={`${styles.cancelEditButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{section.name}</h3>
+                      )}
                     </div>
                     {!editMode && (
                       <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                         <IoChevronForward size={16} />
+                      </div>
+                    )}
+                    {editMode && editingSectionIndex !== index && section.name !== "Record Data" && (
+                      <div className={styles.sectionEditActions}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditingSection(index);
+                          }}
+                          className={`${styles.editSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          title="Rename section"
+                        >
+                          <FaEdit size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSection(index);
+                          }}
+                          className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          title="Delete section"
+                        >
+                          <FaTrash size={12} />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -2361,14 +2766,29 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {renderBreadcrumbs()}
         <div className={styles.header}>
-          <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <FaArrowLeft size={16} />
-            Back to Template
-          </button>
-          <h1 className={styles.title}>{section.name}</h1>
-          <p className={styles.subtitle}>Customize the section name and manage its fields.</p>
+          <div className={styles.headerTop}>
+            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              <FaArrowLeft size={16} />
+              Back to Template
+            </button>
+            {hasChanges() && (
+              <button
+                onClick={saveChanges}
+                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaSave size={14} />
+                <span>Save Changes</span>
+              </button>
+            )}
+          </div>
+          <div className={styles.headerBreadcrumbs}>
+            {renderBreadcrumbs()}
+          </div>
+          <div className={styles.headerContent}>
+            <h1 className={styles.title}>{section.name}</h1>
+            <p className={styles.subtitle}>Customize the section name and manage its fields.</p>
+          </div>
         </div>
 
         <div className={styles.section}>
@@ -2384,105 +2804,235 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
           />
         </div>
 
-        {!editMode && (
-          <div className={styles.section}>
-            <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Actions</h3>
-            <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Manage fields in this section.</p>
-            <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
-              <div
-                onClick={() => handleCreateHeader()}
-                className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ""}`}
-                role="button"
-                aria-label="Add New Field"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    handleCreateHeader();
-                  }
-                }}
-              >
-                <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <FaPlus size={24} />
-                </div>
-                <div className={styles.recordContent}>
-                  <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Add Field</h3>
-                  <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Create a new field for this section</p>
-                </div>
-                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                  <IoChevronForward size={16} />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         <div className={styles.section}>
-          <div className={styles.section}>
+          <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
             <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>🏷️ Fields in Section</h3>
             <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>These fields are currently included in this section.</p>
-            {section.keys.map((key, index) => {
-              const header = template.headers.find((h) => h.key === key) || {
-                key,
-                name: key,
-                type: "text",
-              };
-              const headerIndex = template.headers.findIndex((h) => h.key === key);
-              const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
-              return (
-                <div
-                  ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
-                  key={`${currentSectionIndex}-${index}`}
-                  className={`${styles.keyItem} ${
-                    draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
-                  } ${isDarkTheme ? styles.darkTheme : ""}`}
-                  draggable={editMode && !isProtected}
-                  onDragStart={(e) => editMode && handleDragStart(e, currentSectionIndex, index)}
-                  onDragOver={(e) => editMode && handleDragOver(e, currentSectionIndex, index)}
-                  onDragEnd={() => editMode && handleDragEnd()}
-                  onTouchStart={(e) => editMode && handleTouchStart(e, currentSectionIndex, index)}
-                  onTouchMove={(e) => editMode && handleTouchMove(e, currentSectionIndex, index)}
-                  onTouchEnd={() => editMode && handleTouchEnd()}
-                  onClick={(e) => {
-                    const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
-                    if (isCheckboxClick) {
-                      !editMode && toggleKeySelection(currentSectionIndex, header.key);
-                    } else if (headerIndex !== -1) {
-                      handleEditHeader(headerIndex);
-                    }
-                  }}
-                >
-                  <div className={styles.headerContent}>
-                    <div className={styles.headerRow}>
-                      <div className={styles.headerMain}>
-                        <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {section.keys.includes(header.key) ? (
-                            <FaRegCheckCircle size={18} className={styles.checked} />
-                          ) : (
-                            <FaRegCircle size={18} />
-                          )}
-                        </span>
-                        <span className={styles.headerName}>{header.name}</span>
-                      </div>
-                      {editMode ? (
-                        <div className={styles.headerActions}>
-                          <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                            {isProtected ? "" : <MdDragIndicator size={16} />}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <IoChevronForward size={16} />
-                        </div>
-                      )}
+
+            <div className={`${styles.unifiedGrid} ${showFieldForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              {/* Create Field Card / Expanded Form */}
+              {showFieldForm ? (
+                <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  <div className={styles.expandedFormHeader}>
+                    <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      <FaPlus size={22} />
                     </div>
-                    <div className={styles.headerMeta}>
-                      <span className={styles.headerType}>{header.type}</span>
-                      {header.section && <span className={styles.headerSection}>{header.section}</span>}
+                    <div className={styles.expandedFormTitle}>
+                      <h3 className={`${styles.expandedFormTitleText} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        Create New Field
+                      </h3>
+                      <p className={`${styles.expandedFormSubtitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        Add a new field to organize your record data
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={styles.expandedFormBody}>
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Name</label>
+                      <input
+                        type="text"
+                        value={newHeaderName}
+                        onChange={(e) => setNewHeaderName(e.target.value)}
+                        placeholder="Enter field name..."
+                        className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newHeaderName.trim()) {
+                            saveHeader();
+                          } else if (e.key === 'Escape') {
+                            setShowFieldForm(false);
+                            resetHeaderForm();
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Type</label>
+                      <select
+                        value={newHeaderType}
+                        onChange={(e) => setNewHeaderType(e.target.value)}
+                        className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="currency">Currency</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="multi-select">Multi-Select</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Section</label>
+                      <select
+                        value={newHeaderSection}
+                        onChange={(e) => setNewHeaderSection(e.target.value)}
+                        className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        <option value="">Select Section</option>
+                        {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections
+                          .filter((section) => section.name !== "Record Data")
+                          .map((section, index) => (
+                            <option key={index} value={section.name}>
+                              {section.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
+                      <div className={styles.optionsSection}>
+                        <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Options</label>
+                        <div className={styles.optionInputRow}>
+                          <input
+                            type="text"
+                            value={newOption}
+                            onChange={(e) => setNewOption(e.target.value)}
+                            placeholder="Add option..."
+                            className={`${styles.expandedInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                addOption();
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={addOption}
+                            className={`${styles.addOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            disabled={!newOption.trim()}
+                          >
+                            <FaPlus size={14} />
+                          </button>
+                        </div>
+                        <div className={styles.optionsList}>
+                          {newHeaderOptions.map((option) => (
+                            <div key={option} className={`${styles.optionItem} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <span>{option}</span>
+                              <button
+                                onClick={() => removeOption(option)}
+                                className={`${styles.removeOptionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                              >
+                                <FaTimes size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={styles.expandedFormActions}>
+                      <button
+                        onClick={() => {
+                          setShowFieldForm(false);
+                          resetHeaderForm();
+                        }}
+                        className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveHeader}
+                        className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        disabled={!newHeaderName.trim() || !newHeaderSection.trim()}
+                      >
+                        <FaPlus size={14} />
+                        <span>Create Field</span>
+                      </button>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              ) : (
+                <div
+                  onClick={() => setShowFieldForm(true)}
+                  className={`${styles.configRecord} ${styles.newCategoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                  role="button"
+                  aria-label="Create new field"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setShowFieldForm(true);
+                    }
+                  }}
+                >
+                  <div className={`${styles.recordIcon} ${styles.newCategoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <FaPlus size={22} />
+                  </div>
+                  <div className={styles.recordContent}>
+                    <h3 className={`${styles.recordTitle} ${styles.newCategoryTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Create Field</h3>
+                    <p className={`${styles.recordDescription} ${styles.newCategoryDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>Add a new field to organize your data</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing Fields */}
+              {section.keys.map((key, index) => {
+                const header = template.headers.find((h) => h.key === key) || {
+                  key,
+                  name: key,
+                  type: "text",
+                };
+                const headerIndex = template.headers.findIndex((h) => h.key === key);
+                const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
+                return (
+                  <div
+                    ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
+                    key={`${currentSectionIndex}-${index}`}
+                    className={`${styles.configRecord} ${
+                      draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
+                    } ${isDarkTheme ? styles.darkTheme : ""}`}
+                    draggable={editMode && !isProtected}
+                    onDragStart={(e) => editMode && handleDragStart(e, currentSectionIndex, index)}
+                    onDragOver={(e) => editMode && handleDragOver(e, currentSectionIndex, index)}
+                    onDragEnd={() => editMode && handleDragEnd()}
+                    onTouchStart={(e) => editMode && handleTouchStart(e, currentSectionIndex, index)}
+                    onTouchMove={(e) => editMode && handleTouchMove(e, currentSectionIndex, index)}
+                    onTouchEnd={() => editMode && handleTouchEnd()}
+                    onClick={(e) => {
+                      const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
+                      if (isCheckboxClick) {
+                        !editMode && toggleKeySelection(currentSectionIndex, header.key);
+                      } else if (headerIndex !== -1) {
+                        handleEditHeader(headerIndex);
+                      }
+                    }}
+                  >
+                    <div className={styles.headerContent}>
+                      <div className={styles.headerRow}>
+                        <div className={styles.headerMain}>
+                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            {section.keys.includes(header.key) ? (
+                              <FaRegCheckCircle size={18} className={styles.checked} />
+                            ) : (
+                              <FaRegCircle size={18} />
+                            )}
+                          </span>
+                          <span className={styles.headerName}>{header.name}</span>
+                        </div>
+                        {editMode ? (
+                          <div className={styles.headerActions}>
+                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {isProtected ? "" : <MdDragIndicator size={16} />}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                            <IoChevronForward size={16} />
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.headerMeta}>
+                        <span className={styles.headerType}>{header.type}</span>
+                        {header.section && <span className={styles.headerSection}>{header.section}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className={styles.section}>
@@ -2563,14 +3113,29 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {renderBreadcrumbs()}
         <div className={styles.header}>
-          <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <FaArrowLeft size={16} />
-            Back to Section
-          </button>
-          <h1 className={styles.title}>{header.name}</h1>
-          <p className={styles.subtitle}>Customize the field properties and settings.</p>
+          <div className={styles.headerTop}>
+            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              <FaArrowLeft size={16} />
+              Back to Section
+            </button>
+            {hasChanges() && (
+              <button
+                onClick={saveChanges}
+                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaSave size={14} />
+                <span>Save Changes</span>
+              </button>
+            )}
+          </div>
+          <div className={styles.headerBreadcrumbs}>
+            {renderBreadcrumbs()}
+          </div>
+          <div className={styles.headerContent}>
+            <h1 className={styles.title}>{header.name}</h1>
+            <p className={styles.subtitle}>Customize the field properties and settings.</p>
+          </div>
         </div>
 
         <div className={styles.section}>
@@ -2670,6 +3235,176 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
             </div>
           </div>
         </div>
+
+        {/* Pipeline Form */}
+        {showPipelineForm && (
+          <div className={`${styles.pipelineForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            <h3 className={`${styles.formTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              {editingPipelineIndex !== null ? 'Edit Pipeline' : 'Create New Pipeline'}
+            </h3>
+
+            <div className={styles.inputGroup}>
+              <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Pipeline Name</label>
+              <input
+                type="text"
+                value={newPipelineName}
+                onChange={(e) => setNewPipelineName(e.target.value)}
+                placeholder="Enter pipeline name"
+                className={`${styles.inputField} ${isDarkTheme ? styles.darkTheme : ""}`}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Source Template</label>
+              <select
+                value={pipelineSourceTemplate}
+                onChange={(e) => setPipelineSourceTemplate(e.target.value)}
+                className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <option value="">Select source template...</option>
+                {getObjectTemplates(selectedObjectIndex).map((template) => (
+                  <option key={template.docId} value={template.docId}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Target Template</label>
+              <select
+                value={pipelineTargetTemplate}
+                onChange={(e) => setPipelineTargetTemplate(e.target.value)}
+                className={`${styles.selectField} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <option value="">Select target template...</option>
+                {getObjectTemplates(selectedObjectIndex).map((template) => (
+                  <option key={template.docId} value={template.docId}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Field Mappings</label>
+              <div className={styles.fieldMappings}>
+                {pipelineFieldMappings.map((mapping, index) => (
+                  <div key={index} className={styles.mappingRow}>
+                    <select
+                      value={mapping.source}
+                      onChange={(e) => updateFieldMapping(index, 'source', e.target.value)}
+                      className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="">Select source field...</option>
+                      {getTemplateFields(pipelineSourceTemplate).map((field) => (
+                        <option key={field.key} value={field.key}>
+                          {field.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className={styles.mappingArrow}>→</span>
+                    <select
+                      value={mapping.target}
+                      onChange={(e) => updateFieldMapping(index, 'target', e.target.value)}
+                      className={`${styles.selectField} ${styles.mappingSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="">Select target field...</option>
+                      {getTemplateFields(pipelineTargetTemplate).map((field) => (
+                        <option key={field.key} value={field.key}>
+                          {field.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => removeFieldMapping(index)}
+                      className={`${styles.removeMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      aria-label="Remove mapping"
+                    >
+                      <IoTrash size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={addFieldMapping}
+                  className={`${styles.addMappingButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <IoAdd size={14} />
+                  Add Field Mapping
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.formActions}>
+              <button
+                onClick={() => {
+                  setShowPipelineForm(false);
+                  resetPipelineForm();
+                }}
+                className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingPipelineIndex !== null ? updatePipeline : createPipeline}
+                className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                disabled={
+                  !newPipelineName.trim() ||
+                  !pipelineSourceTemplate ||
+                  !pipelineTargetTemplate ||
+                  pipelineFieldMappings.length === 0 ||
+                  !pipelineFieldMappings.every(mapping => mapping.source && mapping.target)
+                }
+              >
+                {editingPipelineIndex !== null ? 'Update Pipeline' : 'Create Pipeline'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Existing Pipelines */}
+        {getObjectPipelines(selectedObjectIndex).length > 0 && (
+          <div className={styles.existingPipelines}>
+            <h3 className={`${styles.subsectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Existing Pipelines</h3>
+            <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              {getObjectPipelines(selectedObjectIndex).map((pipeline, index) => {
+                const sourceTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.sourceTemplateId);
+                const targetTemplate = getObjectTemplates(selectedObjectIndex).find(t => t.docId === pipeline.targetTemplateId);
+                return (
+                  <div key={index} className={`${styles.pipelineCard} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                    <div className={styles.pipelineHeader}>
+                      <h4 className={`${styles.pipelineName} ${isDarkTheme ? styles.darkTheme : ""}`}>{pipeline.name}</h4>
+                      <div className={styles.pipelineActions}>
+                        <button
+                          onClick={() => editPipeline(index)}
+                          className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          aria-label="Edit pipeline"
+                        >
+                          <FaEdit size={14} />
+                        </button>
+                        <button
+                          onClick={() => deleteObjectPipeline(index)}
+                          className={`${styles.actionButton} ${styles.dangerButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          aria-label="Delete pipeline"
+                        >
+                          <IoTrash size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles.pipelineFlow}>
+                      <span className={`${styles.templateName} ${isDarkTheme ? styles.darkTheme : ""}`}>{sourceTemplate?.name || 'Unknown'}</span>
+                      <span className={styles.flowArrow}>→</span>
+                      <span className={`${styles.templateName} ${isDarkTheme ? styles.darkTheme : ""}`}>{targetTemplate?.name || 'Unknown'}</span>
+                    </div>
+                    <div className={`${styles.pipelineMappings} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                      {pipeline.fieldMappings?.length || 0} field mappings
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -2681,14 +3416,29 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
-        {renderBreadcrumbs()}
         <div className={styles.header}>
-          <button onClick={goBack} className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
-            <FaArrowLeft size={16} />
-            Back to Section
-          </button>
-          <h1 className={styles.title}>Add New Field</h1>
-          <p className={styles.subtitle}>Create a new field for your record template.</p>
+          <div className={styles.headerTop}>
+            <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
+              <FaArrowLeft size={16} />
+              Back to Section
+            </button>
+            {hasChanges() && (
+              <button
+                onClick={saveChanges}
+                className={`${styles.saveChangesButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaSave size={14} />
+                <span>Save Changes</span>
+              </button>
+            )}
+          </div>
+          <div className={styles.headerBreadcrumbs}>
+            {renderBreadcrumbs()}
+          </div>
+          <div className={styles.headerContent}>
+            <h1 className={styles.title}>Add New Field</h1>
+            <p className={styles.subtitle}>Create a new field for your record template.</p>
+          </div>
         </div>
 
         <div className={styles.section}>
@@ -2766,6 +3516,17 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
               </div>
             )}
           </div>
+          
+          {/* Create button - matches RecordsTemplate style */}
+          <div className={styles.formActions}>
+            <button
+              onClick={saveHeader}
+              disabled={!newHeaderName.trim() || !newHeaderSection.trim()}
+              className={`${styles.confirmButton} ${isDarkTheme ? styles.darkTheme : ""} ${(!newHeaderName.trim() || !newHeaderSection.trim()) ? styles.disabled : ''}`}
+            >
+              Create Field
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -2789,9 +3550,14 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   );
 });
 
-DataModels.propTypes = {
-  onUnsavedChanges: PropTypes.func,
+DataModelsInner.propTypes = {
   onSave: PropTypes.func,
+  onBack: PropTypes.func,
+};
+
+DataModels.propTypes = {
+  onSave: PropTypes.func,
+  onBack: PropTypes.func,
 };
 
 export default DataModels;

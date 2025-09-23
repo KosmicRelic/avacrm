@@ -42,7 +42,7 @@ export const MainContextProvider = ({ children }) => {
   const [unsubscribeFunctions, setUnsubscribeFunctions] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
-  const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false });
+  const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false, templateObjects: false });
   const prevStates = useRef({
     sheets: { allSheets: [], structure: [], deletedSheetId: null },
     records: [],
@@ -330,7 +330,7 @@ export const MainContextProvider = ({ children }) => {
           setBannerQueue([]);
           processedTeamMembers.current.clear();
           displayedMessages.current.clear();
-          hasFetched.current = { sheets: false, dashboard: false, metrics: false };
+          hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false };
           prevStates.current = {
             sheets: { allSheets: [], structure: [], deletedSheetId: null },
             records: [],
@@ -372,8 +372,54 @@ export const MainContextProvider = ({ children }) => {
         });
         return [];
       });
+      // Reset fetch flags when business changes
+      hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false };
+      // Clear templateObjects when switching businesses
+      setTemplateObjects([]);
     }
   }, [businessId]);
+
+  // Fetch templateObjects when user is authenticated and has businessId (available from any route)
+  useEffect(() => {
+    if (!user || !businessId || hasFetched.current.templateObjects) return;
+
+    const fetchTemplateObjects = async () => {
+      try {
+        // Set up real-time listener for templateObjects
+        const templateObjectsUnsubscribe = onSnapshot(
+          collection(db, 'businesses', businessId, 'templateObjects'),
+          (templateObjectsSnapshot) => {
+            const objects = templateObjectsSnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setTemplateObjects(objects);
+          },
+          (error) => {
+            console.error('Error fetching templateObjects:', {
+              code: error.code,
+              message: error.message,
+              businessId,
+              userId: user.uid,
+              timestamp: new Date().toISOString(),
+            });
+            setTemplateObjects([]);
+          }
+        );
+
+        // Mark as fetched and store unsubscribe function for cleanup
+        hasFetched.current.templateObjects = true;
+        setUnsubscribeFunctions(prev => [...prev, templateObjectsUnsubscribe]);
+
+        return templateObjectsUnsubscribe;
+      } catch (error) {
+        console.error('Error setting up templateObjects listener:', error);
+        setTemplateObjects([]);
+      }
+    };
+
+    fetchTemplateObjects();
+  }, [user, businessId]);
 
   useEffect(() => {
     if (!user || !user.uid) return;

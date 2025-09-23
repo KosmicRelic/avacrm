@@ -38,10 +38,8 @@ export default function Settings() {
   });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [dataModelsHasUnsavedChanges, setDataModelsHasUnsavedChanges] = useState(false);
-  const dataModelsRef = useRef(null);
-
-  useEffect(() => {
+  const [selectedTheme, setSelectedTheme] = useState('business');
+  const dataModelsRef = useRef(null);  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
@@ -503,13 +501,9 @@ export default function Settings() {
   };
 
   // DataModels callbacks
-  const handleDataModelsUnsavedChanges = (hasChanges) => {
-    setDataModelsHasUnsavedChanges(hasChanges);
-  };
-
   const handleDataModelsSave = () => {
     // This will be called when DataModels saves successfully
-    setDataModelsHasUnsavedChanges(false);
+    // Any cleanup or notifications can go here
   };
 
   return (
@@ -559,22 +553,6 @@ export default function Settings() {
               <span>Data Models</span>
               <FaChevronRight className={styles.arrowIcon} />
             </button>
-            {dataModelsHasUnsavedChanges && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Trigger save in DataModels component
-                  if (dataModelsRef.current && dataModelsRef.current.saveDataModels) {
-                    dataModelsRef.current.saveDataModels();
-                  }
-                }}
-                className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                aria-label="Save Data Models"
-                title="Save changes"
-              >
-                <FaCheck size={14} />
-              </button>
-            )}
           </div>
           {/* Pipeline Management moved to Actions → Record Templates */}
         </div>
@@ -946,7 +924,6 @@ export default function Settings() {
             {currentStep === 'dataModels' && (
               <DataModels
                 ref={dataModelsRef}
-                onUnsavedChanges={handleDataModelsUnsavedChanges}
                 onSave={handleDataModelsSave}
                 onBack={() => handleStepChange('main')}
               />
