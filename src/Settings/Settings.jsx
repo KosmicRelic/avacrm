@@ -514,11 +514,11 @@ export default function Settings() {
 
   return (
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {/* <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
           {t('settings.title')}
         </h1>
-      </div>
+      </div> */}
 
       <div className={`${styles.teamAccessContainer} ${isMobile ? styles.mobile : ''}`}>
         <div
