@@ -1,14 +1,18 @@
 /* Core container styles */
 .container {
-  padding: 16px;
-  padding-top: 64px;
+  padding: 0 16px;
+  /* padding-top: 64px; */
   margin: 0 auto;
   background: rgba(243, 242, 248);
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   transition: background 0.3s ease;
-  position: relative;
-  min-height: 100vh;
+  position: absolute;
+  top:64px;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  overflow: hidden;
 }
 
 .container.darkTheme {
@@ -155,15 +159,15 @@
   display: flex;
   gap: 16px;
   width: 100%;
-  height: calc(100vh - 80px);
   max-width: 100%;
+  height: 100%;
   position: relative;
   overflow: hidden;
 }
 
 .teamAccessContainer.mobile {
   gap: 0;
-  height: calc(100vh - 64px);
+  height: 100%;
 }
 
 /* Left pane */
@@ -567,7 +571,7 @@
 @media (max-width: 768px) {
   .container {
     padding: 0;
-    padding-top: 64px;
+    bottom: 0;
   }
 
   .teamAccessContainer {
@@ -575,7 +579,7 @@
     flex-direction: column;
     width: 100%;
     max-width: 100vw;
-    height: calc(100vh - 64px);
+    /* height: calc(100vh - 64px); */
     overflow: hidden;
   }
 
