@@ -575,7 +575,7 @@
     flex-direction: column;
     width: 100%;
     max-width: 100vw;
-    height: calc(100vh - 56px);
+    height: calc(100vh - 64px);
     overflow: hidden;
   }
 
@@ -671,5 +671,19 @@
 
   .rightPane {
     visibility: visible;
+  }
+}
+
+@media (max-width: 769px) {
+  .leftPane {
+      border-radius: 0px;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+  }
+
+  .rightPane {
+      border-radius: 0px;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
   }
 }

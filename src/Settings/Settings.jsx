@@ -948,6 +948,7 @@ export default function Settings() {
                 ref={dataModelsRef}
                 onUnsavedChanges={handleDataModelsUnsavedChanges}
                 onSave={handleDataModelsSave}
+                onBack={() => handleStepChange('main')}
               />
             )}
 

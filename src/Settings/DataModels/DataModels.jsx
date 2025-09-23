@@ -14,7 +14,7 @@ import { collection, query, where, getDocs, doc, updateDoc, addDoc, Timestamp } 
 import { updateRecordTemplatesAndRecordsFunction } from '../../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 import fetchUserData from '../../Firebase/Firebase Functions/User Functions/FetchUserData';
 
-const DataModels = forwardRef(({ onUnsavedChanges, onSave }, ref) => {
+const DataModels = forwardRef(({ onUnsavedChanges, onSave, onBack }, ref) => {
   const {
     isDarkTheme,
     businessId,
@@ -1611,6 +1611,16 @@ const DataModels = forwardRef(({ onUnsavedChanges, onSave }, ref) => {
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
       {renderBreadcrumbs()}
       <div className={styles.header}>
+        <div className={styles.headerTop}>
+          <button
+            onClick={onBack}
+            className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+            aria-label="Back to Settings"
+          >
+            <FaArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        </div>
         <h1 className={styles.title}>Data Models</h1>
         <p className={styles.subtitle}>Manage your record templates and data structures</p>
       </div>
