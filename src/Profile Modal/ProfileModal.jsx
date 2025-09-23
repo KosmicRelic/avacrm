@@ -16,7 +16,7 @@ const ProfileModal = ({
   onOpenSheetsModal,
   onOpenMetricsModal, // Added prop
 }) => {
-  const { isDarkTheme, user } = useContext(MainContext);
+  const { isDarkTheme, setIsDarkTheme, user } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ const ProfileModal = ({
           isDarkTheme ? styles.darkTheme : ""
         }`}
       >
-        <div className={styles.header}>
+        <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <h2 className={`${styles.settingsTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Settings</h2>
           <button className={`${styles.closeButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={handleClose}>
             ✕
@@ -127,7 +127,23 @@ const ProfileModal = ({
             </button>
           )}
         </div>
-        <div className={styles.buildInfo}>
+        <div className={styles.themeSection}>
+          <div className={styles.themeToggle}>
+            <span className={`${styles.themeLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
+              Theme
+            </span>
+            <button
+              className={`${styles.themeSwitch} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={() => setIsDarkTheme(!isDarkTheme)}
+              aria-label={`Switch to ${isDarkTheme ? 'light' : 'dark'} theme`}
+            >
+              <div className={`${styles.switchHandle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {isDarkTheme ? '🌙' : '☀️'}
+              </div>
+            </button>
+          </div>
+        </div>
+        <div className={`${styles.buildInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <span className={`${styles.buildNumber} ${isDarkTheme ? styles.darkTheme : ""}`}>
             Build v0.0.0 - {new Date().toLocaleDateString()}
           </span>

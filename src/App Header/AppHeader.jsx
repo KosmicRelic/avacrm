@@ -1,4 +1,3 @@
-import { CgDarkMode } from 'react-icons/cg';
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
@@ -9,12 +8,10 @@ import { RiDashboard2Fill } from 'react-icons/ri';
 import { MainContext } from '../Contexts/MainContext';
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption }) {
-  const { isDarkTheme, setIsDarkTheme, user } = useContext(MainContext);
+  const { isDarkTheme, user } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const themeMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,9 +41,6 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) {
-        setIsThemeMenuOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -64,21 +58,6 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
       actions: '/actions',
     };
     navigate(routes[option]);
-  };
-
-  const toggleThemeMenu = () => {
-    setIsThemeMenuOpen((prev) => !prev);
-  };
-
-  const handleThemeSelect = (mode) => {
-    if (mode === 'device') {
-      localStorage.setItem('theme', 'device');
-      setIsDarkTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    } else {
-      localStorage.setItem('theme', mode);
-      setIsDarkTheme(mode === 'dark');
-    }
-    setIsThemeMenuOpen(false);
   };
 
   const toggleMenu = () => {
@@ -114,23 +93,8 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   // Filter navOptions based on permissions
   const visibleNavOptions = Object.keys(navOptions).filter((option) => canAccess(option));
 
-  // Theme options
-  const themeOptions = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'device', label: 'Device Settings' },
-  ];
-
   // Get the active option's details
   const activeNav = navOptions[activeOption] || navOptions.dashboard;
-
-  // Determine the current theme for highlighting
-  const currentTheme =
-    localStorage.getItem('theme') === 'device'
-      ? 'device'
-      : isDarkTheme
-      ? 'dark'
-      : 'light';
 
   return (
     <header className={`${styles.headerContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -160,7 +124,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                   activeNav.icon
                 )}
                 <span>{activeNav.label}</span>
-                <span className={`${styles.chevronWrapper} ${isMenuOpen ? styles.chevronUp : ''}`}>
+                <span className={`${styles.chevronWrapper} ${isMenuOpen ? styles.chevronUp : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   <FaChevronDown size={14} />
                 </span>
               </button>
@@ -176,7 +140,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                         activeOption === option
                           ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
                           : ''
-                      }`}
+                      } ${isDarkTheme ? styles.darkTheme : ''}`}
                       onClick={() => handleOptionClick(option)}
                     >
                       {option === 'sheets' ? (
@@ -191,33 +155,6 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
               )}
             </>
           )}
-          <div className={styles.themeContainer}>
-            <button
-              className={`${styles.themeButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={toggleThemeMenu}
-              aria-label="Toggle Theme Menu"
-            >
-              <CgDarkMode size={18} />
-            </button>
-            {isThemeMenuOpen && (
-              <div
-                ref={themeMenuRef}
-                className={`${styles.themeDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
-              >
-                {themeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    className={`${styles.themeOption} ${
-                      currentTheme === option.value ? styles.activeTheme : ''
-                    } ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => handleThemeSelect(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
         {!isMobile && (
           <nav className={styles.desktopNav}>
@@ -228,7 +165,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                   activeOption === option
                     ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
                     : ''
-                }`}
+                } ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={() => handleOptionClick(option)}
               >
                 {option === 'sheets' ? (
@@ -242,7 +179,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
           </nav>
         )}
         <button
-          className={styles.objectButton}
+          className={`${styles.objectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={() => setIsProfileModalOpen(true)}
           aria-label="Profile"
         >

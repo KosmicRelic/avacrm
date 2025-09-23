@@ -2,18 +2,16 @@
   position: fixed;
   top: 0;
   width: 100%;
-  background: transparent;
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   z-index: 1000;
   padding: 0 20px;
   box-sizing: border-box;
   overflow: visible;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.headerContainer.darkTheme {
-  background: transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* iOS-style subtle gradient */
+  background: transparent
 }
 
 .headerTop {
@@ -21,7 +19,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 60px;
+  height: 64px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -35,15 +33,15 @@
 
 .avaTitle {
   margin: 0;
-  font-size: 24px;
-  font-weight: 900;
+  font-size: 20px;
+  font-weight: 700;
   background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   flex-shrink: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
 }
 
 .themeContainer {
@@ -52,15 +50,23 @@
 
 .themeButton {
   color: #000000;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
   padding: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 247, 0.8) 0%,
+    rgba(240, 240, 242, 0.7) 100%
+  );
   position: relative;
   overflow: hidden;
 }
@@ -77,10 +83,16 @@
 }
 
 .themeButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(229, 229, 234, 0.9) 0%,
+    rgba(220, 220, 225, 0.8) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .themeButton:hover::before {
@@ -89,18 +101,34 @@
 
 .themeButton:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .themeButton.darkTheme {
-  color: #0a84ff;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  color: rgb(235, 235, 245);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 60, 0.8) 0%,
+    rgba(48, 48, 50, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .themeButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(72, 72, 74, 0.9) 0%,
+    rgba(62, 62, 64, 0.8) 100%
+  );
+  color: #0a84ff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .themeDropdown {
@@ -108,78 +136,167 @@
   top: 100%;
   left: 0;
   width: 180px;
-  background: rgba(243, 242, 248, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
   z-index: 1003;
-  margin-top: 6px;
-  padding: 6px 0;
+  margin-top: 8px;
+  padding: 8px 0;
   animation: slideDown 0.2s ease-out;
   display: flex;
   flex-direction: column;
-  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .themeDropdown.darkTheme {
-  background: rgba(28, 28, 30, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(28, 28, 30, 0.3) 0%,
+    rgba(20, 20, 22, 0.2) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .themeOption {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 15px;
   font-weight: 500;
-  color: #1d1d1f;
-  background: none;
-  border: none;
+  color: #6e6e73;
+  background: rgba(245, 245, 247, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  margin: 0 8px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 247, 0.8) 0%,
+    rgba(240, 240, 242, 0.7) 100%
+  );
+  /* Better typography */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .themeOption.darkTheme {
-  color: #f5f5f7;
+  color: rgb(235, 235, 245);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 60, 0.8) 0%,
+    rgba(48, 48, 50, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .themeOption:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: linear-gradient(
+    135deg,
+    rgba(229, 229, 234, 0.9) 0%,
+    rgba(220, 220, 225, 0.8) 100%
+  );
   color: #007aff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .themeOption.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(
+    135deg,
+    rgba(72, 72, 74, 0.9) 0%,
+    rgba(62, 62, 64, 0.8) 100%
+  );
   color: #0a84ff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .activeTheme {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.12) 0%,
+    rgba(0, 122, 255, 0.08) 100%
+  );
   color: #007aff;
-  background: rgba(0, 122, 255, 0.15);
   font-weight: 600;
+  border-color: rgba(0, 122, 255, 0.25);
+  box-shadow:
+    0 2px 12px rgba(0, 122, 255, 0.15),
+    0 1px 4px rgba(0, 122, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeTheme.darkTheme {
+  background: linear-gradient(
+    135deg,
+    rgba(10, 132, 255, 0.18) 0%,
+    rgba(10, 132, 255, 0.12) 100%
+  );
   color: #0a84ff;
-  background: rgba(10, 132, 255, 0.25);
-  font-weight: 600;
+  border-color: rgba(10, 132, 255, 0.35);
+  box-shadow:
+    0 2px 12px rgba(10, 132, 255, 0.2),
+    0 1px 4px rgba(10, 132, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .menuButton {
   color: #000000;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
   padding: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 247, 0.8) 0%,
+    rgba(240, 240, 242, 0.7) 100%
+  );
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .menuButton::before {
@@ -194,10 +311,16 @@
 }
 
 .menuButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(229, 229, 234, 0.9) 0%,
+    rgba(220, 220, 225, 0.8) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .menuButton:hover::before {
@@ -206,18 +329,33 @@
 
 .menuButton:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .menuButton.darkTheme {
-  color: #007AFF;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  color: rgb(235, 235, 245);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 60, 0.8) 0%,
+    rgba(48, 48, 50, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .menuButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(72, 72, 74, 0.9) 0%,
+    rgba(62, 62, 64, 0.8) 100%
+  );
+  color: #0a84ff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .menuDropdown {
@@ -225,24 +363,41 @@
   top: 100%;
   left: 0;
   width: 200px;
-  background: rgba(243, 242, 248, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
   z-index: 1003;
-  margin-top: 6px;
-  padding: 6px 0;
+  margin-top: 8px;
+  padding: 8px 0;
   animation: slideDown 0.2s ease-out;
   display: flex;
   flex-direction: column;
-  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .menuDropdown.darkTheme {
-  background: rgba(28, 28, 30, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(28, 28, 30, 0.3) 0%,
+    rgba(20, 20, 22, 0.2) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .desktopNav {
@@ -256,19 +411,27 @@
 .navButton {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   color: #6e6e73;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 247, 0.8) 0%,
+    rgba(240, 240, 242, 0.7) 100%
+  );
   min-width: fit-content;
   box-sizing: border-box;
   white-space: nowrap;
@@ -276,6 +439,9 @@
   height: 36px;
   line-height: 1;
   overflow: hidden;
+  /* Better typography */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .navButton::before {
@@ -290,10 +456,16 @@
 }
 
 .navButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(229, 229, 234, 0.9) 0%,
+    rgba(220, 220, 225, 0.8) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .navButton:hover::before {
@@ -302,22 +474,33 @@
 
 .navButton:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .navButton.darkTheme {
-  color: #8e8e93;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  color: rgb(235, 235, 245);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 60, 0.8) 0%,
+    rgba(48, 48, 50, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .navButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.navButton.darkTheme {
-  color: #8e8e93;
+  background: linear-gradient(
+    135deg,
+    rgba(72, 72, 74, 0.9) 0%,
+    rgba(62, 62, 64, 0.8) 100%
+  );
+  color: #0a84ff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .iconWrapper {
@@ -326,86 +509,179 @@
 }
 
 .activeDashboard {
-  color: #5856d6;
-  background: rgba(88, 86, 214, 0.15);
-  border-color: rgba(88, 86, 214, 0.3);
-  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.2);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.12) 0%,
+    rgba(0, 122, 255, 0.08) 100%
+  );
+  color: #007aff;
+  font-weight: 600;
+  border-color: rgba(0, 122, 255, 0.25);
+  box-shadow:
+    0 2px 12px rgba(0, 122, 255, 0.15),
+    0 1px 4px rgba(0, 122, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeDashboard.darkTheme {
-  color: #5856d6;
-  background: rgba(88, 86, 214, 0.25);
-  border-color: rgba(88, 86, 214, 0.4);
-  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(10, 132, 255, 0.18) 0%,
+    rgba(10, 132, 255, 0.12) 100%
+  );
+  color: #0a84ff;
+  border-color: rgba(10, 132, 255, 0.35);
+  box-shadow:
+    0 2px 12px rgba(10, 132, 255, 0.2),
+    0 1px 4px rgba(10, 132, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeSheets {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.12) 0%,
+    rgba(0, 122, 255, 0.08) 100%
+  );
   color: #007aff;
-  background: rgba(0, 122, 255, 0.15);
-  border-color: rgba(0, 122, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+  font-weight: 600;
+  border-color: rgba(0, 122, 255, 0.25);
+  box-shadow:
+    0 2px 12px rgba(0, 122, 255, 0.15),
+    0 1px 4px rgba(0, 122, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeSheets.darkTheme {
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.25);
-  border-color: rgba(0, 122, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(10, 132, 255, 0.18) 0%,
+    rgba(10, 132, 255, 0.12) 100%
+  );
+  color: #0a84ff;
+  border-color: rgba(10, 132, 255, 0.35);
+  box-shadow:
+    0 2px 12px rgba(10, 132, 255, 0.2),
+    0 1px 4px rgba(10, 132, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeFinancials {
+  background: linear-gradient(
+    135deg,
+    rgba(52, 199, 89, 0.12) 0%,
+    rgba(52, 199, 89, 0.08) 100%
+  );
   color: #34c759;
-  background: rgba(52, 199, 89, 0.15);
-  border-color: rgba(52, 199, 89, 0.3);
-  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+  font-weight: 600;
+  border-color: rgba(52, 199, 89, 0.25);
+  box-shadow:
+    0 2px 12px rgba(52, 199, 89, 0.15),
+    0 1px 4px rgba(52, 199, 89, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeFinancials.darkTheme {
+  background: linear-gradient(
+    135deg,
+    rgba(52, 199, 89, 0.18) 0%,
+    rgba(52, 199, 89, 0.12) 100%
+  );
   color: #34c759;
-  background: rgba(52, 199, 89, 0.25);
-  border-color: rgba(52, 199, 89, 0.4);
-  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+  border-color: rgba(52, 199, 89, 0.35);
+  box-shadow:
+    0 2px 12px rgba(52, 199, 89, 0.2),
+    0 1px 4px rgba(52, 199, 89, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeActions {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 45, 85, 0.12) 0%,
+    rgba(255, 45, 85, 0.08) 100%
+  );
   color: #FF2D55;
-  background: rgba(255, 45, 85, 0.15);
-  border-color: rgba(255, 45, 85, 0.3);
-  box-shadow: 0 4px 12px rgba(255, 45, 85, 0.2);
+  font-weight: 600;
+  border-color: rgba(255, 45, 85, 0.25);
+  box-shadow:
+    0 2px 12px rgba(255, 45, 85, 0.15),
+    0 1px 4px rgba(255, 45, 85, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeActions.darkTheme {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 45, 85, 0.18) 0%,
+    rgba(255, 45, 85, 0.12) 100%
+  );
   color: #FF2D55;
-  background: rgba(255, 45, 85, 0.25);
-  border-color: rgba(255, 45, 85, 0.4);
-  box-shadow: 0 4px 12px rgba(255, 45, 85, 0.3);
+  border-color: rgba(255, 45, 85, 0.35);
+  box-shadow:
+    0 2px 12px rgba(255, 45, 85, 0.2),
+    0 1px 4px rgba(255, 45, 85, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeMetrics {
+  background: linear-gradient(
+    135deg,
+    rgba(175, 82, 222, 0.12) 0%,
+    rgba(175, 82, 222, 0.08) 100%
+  );
   color: #AF52DE;
-  background: rgba(175, 82, 222, 0.15);
-  border-color: rgba(175, 82, 222, 0.3);
-  box-shadow: 0 4px 12px rgba(175, 82, 222, 0.2);
+  font-weight: 600;
+  border-color: rgba(175, 82, 222, 0.25);
+  box-shadow:
+    0 2px 12px rgba(175, 82, 222, 0.15),
+    0 1px 4px rgba(175, 82, 222, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeMetrics.darkTheme {
+  background: linear-gradient(
+    135deg,
+    rgba(175, 82, 222, 0.18) 0%,
+    rgba(175, 82, 222, 0.12) 100%
+  );
   color: #AF52DE;
-  background: rgba(175, 82, 222, 0.25);
-  border-color: rgba(175, 82, 222, 0.4);
-  box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3);
+  border-color: rgba(175, 82, 255, 0.35);
+  box-shadow:
+    0 2px 12px rgba(175, 82, 222, 0.2),
+    0 1px 4px rgba(175, 82, 222, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .objectButton {
   color: #007aff;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
   padding: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  /* iOS-style subtle gradient */
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 247, 0.8) 0%,
+    rgba(240, 240, 242, 0.7) 100%
+  );
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -423,10 +699,16 @@
 }
 
 .objectButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(229, 229, 234, 0.9) 0%,
+    rgba(220, 220, 225, 0.8) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .objectButton:hover::before {
@@ -435,18 +717,32 @@
 
 .objectButton:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .objectButton.darkTheme {
   color: #0a84ff;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 60, 0.8) 0%,
+    rgba(48, 48, 50, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .objectButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(72, 72, 74, 0.9) 0%,
+    rgba(62, 62, 64, 0.8) 100%
+  );
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 @keyframes slideDown {
@@ -461,15 +757,6 @@
 }
 
 @media (max-width: 1024px) {
-  .headerContainer {
-    flex-direction: column;
-    align-items: stretch;
-    min-height: 56px;
-    background: rgba(243, 242, 248, 0.7);
-  }
-  .headerContainer.darkTheme {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
   .headerTop {
     justify-content: space-between;
   }
@@ -477,23 +764,34 @@
     display: none;
   }
   .avaTitle {
-    font-size: 20px;
+    font-size: 18px;
   }
   .navButton {
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 16px;
+    padding: 8px 12px;
     height: auto;
   }
   .navButton:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    background: linear-gradient(
+      135deg,
+      rgba(229, 229, 234, 0.9) 0%,
+      rgba(220, 220, 225, 0.8) 100%
+    );
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    color: #1d1d1f;
   }
   .navButton.darkTheme:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+      135deg,
+      rgba(72, 72, 74, 0.9) 0%,
+      rgba(62, 62, 64, 0.8) 100%
+    );
+    color: #f5f5f7;
   }
 }
 
@@ -513,16 +811,25 @@
     margin-right: 20px;
   }
   .navButton:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    background: linear-gradient(
+      135deg,
+      rgba(229, 229, 234, 0.9) 0%,
+      rgba(220, 220, 225, 0.8) 100%
+    );
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
     color: #1d1d1f;
   }
   .navButton.darkTheme:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: #ffffff;
+    background: linear-gradient(
+      135deg,
+      rgba(72, 72, 74, 0.9) 0%,
+      rgba(62, 62, 64, 0.8) 100%
+    );
+    color: #f5f5f7;
   }
   .menuButton,
   .menuDropdown {
@@ -534,7 +841,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 8px;
+  margin-left: 6px;
   color: #6e6e73;
   transition: transform 0.2s ease, color 0.3s ease;
 }
@@ -548,12 +855,12 @@
 }
 
 .menuButton {
-  padding-right: 10px;
-  border-radius: 12px;
+  padding-right: 8px;
+  border-radius: 18px;
 }
 
 @media (max-width: 1024px) {
   .menudropDown .navButton {
-    padding: 8px 16px;
+    padding: 8px 12px;
   }
 }
