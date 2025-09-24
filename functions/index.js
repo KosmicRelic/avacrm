@@ -13,7 +13,12 @@ const auth = admin.auth();
 const resend = new Resend('re_C1GAhxiY_KvM6xMG96EHQwAZnC6Cp2k5s');
 // CORS configuration
 const corsOptions = {
-  origin: ['https://www.apx.gr', 'http://localhost:5173'], // default for most functions
+  origin: [
+    'https://www.apx.gr', 
+    'http://localhost:5173',
+    'https://avacrm-6900e.web.app',
+    'https://avacrm-6900e.firebaseapp.com'
+  ], // default for most functions
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false,

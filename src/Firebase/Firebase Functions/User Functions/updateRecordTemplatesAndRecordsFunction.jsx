@@ -10,8 +10,14 @@ export const updateRecordTemplatesAndRecordsFunction = async ({ businessId, obje
       throw new Error('User is not authenticated');
     }
 
+    // Determine the correct URL based on environment
+    const isLocalhost = window.location.hostname === 'localhost';
+    const apiUrl = isLocalhost 
+      ? '/api' // Use proxy in development
+      : 'https://updaterecordtemplatesandrecords-lsdm7txq6q-uc.a.run.app'; // Direct URL in production
+
     const response = await fetch(
-      '/api', // Use proxy to avoid CORS issues in development
+      apiUrl,
       {
         method: 'POST',
         headers: {

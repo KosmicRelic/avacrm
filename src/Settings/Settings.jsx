@@ -411,8 +411,14 @@ export default function Settings() {
       let attempt = 0;
       while (attempt < maxRetries) {
         try {
+          // Determine the correct URL based on environment
+          const isLocalhost = window.location.hostname === 'localhost';
+          const apiUrl = isLocalhost 
+            ? '/api/invite' // Use proxy in development
+            : 'https://sendinvitationemail-lsdm7txq6q-uc.a.run.app'; // Direct URL in production
+
           const response = await fetch(
-            '/api/invite',
+            apiUrl,
             {
               method: 'POST',
               headers: {
