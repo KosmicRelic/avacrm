@@ -682,19 +682,6 @@ const Sheets = ({
           </div>
         ) : (
           <div className={`${styles.bodyContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <RowComponent
-              rowData={{ docId: 'Add New Record', isAddNew: true }}
-              headers={visibleHeaders}
-              onClick={() => handleRowClick({ isAddNew: true })}
-              isSelected={false}
-              isSelectMode={isSelectMode}
-              onSelect={handleSelectToggle}
-              onAddRow={() => handleRowClick({ isAddNew: true })}
-              style={{ display: activeSheet ? undefined : 'none' }}
-              getTeamMemberName={getTeamMemberName}
-              onInlineSave={handleInlineSave}
-              teamMembers={teamMembers}
-            />
             {filteredRecords.length > 0 ? (
               filteredRecords.map((rowData, rowIndex) => (
                 <RowComponent
@@ -716,6 +703,26 @@ const Sheets = ({
           </div>
         )}
       </div>
+    </div>
+  );
+
+  // Define ActionButtons component
+  const ActionButtons = (
+    <div className={styles.actionTabsContainer}>
+      {isBusinessUser && (
+        <button
+          className={`${styles.actionTabButton} ${isSelectMode ? styles.active : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={handleSelectToggle}
+        >
+          Select
+        </button>
+      )}
+      <button
+        className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+        onClick={() => handleRowClick({ isAddNew: true })}
+      >
+        + Add
+      </button>
     </div>
   );
 
@@ -778,6 +785,7 @@ const Sheets = ({
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {TableContent}
+        {ActionButtons}
         {SheetTabs}
         {isMobile && isEditorOpen && (
           <div

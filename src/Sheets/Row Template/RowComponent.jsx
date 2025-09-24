@@ -234,17 +234,13 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
       }
       return;
     }
-    // Only prevent row click when clicking on cells if in select mode
-    // Allow row click for selection when not in select mode
-    if (isSelectMode) {
-      e.stopPropagation();
-    }
+    // In select mode, allow row click for selection
   };
 
   const handleCellDoubleClick = (e, headerKey, currentValue, rawValue, header) => {
     // Prevent row click when double-clicking on cells
     e.stopPropagation();
-    if (isAddNew || isFieldReadOnly(headerKey)) return;
+    if (isAddNew || isFieldReadOnly(headerKey) || isSelectMode) return;
     
     setEditingCell(headerKey);
     
@@ -592,55 +588,8 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
       } ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
     >
-      {/* Only show select button for business user */}
-      {!isAddNew && isSelectMode && isBusinessUser && (
-        <div
-          className={`${styles.bodyCell} ${styles.selectCell} ${styles.selectMode} ${
-            isDarkTheme ? styles.darkTheme : ''
-          }`}
-          onClick={handleCellClick}
-        >
-          <div
-            className={`${styles.selectIcon} ${isSelected ? styles.selected : ''} ${
-              isDarkTheme ? styles.darkTheme : ''
-            }`}
-            onClick={handleSelectClick}
-          >
-            {isSelected ? <FaRegCheckCircle size={18} /> : <FaRegCircle size={18} />}
-          </div>
-        </div>
-      )}
-      {isAddNew ? (
-        <>
-          <div
-            className={`${styles.bodyCell} ${styles.addCell} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleCellClick}
-          >
-            {/* Only show select button for business user in add new row */}
-            {isBusinessUser && (
-              <button
-                className={`${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleSelectClick}
-              >
-                Select
-              </button>
-            )}
-          </div>
-          <div
-            className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleCellClick}
-          >
-            + Add
-          </div>
-          {headers.slice(2).map((header, i) => (
-            <div
-              key={i}
-              className={`${styles.bodyCell} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={handleCellClick}
-            ></div>
-          ))}
-        </>
-      ) : (
+      {/* Remove the add new row entirely */}
+      {!isAddNew && (
         headers.map((header, i) => {
           const value = rowData[header.key];
           let displayValue;

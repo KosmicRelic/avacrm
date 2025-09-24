@@ -144,18 +144,6 @@
   justify-content: center;
 }
 
-.selectCell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 12px;
-}
-
-.selectCell.selectMode {
-  width: 18px;
-  padding: 12px;
-}
-
 .selectButton {
   border: none;
   cursor: pointer;
@@ -215,39 +203,6 @@
 .addCell.darkTheme:hover {
   background: rgba(10, 132, 255, 0.15);
   color: #0a84ff;
-}
-
-.selectIcon {
-  color: #86868b;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  /* padding: 6px; */
-  border-radius: 8px;
-}
-
-.selectIcon.darkTheme {
-  color: #98989d;
-}
-
-.selectIcon:hover {
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.selectIcon.darkTheme:hover {
-  color: #0a84ff;
-  background: rgba(10, 132, 255, 0.15);
-}
-
-.selectIcon.selected {
-  color: #007aff;
-  background: rgba(0, 122, 255, 0.15);
-}
-
-.selectIcon.darkTheme.selected {
-  color: #0a84ff;
-  background: rgba(10, 132, 255, 0.2);
 }
 
 .editButtonContainer {
@@ -604,57 +559,65 @@
 }
 
 .selectedRow {
-  background: rgba(0, 122, 255, 0.06);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.04) 100%);
   box-shadow:
-    0 1px 3px rgba(0, 122, 255, 0.08),
-    0 2px 8px rgba(0, 122, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(0, 122, 255, 0.15);
-  transform: none;
+    0 2px 12px rgba(0, 122, 255, 0.15),
+    0 4px 24px rgba(0, 122, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 122, 255, 0.1);
+  border: 1.5px solid rgba(0, 122, 255, 0.25);
+  transform: translateY(-1px) scale(1.001);
   position: relative;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: selectedPulse 0.6s ease-out;
 }
 
-.selectedRow::before {
-  content: '';
+.selectedRow::after {
+  content: '✓';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, rgba(0, 122, 255, 0.8) 0%, rgba(0, 122, 255, 0.6) 100%);
-  border-radius: 0 2px 2px 0;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007aff;
+  font-size: 16px;
+  font-weight: bold;
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .selectedRow.darkTheme {
-  background: rgba(10, 132, 255, 0.08);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.06) 100%);
   box-shadow:
-    0 1px 3px rgba(10, 132, 255, 0.1),
-    0 2px 8px rgba(10, 132, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(10, 132, 255, 0.18);
+    0 2px 12px rgba(10, 132, 255, 0.2),
+    0 4px 24px rgba(10, 132, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(10, 132, 255, 0.15);
+  border: 1.5px solid rgba(10, 132, 255, 0.3);
 }
 
-.selectedRow.darkTheme::before {
-  background: linear-gradient(180deg, rgba(10, 132, 255, 0.9) 0%, rgba(10, 132, 255, 0.7) 100%);
+.selectedRow.darkTheme::after {
+  color: #0a84ff;
 }
 
 .selectedRow:hover {
-  background: rgba(0, 122, 255, 0.08);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(0, 122, 255, 0.06) 100%);
   box-shadow:
-    0 2px 8px rgba(0, 122, 255, 0.12),
-    0 4px 16px rgba(0, 122, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border-color: rgba(0, 122, 255, 0.2);
+    0 4px 20px rgba(0, 122, 255, 0.2),
+    0 8px 40px rgba(0, 122, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 122, 255, 0.15);
+  border-color: rgba(0, 122, 255, 0.35);
+  transform: translateY(-2px) scale(1.002);
 }
 
 .selectedRow.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.1);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.16) 0%, rgba(10, 132, 255, 0.08) 100%);
   box-shadow:
-    0 2px 8px rgba(10, 132, 255, 0.15),
-    0 4px 16px rgba(10, 132, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  border-color: rgba(10, 132, 255, 0.22);
+    0 4px 20px rgba(10, 132, 255, 0.25),
+    0 8px 40px rgba(10, 132, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(10, 132, 255, 0.2);
+  border-color: rgba(10, 132, 255, 0.4);
 }
 
 @media (max-width: 1024px) {
@@ -666,11 +629,6 @@
   }
 
   .bodyCell.selectMode {
-    width: 18px;
-    padding: 14px;
-  }
-
-  .selectCell.selectMode {
     width: 18px;
     padding: 14px;
   }
@@ -689,5 +647,32 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes selectedPulse {
+  0% {
+    transform: translateY(-1px) scale(1.001);
+    box-shadow:
+      0 2px 12px rgba(0, 122, 255, 0.15),
+      0 4px 24px rgba(0, 122, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 122, 255, 0.1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.003);
+    box-shadow:
+      0 4px 20px rgba(0, 122, 255, 0.25),
+      0 8px 40px rgba(0, 122, 255, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 122, 255, 0.15);
+  }
+  100% {
+    transform: translateY(-1px) scale(1.001);
+    box-shadow:
+      0 2px 12px rgba(0, 122, 255, 0.15),
+      0 4px 24px rgba(0, 122, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 122, 255, 0.1);
   }
 }
