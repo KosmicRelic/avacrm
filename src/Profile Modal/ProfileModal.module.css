@@ -171,76 +171,7 @@
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
-.themeSection {
-  margin-bottom: 24px;
-}
 
-.themeToggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-}
-
-.themeLabel {
-  font-size: 16px;
-  font-weight: 500;
-  color: #000000;
-  transition: color 0.3s ease;
-  letter-spacing: -0.01em;
-}
-
-.themeLabel.darkTheme {
-  color: #ffffff;
-}
-
-.themeSwitch {
-  position: relative;
-  width: 60px;
-  height: 32px;
-  background: rgba(240, 240, 245, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.themeSwitch.darkTheme {
-  background: rgba(44, 44, 46, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.themeSwitch:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.themeSwitch.darkTheme:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.switchHandle {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 26px;
-  height: 26px;
-  background: rgb(255, 255, 255);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.themeSwitch.darkTheme .switchHandle {
-  left: 30px;
-  background: rgba(44, 44, 46);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
 
 .section {
   margin-bottom: 24px;

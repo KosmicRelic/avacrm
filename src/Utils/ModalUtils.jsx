@@ -3,7 +3,6 @@ import EditSheetsModal from '../Modal/Edit Sheets Modal/EditSheetsModal';
 import FilterModal from '../Modal/FilterModal/FilterModal';
 import ReOrderModal from '../Modal/Re Order Modal/ReOrderModal';
 import TransportModal from '../Modal/Records Transportaion Modal/RecordsTransportModal';
-import RecordsTemplate from '../Modal/Records Template/RecordsTemplate';
 import CreateSheetsAndFolders from '../Modal/Create Sheets And Folders/CreateSheetsAndFolders';
 import FolderModal from '../Modal/Folder Modal/FolderModal';
 import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
@@ -212,99 +211,6 @@ export const handleModalSave = async ({
     case 'transport':
       if (data?.onComplete) {
         data.onComplete();
-      }
-      break;
-      case 'recordsTemplate':
-      if (data?.templateObjects && Array.isArray(data.templateObjects)) {
-        // Object-based system
-        if (!businessId) {
-          console.warn('Cannot update templates and records: businessId is missing');
-          alert('Error: Business ID is missing. Please ensure your account is properly configured.');
-          return;
-        }
-
-        try {
-          // Prepare objects with their templates - include ALL objects, even those marked for deletion
-          // The backend will handle deletion based on the action flag
-          const objectsWithTemplates = data.templateObjects.map(object => {
-            
-            // Use the templates from the object (they already reflect the user's changes)
-            const objectTemplates = (object.templates || []).filter(template => 
-              template.action !== "remove"
-            ).map(template => {
-              const { isModified, action, ...cleanTemplate } = template;
-              return cleanTemplate;
-            });
-            
-            // Include action and isModified flags so backend knows what to do
-            return {
-              id: object.id,
-              name: object.name,
-              templates: objectTemplates,
-              pipelines: object.pipelines || [],
-              action: object.action,
-              isModified: object.isModified
-            };
-          });
-
-          // Check if there are any actual changes
-          const hasObjectChanges = data.hasObjectChanges === true || 
-            (data.templateObjects && data.templateObjects.some(object => 
-              object.isModified || object.action === 'add' || object.action === 'update' || object.action === 'remove'
-            ));
-          
-          const hasTemplateChanges = data.templateObjects.some(object =>
-            object.templates?.some(template => 
-              template.isModified || template.action === 'add' || template.action === 'remove'
-            )
-          );
-          
-          const hasActualChanges = hasTemplateChanges || hasObjectChanges || (data.deletedHeaderKeys?.length > 0);
-
-          if (!hasActualChanges) {
-            return;
-          }
-
-          const totalPipelines = objectsWithTemplates.reduce((total, object) => total + (object.pipelines?.length || 0), 0);
-
-          const result = await updateRecordTemplatesAndRecordsFunction({
-            businessId,
-            objects: objectsWithTemplates,
-          });
-
-          if (!result.success) {
-            throw new Error(result.error || 'Failed to update template objects');
-          }
-
-          // Update templateObjects in context to ensure immediate UI update
-          // Filter out objects marked for deletion since they will be deleted from Firestore
-          const objectsForContext = objectsWithTemplates.filter(object => object.action !== "remove");
-          
-          if (setTemplateObjects) {
-            setTemplateObjects(objectsForContext);
-          }
-
-          // Update tempData to reflect the latest changes and reset editing state
-          if (setTempData) {
-            setTempData({
-              templateObjects: objectsForContext,
-              deletedHeaderKeys: data.deletedHeaderKeys || [],
-              hasObjectChanges: false, // Reset since we just saved
-              // Reset editing state so UI shows updated names
-              editingObjectIndex: null,
-              editingObjectName: ""
-            });
-          }
-        } catch (error) {
-          console.error('Error updating template objects:', error);
-          alert(`Failed to update template objects. Error: ${error.message}`);
-          return;
-        }
-      } else {
-        console.warn('No template objects found to save. Data received:', {
-          templateObjects: data?.templateObjects,
-          dataKeys: Object.keys(data || {})
-        });
       }
       break;
     case 'folderModal':
@@ -560,7 +466,6 @@ export const handleModalClose = ({
   filterModal,
   sheetsModal,
   transportModal,
-  recordsTemplateModal,
   sheetFolderModal,
   widgetSizeModal,
   widgetViewModal,
@@ -609,7 +514,6 @@ export const handleModalClose = ({
   filterModal?.close();
   sheetsModal?.close();
   transportModal?.close();
-  recordsTemplateModal?.close();
   sheetFolderModal?.close();
   widgetSizeModal?.close();
   widgetViewModal?.close();
@@ -695,19 +599,6 @@ export const renderModalContent = ({
             }
           }
           handleClose={handleModalClose}
-        />
-      );
-    case 'recordsTemplate':
-      return (
-        <RecordsTemplate
-          tempData={activeModal.data || {
-            templateObjects: [...(templateObjects || [])],
-            deletedHeaderKeys: [],
-            hasObjectChanges: false
-          }}
-          setTempData={setActiveModalData}
-          handleClose={handleModalClose}
-          businessId={businessId}
         />
       );
     case 'sheetFolder':
@@ -860,25 +751,6 @@ export const onOpenTransportModal = ({
     data: { action, selectedRowIds, onComplete },
   });
   transportModal?.open();
-};
-
-export const onOpenRecordsTemplateModal = ({
-  templateObjects,
-  setEditMode,
-  setActiveModal,
-  recordsTemplateModal,
-}) => {
-  if (!templateObjects) return;
-  setEditMode(false);
-  setActiveModal({
-    type: 'recordsTemplate',
-    data: {
-      templateObjects: [...(templateObjects || [])],
-      deletedHeaderKeys: [],
-      hasObjectChanges: false
-    },
-  });
-  recordsTemplateModal?.open();
 };
 
 export const onOpenSheetFolderModal = ({

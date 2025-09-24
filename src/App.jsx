@@ -22,7 +22,6 @@ import {
   onManageMetrics,
   onOpenSheetsModal,
   onOpenTransportModal,
-  onOpenRecordsTemplateModal,
   onOpenSheetFolderModal,
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
@@ -124,7 +123,6 @@ function App() {
   const filterModal = useModal();
   const sheetsModal = useModal();
   const transportModal = useModal();
-  const recordsTemplateModal = useModal();
   const sheetFolderModal = useModal();
   const folderModal = useModal();
   const widgetSizeModal = useModal();
@@ -503,7 +501,6 @@ function App() {
     filterModal,
     sheetsModal,
     transportModal,
-    recordsTemplateModal,
     sheetFolderModal,
     widgetSizeModal,
     widgetViewModal,
@@ -732,7 +729,6 @@ function App() {
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
           setActiveOption={setActiveOption}
-          onOpenRecordsTemplateModal={() => onOpenRecordsTemplateModal(modalUtilsProps)}
           onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
           onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
         />

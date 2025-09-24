@@ -7,12 +7,12 @@ import { MainContext } from "../Contexts/MainContext";
 import PropTypes from "prop-types";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
+import ThemeSelector from "./ThemeSelector/ThemeSelector";
 
 const ProfileModal = ({
   isOpen,
   onClose,
   setActiveOption,
-  onOpenRecordsTemplateModal,
   onOpenSheetsModal,
   onOpenMetricsModal, // Added prop
 }) => {
@@ -43,10 +43,6 @@ const ProfileModal = ({
   const handleButtonClick = (action) => {
     action();
     handleClose();
-  };
-
-  const handleRecordsClick = () => {
-    handleButtonClick(onOpenRecordsTemplateModal);
   };
 
   const handleSettingsClick = () => {
@@ -84,7 +80,7 @@ const ProfileModal = ({
         }`}
       >
         <div className={`${styles.header} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <h2 className={`${styles.settingsTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Settings</h2>
+          <h2 className={`${styles.settingsTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Profile</h2>
           <button className={`${styles.closeButton} ${isDarkTheme ? styles.darkTheme : ""}`} onClick={handleClose}>
             ✕
           </button>
@@ -104,13 +100,6 @@ const ProfileModal = ({
               <h3 className={isDarkTheme ? styles.darkTheme : ""}>Manage</h3>
               <button
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                onClick={handleRecordsClick}
-              >
-                <FaUser size={16} style={{ marginRight: "8px" }} />
-                Records
-              </button>
-              <button
-                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                 onClick={handleSignOut}
               >
                 <FaUser size={16} style={{ marginRight: "8px" }} />
@@ -127,21 +116,9 @@ const ProfileModal = ({
             </button>
           )}
         </div>
-        <div className={styles.themeSection}>
-          <div className={styles.themeToggle}>
-            <span className={`${styles.themeLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              Theme
-            </span>
-            <button
-              className={`${styles.themeSwitch} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={() => setIsDarkTheme(!isDarkTheme)}
-              aria-label={`Switch to ${isDarkTheme ? 'light' : 'dark'} theme`}
-            >
-              <div className={`${styles.switchHandle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {isDarkTheme ? '🌙' : '☀️'}
-              </div>
-            </button>
-          </div>
+        <div className={styles.section}>
+          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Appearance</h3>
+          <ThemeSelector />
         </div>
         <div className={`${styles.buildInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <span className={`${styles.buildNumber} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -157,7 +134,6 @@ ProfileModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   setActiveOption: PropTypes.func.isRequired,
-  onOpenRecordsTemplateModal: PropTypes.func.isRequired,
   onOpenSheetsModal: PropTypes.func.isRequired,
   onOpenMetricsModal: PropTypes.func.isRequired,
 };

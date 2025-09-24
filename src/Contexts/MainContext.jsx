@@ -9,11 +9,24 @@ import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUs
 export const MainContext = createContext();
 
 export const MainContextProvider = ({ children }) => {
+  const [themeMode, setThemeMode] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    // Handle legacy 'device' value
+    if (stored === 'device') return 'system';
+    // Ensure valid theme values
+    if (!stored || !['light', 'dark', 'system'].includes(stored)) return 'system';
+    return stored;
+  });
+
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    const storedTheme = localStorage.getItem('theme') || 'device';
-    return storedTheme === 'device'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : storedTheme === 'dark';
+    let storedTheme = localStorage.getItem('theme') || 'system';
+    // Handle legacy 'device' value
+    if (storedTheme === 'device') storedTheme = 'system';
+    
+    if (storedTheme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return storedTheme === 'dark';
   });
 
   const [user, setUser] = useState(null);
@@ -112,16 +125,60 @@ export const MainContextProvider = ({ children }) => {
     document.body.style.color = isDarkTheme ? 'rgb(0, 0, 0)' : 'rgb(243, 242, 248)';
   }, [isDarkTheme]);
 
+  // Theme setter function
+  const setTheme = useCallback((theme) => {
+    setThemeMode(theme);
+    localStorage.setItem('theme', theme);
+    
+    if (theme === 'system') {
+      const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkTheme(systemIsDark);
+    } else {
+      setIsDarkTheme(theme === 'dark');
+    }
+  }, []);
+
+  // Initialize localStorage if needed
+  useEffect(() => {
+    const currentMode = themeMode;
+    const storedTheme = localStorage.getItem('theme');
+    
+    // Sync localStorage with state if they're different
+    if (storedTheme !== currentMode) {
+      localStorage.setItem('theme', currentMode);
+    }
+  }, [themeMode]);
+
+  // Copy current theme to clipboard
+  const copyCurrentTheme = useCallback(async () => {
+    const currentThemeData = {
+      mode: themeMode,
+      isDark: isDarkTheme,
+      timestamp: new Date().toISOString(),
+      systemPreference: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    };
+    
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(currentThemeData, null, 2));
+      addBannerMessage('Theme settings copied to clipboard', 'success');
+      return true;
+    } catch (error) {
+      console.error('Failed to copy theme:', error);
+      addBannerMessage('Failed to copy theme settings', 'error');
+      return false;
+    }
+  }, [themeMode, isDarkTheme, addBannerMessage]);
+
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      if (localStorage.getItem('theme') === 'device') {
+      if (themeMode === 'system') {
         setIsDarkTheme(mediaQuery.matches);
       }
     };
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [themeMode]);
 
   useEffect(() => {
     let isMounted = true; // New: track if component is mounted
@@ -1018,6 +1075,9 @@ export const MainContextProvider = ({ children }) => {
     optimisticUpdateRecord,
     isDarkTheme,
     setIsDarkTheme,
+    themeMode,
+    setTheme,
+    copyCurrentTheme,
     themeRef,
     templateObjects,
     setTemplateObjects: (newObjects) => {
@@ -1075,7 +1135,7 @@ export const MainContextProvider = ({ children }) => {
     actions,
     setActions,
     dataLoading, // New: expose loading state for Firestore data
-  }), [sheets, records, isDarkTheme, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetRecordsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
+  }), [sheets, records, isDarkTheme, themeMode, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetRecordsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
 
   // Debounce for sheet record fetches
   const debounceRef = useRef();
