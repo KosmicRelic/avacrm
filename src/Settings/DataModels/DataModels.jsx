@@ -2658,7 +2658,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
               <div
                 ref={(el) => sectionRefs.current.set(section.name || `section-${index}`, el)}
                 key={section.name || `section-${index}`}
-                className={`${styles.configRecord} ${
+                className={`${styles.configRecord} ${styles.categoryCard} ${
                   draggedSectionOrderIndex === index ? styles.dragging : ""
                 } ${isDarkTheme ? styles.darkTheme : ""}`}
                 draggable={editMode}
@@ -2728,7 +2728,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                         <IoChevronForward size={16} />
                       </div>
                     )}
-                    {editMode && editingSectionIndex !== index && section.name !== "Record Data" && (
+                    {editingSectionIndex !== index && section.name !== "Record Data" && (
                       <div className={styles.sectionEditActions}>
                         <button
                           onClick={(e) => {
@@ -2740,16 +2740,18 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                         >
                           <FaEdit size={12} />
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSection(index);
-                          }}
-                          className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                          title="Delete section"
-                        >
-                          <FaTrash size={12} />
-                        </button>
+                        {editMode && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSection(index);
+                            }}
+                            className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            title="Delete section"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2822,21 +2824,6 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
             <p className={styles.subtitle}>Customize the section name and manage its fields.</p>
           </div>
         </div>
-
-        <div className={styles.section}>
-          <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>⚙️ Section Configuration</h2>
-          <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Customize the section name and manage its fields.</p>
-          <input
-            type="text"
-            value={section.name || ""}
-            onChange={(e) => updateSectionName(currentSectionIndex, e.target.value)}
-            className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ""}`}
-            placeholder="Section Name"
-            disabled={section.name === "Record Data" || !editMode}
-          />
-        </div>
-
-
 
         <div className={styles.section}>
           <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -3013,7 +3000,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                   <div
                     ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
                     key={`${currentSectionIndex}-${index}`}
-                    className={`${styles.configRecord} ${
+                    className={`${styles.configRecord} ${styles.categoryCard} ${
                       draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
                     } ${isDarkTheme ? styles.darkTheme : ""}`}
                     draggable={editMode && !isProtected}
