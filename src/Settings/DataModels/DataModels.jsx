@@ -48,6 +48,11 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   const [newHeaderOptions, setNewHeaderOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
   const [deletedHeaderKeys, setDeletedHeaderKeys] = useState([]);
+  const [editingBasicFields, setEditingBasicFields] = useState(false);
+  const [currentBasicFields, setCurrentBasicFields] = useState([]);
+  const [selectedObjectForBasic, setSelectedObjectForBasic] = useState(null);
+  const [editingBasicFieldIndex, setEditingBasicFieldIndex] = useState(null);
+  const [isEditingBasicField, setIsEditingBasicField] = useState(false);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
 
   // Object management state - use local state to prevent Firestore overwrites
@@ -56,6 +61,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     // Process objects to ensure templates have proper structure
     return objects.map(object => ({
       ...object,
+      basicFields: object.basicFields || [],
       templates: (object.templates || []).map((t) => {
         // Remove duplicate headers based on key
         const seenKeys = new Set();
@@ -140,6 +146,21 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     }
   }, [deletedHeaderKeys, templateObjects, contextSetTemplateObjects]);
 
+  // Ensure all objects have basicFields
+  useEffect(() => {
+    setTemplateObjects(prev => prev.map(object => ({
+      ...object,
+      basicFields: object.basicFields || [
+        { key: "fullName", name: "Full Name", type: "text" },
+        { key: "email", name: "Email", type: "text" },
+        { key: "phoneNumber", name: "Phone Number", type: "text" },
+        { key: "address", name: "Address", type: "text" },
+        { key: "priority", name: "Priority", type: "picklist", options: ["Low", "Medium", "High"] },
+        { key: "status", name: "Status", type: "picklist", options: ["New", "Active", "Inactive", "Closed Won", "Closed Lost"] },
+      ]
+    })));
+  }, []);
+
   // Initialize initial state and detect changes - NO DEPENDENCIES to avoid resetting
   useEffect(() => {
     if (!initialStateRef.current) {
@@ -193,13 +214,44 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   // Sync local templateObjects with context on initial load
   useEffect(() => {
     if (contextTemplateObjects && contextTemplateObjects.length > 0 && templateObjects.length === 0) {
-      setTemplateObjects(contextTemplateObjects);
-      
+      // Process objects to ensure templates have proper structure, same as initial state
+      const processedObjects = contextTemplateObjects.map(object => ({
+        ...object,
+        basicFields: object.basicFields || [],
+        templates: (object.templates || []).map((t) => {
+          // Remove duplicate headers based on key
+          const seenKeys = new Set();
+          const uniqueHeaders = t.headers?.filter(header => {
+            if (seenKeys.has(header.key)) {
+              return false;
+            }
+            seenKeys.add(header.key);
+            return true;
+          }) || [];
+
+          return {
+            ...t,
+            headers: uniqueHeaders.map((h) => ({
+              ...h,
+              isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecord" || h.key === "typeOfObject" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+            })),
+            sections: t.sections.map((s) => ({
+              ...s,
+              keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecord") || s.keys.includes("typeOfObject") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+            })),
+            isModified: t.isModified || false,
+            action: t.action || null,
+          };
+        })
+      }));
+
+      setTemplateObjects(processedObjects);
+
       // Update initial state when templateObjects are first loaded from context
       if (!initialStateRef.current) {
         initialStateRef.current = {
           deletedHeaderKeys: [...deletedHeaderKeys],
-          templateObjects: JSON.parse(JSON.stringify(contextTemplateObjects))
+          templateObjects: JSON.parse(JSON.stringify(processedObjects))
         };
       }
     }
@@ -378,10 +430,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         .map(object => {
           // Use the templates from the object (they already reflect the user's changes)
           const objectTemplates = (object.templates || [])
-            .filter(template => 
-              template.action !== "remove" &&
-              (template.isModified || template.action === 'add' || template.action === 'update')
-            )
+            .filter(template => template.action !== "remove")
             .map(template => {
               const { isModified, action, ...cleanTemplate } = template;
               return cleanTemplate;
@@ -391,6 +440,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
           return {
             id: object.id,
             name: object.name,
+            basicFields: object.basicFields || [],
             templates: objectTemplates,
             pipelines: object.pipelines || [],
             action: object.action,
@@ -517,8 +567,8 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       const object = templateObjects[selectedObjectIndex];
       const template = object.templates[selectedTemplateIndex];
       const section = template.sections[index];
-      if (section.name === "Record Data") {
-        alert("The 'Record Data' section cannot be deleted as it contains critical fields.");
+      if (section.name === "Record Data" || section.name === "Basic Information") {
+        alert("The 'Record Data' and 'Basic Information' sections cannot be deleted as they contain critical fields.");
         return;
       }
       const sectionContainsProtectedKey = section.keys.some((key) => key === "docId" || key === "linkId" || key === "typeOfRecord" || key === "typeOfObject" || key === "assignedTo");
@@ -551,6 +601,74 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     [selectedObjectIndex, selectedTemplateIndex, templateObjects, goBack]
   );
 
+  // Update basic fields for an object
+  const updateBasicFields = useCallback((objectIndex, newBasicFields) => {
+    setTemplateObjects(prev => {
+      const newObjects = [...prev];
+      const currentObject = { ...newObjects[objectIndex] };
+      currentObject.basicFields = newBasicFields;
+      currentObject.isModified = true;
+      currentObject.action = currentObject.action || "update";
+      newObjects[objectIndex] = currentObject;
+      return newObjects;
+    });
+  }, []);
+
+  // Start editing basic fields
+  const startEditBasicFields = useCallback((objectIndex) => {
+    setSelectedObjectForBasic(objectIndex);
+    setCurrentBasicFields([...(templateObjects[objectIndex].basicFields || [])]);
+    setEditingBasicFields(true);
+  }, [templateObjects]);
+
+  // Save basic fields
+  const saveBasicFields = useCallback(() => {
+    if (selectedObjectForBasic !== null) {
+      updateBasicFields(selectedObjectForBasic, currentBasicFields);
+    }
+    setEditingBasicFields(false);
+    setSelectedObjectForBasic(null);
+    setCurrentBasicFields([]);
+  }, [selectedObjectForBasic, currentBasicFields, updateBasicFields]);
+
+  // Cancel editing
+  const cancelEditBasicFields = useCallback(() => {
+    setEditingBasicFields(false);
+    setSelectedObjectForBasic(null);
+    setCurrentBasicFields([]);
+  }, []);
+
+  // Start editing a basic field
+  const startEditBasicField = useCallback((index) => {
+    const basicFields = templateObjects[selectedObjectIndex]?.basicFields || [];
+    const field = basicFields[index];
+    if (!field) return;
+    setNewHeaderName(field.name);
+    setNewHeaderType(field.type);
+    setNewHeaderOptions([...(field.options || [])]);
+    setNewHeaderSection("Basic Information");
+    setEditingBasicFieldIndex(index);
+    setIsEditingBasicField(true);
+    setActiveHeaderIndex(-2); // Special index
+    setShowFieldForm(true);
+  }, [templateObjects, selectedObjectIndex]);
+
+  // Save basic field
+  const saveBasicField = useCallback(() => {
+    if (editingBasicFieldIndex === null) return;
+    const updatedFields = [...templateObjects[selectedObjectIndex].basicFields];
+    updatedFields[editingBasicFieldIndex] = {
+      ...updatedFields[editingBasicFieldIndex],
+      name: newHeaderName.trim(),
+      type: newHeaderType,
+      options: newHeaderType === "picklist" ? [...newHeaderOptions] : [],
+    };
+    updateBasicFields(selectedObjectIndex, updatedFields);
+    resetHeaderForm();
+    setEditingBasicFieldIndex(null);
+    setActiveHeaderIndex(null);
+  }, [editingBasicFieldIndex, newHeaderName, newHeaderType, newHeaderOptions, templateObjects, selectedObjectIndex, updateBasicFields]);
+
   // Validate header name
   const validateHeader = useCallback(
     (name, existingHeaders, isUpdate = false, index = null) => {
@@ -571,12 +689,62 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     []
   );
 
+  // Delete basic field
+  const deleteBasicField = useCallback(
+    (index) => {
+      if (selectedObjectIndex === null) return;
+      const object = templateObjects[selectedObjectIndex];
+      const basicFields = object.basicFields || [];
+      const field = basicFields[index];
+      if (!field) return;
+      if (field.key === "docId" || field.key === "typeOfRecord" || field.key === "typeOfObject" || field.key === "assignedTo") {
+        alert("The 'ID', 'Type of Records', 'Type of Object' or 'Assigned To' field cannot be deleted.");
+        return;
+      }
+      const fieldName = field.name;
+      if (window.confirm(`Are you sure you want to delete the field "${fieldName}"?`)) {
+        setTemplateObjects((prev) => {
+          const newObjects = [...prev];
+          const currentObject = { ...newObjects[selectedObjectIndex] };
+          currentObject.basicFields = basicFields.filter((_, i) => i !== index);
+          currentObject.isModified = true;
+          currentObject.action = currentObject.action || "update";
+          newObjects[selectedObjectIndex] = currentObject;
+          return newObjects;
+        });
+        setActiveHeaderIndex(null);
+        goBack();
+      }
+    },
+    [selectedObjectIndex, templateObjects, goBack]
+  );
+
+  // Reset header form
+  const resetHeaderForm = useCallback(() => {
+    setNewHeaderName("");
+    setNewHeaderType("text");
+    setNewHeaderSection("");
+    setNewHeaderOptions([]);
+    setNewOption("");
+    setDeletedHeaderKeys([]);
+    setCopiedHeaderId(false);
+    setActiveHeaderIndex(null);
+  }, []);
+
   // Add new header
   const addHeader = useCallback(() => {
-    if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+    if (selectedObjectIndex === null) return;
     const object = templateObjects[selectedObjectIndex];
-    const template = object.templates[selectedTemplateIndex];
-    const existingHeaders = template.headers;
+    let existingHeaders;
+    let isBasic = false;
+    if (currentSectionIndex === -1) {
+      existingHeaders = object.basicFields || [];
+      isBasic = true;
+    } else {
+      if (selectedTemplateIndex === null) return;
+      const template = object.templates[selectedTemplateIndex];
+      existingHeaders = template.headers;
+    }
     if (!validateHeader(newHeaderName, existingHeaders)) return;
     if (!newHeaderSection) {
       alert("Please select a section for the field.");
@@ -599,19 +767,25 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     setTemplateObjects((prev) => {
       const newObjects = [...prev];
       const currentObject = { ...newObjects[selectedObjectIndex] };
-      const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
-      currentTemplate.headers = [...currentTemplate.headers, newHeader];
-      currentTemplate.sections = currentTemplate.sections.map((section) => {
-        if (section.name === newHeaderSection) {
-          return { ...section, keys: [...section.keys, newHeader.key] };
-        }
-        return section;
-      });
-      currentObject.templates[selectedTemplateIndex] = {
-        ...currentTemplate,
-        isModified: true,
-        action: currentTemplate.action || "update",
-      };
+      if (isBasic) {
+        currentObject.basicFields = [...(currentObject.basicFields || []), newHeader];
+        currentObject.isModified = true;
+        currentObject.action = currentObject.action || "update";
+      } else {
+        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
+        currentTemplate.headers = [...currentTemplate.headers, newHeader];
+        currentTemplate.sections = currentTemplate.sections.map((section) => {
+          if (section.name === newHeaderSection) {
+            return { ...section, keys: [...section.keys, newHeader.key] };
+          }
+          return section;
+        });
+        currentObject.templates[selectedTemplateIndex] = {
+          ...currentTemplate,
+          isModified: true,
+          action: currentTemplate.action || "update",
+        };
+      }
       newObjects[selectedObjectIndex] = currentObject;
       return newObjects;
     });
@@ -625,25 +799,39 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     newHeaderOptions,
     selectedObjectIndex,
     selectedTemplateIndex,
+    currentSectionIndex,
     templateObjects,
     validateHeader,
-    goBack,
+    resetHeaderForm,
   ]);
 
   // Update existing header
   const updateHeader = useCallback(
     (index) => {
-      if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
+      if (selectedObjectIndex === null) return;
       const object = templateObjects[selectedObjectIndex];
-      const template = object.templates[selectedTemplateIndex];
-      const existingHeaders = template.headers;
+      let existingHeaders;
+      let isBasic = false;
+      if (currentSectionIndex === -1) {
+        existingHeaders = object.basicFields;
+        isBasic = true;
+      } else {
+        if (selectedTemplateIndex === null) return;
+        const template = object.templates[selectedTemplateIndex];
+        existingHeaders = template.headers;
+      }
       if (!validateHeader(newHeaderName, existingHeaders, true, index)) return;
       if (!newHeaderSection) {
         alert("Please select a section for the field.");
         return;
       }
 
-      const currentHeader = template.headers[index];
+      let currentHeader;
+      if (isBasic) {
+        currentHeader = (object.basicFields || [])[index];
+      } else {
+        currentHeader = object.templates[selectedTemplateIndex].headers[index];
+      }
       const isProtected = currentHeader.key === "docId" || currentHeader.key === "typeOfRecord" || currentHeader.key === "typeOfObject" || currentHeader.key === "assignedTo";
 
       if (isProtected && newHeaderSection !== "Record Data") {
@@ -659,36 +847,49 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       setTemplateObjects((prev) => {
         const newObjects = [...prev];
         const currentObject = { ...newObjects[selectedObjectIndex] };
-        const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
-        const headers = [...currentTemplate.headers];
-        const sections = currentTemplate.sections.map((s) => ({ ...s, keys: [...s.keys] }));
-        headers[index] = {
-          ...headers[index],
-          name: newHeaderName.trim(),
-          section: newHeaderSection,
-          ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
-        };
+        if (isBasic) {
+          const basicFields = [...(currentObject.basicFields || [])];
+          basicFields[index] = {
+            ...basicFields[index],
+            name: newHeaderName.trim(),
+            section: newHeaderSection,
+            ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
+          };
+          currentObject.basicFields = basicFields;
+          currentObject.isModified = true;
+          currentObject.action = currentObject.action || "update";
+        } else {
+          const currentTemplate = { ...currentObject.templates[selectedTemplateIndex] };
+          const headers = [...currentTemplate.headers];
+          const sections = currentTemplate.sections.map((s) => ({ ...s, keys: [...s.keys] }));
+          headers[index] = {
+            ...headers[index],
+            name: newHeaderName.trim(),
+            section: newHeaderSection,
+            ...(newHeaderType === "dropdown" || newHeaderType === "multi-select" ? { options: [...newHeaderOptions] } : {}),
+          };
 
-        if (currentHeader.section !== newHeaderSection) {
-          sections.forEach((section) => {
-            if (section.name === currentHeader.section) {
-              section.keys = section.keys.filter((key) => key !== currentHeader.key);
-            }
-            if (section.name === newHeaderSection) {
-              if (!section.keys.includes(currentHeader.key)) {
-                section.keys = [...section.keys, currentHeader.key];
+          if (currentHeader.section !== newHeaderSection) {
+            sections.forEach((section) => {
+              if (section.name === currentHeader.section) {
+                section.keys = section.keys.filter((key) => key !== currentHeader.key);
               }
-            }
-          });
-        }
+              if (section.name === newHeaderSection) {
+                if (!section.keys.includes(currentHeader.key)) {
+                  section.keys = [...section.keys, currentHeader.key];
+                }
+              }
+            });
+          }
 
-        currentObject.templates[selectedTemplateIndex] = {
-          ...currentTemplate,
-          headers,
-          sections,
-          isModified: true,
-          action: currentTemplate.action || "update",
-        };
+          currentObject.templates[selectedTemplateIndex] = {
+            ...currentTemplate,
+            headers,
+            sections,
+            isModified: true,
+            action: currentTemplate.action || "update",
+          };
+        }
         newObjects[selectedObjectIndex] = currentObject;
         return newObjects;
       });
@@ -696,13 +897,29 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       setActiveHeaderIndex(null);
       goBack();
     },
-    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedObjectIndex, selectedTemplateIndex, templateObjects, validateHeader, goBack]
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, templateObjects, validateHeader, goBack]
   );
 
   // Save header (add or update)
   const saveHeader = useCallback(() => {
     if (activeHeaderIndex === -1) {
       addHeader();
+    } else if (activeHeaderIndex === -2) {
+      // Save basic field
+      if (editingBasicFieldIndex === null) return;
+      const updatedFields = [...(templateObjects[selectedObjectIndex].basicFields || [])];
+      updatedFields[editingBasicFieldIndex] = {
+        ...updatedFields[editingBasicFieldIndex],
+        name: newHeaderName.trim(),
+        type: newHeaderType,
+        options: newHeaderType === "picklist" ? [...newHeaderOptions] : [],
+      };
+      updateBasicFields(selectedObjectIndex, updatedFields);
+      resetHeaderForm();
+      setEditingBasicFieldIndex(null);
+      setIsEditingBasicField(false);
+      setActiveHeaderIndex(null);
+      goBack();
     } else if (activeHeaderIndex !== null) {
       updateHeader(activeHeaderIndex);
     }
@@ -795,10 +1012,6 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         },
       ],
       sections: [
-        {
-          name: "Primary Section",
-          keys: [],
-        },
         {
           name: "Record Data",
           keys: ["docId", "linkId", "typeOfRecord", "typeOfObject", "assignedTo"],
@@ -1204,6 +1417,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     const newObject = {
       id: uuidv4(),
       name: newObjectName.trim(),
+      basicFields: [],
       templates: [],
       pipelines: [],
       isModified: true,
@@ -1632,28 +1846,26 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     [selectedObjectIndex, selectedTemplateIndex, templateObjects, navigateToView]
   );
 
-  // Reset header form
-  const resetHeaderForm = useCallback(() => {
-    setNewHeaderName("");
-    setNewHeaderType("text");
-    setNewHeaderSection("");
-    setNewHeaderOptions([]);
-    setNewOption("");
-    setDeletedHeaderKeys([]);
-    setCopiedHeaderId(false);
-    setActiveHeaderIndex(null);
-  }, []);
-
   // Create new header
   const handleCreateHeader = useCallback(() => {
-    if (selectedObjectIndex === null || selectedTemplateIndex === null || currentSectionIndex === null) return;
-    resetHeaderForm();
-    const object = templateObjects[selectedObjectIndex];
-    const template = object.templates[selectedTemplateIndex];
-    const currentSectionName = template.sections[currentSectionIndex].name;
-    setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
-    setActiveHeaderIndex(-1); // Set to -1 to indicate we're creating a new field
-    setShowFieldForm(true);
+    if (selectedObjectIndex === null) return;
+    if (currentSectionIndex === -1) {
+      // Creating basic field
+      resetHeaderForm();
+      setNewHeaderSection("Basic Information");
+      setActiveHeaderIndex(-1);
+      setShowFieldForm(true);
+    } else {
+      // Creating template field
+      if (selectedTemplateIndex === null || currentSectionIndex === null) return;
+      resetHeaderForm();
+      const object = templateObjects[selectedObjectIndex];
+      const template = object.templates[selectedTemplateIndex];
+      const currentSectionName = template.sections[currentSectionIndex].name;
+      setNewHeaderSection(currentSectionName !== "Record Data" ? currentSectionName : "Primary Section");
+      setActiveHeaderIndex(-1); // Set to -1 to indicate we're creating a new field
+      setShowFieldForm(true);
+    }
   }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
 
   // Export records for the current template
@@ -2037,6 +2249,16 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                     <FaEdit size={12} />
                   </div>
                   <div
+                    className={`${styles.basicFieldsButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditBasicFields(originalIndex);
+                    }}
+                    title="Edit Basic Fields"
+                  >
+                    <FaDatabase size={12} />
+                  </div>
+                  <div
                     className={`${styles.objectDeleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -2111,6 +2333,34 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
 
         <div className={`${styles.section} ${styles.unifiedSection} ${isDarkTheme ? styles.darkTheme : ""}`}>
           <div className={`${styles.unifiedGrid} ${showTemplateForm ? styles.expandedFormActive : ""} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            {/* Basic Information Card */}
+            <div
+              className={`${styles.configRecord} ${styles.sectionCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+              role="button"
+              aria-label="Edit Basic Information"
+              tabIndex={0}
+              onClick={() => {
+                setCurrentSectionIndex(-1); // Special index for basic info
+                setCurrentView('section-detail');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setCurrentSectionIndex(-1);
+                  setCurrentView('section-detail');
+                }
+              }}
+            >
+              <div className={`${styles.recordIcon} ${styles.sectionIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                <FaDatabase size={22} />
+              </div>
+              <div className={styles.recordContent}>
+                <h3 className={`${styles.recordTitle} ${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Basic Information</h3>
+                <p className={`${styles.recordDescription} ${styles.sectionDesc} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                  {templateObjects[selectedObjectIndex].basicFields.length} field{templateObjects[selectedObjectIndex].basicFields.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+
             {/* New Template Card / Form */}
             {showTemplateForm ? (
               <div className={`${styles.configRecord} ${styles.expandedCategoryForm} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -2789,12 +3039,22 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   };
 
   const renderSectionDetailView = () => {
-    if (selectedTemplateIndex === null || currentSectionIndex === null || !templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.sections[currentSectionIndex]) {
-      return null;
+    if (selectedObjectIndex === null) return null;
+    const object = templateObjects[selectedObjectIndex];
+    let section, template, headers, sectionName;
+    if (currentSectionIndex === -1) {
+      // Basic fields
+      headers = object.basicFields || [];
+      sectionName = "Basic Information";
+    } else {
+      if (selectedTemplateIndex === null || currentSectionIndex === null || !object.templates[selectedTemplateIndex]?.sections[currentSectionIndex]) {
+        return null;
+      }
+      template = object.templates[selectedTemplateIndex];
+      section = template.sections[currentSectionIndex];
+      headers = template.headers;
+      sectionName = section.name;
     }
-
-    const template = templateObjects[selectedObjectIndex].templates[selectedTemplateIndex];
-    const section = template.sections[currentSectionIndex];
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -2803,7 +3063,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
             <div className={styles.headerTopLeft}>
               <button onClick={goBack} className={`${styles.backButton} ${styles.headerBackButton} ${isDarkTheme ? styles.darkTheme : ""}`}>
                 <FaArrowLeft size={16} />
-                Back to Template
+                Back
               </button>
               {hasChanges() && (
                 <button
@@ -2820,7 +3080,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
             {renderBreadcrumbs()}
           </div>
           <div className={styles.headerContent}>
-            <h1 className={styles.title}>{section.name}</h1>
+            <h1 className={styles.title}>{sectionName}</h1>
             <p className={styles.subtitle}>Customize the section name and manage its fields.</p>
           </div>
         </div>
@@ -2885,23 +3145,25 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                       </select>
                     </div>
 
-                    <div className={styles.inputGroup}>
-                      <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Section</label>
-                      <select
-                        value={newHeaderSection}
-                        onChange={(e) => setNewHeaderSection(e.target.value)}
-                        className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
-                      >
-                        <option value="">Select Section</option>
-                        {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections
-                          .filter((section) => section.name !== "Record Data")
-                          .map((section, index) => (
-                            <option key={index} value={section.name}>
-                              {section.name}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                    {currentSectionIndex !== -1 && (
+                      <div className={styles.inputGroup}>
+                        <label className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ""}`}>Section</label>
+                        <select
+                          value={newHeaderSection}
+                          onChange={(e) => setNewHeaderSection(e.target.value)}
+                          className={`${styles.expandedSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                        >
+                          <option value="">Select Section</option>
+                          {templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex].sections
+                            .filter((section) => section.name !== "Record Data")
+                            .map((section, index) => (
+                              <option key={index} value={section.name}>
+                                {section.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
 
                     {(newHeaderType === "dropdown" || newHeaderType === "multi-select") && (
                       <div className={styles.optionsSection}>
@@ -2956,7 +3218,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                       <button
                         onClick={saveHeader}
                         className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
-                        disabled={!newHeaderName.trim() || !newHeaderSection.trim()}
+                        disabled={!newHeaderName.trim() || (currentSectionIndex !== -1 && !newHeaderSection.trim())}
                       >
                         <FaPlus size={14} />
                         <span>Create Field</span>
@@ -2988,32 +3250,136 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
               )}
 
               {/* Existing Fields */}
-              {section.keys.map((key, index) => {
-                const header = template.headers.find((h) => h.key === key) || {
-                  key,
-                  name: key,
-                  type: "text",
-                };
-                const headerIndex = template.headers.findIndex((h) => h.key === key);
-                const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
+              {currentSectionIndex === -1 ? (
+                // Basic fields
+                headers.map((header, index) => {
+                  const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
+                  return (
+                    <div
+                      key={header.key}
+                      className={`${styles.configRecord} ${styles.categoryCard} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <div className={`${styles.recordIcon} ${styles.categoryIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                        <FaDatabase size={22} />
+                      </div>
+                      <div className={styles.recordContent}>
+                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>{header.name}</h3>
+                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>{header.type}</p>
+                      </div>
+                      <div className={styles.recordActions}>
+                        <button
+                          onClick={() => startEditBasicField(index)}
+                          className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                          title="Edit field"
+                        >
+                          <FaEdit size={12} />
+                        </button>
+                        {!isProtected && (
+                          <button
+                            onClick={() => deleteBasicField(index)}
+                            className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                            title="Delete field"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                // Template section fields
+                section.keys.map((key, index) => {
+                  const header = headers.find((h) => h.key === key) || {
+                    key,
+                    name: key,
+                    type: "text",
+                  };
+                  const headerIndex = headers.findIndex((h) => h.key === key);
+                  const isProtected = header.key === "docId" || header.key === "typeOfRecord" || header.key === "typeOfObject" || header.key === "assignedTo";
+                  return (
+                    <div
+                      ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
+                      key={`${currentSectionIndex}-${index}`}
+                      className={`${styles.configRecord} ${styles.categoryCard} ${
+                        draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
+                      } ${isDarkTheme ? styles.darkTheme : ""}`}
+                      draggable={editMode && !isProtected}
+                      onDragStart={(e) => editMode && handleDragStart(e, currentSectionIndex, index)}
+                      onDragOver={(e) => editMode && handleDragOver(e, currentSectionIndex, index)}
+                      onDragEnd={() => editMode && handleDragEnd()}
+                      onTouchStart={(e) => editMode && handleTouchStart(e, currentSectionIndex, index)}
+                      onTouchMove={(e) => editMode && handleTouchMove(e, currentSectionIndex, index)}
+                      onTouchEnd={() => editMode && handleTouchEnd()}
+                      onClick={(e) => {
+                        const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
+                        if (isCheckboxClick) {
+                          !editMode && toggleKeySelection(currentSectionIndex, header.key);
+                        } else if (headerIndex !== -1) {
+                          handleEditHeader(headerIndex);
+                        }
+                      }}
+                    >
+                      <div className={styles.headerContent}>
+                        <div className={styles.headerRow}>
+                          <div className={styles.headerMain}>
+                            <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              {section.keys.includes(header.key) ? (
+                                <FaRegCheckCircle size={18} className={styles.checked} />
+                              ) : (
+                                <FaRegCircle size={18} />
+                              )}
+                            </span>
+                            <span className={styles.headerName}>{header.name}</span>
+                          </div>
+                          {editMode ? (
+                            <div className={styles.headerActions}>
+                              <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                                {isProtected ? "" : <MdDragIndicator size={16} />}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                              <IoChevronForward size={16} />
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.headerMeta}>
+                          <span className={styles.headerType}>{header.type}</span>
+                          {header.section && <span className={styles.headerSection}>{header.section}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {currentSectionIndex !== -1 && (
+            <div className={styles.section}>
+              <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>🔍 Available Fields</h3>
+              <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Search and select additional fields to add to this section.</p>
+              <div className={styles.searchContainer}>
+                <FaSearch className={styles.searchIcon} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search fields by name, type, or section"
+                  className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                />
+              </div>
+              {filteredHeaders().map((header) => {
+                const headerIndex = template.headers.findIndex((h) => h.key === header.key);
                 return (
                   <div
-                    ref={(el) => keyRefs.current.set(`${currentSectionIndex}-${index}`, el)}
-                    key={`${currentSectionIndex}-${index}`}
-                    className={`${styles.configRecord} ${styles.categoryCard} ${
-                      draggedIndex === index && draggedSectionIndex === currentSectionIndex ? styles.dragging : ""
-                    } ${isDarkTheme ? styles.darkTheme : ""}`}
-                    draggable={editMode && !isProtected}
-                    onDragStart={(e) => editMode && handleDragStart(e, currentSectionIndex, index)}
-                    onDragOver={(e) => editMode && handleDragOver(e, currentSectionIndex, index)}
-                    onDragEnd={() => editMode && handleDragEnd()}
-                    onTouchStart={(e) => editMode && handleTouchStart(e, currentSectionIndex, index)}
-                    onTouchMove={(e) => editMode && handleTouchMove(e, currentSectionIndex, index)}
-                    onTouchEnd={() => editMode && handleTouchEnd()}
+                    key={header.key}
+                    className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
                     onClick={(e) => {
                       const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
                       if (isCheckboxClick) {
-                        !editMode && toggleKeySelection(currentSectionIndex, header.key);
+                        toggleKeySelection(currentSectionIndex, header.key);
                       } else if (headerIndex !== -1) {
                         handleEditHeader(headerIndex);
                       }
@@ -3031,13 +3397,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                           </span>
                           <span className={styles.headerName}>{header.name}</span>
                         </div>
-                        {editMode ? (
-                          <div className={styles.headerActions}>
-                            <span className={`${styles.dragIcon} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                              {isProtected ? "" : <MdDragIndicator size={16} />}
-                            </span>
-                          </div>
-                        ) : (
+                        {!editMode && (
                           <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
                             <IoChevronForward size={16} />
                           </div>
@@ -3052,64 +3412,8 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
                 );
               })}
             </div>
-          </div>
-
-          <div className={styles.section}>
-            <h3 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>🔍 Available Fields</h3>
-            <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>Search and select additional fields to add to this section.</p>
-            <div className={styles.searchContainer}>
-              <FaSearch className={styles.searchIcon} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search fields by name, type, or section"
-                className={`${styles.searchInput} ${isDarkTheme ? styles.darkTheme : ""}`}
-              />
-            </div>
-            {filteredHeaders().map((header) => {
-              const headerIndex = template.headers.findIndex((h) => h.key === header.key);
-              return (
-                <div
-                  key={header.key}
-                  className={`${styles.keyItem} ${isDarkTheme ? styles.darkTheme : ""}`}
-                  onClick={(e) => {
-                    const isCheckboxClick = e.target.closest(`.${styles.customCheckbox}`);
-                    if (isCheckboxClick) {
-                      toggleKeySelection(currentSectionIndex, header.key);
-                    } else if (headerIndex !== -1) {
-                      handleEditHeader(headerIndex);
-                    }
-                  }}
-                >
-                  <div className={styles.headerContent}>
-                    <div className={styles.headerRow}>
-                      <div className={styles.headerMain}>
-                        <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          {section.keys.includes(header.key) ? (
-                            <FaRegCheckCircle size={18} className={styles.checked} />
-                          ) : (
-                            <FaRegCircle size={18} />
-                          )}
-                        </span>
-                        <span className={styles.headerName}>{header.name}</span>
-                      </div>
-                      {!editMode && (
-                        <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ""}`}>
-                          <IoChevronForward size={16} />
-                        </div>
-                      )}
-                    </div>
-                    <div className={styles.headerMeta}>
-                      <span className={styles.headerType}>{header.type}</span>
-                      {header.section && <span className={styles.headerSection}>{header.section}</span>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {editMode && (
+          )}
+          {editMode && currentSectionIndex !== -1 && (
             <button
               className={`${styles.deleteSectionButton} ${isDarkTheme ? styles.darkTheme : ""}`}
               onClick={() => handleDeleteSection(currentSectionIndex)}
@@ -3124,11 +3428,20 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   };
 
   const renderFieldEditView = () => {
-    if (selectedTemplateIndex === null || activeHeaderIndex === null || !templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]) {
-      return null;
+    let header;
+    if (activeHeaderIndex === -2) {
+      // Editing basic field
+      if (editingBasicFieldIndex === null || !templateObjects[selectedObjectIndex]?.basicFields[editingBasicFieldIndex]) {
+        return null;
+      }
+      header = templateObjects[selectedObjectIndex].basicFields[editingBasicFieldIndex];
+    } else {
+      // Editing template header
+      if (selectedTemplateIndex === null || activeHeaderIndex === null || !templateObjects[selectedObjectIndex]?.templates[selectedTemplateIndex]?.headers[activeHeaderIndex]) {
+        return null;
+      }
+      header = templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex];
     }
-
-    const header = templateObjects[selectedObjectIndex].templates[selectedTemplateIndex].headers[activeHeaderIndex];
 
     return (
       <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -3563,6 +3876,107 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   // Main render
   return (
     <div className={`${styles.pageContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
+      {editingBasicFields && (
+        <div className={`${styles.modalOverlay} ${isDarkTheme ? styles.darkTheme : ""}`}>
+          <div className={`${styles.modal} ${isDarkTheme ? styles.darkTheme : ""}`}>
+            <div className={styles.modalHeader}>
+              <h2 className={`${styles.modalTitle} ${isDarkTheme ? styles.darkTheme : ""}`}>Edit Basic Fields</h2>
+              <button
+                onClick={cancelEditBasicFields}
+                className={`${styles.closeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                <FaTimes size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={`${styles.modalDescription} ${isDarkTheme ? styles.darkTheme : ""}`}>
+                These fields will be included in all templates for this object.
+              </p>
+              <div className={styles.fieldsList}>
+                {currentBasicFields.map((field, index) => (
+                  <div key={field.key} className={styles.fieldItem}>
+                    <input
+                      type="text"
+                      value={field.name}
+                      onChange={(e) => {
+                        const newFields = [...currentBasicFields];
+                        newFields[index].name = e.target.value;
+                        setCurrentBasicFields(newFields);
+                      }}
+                      placeholder="Field Name"
+                      className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    />
+                    <select
+                      value={field.type}
+                      onChange={(e) => {
+                        const newFields = [...currentBasicFields];
+                        newFields[index].type = e.target.value;
+                        if (e.target.value !== 'picklist') {
+                          newFields[index].options = [];
+                        }
+                        setCurrentBasicFields(newFields);
+                      }}
+                      className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="date">Date</option>
+                      <option value="picklist">Picklist</option>
+                    </select>
+                    {field.type === 'picklist' && (
+                      <input
+                        type="text"
+                        value={field.options.join(', ')}
+                        onChange={(e) => {
+                          const newFields = [...currentBasicFields];
+                          newFields[index].options = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+                          setCurrentBasicFields(newFields);
+                        }}
+                        placeholder="Options (comma separated)"
+                        className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ""}`}
+                      />
+                    )}
+                    <button
+                      onClick={() => {
+                        const newFields = currentBasicFields.filter((_, i) => i !== index);
+                        setCurrentBasicFields(newFields);
+                      }}
+                      className={`${styles.removeButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                    >
+                      <FaTrash size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    setCurrentBasicFields([...currentBasicFields, { key: uuidv4(), name: '', type: 'text', options: [] }]);
+                  }}
+                  className={`${styles.addButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+                >
+                  <FaPlus size={12} /> Add Field
+                </button>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                onClick={cancelEditBasicFields}
+                className={`${styles.secondaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveBasicFields}
+                className={`${styles.primaryButton} ${isDarkTheme ? styles.darkTheme : ""}`}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+
+      )}
       {currentView === 'objects' && renderObjectsView()}
       {currentView === 'templates' && renderTemplatesView()}
       {currentView === 'template-detail' && renderTemplateDetailView()}

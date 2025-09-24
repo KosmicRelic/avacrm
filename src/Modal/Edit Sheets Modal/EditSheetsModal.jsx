@@ -487,6 +487,7 @@ const EditSheetsModal = ({
             name: header.name,
             type: header.type,
             options: header.options || [],
+            section: header.section,
             visible: true,
             hidden: false,
           },
@@ -957,6 +958,9 @@ const EditSheetsModal = ({
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {(() => {
                     const selectedTemplate = allTemplates.find((t) => t.typeOfRecord === selectedTemplateForHeaders);
+                    const selectedObject = templateObjects.find(obj => obj.id === selectedTemplate?.objectId);
+                    
+                    // Get template headers
                     const templateHeaders = selectedTemplate?.headers
                       .filter((header) => header.isUsed !== false)
                       .map((header) => ({
@@ -964,33 +968,59 @@ const EditSheetsModal = ({
                         name: header.name,
                         type: header.type,
                         options: header.options || [],
+                        section: header.section,
                       })) || [];
-                    return templateHeaders.length === 0 ? (
+                    
+                    // Get basic fields from the object
+                    const basicFields = (selectedObject?.basicFields || [])
+                      .map((field) => ({
+                        key: field.key,
+                        name: field.name,
+                        type: field.type,
+                        options: field.options || [],
+                        section: "Basic Information",
+                      }));
+                    
+                    // Combine template headers and basic fields
+                    const allHeaders = [...templateHeaders, ...basicFields];
+                    
+                    const groupedHeaders = allHeaders.reduce((acc, header) => {
+                      const sectionName = header.section || "Basic Information";
+                      if (!acc[sectionName]) acc[sectionName] = [];
+                      acc[sectionName].push(header);
+                      return acc;
+                    }, {});
+                    return Object.keys(groupedHeaders).length === 0 ? (
                       <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        No headers available for this template.
+                        No columns available for this template.
                       </div>
                     ) : (
-                      templateHeaders.map((header) => (
-                        <div
-                          key={header.key}
-                          className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          onClick={() => toggleHeaderSelection(header)}
-                        >
-                          <div className={styles.recordTypeRow}>
-                            <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              {currentHeaders.some((h) => h.key === header.key) ? (
-                                <FaRegCheckCircle size={18} className={`${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                              ) : (
-                                <FaRegCircle size={18} />
-                              )}
-                            </span>
-                            <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
-                            </span>
-                            <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              <IoChevronForward size={16} />
+                      Object.entries(groupedHeaders).map(([sectionName, headers]) => (
+                        <div key={sectionName} className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <h4 className={`${styles.sectionGroupTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{sectionName}</h4>
+                          {headers.map((header) => (
+                            <div
+                              key={header.key}
+                              className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              onClick={() => toggleHeaderSelection(header)}
+                            >
+                              <div className={styles.recordTypeRow}>
+                                <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {currentHeaders.some((h) => h.key === header.key) ? (
+                                    <FaRegCheckCircle size={18} className={`${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                                  ) : (
+                                    <FaRegCircle size={18} />
+                                  )}
+                                </span>
+                                <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                                </span>
+                                <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  <IoChevronForward size={16} />
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                         </div>
                       ))
                     );

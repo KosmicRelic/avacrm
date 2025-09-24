@@ -14,7 +14,9 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   startInEditMode,
   preSelectedSheet,
 }) => {
+  console.log('RecordsEditor component rendered', { initialRowData, startInEditMode, preSelectedSheet });
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
+  console.log('RecordsEditor context data:', { recordTemplates: recordTemplates?.length, templateObjects: templateObjects?.length });
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
@@ -34,12 +36,45 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
+    console.log('RecordsEditor selectedSections useMemo triggered');
+    console.log('RecordsEditor recordTemplates:', recordTemplates);
+    console.log('RecordsEditor templateObjects:', templateObjects);
     // Use formData.typeOfRecord first (for pipeline conversions), then fall back to other sources
     const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
+    console.log('RecordsEditor selectedSections:', { templateName, formData, initialRowData, selectedRecordType });
     const template = recordTemplates?.find((t) => t.name === templateName);
+    console.log('RecordsEditor template found:', template);
     
-    if (!template || !template.sections) return [];
-    return template.sections.map((section) => ({
+    if (!template || !template.sections) {
+      console.log('RecordsEditor: No template or sections found');
+      return [];
+    }
+
+    // Get basic fields from the object
+    let basicFieldsSection = null;
+    if (template.objectId && templateObjects) {
+      const object = templateObjects.find(e => e.id === template.objectId);
+      console.log('RecordsEditor object found:', object);
+      console.log('RecordsEditor object.basicFields:', object?.basicFields);
+      if (object?.basicFields && object.basicFields.length > 0) {
+        basicFieldsSection = {
+          name: 'Basic Information',
+          fields: object.basicFields.map(field => ({
+            key: field.key,
+            name: field.name,
+            type: field.type,
+            options: field.options || [],
+          })),
+        };
+        console.log('RecordsEditor basicFieldsSection created:', basicFieldsSection);
+      } else {
+        console.log('RecordsEditor: No basicFields found in object');
+      }
+    } else {
+      console.log('RecordsEditor: No objectId or templateObjects', { objectId: template.objectId, templateObjects: !!templateObjects });
+    }
+
+    const templateSections = template.sections.map((section) => ({
       name: section.name,
       fields: section.keys
         .map((key) => {
@@ -52,7 +87,13 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
           };
         }),
     }));
-  }, [selectedRecordType, recordTemplates, isEditing, initialRowData, formData.typeOfRecord]);
+    console.log('RecordsEditor templateSections:', templateSections);
+
+    // Combine basic fields section with template sections
+    const result = basicFieldsSection ? [basicFieldsSection, ...templateSections] : templateSections;
+    console.log('RecordsEditor final selectedSections:', result);
+    return result;
+  }, [selectedRecordType, recordTemplates, templateObjects, isEditing, initialRowData, formData.typeOfRecord]);
 
   // Ensure formData has all required fields properly initialized
   useEffect(() => {
@@ -215,6 +256,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       alert('Please select a record type.');
       return;
     }
+    console.log('handleSelectionNext debug:', { selectedSheet, selectedRecordType, recordTemplates: recordTemplates?.map(t => ({ name: t.name, objectId: t.objectId })) });
     const template = recordTemplates?.find((t) => t.name === selectedRecordType);
     if (!template) {
       alert('Invalid record type selected.');

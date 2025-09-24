@@ -1881,3 +1881,33 @@
   gap: 12px;
   align-items: center;
 }
+
+/* Grouped sections in Pick Your Columns */
+.sectionGroup {
+  margin-bottom: 20px;
+}
+
+.sectionGroup:last-child {
+  margin-bottom: 0;
+}
+
+.sectionGroupTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.016em;
+  text-transform: capitalize;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+}
+
+.sectionGroupTitle.darkTheme {
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .sectionGroupTitle {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+  }
+}

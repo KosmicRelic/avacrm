@@ -269,6 +269,19 @@ const fetchUserData = async ({
                 const objects = templateObjectsSnapshot.docs.map((doc) => ({
                   id: doc.id,
                   ...doc.data(),
+                })).map(object => ({
+                  ...object,
+                  templates: (object.templates || []).map(template => ({
+                    ...template,
+                    headers: [
+                      ...template.headers,
+                      ...(object.basicFields || []).map(field => ({
+                        ...field,
+                        section: "",
+                        isUsed: true,
+                      }))
+                    ]
+                  }))
                 }));
                 setTemplateObjects(objects);
               }

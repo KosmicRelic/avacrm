@@ -627,7 +627,7 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
       // Handle object updates if objects are provided
       if (objects && Array.isArray(objects)) {
         for (const object of objects) {
-          const { id, name, templates, pipelines, action } = object;
+          const { id, name, basicFields, templates, pipelines, action } = object;
 
           if (!id || !name) {
             functions.logger.warn('Skipping object: Missing id or name', { id, name });
@@ -734,6 +734,7 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
             batch.set(objectRef, {
               id,
               name,
+              basicFields: basicFields || [],
               templates: templates || [],
               pipelines: pipelines || [],
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
