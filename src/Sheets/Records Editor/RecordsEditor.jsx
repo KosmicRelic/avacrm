@@ -15,7 +15,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   preSelectedSheet,
 }) => {
   console.log('RecordsEditor component rendered', { initialRowData, startInEditMode, preSelectedSheet });
-  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, teamMembers, user } = useContext(MainContext);
+  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, teamMembers, user, setTemplateObjects: contextSetTemplateObjects } = useContext(MainContext);
   console.log('RecordsEditor context data:', { recordTemplates: recordTemplates?.length, templateObjects: templateObjects?.length });
   const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
@@ -375,6 +375,75 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     const usedPipelineIds = formData.usedPipelines || [];
     return sourcePipelines.filter(pipeline => !usedPipelineIds.includes(pipeline.id));
   }, [recordTemplates, templateObjects, isEditing, initialRowData, selectedRecordType, formData.usedPipelines, formData.typeOfRecord]);
+
+  // Get available templates in the same category/object for creating new linked records
+  const getAvailableTemplatesInCategory = useCallback(() => {
+    if (!formData.linkId || !formData.typeOfObject) return [];
+    
+    // Find the current object
+    const currentObject = templateObjects?.find(obj => obj.name === formData.typeOfObject);
+    if (!currentObject) return [];
+    
+    // Get all templates from this object, excluding the current one
+    const currentTemplateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
+    return (currentObject.templates || []).filter(template => 
+      template.name !== currentTemplateName
+    );
+  }, [templateObjects, formData.linkId, formData.typeOfObject, formData.typeOfRecord, isEditing, initialRowData, selectedRecordType]);
+
+  // Create a new record with the same linkId but different template
+  const createLinkedRecord = useCallback((targetTemplate) => {
+    if (!targetTemplate || !formData.linkId) {
+      alert('Unable to create linked record: missing required data.');
+      return;
+    }
+
+    // Get basic fields from the object to copy them
+    const currentObject = templateObjects?.find(obj => obj.name === formData.typeOfObject);
+    const basicFields = currentObject?.basicFields || [];
+    
+    // Create new record data with basic fields copied and same linkId
+
+    // Helper for deep cloning
+    const deepClone = (value) => {
+      if (Array.isArray(value)) return value.map(deepClone);
+      if (value && typeof value === 'object') return JSON.parse(JSON.stringify(value));
+      return value;
+    };
+
+    const newRecordData = {
+      docId: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      linkId: formData.linkId,
+      typeOfRecord: targetTemplate.name,
+      typeOfObject: formData.typeOfObject,
+      assignedTo: formData.assignedTo || user?.email || '',
+      sheetName: selectedSheet || preSelectedSheet,
+      action: 'add',
+      isModified: true,
+      history: [],
+    };
+
+    // Copy basic field values from current record, deep cloning them
+    basicFields.forEach(field => {
+      if (formData[field.key] !== undefined && formData[field.key] !== '') {
+        newRecordData[field.key] = deepClone(formData[field.key]);
+      }
+    });
+
+    // Close current editor and open new one
+    if (onOpenNewRecord) {
+      onClose(); // Close current editor first
+      onOpenNewRecord(newRecordData);
+    } else {
+      // Fallback: reset current editor to create new record
+      setView('editor');
+      setSelectedRecordType(targetTemplate.name);
+      setIsEditing(false);
+      setFormData(newRecordData);
+    }
+  }, [formData, templateObjects, user?.email, onOpenNewRecord, onClose, selectedSheet, preSelectedSheet]);
+
+
 
   // Execute pipeline to convert record to another type
   const executePipeline = useCallback((pipeline) => {
@@ -1283,6 +1352,46 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
                                 className={`${styles.pipelineButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                               >
                                 Convert
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Related Templates Section - Show for records with linkId */}
+                {view === 'editor' && formData.linkId && (() => {
+                  const availableTemplates = getAvailableTemplatesInCategory();
+                  
+                  return availableTemplates.length > 0 && (
+                    <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${styles.active}`}>
+                      <div className={styles.sectionHeader}>
+                        <div className={styles.sectionText}>
+                          <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Related Templates</span>
+                          <span className={`${styles.sectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            Create records using different templates for the same entity
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
+                        <div className={styles.fieldGrid}>
+                          {availableTemplates.map((template) => (
+                            <div key={template.docId} className={`${styles.fieldItem} ${styles.templateFieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              <div className={styles.templateItemContent}>
+                                <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {template.name}
+                                </span>
+                                <span className={`${styles.templateDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Create a new {template.name} record with Link ID: {formData.linkId}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => createLinkedRecord(template)}
+                                className={`${styles.templateActionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                Create
                               </button>
                             </div>
                           ))}

@@ -907,19 +907,19 @@ export const MainContextProvider = ({ children }) => {
           // Sync linked record basic fields for updated records
           for (const record of modifiedRecords) {
             if ((record.action === 'add' || record.action === 'update') && record.linkId) {
-              const newDocId = addedRecordsMap.get(record) || record.docId;
-              const cleanRecord = { ...record, docId: newDocId };
-              delete cleanRecord.isModified;
-              delete cleanRecord.action;
-
-              try {
-                const syncResult = await syncLinkedRecordBasicFieldsFunction(businessId, cleanRecord);
-                if (syncResult.success && syncResult.updatedCount > 0) {
-                  console.log(`Synced basic fields for record ${newDocId}:`, syncResult.message);
-                }
-              } catch (error) {
-                console.error('Error syncing linked record basic fields:', error);
-              }
+              // DISABLED: Do not sync basic fields for linked records
+              // const newDocId = addedRecordsMap.get(record) || record.docId;
+              // const cleanRecord = { ...record, docId: newDocId };
+              // delete cleanRecord.isModified;
+              // delete cleanRecord.action;
+              // try {
+              //   const syncResult = await syncLinkedRecordBasicFieldsFunction(businessId, cleanRecord);
+              //   if (syncResult.success && syncResult.updatedCount > 0) {
+              //     console.log(`Synced basic fields for record ${newDocId}:`, syncResult.message);
+              //   }
+              // } catch (error) {
+              //   console.error('Error syncing linked record basic fields:', error);
+              // }
             }
           }
 
