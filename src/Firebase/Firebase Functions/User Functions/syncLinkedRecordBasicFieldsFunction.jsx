@@ -31,6 +31,10 @@ export const syncLinkedRecordBasicFieldsFunction = async (businessId, updatedRec
       return { success: true, message: 'No basic fields to sync' };
     }
 
+    // Filter out system fields that shouldn't trigger sync
+    const systemFields = ['updatedAt', 'createdAt', 'lastModifiedBy', 'history'];
+    const syncableBasicFields = basicFields.filter(field => !systemFields.includes(field.key));
+
     // Get all records with the same linkId
     const recordsRef = collection(db, 'businesses', businessId, 'records');
     const linkedRecordsQuery = query(recordsRef, where('linkId', '==', updatedRecord.linkId));
@@ -52,28 +56,16 @@ export const syncLinkedRecordBasicFieldsFunction = async (businessId, updatedRec
       const updateData = {};
 
       // Copy basic field values from the updated record
-      basicFields.forEach(field => {
+      syncableBasicFields.forEach(field => {
         const fieldKey = field.key;
         if (updatedRecord.hasOwnProperty(fieldKey) && updatedRecord[fieldKey] !== recordData[fieldKey]) {
           updateData[fieldKey] = updatedRecord[fieldKey];
         }
       });
 
-      // Add history entry for the sync
-      const currentHistory = recordData.history || [];
-      const syncHistoryEntry = {
-        field: 'basic_fields_sync',
-        oldValue: 'Various',
-        newValue: 'Synced from linked record',
-        timestamp: new Date().toISOString(),
-        user: updatedRecord.lastModifiedBy || 'system',
-        action: 'sync'
-      };
-
-      updateData.history = [...currentHistory, syncHistoryEntry];
       updateData.updatedAt = new Date().toISOString();
 
-      if (Object.keys(updateData).length > 2) { // More than just history and updatedAt
+      if (Object.keys(updateData).length > 1) { // More than just updatedAt
         batch.update(recordDoc.ref, updateData);
         updatedCount++;
       }

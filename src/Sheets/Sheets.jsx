@@ -429,6 +429,22 @@ const Sheets = ({
     []
   );
 
+  const handleRowEdit = useCallback(
+    (rowData) => {
+      const fullRecord = records.find((record) => record.docId === rowData.docId) || rowData;
+      setSelectedRow(fullRecord);
+      setIsEditorOpen(true);
+      setIsClosing(false);
+      onRowClick(fullRecord);
+      if (fullRecord?.docId) {
+        const urlSheetName = activeSheetName.replace(/ /g, "-");
+        navigate(`/sheets/${urlSheetName}/${fullRecord.docId}`, { replace: false });
+      }
+      setSelectedRowForEdit(null); // Clear any existing selection
+    },
+    [records, onRowClick, activeSheetName, navigate]
+  );
+
   const handleFloatingEditClick = useCallback(
     () => {
       if (selectedRowForEdit) {
@@ -475,20 +491,33 @@ const Sheets = ({
       setSelectedRow(newRecordData);
       setIsEditorOpen(false);
     },
-    [onRecordSave]
+    [records, onRecordSave]
   );
 
   const handleInlineSave = useCallback(
     (updatedRowData) => {
       const rowId = updatedRowData.docId;
-      const newRecordData = { ...updatedRowData, isModified: true, action: 'update' };
-
-      setRecords((prev) =>
-        prev.map((record) => (record.docId === rowId ? newRecordData : record))
-      );
-      onRecordSave(newRecordData);
+      
+      // Find the original record to compare
+      const originalRecord = records.find(record => record.docId === rowId);
+      if (!originalRecord) return;
+      
+      // Check if any data actually changed (excluding system fields)
+      const systemFields = ['updatedAt', 'createdAt', 'createdBy', 'lastModifiedBy'];
+      const hasDataChanges = Object.keys(updatedRowData).some(key => {
+        if (systemFields.includes(key)) return false;
+        return JSON.stringify(updatedRowData[key]) !== JSON.stringify(originalRecord[key]);
+      });
+      
+      if (hasDataChanges) {
+        const newRecordData = { ...updatedRowData, isModified: true, action: 'update' };
+        setRecords((prev) =>
+          prev.map((record) => (record.docId === rowId ? newRecordData : record))
+        );
+        onRecordSave(newRecordData);
+      }
     },
-    [onRecordSave]
+    [records, onRecordSave]
   );
 
   const handleOpenNewRecord = useCallback(
@@ -658,6 +687,7 @@ const Sheets = ({
                   onSelect={handleRowSelect}
                   getTeamMemberName={getTeamMemberName}
                   onInlineSave={handleInlineSave}
+                  onEdit={handleRowEdit}
                   teamMembers={teamMembers}
                 />
               ))
@@ -807,24 +837,6 @@ const Sheets = ({
           </div>
         )}
       </div>
-      {/* Floating edit button positioned at bottom center of screen */}
-      {selectedRowForEdit && !isSelectMode && (
-        <button
-          className={`${styles.floatingEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={handleFloatingEditClick}
-          title="Edit record"
-          style={{
-            position: 'fixed',
-            bottom: '100px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 900
-          }}
-        >
-          <FiEdit size={16} />
-          Edit
-        </button>
-      )}
       {isEditorOpen && !isMobile && (
         <>
           <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
