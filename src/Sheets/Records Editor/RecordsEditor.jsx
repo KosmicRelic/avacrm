@@ -474,6 +474,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
         return formData.typeOfObject || '';
       })(),
       assignedTo: formData.assignedTo || user?.email || '',
+      lastModifiedBy: user?.uid || user?.email || 'unknown',
       history: formData.history || [],
       isModified: true,
       action: isEditing ? 'update' : 'add',

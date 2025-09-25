@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useContext, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
 import AppHeader from './App Header/AppHeader';
 import { MainContext } from './Contexts/MainContext';
 import styles from './App.module.css';
@@ -557,7 +558,12 @@ function App() {
             isBannerExiting ? styles.bannerExit : styles.bannerVisible
           }`}
         >
-          {currentBanner.message}
+          {currentBanner.type === 'success' ? (
+            <IoCheckmarkCircle size={18} />
+          ) : (
+            <IoCloseCircle size={18} />
+          )}
+          <span>{currentBanner.message}</span>
         </div>
       )}
       {showHeader && (

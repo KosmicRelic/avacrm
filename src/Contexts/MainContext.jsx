@@ -5,6 +5,7 @@ import { auth, db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
 import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData';
+import { syncLinkedRecordBasicFieldsFunction } from '../Firebase/Firebase Functions/User Functions/syncLinkedRecordBasicFieldsFunction';
 
 export const MainContext = createContext();
 
@@ -902,6 +903,25 @@ export const MainContextProvider = ({ children }) => {
 
         if (hasChanges) {
           await batch.commit();
+
+          // Sync linked record basic fields for updated records
+          for (const record of modifiedRecords) {
+            if ((record.action === 'add' || record.action === 'update') && record.linkId) {
+              const newDocId = addedRecordsMap.get(record) || record.docId;
+              const cleanRecord = { ...record, docId: newDocId };
+              delete cleanRecord.isModified;
+              delete cleanRecord.action;
+
+              try {
+                const syncResult = await syncLinkedRecordBasicFieldsFunction(businessId, cleanRecord);
+                if (syncResult.success && syncResult.updatedCount > 0) {
+                  console.log(`Synced basic fields for record ${newDocId}:`, syncResult.message);
+                }
+              } catch (error) {
+                console.error('Error syncing linked record basic fields:', error);
+              }
+            }
+          }
 
           // Update local state after commit
           if (modifiedRecords.length > 0) {

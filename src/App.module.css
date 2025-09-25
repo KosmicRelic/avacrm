@@ -18,31 +18,72 @@
 
 .banner {
   position: fixed;
-  top: 10px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%) translateY(-100%);
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 12px 20px;
+  border-radius: 20px;
   z-index: 9999;
   opacity: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
+  color: rgba(0, 0, 0, 0.85);
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.banner.darkTheme {
+  background: linear-gradient(
+    180deg,
+    rgba(28, 28, 30, 0.95) 0%,
+    rgba(20, 20, 22, 0.85) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .bannerVisible {
-  animation: slideIn 0.3s ease-in-out forwards;
+  animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .bannerExit {
-  animation: slideOut 0.3s ease-in-out forwards;
+  animation: slideOut 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 @keyframes slideIn {
   0% {
     transform: translateX(-50%) translateY(-100%);
     opacity: 0;
+    filter: blur(4px);
   }
   100% {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
+    filter: blur(0px);
   }
 }
 
@@ -50,32 +91,67 @@
   0% {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
+    filter: blur(0px);
   }
   100% {
     transform: translateX(-50%) translateY(-100%);
     opacity: 0;
+    filter: blur(4px);
   }
 }
 
 .success {
-  background-color: #4caf50;
-  color: white;
+  background: linear-gradient(
+    180deg,
+    rgba(52, 199, 89, 0.95) 0%,
+    rgba(48, 209, 88, 0.85) 100%
+  );
+  border-color: rgba(52, 199, 89, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 8px 32px rgba(52, 199, 89, 0.2),
+    0 2px 16px rgba(52, 199, 89, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.success.darkTheme {
+  background: linear-gradient(
+    180deg,
+    rgba(52, 199, 89, 0.9) 0%,
+    rgba(48, 209, 88, 0.8) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(52, 199, 89, 0.3),
+    0 2px 16px rgba(52, 199, 89, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .error {
-  background-color: #f44336;
-  color: white;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 59, 48, 0.95) 0%,
+    rgba(255, 69, 58, 0.85) 100%
+  );
+  border-color: rgba(255, 59, 48, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 8px 32px rgba(255, 59, 48, 0.2),
+    0 2px 16px rgba(255, 59, 48, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-.darkTheme .banner {
-  color: #fff;
+.error.darkTheme {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 59, 48, 0.9) 0%,
+    rgba(255, 69, 58, 0.8) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(255, 59, 48, 0.3),
+    0 2px 16px rgba(255, 59, 48, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 1024px) {
-  .appContainer {
-    /* Add responsive styles if needed */
-  }
-  .contentWrapper {
-    /* Add responsive styles if needed */
-  }
+  /* Add responsive styles if needed */
 }
