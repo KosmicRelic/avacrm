@@ -210,6 +210,11 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
   };
 
   const handleCellClick = (e, headerKey, currentValue, rawValue, header) => {
+    // In select mode, allow the click to bubble up to the row for selection
+    if (isSelectMode) {
+      return;
+    }
+    
     // If row is selected (not in select mode), clicking a cell should edit that cell
     if (!isSelectMode && isSelected && !isFieldReadOnly(headerKey)) {
       e.stopPropagation();
@@ -238,6 +243,11 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
   };
 
   const handleCellDoubleClick = (e, headerKey, currentValue, rawValue, header) => {
+    // In select mode, allow the click to bubble up to the row for selection
+    if (isSelectMode) {
+      return;
+    }
+    
     // Prevent row click when double-clicking on cells
     e.stopPropagation();
     if (isAddNew || isFieldReadOnly(headerKey) || isSelectMode) return;
@@ -585,7 +595,7 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
     <div
       className={`${styles.bodyRow} ${isAddNew ? styles.addNewRow : ''} ${
         isSelected ? styles.selectedRow : ''
-      } ${isDarkTheme ? styles.darkTheme : ''}`}
+      } ${isSelectMode ? styles.selectMode : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
     >
       {/* Remove the add new row entirely */}

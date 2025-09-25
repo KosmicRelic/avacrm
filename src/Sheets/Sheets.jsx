@@ -697,16 +697,16 @@ const Sheets = ({
           >
             Cancel
           </button>
+          <button
+            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleSelectAll}
+          >
+            {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
+              ? 'Deselect All'
+              : 'Select All'}
+          </button>
           {selectedRowIds.length > 0 && (
             <>
-              <button
-                className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleSelectAll}
-              >
-                {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
-                  ? 'Deselect All'
-                  : 'Select All'}
-              </button>
               <button
                 className={`${styles.actionTabButton} ${styles.deleteTab} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={() => {
