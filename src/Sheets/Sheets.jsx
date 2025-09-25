@@ -591,42 +591,6 @@ const Sheets = ({
                 <MdFilterAlt size={20} />
               </button>
             )}
-            {isSelectMode && isBusinessUser ? (
-              <>
-                <button
-                  className={`${styles.cancelButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={handleSelectToggle}
-                >
-                  Cancel
-                </button>
-                {selectedRowIds.length > 0 && (
-                  <>
-                    <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={handleSelectAll}
-                    >
-                      {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
-                        ? 'Deselect All'
-                        : 'Select All'}
-                    </button>
-                    <button
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Are you sure you want to delete the selected records? This action cannot be undone.'
-                          )
-                        ) {
-                          handleDeleteSelected();
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </>
-            ) : null}
           </div>
           <div className={styles.searchContainer}>
             <input
@@ -709,20 +673,58 @@ const Sheets = ({
   // Define ActionButtons component
   const ActionButtons = (
     <div className={styles.actionTabsContainer}>
-      {isBusinessUser && (
-        <button
-          className={`${styles.actionTabButton} ${isSelectMode ? styles.active : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={handleSelectToggle}
-        >
-          Select
-        </button>
+      {isBusinessUser && !isSelectMode && (
+        <>
+          <button
+            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleSelectToggle}
+          >
+            Select
+          </button>
+          <button
+            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={() => handleRowClick({ isAddNew: true })}
+          >
+            + Add
+          </button>
+        </>
       )}
-      <button
-        className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-        onClick={() => handleRowClick({ isAddNew: true })}
-      >
-        + Add
-      </button>
+      {isSelectMode && isBusinessUser && (
+        <>
+          <button
+            className={`${styles.actionTabButton} ${styles.cancelTab} ${isDarkTheme ? styles.darkTheme : ''}`}
+            onClick={handleSelectToggle}
+          >
+            Cancel
+          </button>
+          {selectedRowIds.length > 0 && (
+            <>
+              <button
+                className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={handleSelectAll}
+              >
+                {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
+                  ? 'Deselect All'
+                  : 'Select All'}
+              </button>
+              <button
+                className={`${styles.actionTabButton} ${styles.deleteTab} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      'Are you sure you want to delete the selected records? This action cannot be undone.'
+                    )
+                  ) {
+                    handleDeleteSelected();
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 
