@@ -837,6 +837,24 @@ const Sheets = ({
           </div>
         )}
       </div>
+      {/* Floating edit button positioned at bottom center of screen */}
+      {selectedRowForEdit && !isSelectMode && (
+        <button
+          className={`${styles.floatingEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+          onClick={handleFloatingEditClick}
+          title="Edit record"
+          style={{
+            position: 'fixed',
+            bottom: '100px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 900
+          }}
+        >
+          <FiEdit size={16} />
+          Edit
+        </button>
+      )}
       {isEditorOpen && !isMobile && (
         <>
           <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
