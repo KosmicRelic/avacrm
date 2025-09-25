@@ -673,7 +673,7 @@ const Sheets = ({
   // Define ActionButtons component
   const ActionButtons = (
     <div className={styles.actionTabsContainer}>
-      {isBusinessUser && !isSelectMode && (
+      {isBusinessUser && !isSelectMode && activeSheet && (
         <>
           <button
             className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}

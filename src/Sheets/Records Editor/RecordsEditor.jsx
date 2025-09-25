@@ -1296,16 +1296,6 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
                   <div className={styles.deleteButtonWrapper}>
                     {isBusinessUser && (
                       <button
-                        className={`${styles.historyButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={handleViewHistory}
-                        aria-label="View history"
-                      >
-                        <MdHistory size={18} />
-                        View History
-                      </button>
-                    )}
-                    {isBusinessUser && (
-                      <button
                         className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                         onClick={handleDelete}
                         aria-label="Delete record"
