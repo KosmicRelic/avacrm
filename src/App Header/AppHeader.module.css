@@ -547,15 +547,15 @@
 .activeDashboard {
   background: linear-gradient(
     135deg,
-    rgba(0, 122, 255, 0.12) 0%,
-    rgba(0, 122, 255, 0.08) 100%
+    rgba(255, 149, 0, 0.12) 0%,
+    rgba(255, 149, 0, 0.08) 100%
   );
-  color: #007aff;
+  color: #FF9500;
   font-weight: 600;
-  border-color: rgba(0, 122, 255, 0.25);
+  border-color: rgba(255, 149, 0, 0.25);
   box-shadow:
-    0 2px 12px rgba(0, 122, 255, 0.15),
-    0 1px 4px rgba(0, 122, 255, 0.1),
+    0 2px 12px rgba(255, 149, 0, 0.15),
+    0 1px 4px rgba(255, 149, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -564,18 +564,18 @@
 .activeDashboard.darkTheme {
   background: linear-gradient(
     135deg,
-    rgba(10, 132, 255, 0.18) 0%,
-    rgba(10, 132, 255, 0.12) 100%
+    rgba(255, 159, 10, 0.18) 0%,
+    rgba(255, 159, 10, 0.12) 100%
   );
-  color: #0a84ff;
-  border-color: rgba(10, 132, 255, 0.35);
+  color: #FF9F0A;
+  border-color: rgba(255, 159, 10, 0.35);
   box-shadow:
-    0 2px 12px rgba(10, 132, 255, 0.2),
-    0 1px 4px rgba(10, 132, 255, 0.15),
+    0 2px 12px rgba(255, 159, 10, 0.2),
+    0 1px 4px rgba(255, 159, 10, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.activeObjects {
+.activeWorkflows {
   background: linear-gradient(
     135deg,
     rgba(88, 86, 214, 0.12) 0%,
@@ -592,7 +592,7 @@
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.activeObjects.darkTheme {
+.activeWorkflows.darkTheme {
   background: linear-gradient(
     135deg,
     rgba(88, 86, 214, 0.18) 0%,
@@ -732,23 +732,21 @@
 
 .objectButton {
   color: #007aff;
-  background: rgba(245, 245, 247, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.1) 100%),
+    linear-gradient(145deg, rgba(245, 245, 247, 0.6) 0%, rgba(240, 240, 242, 0.45) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 18px;
   padding: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(50px) saturate(150%);
+  -webkit-backdrop-filter: blur(50px) saturate(150%);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  /* iOS-style subtle gradient */
-  background: linear-gradient(
-    135deg,
-    rgba(245, 245, 247, 0.8) 0%,
-    rgba(240, 240, 242, 0.7) 100%
-  );
+    0 6px 24px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -766,16 +764,16 @@
 }
 
 .objectButton:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(229, 229, 234, 0.9) 0%,
-    rgba(220, 220, 225, 0.8) 100%
-  );
-  transform: translateY(-1px);
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.18) 100%),
+    linear-gradient(145deg, rgba(229, 229, 234, 0.7) 0%, rgba(220, 220, 225, 0.55) 100%);
+  backdrop-filter: blur(60px) saturate(160%);
+  transform: translateY(-1px) scale(1.02);
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 8px 28px rgba(0, 0, 0, 0.1),
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
 }
 
 .objectButton:hover::before {
@@ -789,27 +787,28 @@
 
 .objectButton.darkTheme {
   color: #0a84ff;
-  background: linear-gradient(
-    135deg,
-    rgba(58, 58, 60, 0.8) 0%,
-    rgba(48, 48, 50, 0.7) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.08);
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.08) 100%),
+    linear-gradient(145deg, rgba(58, 58, 60, 0.65) 0%, rgba(48, 48, 50, 0.5) 100%);
+  border-color: rgba(255, 255, 255, 0.15);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 6px 24px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
 .objectButton.darkTheme:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(72, 72, 74, 0.9) 0%,
-    rgba(62, 62, 64, 0.8) 100%
-  );
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.12) 100%),
+    linear-gradient(145deg, rgba(72, 72, 74, 0.7) 0%, rgba(62, 62, 64, 0.55) 100%);
+  backdrop-filter: blur(60px) saturate(160%);
+  transform: translateY(-1px) scale(1.02);
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
 }
 
 @keyframes slideDown {

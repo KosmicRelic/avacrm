@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
 import { CgProfile } from 'react-icons/cg';
-import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaCubes } from 'react-icons/fa';
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaProjectDiagram } from 'react-icons/fa';
 import { SiGoogleadsense } from 'react-icons/si';
 import { RiDashboard2Fill } from 'react-icons/ri';
 import { MainContext } from '../Contexts/MainContext';
@@ -19,7 +19,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   useEffect(() => {
     const path = location.pathname;
     if (path === '/dashboard') setActiveOption('dashboard');
-    else if (path === '/objects') setActiveOption('objects');
+    else if (path === '/workflows') setActiveOption('workflows');
     else if (path.startsWith('/sheets')) {
       setActiveOption('sheets');
     }
@@ -53,7 +53,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     setIsMenuOpen(false);
     const routes = {
       dashboard: '/dashboard',
-      objects: '/objects',
+      workflows: '/workflows',
       sheets: '/sheets',
       metrics: '/metrics',
       financials: '/financials',
@@ -71,18 +71,18 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   // Map of options to their icons, labels, and routes
   const navOptions = {
     dashboard: { icon: <RiDashboard2Fill size={20} />, label: 'Dashboard' },
-    objects: { icon: <FaCubes size={20} />, label: 'Objects' },
     sheets: { icon: <SiGoogleadsense size={20} />, label: 'Sheets' },
-    financials: { icon: <FaMoneyBillWave size={20} />, label: 'Financials' },
+    workflows: { icon: <FaProjectDiagram size={20} />, label: 'Workflows' },
     actions: { icon: <FaBullhorn size={20} />, label: 'Actions' },
     metrics: { icon: <FaChartBar size={20} />, label: 'Metrics' },
+    financials: { icon: <FaMoneyBillWave size={20} />, label: 'Financials' },
   };
 
   // Permission helpers
   const canAccess = (section) => {
     if (!user) return false;
     if (user.uid === user.businessId) return true;
-    if (section === 'dashboard' || section === 'objects' || section === 'financials' || section === 'actions' || section === 'metrics') {
+    if (section === 'dashboard' || section === 'workflows' || section === 'financials' || section === 'actions' || section === 'metrics') {
       return (
         user.permissions?.[section] === 'editor' || user.permissions?.[section] === 'viewer'
       );
@@ -110,8 +110,8 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                 className={`${styles.menuButton} ${styles.navButton} ${
                   activeOption === 'dashboard'
                     ? styles.activeDashboard
-                    : activeOption === 'objects'
-                    ? styles.activeObjects
+                    : activeOption === 'workflows'
+                    ? styles.activeWorkflows
                     : activeOption === 'sheets'
                     ? styles.activeSheets
                     : activeOption === 'financials'
