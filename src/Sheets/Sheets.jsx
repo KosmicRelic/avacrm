@@ -221,6 +221,8 @@ const Sheets = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
+  const [editButtonPosition, setEditButtonPosition] = useState({ top: 0, left: 0 });
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const isMobile = windowWidth <= 1024;
 
@@ -273,6 +275,81 @@ const Sheets = ({
     if (selectedRowForEdit && !isSelectMode) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [selectedRowForEdit, isSelectMode]);
+
+  // Position the edit button near the selected row (optimized for performance)
+  useEffect(() => {
+    if (selectedRowForEdit && !isSelectMode) {
+      let animationFrameId = null;
+      let isUpdating = false;
+
+      const updatePosition = () => {
+        if (isUpdating) return; // Prevent overlapping updates
+        isUpdating = true;
+
+        // Use requestAnimationFrame for smooth updates
+        animationFrameId = requestAnimationFrame(() => {
+          const selectedRowElement = document.querySelector(`[data-row-id="${selectedRowForEdit.docId}"]`);
+          if (selectedRowElement) {
+            const rect = selectedRowElement.getBoundingClientRect();
+
+            // Position the button below the selected row
+            let buttonTop = rect.bottom + 8; // 8px below the row
+            let buttonLeft = rect.left + (rect.width / 2) - 50; // Center horizontally on the row (button is ~100px wide)
+            
+            // Ensure button doesn't go off-screen horizontally
+            const buttonWidth = 100;
+            if (buttonLeft < 10) {
+              buttonLeft = 10;
+            } else if (buttonLeft + buttonWidth > window.innerWidth - 10) {
+              buttonLeft = window.innerWidth - 10 - buttonWidth;
+            }
+            
+            // Ensure button stays within vertical viewport bounds
+            const buttonHeight = 36;
+            if (buttonTop + buttonHeight > window.innerHeight - 20) {
+              // If it would go off bottom, position it above the row instead
+              buttonTop = rect.top - buttonHeight - 8;
+            }
+
+            setEditButtonPosition({ top: buttonTop, left: buttonLeft });
+          }
+          isUpdating = false;
+        });
+      };
+
+      // Throttled scroll handler
+      let scrollTimeoutId = null;
+      const throttledUpdatePosition = () => {
+        if (scrollTimeoutId) return; // Already scheduled
+
+        scrollTimeoutId = setTimeout(() => {
+          updatePosition();
+          scrollTimeoutId = null;
+        }, 16); // ~60fps
+      };
+
+      // Initial position
+      updatePosition();
+
+      // Update position on scroll (throttled) and resize
+      const scrollContainer = scrollContainerRef.current;
+      if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', throttledUpdatePosition, { passive: true });
+        window.addEventListener('resize', updatePosition);
+
+        return () => {
+          scrollContainer.removeEventListener('scroll', throttledUpdatePosition);
+          window.removeEventListener('resize', updatePosition);
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+          }
+          if (scrollTimeoutId) {
+            clearTimeout(scrollTimeoutId);
+          }
+        };
+      }
     }
   }, [selectedRowForEdit, isSelectMode]);
 
@@ -837,7 +914,7 @@ const Sheets = ({
           </div>
         )}
       </div>
-      {/* Floating edit button positioned at bottom center of screen */}
+      {/* Floating edit button positioned near the selected row */}
       {selectedRowForEdit && !isSelectMode && (
         <button
           className={`${styles.floatingEditButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -845,9 +922,9 @@ const Sheets = ({
           title="Edit record"
           style={{
             position: 'fixed',
-            bottom: '100px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            top: `${editButtonPosition.top}px`,
+            left: `${editButtonPosition.left}px`,
+            transform: 'translateY(-50%)',
             zIndex: 900
           }}
         >

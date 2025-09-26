@@ -597,6 +597,7 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
         isSelected ? styles.selectedRow : ''
       } ${isSelectMode ? styles.selectMode : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
       onClick={handleClick}
+      data-row-id={rowData.docId}
     >
       {/* Remove the add new row entirely */}
       {!isAddNew && (
