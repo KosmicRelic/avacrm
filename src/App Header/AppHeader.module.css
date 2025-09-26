@@ -2,8 +2,6 @@
   position: fixed;
   top: 0;
   width: 100%;
-  backdrop-filter: blur(50px);
-  -webkit-backdrop-filter: blur(50px);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   z-index: 1000;
   padding: 0 20px;
