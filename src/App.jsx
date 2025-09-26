@@ -194,10 +194,7 @@ function App() {
   const resolvedHeaders = useMemo(() => {
     if (!activeSheet) return [];
     return (activeSheet.headers || []).map((header) => ({
-      key: header.key,
-      name: header.name,
-      type: header.type,
-      options: header.options || [],
+      ...header,
       visible: header.visible !== false,
       hidden: header.hidden || false,
     }));

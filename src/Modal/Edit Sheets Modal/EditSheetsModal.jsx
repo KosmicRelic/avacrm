@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff, MdDragIndicator } from 'react-icons/md';
 import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
-import { IoChevronForward } from 'react-icons/io5';
+import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
 
 // Utility function to convert various date formats to milliseconds
 function toMillis(dateValue) {
@@ -45,29 +45,76 @@ const EditSheetsModal = ({
   const { isDarkTheme, templateObjects } = useContext(MainContext);
   
   // Get all templates directly from objects
-  const allTemplates = templateObjects.flatMap(object => 
+  const allTemplates = useMemo(() => templateObjects.flatMap(object => 
     (object.templates || []).map(template => ({
       ...template,
       objectId: object.id,
       objectName: object.name
     }))
-  );
+  ), [templateObjects]);
   const { registerModalSteps, goToStep, goBack, currentStep, setModalConfig } = useContext(ModalNavigatorContext);
   const [sheetName, setSheetName] = useState(tempData.sheetName || '');
   const [currentHeaders, setCurrentHeaders] = useState(() => {
     const uniqueHeaders = [];
     const seenKeys = new Set();
     (tempData.currentHeaders || []).forEach((header) => {
-      if (!seenKeys.has(header.key)) {
-        seenKeys.add(header.key);
+      // Create unique key considering both key and objectId for object fields
+      const uniqueKey = header.objectId ? `${header.key}_${header.objectId}` : header.key;
+      if (!seenKeys.has(uniqueKey)) {
+        seenKeys.add(uniqueKey);
         uniqueHeaders.push({ ...header, options: header.options || [] });
       }
     });
     return uniqueHeaders;
   });
   const [pinnedStates, setPinnedStates] = useState({});
+  const [selectedObjects, setSelectedObjects] = useState(() => {
+    // Initialize from tempData if available, otherwise as empty for independence
+    if (tempData.selectedObjects) {
+      return tempData.selectedObjects;
+    }
+    const objectsMap = {};
+    templateObjects.forEach(object => {
+      objectsMap[object.id] = {
+        name: object.name,
+        selected: false
+      };
+    });
+    return objectsMap;
+  });
+  const [selectedTemplates, setSelectedTemplates] = useState(() => {
+    // Initialize from tempData.typeOfRecordsToDisplay
+    const selectedTypes = tempData.typeOfRecordsToDisplay || [];
+    const templatesMap = {};
+    
+    templateObjects.forEach(object => {
+      templatesMap[object.id] = {
+        selectedTemplates: []
+      };
+    });
+    
+    selectedTypes.forEach(typeOfRecord => {
+      const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
+      if (template) {
+        const objectId = template.objectId;
+        if (!templatesMap[objectId]) {
+          templatesMap[objectId] = { selectedTemplates: [] };
+        }
+        templatesMap[objectId].selectedTemplates.push(typeOfRecord);
+      }
+    });
+    
+    return templatesMap;
+  });
   const [selectedRecordTypes, setSelectedRecordTypes] = useState(tempData.typeOfRecordsToDisplay || []);
   const [navigationDirection, setNavigationDirection] = useState(null);
+  const [expandedObjects, setExpandedObjects] = useState(new Set());
+
+  // Sync selectedRecordTypes from selectedTemplates
+  useEffect(() => {
+    const allSelectedTypes = Object.values(selectedTemplates).flatMap(obj => obj.selectedTemplates);
+    setSelectedRecordTypes(allSelectedTypes);
+  }, [selectedTemplates]);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedRecordTypeForFilter, setSelectedRecordTypeForFilter] = useState(null);
   const [recordsPerSearch, setRecordsPerSearch] = useState(tempData.recordsPerSearch || '');
@@ -230,6 +277,7 @@ const EditSheetsModal = ({
       recordTypeFilters: cleanedRecordTypeFilters,
       recordsPerSearch,
       filterOrder,
+      selectedObjects,
     });
     
     // Clear cache when sheet name changes or when typeOfRecordsToDisplay changes
@@ -249,6 +297,7 @@ const EditSheetsModal = ({
     selectedRecordTypes,
     recordsPerSearch,
     filterOrder,
+    selectedObjects,
     setTempData,
     tempData.sheetName,
     tempData.recordTypeFilters,
@@ -275,6 +324,7 @@ const EditSheetsModal = ({
         { title: 'Select Record Templates', rightButton: null },
         { title: 'Filters for Record Type', rightButton: null },
         { title: 'Add Filter', rightButton: null },
+        { title: 'Select Object Fields', rightButton: null },
       ];
       registerModalSteps({ steps });
       const initialConfig = {
@@ -431,6 +481,21 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
+    } else if (currentStep === 9) {
+      config = {
+        showTitle: true,
+        showDoneButton: false,
+        showBackButton: true,
+        allowClose: false,
+        title: 'Select Object Fields',
+        backButtonTitle: 'Headers',
+        backButton: {
+          label: `< Headers`,
+          onClick: handleBackClick,
+        },
+        leftButton: null,
+        rightButton: null,
+      };
     }
 
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
@@ -448,6 +513,7 @@ const EditSheetsModal = ({
       recordTypeFilters: tempData.recordTypeFilters || {},
       recordsPerSearch,
       filterOrder,
+      selectedObjects,
     };
     if (
       newTempData.sheetName !== tempData.sheetName ||
@@ -455,46 +521,175 @@ const EditSheetsModal = ({
       JSON.stringify(newTempData.typeOfRecordsToDisplay) !== JSON.stringify(tempData.typeOfRecordsToDisplay) ||
       JSON.stringify(newTempData.recordTypeFilters) !== JSON.stringify(tempData.recordTypeFilters) ||
       newTempData.recordsPerSearch !== tempData.recordsPerSearch ||
-      JSON.stringify(newTempData.filterOrder) !== JSON.stringify(tempData.filterOrder)
+      JSON.stringify(newTempData.filterOrder) !== JSON.stringify(tempData.filterOrder) ||
+      JSON.stringify(newTempData.selectedObjects) !== JSON.stringify(tempData.selectedObjects)
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, tempData, setTempData]);
+  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, selectedObjects, tempData.recordTypeFilters, tempData.selectedObjects, setTempData]);
 
-  const toggleRecordTypeSelection = useCallback((type) => {
-    setSelectedRecordTypes((prev) => {
-      if (prev.includes(type)) {
-        const updatedFilters = { ...tempData.recordTypeFilters };
-        delete updatedFilters[type];
-        setTempData({ ...tempData, recordTypeFilters: updatedFilters });
-        return prev.filter((t) => t !== type);
-      } else {
-        return [...prev, type];
-      }
-    });
-  }, [tempData, setTempData]);
+  // Sync state from tempData changes (for loading existing sheets)
+  useEffect(() => {
+    if (tempData.currentHeaders) {
+      const uniqueHeaders = [];
+      const seenKeys = new Set();
+      tempData.currentHeaders.forEach((header) => {
+        // Create unique key considering both key and objectId for object fields
+        const uniqueKey = header.objectId ? `${header.key}_${header.objectId}` : header.key;
+        if (!seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey);
+          uniqueHeaders.push({ ...header, options: header.options || [] });
+        }
+      });
+      setCurrentHeaders(uniqueHeaders);
+    }
+  }, [tempData.currentHeaders]);
 
-  const toggleHeaderSelection = useCallback((header) => {
-    setCurrentHeaders((prev) => {
-      const exists = prev.some((h) => h.key === header.key);
-      if (exists) {
-        return prev.filter((h) => h.key !== header.key);
-      } else {
-        return [
-          ...prev,
-          {
-            key: header.key,
-            name: header.name,
-            type: header.type,
-            options: header.options || [],
-            section: header.section,
-            visible: true,
-            hidden: false,
-          },
-        ];
+  useEffect(() => {
+    if (tempData.selectedObjects) {
+      setSelectedObjects(tempData.selectedObjects);
+    }
+  }, [tempData.selectedObjects]);
+
+  useEffect(() => {
+    if (tempData.typeOfRecordsToDisplay) {
+      const selectedTypes = tempData.typeOfRecordsToDisplay;
+      const templatesMap = {};
+      
+      templateObjects.forEach(object => {
+        templatesMap[object.id] = {
+          selectedTemplates: []
+        };
+      });
+      
+      selectedTypes.forEach(typeOfRecord => {
+        const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
+        if (template) {
+          const objectId = template.objectId;
+          if (!templatesMap[objectId]) {
+            templatesMap[objectId] = { selectedTemplates: [] };
+          }
+          templatesMap[objectId].selectedTemplates.push(typeOfRecord);
+        }
+      });
+      
+      setSelectedTemplates(templatesMap);
+    }
+  }, [tempData.typeOfRecordsToDisplay, allTemplates, templateObjects]);
+
+  useEffect(() => {
+    if (tempData.sheetName !== undefined) {
+      setSheetName(tempData.sheetName);
+    }
+  }, [tempData.sheetName]);
+
+  useEffect(() => {
+    if (tempData.recordsPerSearch !== undefined) {
+      setRecordsPerSearch(tempData.recordsPerSearch || '');
+    }
+  }, [tempData.recordsPerSearch]);
+
+  useEffect(() => {
+    if (tempData.filterOrder) {
+      setFilterOrder(tempData.filterOrder);
+    }
+  }, [tempData.filterOrder]);
+
+  // New functions for object-based selection
+  const toggleObjectSelection = useCallback((objectId) => {
+    setSelectedObjects(prev => {
+      const wasSelected = prev[objectId]?.selected;
+      const newSelected = !wasSelected;
+      if (!newSelected) {
+        // De-selecting, remove headers
+        setCurrentHeaders(current => current.filter(h => h.objectId !== objectId));
       }
+      return {
+        ...prev,
+        [objectId]: {
+          ...prev[objectId],
+          selected: newSelected
+        }
+      };
     });
   }, []);
+
+  const toggleTemplateInObject = useCallback((objectId, typeOfRecord) => {
+    setSelectedTemplates(prev => {
+      const newSelected = { ...prev };
+      if (!newSelected[objectId]) return prev;
+      
+      const templateIndex = newSelected[objectId].selectedTemplates.indexOf(typeOfRecord);
+      if (templateIndex > -1) {
+        // Remove template
+        newSelected[objectId].selectedTemplates.splice(templateIndex, 1);
+        // Clean up filters
+        const updatedFilters = { ...tempData.recordTypeFilters };
+        delete updatedFilters[typeOfRecord];
+        setTempData({ ...tempData, recordTypeFilters: updatedFilters });
+        // Remove headers
+        const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
+        if (template) {
+          setCurrentHeaders(current => current.filter(h => !(h.objectId == null && template.headers.some(th => th.key === h.key))));
+        }
+      } else {
+        // Add template
+        newSelected[objectId].selectedTemplates.push(typeOfRecord);
+      }
+      return newSelected;
+    });
+  }, [tempData, setTempData, allTemplates]);
+
+  const toggleHeaderSelection = useCallback((header, objectId = null) => {
+    setCurrentHeaders((prev) => {
+      // Handle both object field case (key, objectId) and template field case (header object)
+      const headerKey = typeof header === 'string' ? header : header.key;
+      const headerObjectId = objectId;
+
+      const exists = prev.some((h) => h.key === headerKey && h.objectId === headerObjectId);
+      if (exists) {
+        return prev.filter((h) => !(h.key === headerKey && h.objectId === headerObjectId));
+      } else {
+        // If header is a string (object field), we need to find the field data
+        if (typeof header === 'string') {
+          // Find the field in templateObjects
+          const fieldData = templateObjects
+            .flatMap(obj => (obj.basicFields || []).map(field => ({ ...field, objectId: obj.id, objectName: obj.name })))
+            .find(field => field.key === header && field.objectId === objectId);
+
+          if (!fieldData) return prev;
+
+          return [
+            ...prev,
+            {
+              key: fieldData.key,
+              name: fieldData.name,
+              type: fieldData.type,
+              options: fieldData.options || [],
+              section: "Object Fields",
+              objectId: fieldData.objectId,
+              visible: true,
+              hidden: false,
+            },
+          ];
+        } else {
+          // Template field case
+          return [
+            ...prev,
+            {
+              key: header.key,
+              name: header.name,
+              type: header.type,
+              options: header.options || [],
+              section: header.section,
+              visible: true,
+              hidden: false,
+            },
+          ];
+        }
+      }
+    });
+  }, [templateObjects]);
 
   const togglePin = useCallback(
     (headerKey) => {
@@ -683,7 +878,7 @@ const EditSheetsModal = ({
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
           <div
             key={step}
             className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -833,7 +1028,18 @@ const EditSheetsModal = ({
                     goToStep(3);
                   }}
                 >
-                  Add column
+                  Add column from template
+                </button>
+                <button
+                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  type="button"
+                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
+                  onClick={() => {
+                    setNavigationDirection('forward');
+                    goToStep(9);
+                  }}
+                >
+                  Add object field
                 </button>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentHeaders.length === 0 && (
@@ -1076,31 +1282,78 @@ const EditSheetsModal = ({
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
                 <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which record types to include in this sheet. Selected templates will be available for filtering and display.</p>
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {allTemplates.length === 0 ? (
+                  {templateObjects.length === 0 ? (
                     <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No templates available. Create templates first in the main app.
+                      No objects available. Create objects and templates first in the main app.
                     </div>
                   ) : (
-                    allTemplates.map((template) => (
-                      <div
-                        key={template.typeOfRecord}
-                        className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleRecordTypeSelection(template.typeOfRecord)}
-                      >
-                        <div className={styles.recordTypeRow}>
-                          <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {selectedRecordTypes.includes(template.typeOfRecord) ? (
-                              <FaRegCheckCircle size={18} className={styles.checked} />
-                            ) : (
-                              <FaRegCircle size={18} />
-                            )}
-                          </span>
-                          <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecord.charAt(0).toUpperCase() + template.typeOfRecord.slice(1).toLowerCase()}
-                          </span>
+                    templateObjects.map((object) => {
+                      const objectTemplates = object.templates || [];
+                      const selectedTemplatesForObject = selectedTemplates[object.id]?.selectedTemplates || [];
+                      const isObjectSelected = selectedObjects[object.id]?.selected || false;
+                      const isExpanded = expandedObjects.has(object.id);
+                      
+                      return (
+                        <div key={object.id}>
+                          <div
+                            className={`${styles.objectItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            onClick={() => {
+                              setExpandedObjects(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(object.id)) {
+                                  newSet.delete(object.id);
+                                } else {
+                                  newSet.add(object.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <div className={styles.recordTypeRow}>
+                              <span 
+                                className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleObjectSelection(object.id);
+                                }}
+                              >
+                                {isObjectSelected ? (
+                                  <FaRegCheckCircle size={18} className={styles.checked} />
+                                ) : (
+                                  <FaRegCircle size={18} />
+                                )}
+                              </span>
+                              <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {object.name}
+                              </span>
+                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
+                              </div>
+                            </div>
+                          </div>
+                          {isExpanded && objectTemplates.map((template) => (
+                            <div
+                              key={template.typeOfRecord}
+                              className={`${styles.recordTypeItem} ${styles.templateItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              onClick={() => toggleTemplateInObject(object.id, template.typeOfRecord)}
+                            >
+                              <div className={styles.recordTypeRow}>
+                                <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {selectedTemplatesForObject.includes(template.typeOfRecord) ? (
+                                    <FaRegCheckCircle size={18} className={styles.checked} />
+                                  ) : (
+                                    <FaRegCircle size={18} />
+                                  )}
+                                </span>
+                                <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecord.charAt(0).toUpperCase() + template.typeOfRecord.slice(1).toLowerCase()}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -1194,6 +1447,93 @@ const EditSheetsModal = ({
                 </div>
               </div>
             )}
+            {step === 9 && (
+              <div className={styles.section}>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Select Object Fields</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose object-level fields to add as columns. These fields are shared across all templates within an object.</p>
+                <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {templateObjects.filter(object => selectedObjects[object.id]?.selected).length === 0 ? (
+                    <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      No objects available. Create objects and templates first in the main app.
+                    </div>
+                  ) : (
+                    templateObjects.filter(object => selectedObjects[object.id]?.selected).map((object) => {
+                      const objectBasicFields = object.basicFields || [];
+                      const isExpanded = expandedObjects.has(object.id);
+                      
+                      return (
+                        <div key={object.id}>
+                          <div
+                            className={`${styles.objectItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            onClick={() => {
+                              setExpandedObjects(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(object.id)) {
+                                  newSet.delete(object.id);
+                                } else {
+                                  newSet.add(object.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <div className={styles.recordTypeRow}>
+                              <span className={`${styles.objectName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {object.name || object.id}
+                              </span>
+                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
+                              </div>
+                            </div>
+                          </div>
+                          {isExpanded && objectBasicFields.length > 0 && (
+                            <div className={`${styles.templateList} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              {objectBasicFields.map((field) => {
+                                const isSelected = currentHeaders.some((h) => h.key === field.key && h.objectId === object.id);
+                                return (
+                                  <div
+                                    key={field.key}
+                                    className={`${styles.templateItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                    onClick={() => toggleHeaderSelection(field.key, object.id)}
+                                  >
+                                    <div className={styles.recordTypeRow}>
+                                      <span 
+                                        className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleHeaderSelection(field.key, object.id);
+                                        }}
+                                      >
+                                        {isSelected ? (
+                                          <FaRegCheckCircle size={18} />
+                                        ) : (
+                                          <FaRegCircle size={18} />
+                                        )}
+                                      </span>
+                                      <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                        {field.name || field.key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
+                                      </span>
+                                      <span className={`${styles.fieldType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                        {field.type || 'text'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {isExpanded && objectBasicFields.length === 0 && (
+                            <div className={`${styles.noFields} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              No object fields defined for this object.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -1213,12 +1553,14 @@ EditSheetsModal.propTypes = {
         options: PropTypes.arrayOf(PropTypes.string),
         visible: PropTypes.bool,
         hidden: PropTypes.bool,
+        objectId: PropTypes.string,
       })
     ),
     typeOfRecordsToDisplay: PropTypes.arrayOf(PropTypes.string),
     recordTypeFilters: PropTypes.object,
     recordsPerSearch: PropTypes.number,
     filterOrder: PropTypes.arrayOf(PropTypes.string),
+    selectedObjects: PropTypes.object,
   }).isRequired,
   setTempData: PropTypes.func.isRequired,
   sheets: PropTypes.shape({
@@ -1417,17 +1759,20 @@ function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTem
           }
         case 'date':
           return 'Date Filter';
-        case 'dropdown':
+        case 'dropdown': {
           const values = filter.values || [];
           return values.length > 0 ? `${values.join(', ')}` : 'None';
-        case 'text':
+        }
+        case 'text': {
           const condition = filter.condition || 'equals';
           const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
           return value ? `${condition} "${value}"` : 'None';
-        default:
+        }
+        default: {
           return filter.value !== undefined && filter.value !== null
             ? `"${String(filter.value)}"`
             : 'None';
+        }
       }
     },
     [filterValues, numberRangeMode]

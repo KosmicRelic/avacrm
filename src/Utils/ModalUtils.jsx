@@ -107,6 +107,7 @@ export const handleModalSave = async ({
                   typeOfRecordsToDisplay: data.typeOfRecordsToDisplay || [],
                   recordTypeFilters: cleanedRecordTypeFilters,
                   recordsPerSearch: data.recordsPerSearch ?? sheet.recordsPerSearch,
+                  selectedObjects: data.selectedObjects || {},
                   isModified: true,
                   action: 'update',
                 }
@@ -558,6 +559,7 @@ export const renderModalContent = ({
               typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
               recordTypeFilters: activeSheet?.recordTypeFilters || {},
               recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
+              selectedObjects: activeSheet?.selectedObjects || {},
             }
           }
           setTempData={setActiveModalData}
@@ -694,6 +696,7 @@ export const onEditSheet = ({
       typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
       recordTypeFilters: activeSheet?.recordTypeFilters || {},
       recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
+      selectedObjects: activeSheet?.selectedObjects || {},
     },
   });
   sheetModal?.open();
