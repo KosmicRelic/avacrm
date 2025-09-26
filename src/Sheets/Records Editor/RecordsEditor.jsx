@@ -13,10 +13,14 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   initialRowData,
   startInEditMode,
   preSelectedSheet,
+  isObjectMode: propIsObjectMode,
 }) => {
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, setTemplateObjects: contextSetTemplateObjects } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'modeSelection');
-  const [isObjectMode, setIsObjectMode] = useState(startInEditMode ? (initialRowData?.typeOfObject ? true : false) : false);
+  const [isObjectMode, setIsObjectMode] = useState(() => {
+    if (propIsObjectMode !== undefined) return propIsObjectMode;
+    return startInEditMode ? (initialRowData?.typeOfObject ? true : false) : false;
+  });
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
     ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
@@ -172,10 +176,9 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
 
   const sheetOptions = useMemo(() => sheets?.allSheets?.map((sheet) => sheet.sheetName) || [], [sheets]);
   const recordTypeOptions = useMemo(() => {
-    if (!selectedSheet) return [];
-    const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-    return sheet?.typeOfRecordsToDisplay || [];
-  }, [selectedSheet, sheets]);
+    // Return all available record template names, not just sheet-configured ones
+    return recordTemplates?.map(template => template.name) || [];
+  }, [recordTemplates]);
 
   // Helper to get display name from uid
   const getTeamMemberName = (uid) => {
@@ -503,6 +506,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
+    console.log('🔍 RecordsEditor handleSave called:', { formData, isEditing, isObjectMode, selectedSheet });
     if (!selectedSheet && !isObjectMode) {
       alert('No sheet selected.');
       return;
@@ -915,6 +919,84 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     );
   };
 
+  const SingleSelectDropdown = ({ options, value, onChange, placeholder, disabled, isDarkTheme }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+      if (!open) return;
+      const handleClickOutside = (event) => {
+        if (
+          ref.current && !ref.current.contains(event.target) &&
+          dropdownRef.current && !dropdownRef.current.contains(event.target)
+        ) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [open]);
+
+    const handleOptionSelect = (option) => {
+      onChange(option);
+      setOpen(false);
+    };
+
+    const display = value || placeholder;
+
+    // Position dropdown below the field
+    const [dropdownStyle, setDropdownStyle] = useState({});
+    useEffect(() => {
+      if (open && ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setDropdownStyle({
+          top: rect.height + 4,
+          left: 0,
+          width: rect.width,
+        });
+      }
+    }, [open]);
+
+    return (
+      <div className={styles.singleSelectDropdownWrapper}>
+        <div
+          ref={ref}
+          className={[
+            styles.fieldSelect,
+            styles.singleSelectDropdownTrigger,
+            isDarkTheme ? styles.darkTheme : '',
+            disabled ? styles.disabled : '',
+            open ? styles.open : '',
+          ].filter(Boolean).join(' ')}
+          onClick={() => !disabled && setOpen(!open)}
+        >
+          <span className={styles.singleSelectDisplay}>{display}</span>
+          <span className={styles.singleSelectArrow}>▼</span>
+        </div>
+        {open && (
+          <div
+            ref={dropdownRef}
+            className={`${styles.singleSelectDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
+            style={dropdownStyle}
+          >
+            <div className={styles.singleSelectOptions}>
+              {options.map((option) => (
+                <div
+                  key={option}
+                  className={`${styles.singleSelectOption} ${value === option ? styles.selected : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => handleOptionSelect(option)}
+                >
+                  {option}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const MultiSelectDropdown = ({ options, value, onChange, label, disabled, isDarkTheme }) => {
     const [open, setOpen] = useState(false);
     const [tempValue, setTempValue] = useState(Array.isArray(value) ? value : []);
@@ -1169,19 +1251,13 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
                     <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       {isObjectMode ? 'Object Type' : 'Record Type'}
                     </span>
-                    <select
+                    <SingleSelectDropdown
+                      options={isObjectMode ? templateObjects?.map(obj => obj.name) || [] : recordTypeOptions}
                       value={selectedRecordType}
-                      onChange={(e) => setSelectedRecordType(e.target.value)}
-                      className={`${styles.fieldSelect} ${styles.recordTypeSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      aria-label={isObjectMode ? "Select an object type" : "Select a record type"}
-                    >
-                      <option value="">{isObjectMode ? 'Select an object type' : 'Select a record type'}</option>
-                      {(isObjectMode ? templateObjects?.map(obj => obj.name) || [] : recordTypeOptions).map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setSelectedRecordType}
+                      placeholder={isObjectMode ? 'Select an object type' : 'Select a record type'}
+                      isDarkTheme={isDarkTheme}
+                    />
                   </div>
                 </div>
               </div>

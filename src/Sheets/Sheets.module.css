@@ -1030,6 +1030,77 @@
   color: #0a84ff;
 }
 
+.toggleButton {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  height: 36px;
+  color: #6e6e73;
+  background: rgba(245, 245, 247, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  margin-left: 8px;
+}
+
+.toggleButton.darkTheme {
+  color: rgb(235, 235, 245);
+  background: rgba(58, 58, 60, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.toggleButton:hover {
+  background: rgba(229, 229, 234, 0.9);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.toggleButton.darkTheme:hover {
+  background: rgba(72, 72, 74, 0.9);
+  color: #0a84ff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.toggleButton.active {
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border-color: rgba(0, 122, 255, 0.2);
+  box-shadow:
+    0 2px 12px rgba(0, 122, 255, 0.15),
+    0 1px 4px rgba(0, 122, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.toggleButton.active.darkTheme {
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.15);
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow:
+    0 2px 12px rgba(10, 132, 255, 0.2),
+    0 1px 4px rgba(10, 132, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
 .selectButton {
   border: 0.5px solid rgba(0, 122, 255, 0.2);
   cursor: pointer;

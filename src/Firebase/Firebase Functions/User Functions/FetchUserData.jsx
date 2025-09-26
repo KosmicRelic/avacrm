@@ -430,6 +430,7 @@ const fetchUserData = async ({
     const sheetId = activeSheet.docId;
     const typeOfRecordsToDisplay = activeSheet.typeOfRecordsToDisplay || [];
     const recordTypeFilters = activeSheet.recordTypeFilters || {};
+    const objectTypeFilters = activeSheet.objectTypeFilters || {};
 
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {

@@ -96,6 +96,25 @@ export const handleModalSave = async ({
           }
         });
 
+        const cleanedObjectTypeFilters = {};
+        Object.entries(data.objectTypeFilters || {}).forEach(([objectType, filters]) => {
+          const cleanedFilters = {};
+          Object.entries(filters).forEach(([key, filter]) => {
+            const cleanedFilter = {};
+            Object.entries(filter).forEach(([field, value]) => {
+              if (value !== undefined && value !== null) {
+                cleanedFilter[field] = value;
+              }
+            });
+            if (Object.keys(cleanedFilter).length > 0) {
+              cleanedFilters[key] = cleanedFilter;
+            }
+          });
+          if (Object.keys(cleanedFilters).length > 0) {
+            cleanedObjectTypeFilters[objectType] = cleanedFilters;
+          }
+        });
+
         setSheets((prev) => {
           // Update allSheets as before
           const updatedAllSheets = prev.allSheets.map((sheet) =>
@@ -106,6 +125,7 @@ export const handleModalSave = async ({
                   headers: data.currentHeaders,
                   typeOfRecordsToDisplay: data.typeOfRecordsToDisplay || [],
                   recordTypeFilters: cleanedRecordTypeFilters,
+                  objectTypeFilters: cleanedObjectTypeFilters,
                   recordsPerSearch: data.recordsPerSearch ?? sheet.recordsPerSearch,
                   selectedObjects: data.selectedObjects || {},
                   isModified: true,
@@ -558,6 +578,7 @@ export const renderModalContent = ({
               currentHeaders: resolvedHeaders || [],
               typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
               recordTypeFilters: activeSheet?.recordTypeFilters || {},
+              objectTypeFilters: activeSheet?.objectTypeFilters || {},
               recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
               selectedObjects: activeSheet?.selectedObjects || {},
             }
@@ -695,6 +716,7 @@ export const onEditSheet = ({
       currentHeaders: resolvedHeaders || [],
       typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
       recordTypeFilters: activeSheet?.recordTypeFilters || {},
+      objectTypeFilters: activeSheet?.objectTypeFilters || {},
       recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
       selectedObjects: activeSheet?.selectedObjects || {},
     },

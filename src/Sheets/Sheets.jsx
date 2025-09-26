@@ -41,10 +41,15 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
+  try {
+    console.log('🔍 Sheets component rendered');
+    const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
+  // --- LOGGING FOR DEBUGGING DATA LOADING ---
+  console.log('🔍 Context data:', { recordsLength: records.length, objectsLength: objects.length, sheetRecordsFetched, activeSheetName });
+  
   // --- LOGGING FOR DEBUGGING RECORD LOADING ---
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
@@ -55,6 +60,7 @@ const Sheets = ({
 
   const [spinnerVisible, setSpinnerVisible] = useState(false);
   const [spinnerFading, setSpinnerFading] = useState(false);
+  const [showObjects, setShowObjects] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -72,22 +78,121 @@ const Sheets = ({
 
   const sheetRecordTypes = useMemo(() => activeSheet?.typeOfRecordsToDisplay || [], [activeSheet]);
   const recordTypeFilters = useMemo(() => activeSheet?.recordTypeFilters || {}, [activeSheet]);
+  const objectTypeFilters = useMemo(() => activeSheet?.objectTypeFilters || {}, [activeSheet]);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
+
+    console.log('🔍 Sheet configuration:', { activeSheet, sheetRecordTypes, recordTypeFilters, objectTypeFilters, globalFilters });
 
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
     
+    // Choose data source based on showObjects toggle
+    const dataSource = showObjects ? objects : records;
+    const typeField = showObjects ? 'typeOfObject' : 'typeOfRecord';
+    
+    console.log('🔍 sheetRecords calculation:', {
+      showObjects,
+      dataSourceLength: dataSource.length,
+      sheetRecordTypes
+    });
+    
+    // For objects, apply objectTypeFilters. For records, filter by sheet configuration
+    if (showObjects) {
+      // Apply objectTypeFilters to objects
+      return dataSource.filter((object) => {
+        const filters = objectTypeFilters[object.typeOfObject] || {};
+        return Object.entries(filters).every(([field, filter]) => {
+          if (field === 'userFilter') {
+            if (filter.headerKey && filter.condition === 'equals') {
+              const objectValue = object[filter.headerKey];
+              return objectValue === user.uid;
+            }
+            return true;
+          }
+
+          const header = headers.find((h) => h.key === field);
+          const value = object[field];
+          if (!filter || !header) {
+            return true;
+          }
+
+          switch (header.type) {
+            case 'number':
+              if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+              const numValue = Number(value) || 0;
+              if (filter.start || filter.end) {
+                const startNum = filter.start ? Number(filter.start) : -Infinity;
+                const endNum = filter.end ? Number(filter.end) : Infinity;
+                return numValue >= startNum && numValue <= endNum;
+              }
+              if (!filter.value || !filter.order) return true;
+              const filterNum = Number(filter.value);
+              switch (filter.order) {
+                case 'greater':
+                  return numValue > filterNum;
+                case 'less':
+                  return numValue < filterNum;
+                case 'greaterOrEqual':
+                  return numValue >= filterNum;
+                case 'lessOrEqual':
+                  return numValue <= filterNum;
+                default:
+                  return numValue === filterNum;
+              }
+            case 'date':
+              if (!filter.sortOrder) return true;
+              return true;
+            case 'dropdown':
+              if (!filter.values || filter.values.length === 0) return true;
+              return filter.values.includes(value);
+            case 'text':
+              if (!filter.value || !filter.condition) return true;
+              const strValue = String(value || '').toLowerCase();
+              const filterStr = filter.value.toLowerCase();
+              switch (filter.condition) {
+                case 'contains':
+                  return strValue.includes(filterStr);
+                case 'startsWith':
+                  return strValue.startsWith(filterStr);
+                case 'endsWith':
+                  return strValue.endsWith(filterStr);
+                default:
+                  return strValue === filterStr;
+              }
+            default:
+              return true;
+          }
+        });
+      });
+    }
+    
+
     // Create a Set for O(1) lookup of record types
     const sheetRecordTypesSet = new Set(sheetRecordTypes);
     
     // Pre-filter by record types first (usually eliminates most records quickly)
     // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
-    const relevantRecords = records.filter((record) => sheetRecordTypesSet.has(record.typeOfRecord));
+    // If no record types are configured, show all records
+    // If record doesn't have typeOfRecord, include it if sheetRecordTypes is empty
+    let relevantRecords = sheetRecordTypes.length > 0 
+      ? dataSource.filter((record) => {
+          const recordType = record[typeField];
+          return recordType && sheetRecordTypesSet.has(recordType);
+        })
+      : dataSource;
+    
+    // If filtering resulted in 0 records but we have data, show all records as fallback
+    if (relevantRecords.length === 0 && dataSource.length > 0 && sheetRecordTypes.length > 0) {
+      console.log('🔍 Fallback: Showing all records because filtering by type resulted in 0');
+      relevantRecords = dataSource;
+    }
+    
+    console.log('🔍 After record type filtering:', relevantRecords.length);
     
     // Then apply record type filters (only on relevant records)
     return relevantRecords.filter((record) => {
-      const filters = recordTypeFilters[record.typeOfRecord] || {};
+      const filters = recordTypeFilters[record[typeField]] || {};
         return Object.entries(filters).every(([field, filter]) => {
           if (field === 'userFilter') {
             if (filter.headerKey && filter.condition === 'equals') {
@@ -151,7 +256,9 @@ const Sheets = ({
           }
         });
       });
-  }, [records, sheetRecordTypes, recordTypeFilters, headers, user.uid]);
+  }, [records, objects, showObjects, sheetRecordTypes, recordTypeFilters, objectTypeFilters, headers, user.uid]);
+
+  console.log('🔍 Final sheetRecords result:', sheetRecords.length);
 
   const filteredWithGlobalFilters = useMemo(() => {
     return sheetRecords.filter((row) =>
@@ -482,6 +589,7 @@ const Sheets = ({
     if (recordIdFromUrl && records.length > 0) {
       const record = records.find((c) => c.docId === recordIdFromUrl);
       if (record) {
+        console.log('🔍 Opening editor for record from URL:', record);
         setSelectedRow(record);
         setIsEditorOpen(true);
       }
@@ -556,6 +664,7 @@ const Sheets = ({
 
   const handleEditorSave = useCallback(
     async (updatedRow, isEditing) => {
+      console.log('🔍 handleEditorSave called:', { updatedRow, isEditing, businessId });
       if (!businessId) {
         console.error('❌ Cannot save: businessId is null/undefined');
         alert('Cannot save: Business ID not available. Please refresh the page and try again.');
@@ -570,28 +679,34 @@ const Sheets = ({
 
       if (isObject) {
         if (!isEditing) {
+          console.log('📝 Adding new object to state:', newRecordData);
           setObjects((prev) => [...prev, newRecordData]);
         } else {
+          console.log('📝 Updating existing object in state:', newRecordData);
           setObjects((prev) =>
             prev.map((object) => (object.docId === rowId ? newRecordData : object))
           );
         }
         // Save object to Firebase
         try {
+          console.log('💾 Saving object to Firebase:', newRecordData);
           await setDoc(doc(db, `businesses/${businessId}/objects/${newRecordData.docId}`), newRecordData);
         } catch (error) {
           console.error('Failed to save object to Firebase:', error);
         }
       } else {
         if (!isEditing) {
+          console.log('📝 Adding new record to state:', newRecordData);
           setRecords((prev) => [...prev, newRecordData]);
         } else {
+          console.log('📝 Updating existing record in state:', newRecordData);
           setRecords((prev) =>
             prev.map((record) => (record.docId === rowId ? newRecordData : record))
           );
         }
         // Save record to Firebase
         try {
+          console.log('💾 Saving record to Firebase:', newRecordData);
           await setDoc(doc(db, `businesses/${businessId}/records/${newRecordData.docId}`), newRecordData);
         } catch (error) {
           console.error('Failed to save record to Firebase:', error);
@@ -660,6 +775,7 @@ const Sheets = ({
 
   const handleOpenNewRecord = useCallback(
     (newRecordData) => {
+      console.log('🔍 handleOpenNewRecord called:', newRecordData);
       // Add the new record to the records array
       setRecords((prev) => [...prev, newRecordData]);
       
@@ -738,7 +854,7 @@ const Sheets = ({
       style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
-      <span>Loading sheet data...</span>
+      <span>Loading {showObjects ? 'objects' : 'records'}...</span>
     </div>
   );
 
@@ -756,6 +872,14 @@ const Sheets = ({
                 onClick={onFilter}
               >
                 <MdFilterAlt size={20} />
+              </button>
+            )}
+            {!isSelectMode && (
+              <button
+                className={`${styles.toggleButton} ${showObjects ? styles.active : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => setShowObjects(!showObjects)}
+              >
+                {showObjects ? 'Objects' : 'Records'}
               </button>
             )}
           </div>
@@ -971,6 +1095,7 @@ const Sheets = ({
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
+              isObjectMode={showObjects}
             />
           </div>
         )}
@@ -1005,12 +1130,17 @@ const Sheets = ({
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
+              isObjectMode={showObjects}
             />
           </div>
         </>
       )}
     </div>
   );
+  } catch (error) {
+    console.error('🔍 Sheets component error:', error);
+    return <div>Error loading sheets: {error.message}</div>;
+  }
 };
 
 Sheets.propTypes = {

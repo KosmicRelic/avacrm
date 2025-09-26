@@ -128,12 +128,13 @@ const EditSheetsModal = ({
   const [draggedHeaderIndex, setDraggedHeaderIndex] = useState(null);
   const [dragOverHeaderIndex, setDragOverHeaderIndex] = useState(null);
 
-  // Ensure recordTypeFilters, recordsPerSearch, and filterOrder are initialized in tempData
+  // Ensure recordTypeFilters, objectTypeFilters, recordsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
-    if (!tempData.recordTypeFilters || !('recordsPerSearch' in tempData) || !tempData.filterOrder) {
+    if (!tempData.recordTypeFilters || !tempData.objectTypeFilters || !('recordsPerSearch' in tempData) || !tempData.filterOrder) {
       setTempData({
         ...tempData,
         recordTypeFilters: tempData.recordTypeFilters || {},
+        objectTypeFilters: tempData.objectTypeFilters || {},
         recordsPerSearch: tempData.recordsPerSearch || null,
         filterOrder: tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown'],
       });
@@ -180,6 +181,53 @@ const EditSheetsModal = ({
       });
     }
   }, [selectedRecordTypes, allTemplates, tempData, setTempData]);
+
+  // Ensure objectTypeFilters always has all basicFields for each selected object
+  useEffect(() => {
+    const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
+    if (!templateObjects || selectedObjectIds.length === 0) return;
+
+    let changed = false;
+    const updatedObjectTypeFilters = { ...(tempData.objectTypeFilters || {}) };
+
+    selectedObjectIds.forEach((objectId) => {
+      const object = templateObjects.find((o) => o.id === objectId);
+      if (!object || !object.basicFields) return;
+      
+      const objectName = object.name;
+      if (!updatedObjectTypeFilters[objectName]) {
+        updatedObjectTypeFilters[objectName] = {};
+        changed = true;
+      }
+      
+      object.basicFields
+        .filter((field) => field.key)
+        .forEach((field) => {
+          if (!(field.key in updatedObjectTypeFilters[objectName])) {
+            updatedObjectTypeFilters[objectName][field.key] = {};
+            changed = true;
+          }
+        });
+    });
+
+    Object.keys(updatedObjectTypeFilters).forEach((objectName) => {
+      const objectExists = selectedObjectIds.some(id => {
+        const obj = templateObjects.find(o => o.id === id);
+        return obj && obj.name === objectName;
+      });
+      if (!objectExists) {
+        delete updatedObjectTypeFilters[objectName];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setTempData({
+        ...tempData,
+        objectTypeFilters: updatedObjectTypeFilters,
+      });
+    }
+  }, [selectedObjects, templateObjects, tempData, setTempData]);
 
   // Compute filter summary for display
   const getFilterSummary = useCallback(
@@ -270,11 +318,48 @@ const EditSheetsModal = ({
       }
     });
 
+    // Clean objectTypeFilters
+    let updatedObjectTypeFilters = { ...(tempData.objectTypeFilters || {}) };
+    selectedRecordTypes.forEach((typeOfRecords) => {
+      if (!updatedObjectTypeFilters[typeOfRecords]) updatedObjectTypeFilters[typeOfRecords] = {};
+    });
+
+    Object.keys(updatedObjectTypeFilters).forEach((objectName) => {
+      const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
+      const objectExists = selectedObjectIds.some(id => {
+        const obj = templateObjects.find(o => o.id === id);
+        return obj && obj.name === objectName;
+      });
+      if (!objectExists) {
+        delete updatedObjectTypeFilters[objectName];
+      }
+    });
+
+    const cleanedObjectTypeFilters = {};
+    Object.entries(updatedObjectTypeFilters).forEach(([objectName, filters]) => {
+      const cleanedFilters = {};
+      Object.entries(filters).forEach(([key, filter]) => {
+        const cleanedFilter = {};
+        Object.entries(filter).forEach(([field, value]) => {
+          if (value !== undefined && value !== null) {
+            cleanedFilter[field] = value;
+          }
+        });
+        if (Object.keys(cleanedFilter).length > 0) {
+          cleanedFilters[key] = cleanedFilter;
+        }
+      });
+      if (Object.keys(cleanedFilters).length > 0) {
+        cleanedObjectTypeFilters[objectName] = cleanedFilters;
+      }
+    });
+
     setTempData({
       sheetName,
       currentHeaders,
       typeOfRecordsToDisplay: selectedRecordTypes,
       recordTypeFilters: cleanedRecordTypeFilters,
+      objectTypeFilters: cleanedObjectTypeFilters,
       recordsPerSearch,
       filterOrder,
       selectedObjects,

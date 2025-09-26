@@ -584,6 +584,7 @@ export const MainContextProvider = ({ children }) => {
         setObjects,
         setTemplateObjects,
         setRecords: (fetchedRecords) => {
+          console.log('🔄 setRecords called with fetchedRecords:', fetchedRecords);
           setRecords(fetchedRecords);
           setRecordsCache((prev) => ({ ...prev, [sheetId]: fetchedRecords }));
         },
@@ -734,6 +735,7 @@ export const MainContextProvider = ({ children }) => {
     const processUpdates = async () => {
       if (isBatchProcessing.current) return; // Prevent re-entrancy
       isBatchProcessing.current = true;
+      console.log('🔄 Starting batch processing for records/objects sync');
       const batch = writeBatch(db);
       let hasChanges = false;
 
@@ -760,6 +762,7 @@ export const MainContextProvider = ({ children }) => {
           }
           let docRef;
           if (record.action === 'add') {
+            console.log('📝 Adding record to batch:', record);
             docRef = doc(stateConfig.records.collectionPath()); // Firestore will generate ID
             addedRecordsMap.set(record, docRef.id); // Map original record to new Firestore ID
             const { isModified, action, docId, sheetName, ...recordData } = record;
@@ -1085,6 +1088,7 @@ export const MainContextProvider = ({ children }) => {
     },
     records,
     setRecords: (newRecords) => {
+      console.log('🔄 setRecords called with newRecords:', newRecords);
       if (shallowEqual(records, newRecords)) {
         return;
       }
