@@ -592,12 +592,38 @@ const Sheets = ({
         }
         // Save record to Firebase
         try {
-          console.log('Saving record to Firebase:', `businesses/${businessId}/records/${newRecordData.docId}`);
           await setDoc(doc(db, `businesses/${businessId}/records/${newRecordData.docId}`), newRecordData);
-          console.log('Record saved successfully to Firebase');
         } catch (error) {
           console.error('Failed to save record to Firebase:', error);
         }
+
+        // Update the related object to include this record
+        if (newRecordData.typeOfObject && !isEditing) {
+          try {
+            // Find the object this record belongs to
+            const relatedObject = objects.find(obj => obj.typeOfObject === newRecordData.typeOfObject || obj.name === newRecordData.typeOfObject);
+            if (relatedObject) {
+              // Update the object to include this record
+              const updatedObject = {
+                ...relatedObject,
+                records: [...(relatedObject.records || []), newRecordData.docId],
+                lastModified: new Date().toISOString()
+              };
+              
+              // Update local state
+              setObjects(prev => prev.map(obj => 
+                obj.docId === relatedObject.docId ? updatedObject : obj
+              ));
+              
+              // Save to Firebase
+              await setDoc(doc(db, `businesses/${businessId}/objects/${relatedObject.docId}`), updatedObject);
+              console.log('Updated object with new record reference');
+            }
+          } catch (error) {
+            console.error('Failed to update related object:', error);
+          }
+        }
+
         onRecordSave(newRecordData);
       }
       setSelectedRow(newRecordData);

@@ -63,23 +63,6 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
         return [];
       }
 
-      // Get basic fields from the object
-      let basicFieldsSection = null;
-      if (template.objectId && templateObjects) {
-        const object = templateObjects.find(e => e.id === template.objectId);
-        if (object?.basicFields && object.basicFields.length > 0) {
-          basicFieldsSection = {
-            name: 'Basic Information',
-            fields: object.basicFields.map(field => ({
-              key: field.key,
-              name: field.name,
-              type: field.type,
-              options: field.options || [],
-            })),
-          };
-        }
-      }
-
       const templateSections = template.sections.map((section) => ({
         name: section.name,
         fields: section.keys
@@ -94,9 +77,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
           }),
       }));
 
-      // Combine basic fields section with template sections
-      const result = basicFieldsSection ? [basicFieldsSection, ...templateSections] : templateSections;
-      return result;
+      return templateSections;
     }
   }, [isObjectMode, selectedRecordType, recordTemplates, templateObjects, isEditing, initialRowData, formData.typeOfRecord, formData.typeOfObject]);
 
@@ -428,19 +409,6 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       return;
     }
 
-    // Get basic fields from the object to copy them
-    const currentObject = templateObjects?.find(obj => obj.name === formData.typeOfObject);
-    const basicFields = currentObject?.basicFields || [];
-    
-    // Create new record data with basic fields copied and same linkId
-
-    // Helper for deep cloning
-    const deepClone = (value) => {
-      if (Array.isArray(value)) return value.map(deepClone);
-      if (value && typeof value === 'object') return JSON.parse(JSON.stringify(value));
-      return value;
-    };
-
     const newRecordData = {
       docId: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       linkId: formData.linkId,
@@ -452,13 +420,6 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       isModified: true,
       history: [],
     };
-
-    // Copy basic field values from current record, deep cloning them
-    basicFields.forEach(field => {
-      if (formData[field.key] !== undefined && formData[field.key] !== '') {
-        newRecordData[field.key] = deepClone(formData[field.key]);
-      }
-    });
 
     // Close current editor and open new one
     if (onOpenNewRecord) {
@@ -566,6 +527,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       isObject: isObjectMode, // Explicit flag to indicate if this is an object
       ...(isObjectMode ? {
         typeOfObject: isEditing ? initialRowData?.typeOfObject : selectedRecordType,
+        records: initialRowData?.records || [], // Initialize records array for objects
       } : {
         typeOfRecord: isEditing ? initialRowData?.typeOfRecord : template.name,
         typeOfObject: (() => {
