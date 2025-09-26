@@ -13,6 +13,7 @@ const fetchUserData = async ({
   route,
   setSheets,
   setRecords,
+  setObjects,
   setTemplateObjects,
   setMetrics,
   setDashboards,
@@ -293,6 +294,25 @@ const fetchUserData = async ({
           
           // Store the unsubscribe function
           unsubscribeFunctions.push(templateObjectsUnsubscribe);
+          
+          // Set up real-time listener for objects
+          const objectsUnsubscribe = onSnapshot(
+            collection(db, 'businesses', businessId, 'objects'),
+            (objectsSnapshot) => {
+              setObjects && setObjects(
+                objectsSnapshot.docs.map((doc) => ({
+                  docId: doc.id,
+                  ...doc.data(),
+                }))
+              );
+            },
+            (error) => {
+              console.error('Error in objects real-time listener:', error);
+            }
+          );
+          
+          // Store the unsubscribe function
+          unsubscribeFunctions.push(objectsUnsubscribe);
           
           // Set up real-time listener for metrics
           const metricsUnsubscribe = onSnapshot(

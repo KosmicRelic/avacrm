@@ -37,6 +37,7 @@ export const MainContextProvider = ({ children }) => {
   const [records, setRecords] = useState([]);
   // Cache records per sheetId: { [sheetId]: recordsArray }
   const [recordsCache, setRecordsCache] = useState({});
+  const [objects, setObjects] = useState([]);
   const [templateObjects, setTemplateObjects] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [dashboards, setDashboards] = useState([]);
@@ -56,10 +57,11 @@ export const MainContextProvider = ({ children }) => {
   const [unsubscribeFunctions, setUnsubscribeFunctions] = useState([]);
   const fetchingSheetIdsRef = useRef(new Set());
   const themeRef = useRef(isDarkTheme ? 'dark' : 'light');
-  const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false, templateObjects: false });
+  const hasFetched = useRef({ sheets: false, dashboard: false, metrics: false, templateObjects: false, objects: false });
   const prevStates = useRef({
     sheets: { allSheets: [], structure: [], deletedSheetId: null },
     records: [],
+    objects: [],
     metrics: [],
     dashboards: [],
   });
@@ -303,6 +305,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
+                    setObjects,
                     setTemplateObjects,
                     activeSheetName: sheetNameFromUrl,
                     updateSheets: true,
@@ -315,6 +318,7 @@ export const MainContextProvider = ({ children }) => {
                     businessId: fetchedBusinessId,
                     route: '/sheets',
                     setSheets,
+                    setObjects,
                     setTemplateObjects,
                     updateSheets: true,
                   })
@@ -331,6 +335,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/dashboard',
                   setSheets,
                   setRecords,
+                  setObjects,
                   setTemplateObjects,
                   setMetrics,
                   setDashboards,
@@ -345,6 +350,7 @@ export const MainContextProvider = ({ children }) => {
                   route: '/metrics',
                   setSheets,
                   setRecords,
+                  setObjects,
                   setTemplateObjects,
                   setMetrics,
                   setDashboards,
@@ -388,7 +394,7 @@ export const MainContextProvider = ({ children }) => {
           setBannerQueue([]);
           processedTeamMembers.current.clear();
           displayedMessages.current.clear();
-          hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false };
+          hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false, objects: false };
           prevStates.current = {
             sheets: { allSheets: [], structure: [], deletedSheetId: null },
             records: [],
@@ -431,7 +437,7 @@ export const MainContextProvider = ({ children }) => {
         return [];
       });
       // Reset fetch flags when business changes
-      hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false };
+      hasFetched.current = { sheets: false, dashboard: false, metrics: false, templateObjects: false, objects: false };
       // Clear templateObjects when switching businesses
       setTemplateObjects([]);
     }
@@ -575,6 +581,7 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
+        setObjects,
         setTemplateObjects,
         setRecords: (fetchedRecords) => {
           setRecords(fetchedRecords);
@@ -1089,6 +1096,13 @@ export const MainContextProvider = ({ children }) => {
         setRecordsCache((prev) => ({ ...prev, [sheetId]: newRecords }));
       }
     },
+    objects,
+    setObjects: (newObjects) => {
+      if (shallowEqual(objects, newObjects)) {
+        return;
+      }
+      setObjects(newObjects);
+    },
     recordsCache,
     setRecordsCache,
     optimisticUpdateRecord,
@@ -1173,6 +1187,7 @@ export const MainContextProvider = ({ children }) => {
       fetchUserData({
         businessId,
         route: '/sheets',
+        setObjects,
         setRecords,
         setTemplateObjects,
         setMetrics,

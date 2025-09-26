@@ -14,10 +14,9 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   startInEditMode,
   preSelectedSheet,
 }) => {
-  console.log('RecordsEditor component rendered', { initialRowData, startInEditMode, preSelectedSheet });
-  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, teamMembers, user, setTemplateObjects: contextSetTemplateObjects } = useContext(MainContext);
-  console.log('RecordsEditor context data:', { recordTemplates: recordTemplates?.length, templateObjects: templateObjects?.length });
-  const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
+  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, setTemplateObjects: contextSetTemplateObjects } = useContext(MainContext);
+  const [view, setView] = useState(startInEditMode ? 'editor' : 'modeSelection');
+  const [isObjectMode, setIsObjectMode] = useState(startInEditMode ? (initialRowData?.typeOfObject ? true : false) : false);
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
     ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
@@ -36,85 +35,102 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   const [showInputsMap, setShowInputsMap] = useState({});
 
   const selectedSections = useMemo(() => {
-    console.log('RecordsEditor selectedSections useMemo triggered');
-    console.log('RecordsEditor recordTemplates:', recordTemplates);
-    console.log('RecordsEditor templateObjects:', templateObjects);
-    // Use formData.typeOfRecord first (for pipeline conversions), then fall back to other sources
-    const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
-    console.log('RecordsEditor selectedSections:', { templateName, formData, initialRowData, selectedRecordType });
-    const template = recordTemplates?.find((t) => t.name === templateName);
-    console.log('RecordsEditor template found:', template);
-    
-    if (!template || !template.sections) {
-      console.log('RecordsEditor: No template or sections found');
-      return [];
-    }
-
-    // Get basic fields from the object
-    let basicFieldsSection = null;
-    if (template.objectId && templateObjects) {
-      const object = templateObjects.find(e => e.id === template.objectId);
-      console.log('RecordsEditor object found:', object);
-      console.log('RecordsEditor object.basicFields:', object?.basicFields);
-      if (object?.basicFields && object.basicFields.length > 0) {
-        basicFieldsSection = {
-          name: 'Basic Information',
-          fields: object.basicFields.map(field => ({
-            key: field.key,
-            name: field.name,
-            type: field.type,
-            options: field.options || [],
-          })),
-        };
-        console.log('RecordsEditor basicFieldsSection created:', basicFieldsSection);
-      } else {
-        console.log('RecordsEditor: No basicFields found in object');
+    if (isObjectMode) {
+      // Object mode: use basicFields from the selected object
+      const objectName = formData.typeOfObject || (isEditing ? initialRowData?.typeOfObject : selectedRecordType);
+      const object = templateObjects?.find((o) => o.name === objectName);
+      
+      if (!object || !object.basicFields) {
+        return [];
       }
+
+      const basicFieldsSection = {
+        name: 'Basic Information',
+        fields: object.basicFields.map(field => ({
+          key: field.key,
+          name: field.name,
+          type: field.type,
+          options: field.options || [],
+        })),
+      };
+      return [basicFieldsSection];
     } else {
-      console.log('RecordsEditor: No objectId or templateObjects', { objectId: template.objectId, templateObjects: !!templateObjects });
-    }
+      // Record mode: existing logic
+      const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
+      const template = recordTemplates?.find((t) => t.name === templateName);
+      
+      if (!template || !template.sections) {
+        return [];
+      }
 
-    const templateSections = template.sections.map((section) => ({
-      name: section.name,
-      fields: section.keys
-        .map((key) => {
-          const header = template.headers?.find((h) => h.key === key);
-          return {
-            key,
-            name: header?.name || formatFieldName(key),
-            type: header?.type || 'text',
-            options: header?.options || [],
+      // Get basic fields from the object
+      let basicFieldsSection = null;
+      if (template.objectId && templateObjects) {
+        const object = templateObjects.find(e => e.id === template.objectId);
+        if (object?.basicFields && object.basicFields.length > 0) {
+          basicFieldsSection = {
+            name: 'Basic Information',
+            fields: object.basicFields.map(field => ({
+              key: field.key,
+              name: field.name,
+              type: field.type,
+              options: field.options || [],
+            })),
           };
-        }),
-    }));
-    console.log('RecordsEditor templateSections:', templateSections);
+        }
+      }
 
-    // Combine basic fields section with template sections
-    const result = basicFieldsSection ? [basicFieldsSection, ...templateSections] : templateSections;
-    console.log('RecordsEditor final selectedSections:', result);
-    return result;
-  }, [selectedRecordType, recordTemplates, templateObjects, isEditing, initialRowData, formData.typeOfRecord]);
+      const templateSections = template.sections.map((section) => ({
+        name: section.name,
+        fields: section.keys
+          .map((key) => {
+            const header = template.headers?.find((h) => h.key === key);
+            return {
+              key,
+              name: header?.name || formatFieldName(key),
+              type: header?.type || 'text',
+              options: header?.options || [],
+            };
+          }),
+      }));
+
+      // Combine basic fields section with template sections
+      const result = basicFieldsSection ? [basicFieldsSection, ...templateSections] : templateSections;
+      return result;
+    }
+  }, [isObjectMode, selectedRecordType, recordTemplates, templateObjects, isEditing, initialRowData, formData.typeOfRecord, formData.typeOfObject]);
 
   // Ensure formData has all required fields properly initialized
   useEffect(() => {
     if (!isEditing && selectedRecordType && !formData.linkId) {
-      const template = recordTemplates?.find((t) => t.name === selectedRecordType);
-      setFormData(prev => ({
-        ...prev,
-        linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        assignedTo: prev.assignedTo || user?.email || '',
-        typeOfRecord: selectedRecordType,
-        typeOfObject: (() => {
-          // Find the object for this template to set typeOfObject
-          if (template?.objectId && templateObjects) {
-            const object = templateObjects.find(e => e.id === template.objectId);
-            return object ? object.name : '';
-          }
-          return '';
-        })(),
-      }));
+      if (isObjectMode) {
+        // Object mode: selectedRecordType is the object name
+        setFormData(prev => ({
+          ...prev,
+          linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          assignedTo: prev.assignedTo || user?.email || '',
+          typeOfObject: selectedRecordType,
+        }));
+      } else {
+        // Record mode: existing logic
+        const template = recordTemplates?.find((t) => t.name === selectedRecordType);
+        setFormData(prev => ({
+          ...prev,
+          linkId: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          assignedTo: prev.assignedTo || user?.email || '',
+          typeOfRecord: selectedRecordType,
+          typeOfObject: (() => {
+            // Find the object for this template to set typeOfObject
+            if (template?.objectId && templateObjects) {
+              const object = templateObjects.find(e => e.id === template.objectId);
+              return object ? object.name : '';
+            }
+            return '';
+          })(),
+        }));
+      }
     }
-  }, [selectedRecordType, isEditing, formData.linkId, user?.email, recordTemplates, templateObjects]);
+  }, [isObjectMode, selectedRecordType, isEditing, formData.linkId, user?.email, recordTemplates, templateObjects]);
 
   const historicalFormData = useMemo(() => {
     if (!isViewingHistory || !selectedHistoryDate || !formData.history) {
@@ -248,35 +264,49 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   }, [isEditing, formData.typeOfRecord, formData.typeOfObject, recordTemplates, templateObjects]);
 
   const handleSelectionNext = useCallback(() => {
-    if (!selectedSheet) {
+    if (!isObjectMode && !selectedSheet) {
       alert('Please select a sheet.');
       return;
     }
     if (!selectedRecordType) {
-      alert('Please select a record type.');
+      alert(isObjectMode ? 'Please select an object type.' : 'Please select a record type.');
       return;
     }
-    console.log('handleSelectionNext debug:', { selectedSheet, selectedRecordType, recordTemplates: recordTemplates?.map(t => ({ name: t.name, objectId: t.objectId })) });
-    const template = recordTemplates?.find((t) => t.name === selectedRecordType);
-    if (!template) {
-      alert('Invalid record type selected.');
-      return;
+    
+    if (isObjectMode) {
+      // Object mode: selectedRecordType is the object name
+      const object = templateObjects?.find((o) => o.name === selectedRecordType);
+      if (!object) {
+        alert('Invalid object type selected.');
+        return;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        typeOfObject: object.name,
+      }));
+    } else {
+      // Record mode: existing logic
+      const template = recordTemplates?.find((t) => t.name === selectedRecordType);
+      if (!template) {
+        alert('Invalid record type selected.');
+        return;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        sheetName: selectedSheet,
+        typeOfRecord: template.name,
+        typeOfObject: (() => {
+          // Find the object for this template to set typeOfObject
+          if (template.objectId && templateObjects) {
+            const object = templateObjects.find(e => e.id === template.objectId);
+            return object ? object.name : '';
+          }
+          return '';
+        })(),
+      }));
     }
-    setFormData((prev) => ({
-      ...prev,
-      sheetName: selectedSheet,
-      typeOfRecord: template.name,
-      typeOfObject: (() => {
-        // Find the object for this template to set typeOfObject
-        if (template.objectId && templateObjects) {
-          const object = templateObjects.find(e => e.id === template.objectId);
-          return object ? object.name : '';
-        }
-        return '';
-      })(),
-    }));
     setView('editor');
-  }, [selectedSheet, selectedRecordType, recordTemplates]);
+  }, [isObjectMode, selectedSheet, selectedRecordType, recordTemplates, templateObjects]);
 
   const handleClose = useCallback(() => {
     setIsViewingHistory(false);
@@ -512,12 +542,12 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
-    if (!selectedSheet) {
+    if (!selectedSheet && !isObjectMode) {
       alert('No sheet selected.');
       return;
     }
-    const template = recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecord : selectedRecordType));
-    if (!template) {
+    const template = isObjectMode ? null : recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecord : selectedRecordType));
+    if (!isObjectMode && !template) {
       alert('Invalid record type selected.');
       return;
     }
@@ -525,23 +555,28 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       (key) => key !== 'sheetName' && key !== 'typeOfRecord' && key !== 'typeOfObject' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
     if (!isEditing && !hasData && !isViewingHistory) {
-      alert('Please fill in at least one field to create a record.');
+      alert(isObjectMode ? 'Please fill in at least one field to create an object.' : 'Please fill in at least one field to create a record.');
       return;
     }
 
     let newRow = {
       ...formData,
-      docId: isEditing && initialRowData?.docId ? initialRowData.docId : formData.docId,
+      docId: isEditing && initialRowData?.docId ? initialRowData.docId : (formData.docId || `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
-      typeOfRecord: isEditing ? initialRowData?.typeOfRecord : template.name,
-      typeOfObject: (() => {
-        // Find the object for this template to set typeOfObject
-        if (template.objectId && templateObjects) {
-          const object = templateObjects.find(e => e.id === template.objectId);
-          return object ? object.name : '';
-        }
-        return formData.typeOfObject || '';
-      })(),
+      isObject: isObjectMode, // Explicit flag to indicate if this is an object
+      ...(isObjectMode ? {
+        typeOfObject: isEditing ? initialRowData?.typeOfObject : selectedRecordType,
+      } : {
+        typeOfRecord: isEditing ? initialRowData?.typeOfRecord : template.name,
+        typeOfObject: (() => {
+          // Find the object for this template to set typeOfObject
+          if (template.objectId && templateObjects) {
+            const object = templateObjects.find(e => e.id === template.objectId);
+            return object ? object.name : '';
+          }
+          return formData.typeOfObject || '';
+        })(),
+      }),
       assignedTo: formData.assignedTo || user?.email || '',
       lastModifiedBy: user?.uid || user?.email || 'unknown',
       history: formData.history || [],
@@ -549,7 +584,9 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       action: isEditing ? 'update' : 'add',
     };
 
-    const requiredFields = ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'history', 'isModified', 'action'];
+    const requiredFields = isObjectMode 
+      ? ['docId', 'linkId', 'typeOfObject', 'isObject', 'history', 'isModified', 'action']
+      : ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'isObject', 'history', 'isModified', 'action'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];
@@ -560,12 +597,14 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     const timestamp = Timestamp.now();
 
     if (isViewingHistory && selectedHistoryDate) {
-      const existingRecord = records.find((record) => record.docId === initialRowData.docId);
+      const existingRecord = isObjectMode 
+        ? objects.find((object) => object.docId === initialRowData.docId)
+        : records.find((record) => record.docId === initialRowData.docId);
       Object.keys(historicalFormData).forEach((key) => {
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfRecord' &&
+          (!isObjectMode ? key !== 'typeOfRecord' : true) &&
           key !== 'history' &&
           historicalFormData[key] !== existingRecord[key]
         ) {
@@ -582,13 +621,15 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      const existingRecord = records.find((record) => record.docId === initialRowData.docId);
+      const existingRecord = isObjectMode 
+        ? objects.find((object) => object.docId === initialRowData.docId)
+        : records.find((record) => record.docId === initialRowData.docId);
       if (existingRecord) {
         Object.keys(formData).forEach((key) => {
           if (
             key !== 'docId' &&
             key !== 'sheetName' &&
-            key !== 'typeOfRecord' &&
+            (!isObjectMode ? key !== 'typeOfRecord' : true) &&
             key !== 'history' &&
             formData[key] !== existingRecord[key]
           ) {
@@ -607,7 +648,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
         if (
           key !== 'docId' &&
           key !== 'sheetName' &&
-          key !== 'typeOfRecord' &&
+          (!isObjectMode ? key !== 'typeOfRecord' : true) &&
           key !== 'history' &&
           formData[key] &&
           formData[key].toString().trim() !== ''
@@ -670,20 +711,30 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
 
   const handleDelete = useCallback(() => {
     if (!isEditing || !initialRowData?.docId) {
-      alert('No record to delete.');
+      alert(isObjectMode ? 'No object to delete.' : 'No record to delete.');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this record? This action will remove it from all sheets.')) {
-      setRecords((prev) =>
-        prev.map((record) =>
-          record.docId === initialRowData.docId
-            ? { ...record, isModified: true, action: 'remove' }
-            : record
-        )
-      );
+    if (window.confirm(isObjectMode ? 'Are you sure you want to delete this object?' : 'Are you sure you want to delete this record? This action will remove it from all sheets.')) {
+      if (isObjectMode) {
+        setObjects((prev) =>
+          prev.map((object) =>
+            object.docId === initialRowData.docId
+              ? { ...object, isModified: true, action: 'remove' }
+              : object
+          )
+        );
+      } else {
+        setRecords((prev) =>
+          prev.map((record) =>
+            record.docId === initialRowData.docId
+              ? { ...record, isModified: true, action: 'remove' }
+              : record
+          )
+        );
+      }
       onClose();
     }
-  }, [isEditing, initialRowData, setRecords, onClose]);
+  }, [isObjectMode, isEditing, initialRowData, setObjects, setRecords, onClose]);
 
   const toggleSection = useCallback((sectionName) => {
     setHasUserToggledSections(true);
@@ -1066,53 +1117,104 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
               </svg>
             </button>
             <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'selection' ? 'Create a New Record' : 'New Record'}
+              {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'modeSelection' ? 'Create New Item' : view === 'selection' ? 'Create a New Record' : 'New Record'}
             </h1>
-            <button
-              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={view === 'selection' ? handleSelectionNext : handleSave}
-            >
-              {view === 'selection' ? 'Next' : isViewingHistory ? 'Revert Data' : 'Save'}
-            </button>
+            {view !== 'modeSelection' && (
+              <button
+                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={view === 'selection' ? handleSelectionNext : handleSave}
+              >
+                {view === 'selection' ? 'Next' : isViewingHistory ? 'Revert Data' : 'Save'}
+              </button>
+            )}
           </div>
           <div className={styles.contentWrapper}>
+            {view === 'modeSelection' && (
+              <div className={`${styles.sectionWrapper} ${styles.selectionView} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.selectionHeader}>
+                  <h2 className={styles.selectionTitle}>✨ Create New Item</h2>
+                  <p className={styles.selectionSubtitle}>
+                    Choose what type of item you'd like to create
+                  </p>
+                </div>
+                <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
+                  <div className={styles.modeSelectionButtons}>
+                    <button
+                      className={`${styles.modeButton} ${styles.objectModeButton}`}
+                      onClick={() => {
+                        setIsObjectMode(true);
+                        setView('selection');
+                      }}
+                    >
+                      <div className={styles.modeButtonIcon}>🏗️</div>
+                      <div className={styles.modeButtonContent}>
+                        <h3>Create Object</h3>
+                        <p>Build custom data structures with flexible fields and properties</p>
+                      </div>
+                      <div className={styles.modeButtonArrow}>→</div>
+                    </button>
+                    <button
+                      className={`${styles.modeButton} ${styles.recordModeButton}`}
+                      onClick={() => {
+                        setIsObjectMode(false);
+                        setView('selection');
+                      }}
+                    >
+                      <div className={styles.modeButtonIcon}>�</div>
+                      <div className={styles.modeButtonContent}>
+                        <h3>Create Record</h3>
+                        <p>Use predefined templates to create structured data entries</p>
+                      </div>
+                      <div className={styles.modeButtonArrow}>→</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {view === 'selection' && (
               <div className={`${styles.sectionWrapper} ${styles.selectionView} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={styles.selectionHeader}>
-                  <h2 className={styles.selectionTitle}>Create New Record</h2>
-                  <p className={styles.selectionSubtitle}>Choose a sheet and record type to get started</p>
+                  <h2 className={styles.selectionTitle}>Create New {isObjectMode ? 'Object' : 'Record'}</h2>
+                  <p className={styles.selectionSubtitle}>
+                    {isObjectMode 
+                      ? 'Choose an object type to get started'
+                      : 'Choose a sheet and record type to get started'
+                    }
+                  </p>
                 </div>
                 <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
+                  {!isObjectMode && (
+                    <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        Sheet
+                      </span>
+                      <select
+                        value={selectedSheet}
+                        onChange={(e) => setSelectedSheet(e.target.value)}
+                        className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        aria-label="Select a sheet"
+                      >
+                        <option value="">Select a sheet</option>
+                        {sheetOptions.map((sheetName) => (
+                          <option key={sheetName} value={sheetName}>
+                            {sheetName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      Sheet
-                    </span>
-                    <select
-                      value={selectedSheet}
-                      onChange={(e) => setSelectedSheet(e.target.value)}
-                      className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      aria-label="Select a sheet"
-                    >
-                      <option value="">Select a sheet</option>
-                      {sheetOptions.map((sheetName) => (
-                        <option key={sheetName} value={sheetName}>
-                          {sheetName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      Record Type
+                      {isObjectMode ? 'Object Type' : 'Record Type'}
                     </span>
                     <select
                       value={selectedRecordType}
                       onChange={(e) => setSelectedRecordType(e.target.value)}
                       className={`${styles.fieldSelect} ${styles.recordTypeSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      aria-label="Select a record type"
+                      aria-label={isObjectMode ? "Select an object type" : "Select a record type"}
                     >
-                      <option value="">Select a record type</option>
-                      {recordTypeOptions.map((type) => (
+                      <option value="">{isObjectMode ? 'Select an object type' : 'Select a record type'}</option>
+                      {(isObjectMode ? templateObjects?.map(obj => obj.name) || [] : recordTypeOptions).map((type) => (
                         <option key={type} value={type}>
                           {type}
                         </option>
@@ -1410,7 +1512,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
                         aria-label="Delete record"
                       >
                         <MdDelete size={18} />
-                        Delete Record
+                        Delete {isObjectMode ? 'Object' : 'Record'}
                       </button>
                     )}
                   </div>
@@ -1450,11 +1552,13 @@ RecordsEditor.propTypes = {
   }),
   startInEditMode: PropTypes.bool,
   preSelectedSheet: PropTypes.string,
+  isObjectMode: PropTypes.bool,
 };
 
 RecordsEditor.defaultProps = {
   startInEditMode: false,
   onOpenNewRecord: null,
+  isObjectMode: false,
 };
 
 export default RecordsEditor;

@@ -2138,3 +2138,123 @@
 .templateActionButton:active {
   transform: translateY(0);
 }
+
+/* Mode Selection Styles */
+.modeSelectionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  padding: 24px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.modeButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s;
+}
+
+.modeButton:hover::before {
+  left: 100%;
+}
+
+.modeButton:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.modeButton.darkTheme {
+  background: linear-gradient(135deg, rgba(30, 30, 32, 0.9) 0%, rgba(20, 20, 22, 0.7) 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modeButton.darkTheme:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(0, 122, 255, 0.4);
+}
+
+.recordModeButton:hover {
+  border-color: rgba(0, 122, 255, 0.4);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.04) 100%);
+}
+
+.objectModeButton:hover {
+  border-color: rgba(52, 199, 89, 0.4);
+  background: linear-gradient(135deg, rgba(52, 199, 89, 0.08) 0%, rgba(52, 199, 89, 0.04) 100%);
+}
+
+.modeButtonIcon {
+  font-size: 36px;
+  margin-right: 20px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.modeButtonContent {
+  flex: 1;
+}
+
+.modeButtonContent h3 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1c1c1e;
+  letter-spacing: -0.02em;
+}
+
+.modeButtonContent p {
+  margin: 0;
+  font-size: 15px;
+  color: #8e8e93;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.modeButtonArrow {
+  font-size: 20px;
+  color: #c7c7cc;
+  transition: all 0.3s ease;
+  margin-left: 16px;
+}
+
+.modeButton:hover .modeButtonArrow {
+  color: #007aff;
+  transform: translateX(4px);
+}
+
+.modeButton.darkTheme .modeButtonContent h3 {
+  color: #ffffff;
+}
+
+.modeButton.darkTheme .modeButtonContent p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.modeButton.darkTheme:hover .modeButtonArrow {
+  color: #0a84ff;
+}

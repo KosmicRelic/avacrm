@@ -10,6 +10,8 @@ import { FiEdit } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 // Local components
 import RowComponent from './Row Template/RowComponent';
@@ -39,7 +41,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  const { isDarkTheme, setRecords, records, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
+  const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
@@ -489,9 +491,9 @@ const Sheets = ({
   const handleRowClick = useCallback(
     (rowData) => {
       if (rowData.isAddNew) {
-        setIsEditorOpen(true);
         setSelectedRow(null);
         setSelectedRowForEdit(null);
+        setIsEditorOpen(true);
       } else {
         // Check if this row is already selected
         if (selectedRowForEdit?.docId === rowData.docId) {
@@ -553,22 +555,55 @@ const Sheets = ({
   }, [activeSheetName, navigate]);
 
   const handleEditorSave = useCallback(
-    (updatedRow, isEditing) => {
+    async (updatedRow, isEditing) => {
+      if (!businessId) {
+        console.error('❌ Cannot save: businessId is null/undefined');
+        alert('Cannot save: Business ID not available. Please refresh the page and try again.');
+        return;
+      }
+
       const rowId = updatedRow.docId;
       const newRecordData = { ...updatedRow, isModified: true, action: isEditing ? 'update' : 'add' };
 
-      if (!isEditing) {
-        setRecords((prev) => [...prev, newRecordData]);
+      // Check if this is an object using the explicit flag
+      const isObject = updatedRow.isObject === true;
+
+      if (isObject) {
+        if (!isEditing) {
+          setObjects((prev) => [...prev, newRecordData]);
+        } else {
+          setObjects((prev) =>
+            prev.map((object) => (object.docId === rowId ? newRecordData : object))
+          );
+        }
+        // Save object to Firebase
+        try {
+          await setDoc(doc(db, `businesses/${businessId}/objects/${newRecordData.docId}`), newRecordData);
+        } catch (error) {
+          console.error('Failed to save object to Firebase:', error);
+        }
       } else {
-        setRecords((prev) =>
-          prev.map((record) => (record.docId === rowId ? newRecordData : record))
-        );
+        if (!isEditing) {
+          setRecords((prev) => [...prev, newRecordData]);
+        } else {
+          setRecords((prev) =>
+            prev.map((record) => (record.docId === rowId ? newRecordData : record))
+          );
+        }
+        // Save record to Firebase
+        try {
+          console.log('Saving record to Firebase:', `businesses/${businessId}/records/${newRecordData.docId}`);
+          await setDoc(doc(db, `businesses/${businessId}/records/${newRecordData.docId}`), newRecordData);
+          console.log('Record saved successfully to Firebase');
+        } catch (error) {
+          console.error('Failed to save record to Firebase:', error);
+        }
+        onRecordSave(newRecordData);
       }
-      onRecordSave(newRecordData);
       setSelectedRow(newRecordData);
       setIsEditorOpen(false);
     },
-    [records, onRecordSave]
+    [records, objects, onRecordSave, setObjects]
   );
 
   const handleInlineSave = useCallback(
