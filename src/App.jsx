@@ -60,6 +60,7 @@ ProtectedRoute.propTypes = {
 // Lazy load major components for code splitting
 const Sheets = lazy(() => import('./Sheets/Sheets'));
 const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
+const Objects = lazy(() => import('./Objects'));
 const Metrics = lazy(() => import('./Metrics/Metrics'));
 const Settings = lazy(() => import('./Settings/Settings'));
 const Actions = lazy(() => import('./Actions/Actions'));
@@ -210,6 +211,8 @@ function App() {
   useEffect(() => {
     if (location.pathname === '/dashboard') {
       setActiveOption('dashboard');
+    } else if (location.pathname === '/objects') {
+      setActiveOption('objects');
     } else if (location.pathname === '/sheets') {
       setActiveOption('sheets');
     } else if (location.pathname === '/metrics') {
@@ -673,6 +676,14 @@ function App() {
                     activeDashboardId={activeDashboardId}
                     onDashboardChange={handleDashboardChange}
                   />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/objects"
+              element={
+                <ProtectedRoute>
+                  <Objects />
                 </ProtectedRoute>
               }
             />

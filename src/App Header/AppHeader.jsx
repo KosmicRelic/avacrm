@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
 import { CgProfile } from 'react-icons/cg';
-import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown } from 'react-icons/fa';
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaCubes } from 'react-icons/fa';
 import { SiGoogleadsense } from 'react-icons/si';
 import { RiDashboard2Fill } from 'react-icons/ri';
 import { MainContext } from '../Contexts/MainContext';
@@ -19,6 +19,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   useEffect(() => {
     const path = location.pathname;
     if (path === '/dashboard') setActiveOption('dashboard');
+    else if (path === '/objects') setActiveOption('objects');
     else if (path.startsWith('/sheets')) {
       setActiveOption('sheets');
     }
@@ -52,6 +53,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     setIsMenuOpen(false);
     const routes = {
       dashboard: '/dashboard',
+      objects: '/objects',
       sheets: '/sheets',
       metrics: '/metrics',
       financials: '/financials',
@@ -69,6 +71,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   // Map of options to their icons, labels, and routes
   const navOptions = {
     dashboard: { icon: <RiDashboard2Fill size={20} />, label: 'Dashboard' },
+    objects: { icon: <FaCubes size={20} />, label: 'Objects' },
     sheets: { icon: <SiGoogleadsense size={20} />, label: 'Sheets' },
     financials: { icon: <FaMoneyBillWave size={20} />, label: 'Financials' },
     actions: { icon: <FaBullhorn size={20} />, label: 'Actions' },
@@ -79,7 +82,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   const canAccess = (section) => {
     if (!user) return false;
     if (user.uid === user.businessId) return true;
-    if (section === 'dashboard' || section === 'financials' || section === 'actions' || section === 'metrics') {
+    if (section === 'dashboard' || section === 'objects' || section === 'financials' || section === 'actions' || section === 'metrics') {
       return (
         user.permissions?.[section] === 'editor' || user.permissions?.[section] === 'viewer'
       );
@@ -107,6 +110,8 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                 className={`${styles.menuButton} ${styles.navButton} ${
                   activeOption === 'dashboard'
                     ? styles.activeDashboard
+                    : activeOption === 'objects'
+                    ? styles.activeObjects
                     : activeOption === 'sheets'
                     ? styles.activeSheets
                     : activeOption === 'financials'
@@ -128,31 +133,6 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
                   <FaChevronDown size={14} />
                 </span>
               </button>
-              {isMenuOpen && (
-                <div
-                  ref={menuRef}
-                  className={`${styles.menuDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
-                >
-                  {visibleNavOptions.map((option) => (
-                    <button
-                      key={option}
-                      className={`${styles.navButton} ${
-                        activeOption === option
-                          ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
-                          : ''
-                      } ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => handleOptionClick(option)}
-                    >
-                      {option === 'sheets' ? (
-                        <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
-                      ) : (
-                        navOptions[option].icon
-                      )}
-                      <span>{navOptions[option].label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </>
           )}
         </div>
@@ -186,6 +166,31 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
           <CgProfile size={24} />
         </button>
       </div>
+      {isMobile && isMenuOpen && (
+        <div
+          ref={menuRef}
+          className={`${styles.menuDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
+        >
+          {visibleNavOptions.map((option) => (
+            <button
+              key={option}
+              className={`${styles.navButton} ${
+                activeOption === option
+                  ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
+                  : ''
+              } ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={() => handleOptionClick(option)}
+            >
+              {option === 'sheets' ? (
+                <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
+              ) : (
+                navOptions[option].icon
+              )}
+              <span>{navOptions[option].label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
