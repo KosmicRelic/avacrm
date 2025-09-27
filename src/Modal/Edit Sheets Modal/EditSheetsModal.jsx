@@ -117,6 +117,7 @@ const EditSheetsModal = ({
   }, [selectedTemplates]);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedRecordTypeForFilter, setSelectedRecordTypeForFilter] = useState(null);
+  const [selectedObjectFieldForFilter, setSelectedObjectFieldForFilter] = useState(null);
   const [recordsPerSearch, setRecordsPerSearch] = useState(tempData.recordsPerSearch || '');
   const [filterType, setFilterType] = useState(null);
   const [filterOrder, setFilterOrder] = useState(tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown']);
@@ -276,6 +277,47 @@ const EditSheetsModal = ({
       return summaries.length > 0 ? summaries.join('; ') : 'None';
     },
     [tempData.recordTypeFilters, allTemplates]
+  );
+
+  // Compute filter summary for object fields
+  const getObjectFieldFilterSummary = useCallback(
+    (field) => {
+      const fieldKey = `${field.key}_${field.objectId}`;
+      const filters = tempData.objectTypeFilters?.[fieldKey] || {};
+      const summaries = [];
+
+      Object.entries(filters).forEach(([filterKey, filter]) => {
+        if (filterKey === 'userFilter') {
+          summaries.push(`${field.name || field.key} = Current User`);
+          return;
+        }
+
+        const fieldName = field.name || field.key;
+        if (field.type === 'number' && (filter.start || filter.end)) {
+          const start = filter.start || '';
+          const end = filter.end || '';
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${fieldName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
+        } else if (field.type === 'date' && filter.sortOrder) {
+          summaries.push(`${fieldName}: Sorted ${filter.sortOrder}`);
+        } else if (field.type === 'dropdown' && filter.values?.length) {
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${fieldName}: ${filter.values.join(', ')}${sortOrder}`);
+        } else if (filter.value) {
+          const condition = filter.condition || filter.order || 'equals';
+          const prefix = field.type === 'number'
+            ? { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[condition] || ''
+            : condition;
+          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
+          summaries.push(`${fieldName}: ${prefix} ${filter.value}${sortOrder}`);
+        } else if (filter.sortOrder) {
+          summaries.push(`${fieldName}: (${filter.sortOrder})`);
+        }
+      });
+
+      return summaries.length > 0 ? summaries.join('; ') : 'None';
+    },
+    [tempData.objectTypeFilters]
   );
 
   // Handle save action
@@ -844,6 +886,27 @@ const EditSheetsModal = ({
     [goToStep, tempData, setTempData]
   );
 
+  const handleObjectFieldFilterClick = useCallback(
+    (field) => {
+      if (!field) return;
+      const fieldKey = `${field.key}_${field.objectId}`;
+      if (!tempData.objectTypeFilters?.[fieldKey]) {
+        setTempData({
+          ...tempData,
+          objectTypeFilters: {
+            ...tempData.objectTypeFilters,
+            [fieldKey]: {},
+          },
+        });
+      }
+      setSelectedObjectFieldForFilter(field);
+      setFilterType(null);
+      setNavigationDirection('forward');
+      goToStep(7);
+    },
+    [goToStep, tempData, setTempData]
+  );
+
   const handleAddFilterClick = useCallback(
     (typeOfRecords, filterType) => {
       setSelectedRecordTypeForFilter(typeOfRecords);
@@ -1103,18 +1166,7 @@ const EditSheetsModal = ({
             {step === 2 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Manage Your Columns</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Add columns to your sheet. Drag to reorder, pin important ones, and toggle visibility.</p>
-                <button
-                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  type="button"
-                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
-                  onClick={() => {
-                    setNavigationDirection('forward');
-                    goToStep(3);
-                  }}
-                >
-                  Add column from template
-                </button>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Add object fields as columns to your sheet. Drag to reorder, pin important ones, and toggle visibility.</p>
                 <button
                   className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                   type="button"
@@ -1129,7 +1181,7 @@ const EditSheetsModal = ({
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentHeaders.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No columns added yet. Tap "Add column" to get started.
+                      No columns added yet. Tap "Add object field" to get started.
                     </div>
                   )}
                   {currentHeaders.map((header, index) => {
@@ -1244,67 +1296,59 @@ const EditSheetsModal = ({
             )}
             {step === 4 && (
               <div className={styles.section}>
-                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Pick Your Columns</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which columns from this template to include in your sheet. You can reorder them later.</p>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Manage Your Columns</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select which object fields to include as columns in your sheet. You can reorder them later.</p>
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {(() => {
-                    const selectedTemplate = allTemplates.find((t) => t.typeOfRecord === selectedTemplateForHeaders);
-                    const selectedObject = templateObjects.find(obj => obj.id === selectedTemplate?.objectId);
+                    // Get all basic fields from selected objects
+                    const allBasicFields = templateObjects
+                      .filter(object => selectedObjects[object.id]?.selected)
+                      .flatMap(object => 
+                        (object.basicFields || []).map(field => ({
+                          ...field,
+                          objectId: object.id,
+                          objectName: object.name,
+                          key: `${field.key}_${object.id}`, // Make key unique per object
+                        }))
+                      );
                     
-                    // Get template headers
-                    const templateHeaders = selectedTemplate?.headers
-                      .filter((header) => header.isUsed !== false)
-                      .map((header) => ({
-                        key: header.key,
-                        name: header.name,
-                        type: header.type,
-                        options: header.options || [],
-                        section: header.section,
-                      })) || [];
-                    
-                    // Get basic fields from the object
-                    const basicFields = (selectedObject?.basicFields || [])
-                      .map((field) => ({
-                        key: field.key,
-                        name: field.name,
-                        type: field.type,
-                        options: field.options || [],
-                        section: "Basic Information",
-                      }));
-                    
-                    // Combine template headers and basic fields
-                    const allHeaders = [...templateHeaders, ...basicFields];
-                    
-                    const groupedHeaders = allHeaders.reduce((acc, header) => {
-                      const sectionName = header.section || "Basic Information";
-                      if (!acc[sectionName]) acc[sectionName] = [];
-                      acc[sectionName].push(header);
+                    const groupedFields = allBasicFields.reduce((acc, field) => {
+                      const objectName = field.objectName;
+                      if (!acc[objectName]) acc[objectName] = [];
+                      acc[objectName].push(field);
                       return acc;
                     }, {});
-                    return Object.keys(groupedHeaders).length === 0 ? (
+                    
+                    return Object.keys(groupedFields).length === 0 ? (
                       <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        No columns available for this template.
+                        No objects selected. Go back to Choose Data Types to select objects first.
                       </div>
                     ) : (
-                      Object.entries(groupedHeaders).map(([sectionName, headers]) => (
-                        <div key={sectionName} className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          <h4 className={`${styles.sectionGroupTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{sectionName}</h4>
-                          {headers.map((header) => (
+                      Object.entries(groupedFields).map(([objectName, fields]) => (
+                        <div key={objectName} className={`${styles.sectionGroup} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <h4 className={`${styles.sectionGroupTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{objectName}</h4>
+                          {fields.map((field) => (
                             <div
-                              key={header.key}
+                              key={field.key}
                               className={`${styles.recordTypeItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              onClick={() => toggleHeaderSelection(header)}
+                              onClick={() => toggleHeaderSelection({
+                                key: field.key,
+                                name: field.name,
+                                type: field.type,
+                                options: field.options || [],
+                                objectId: field.objectId,
+                              })}
                             >
                               <div className={styles.recordTypeRow}>
                                 <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {currentHeaders.some((h) => h.key === header.key) ? (
+                                  {currentHeaders.some((h) => h.key === field.key && h.objectId === field.objectId) ? (
                                     <FaRegCheckCircle size={18} className={`${styles.checked} ${isDarkTheme ? styles.darkTheme : ''}`} />
                                   ) : (
                                     <FaRegCircle size={18} />
                                   )}
                                 </span>
                                 <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {header.name ? header.name.charAt(0).toUpperCase() + header.name.slice(1).toLowerCase() : header.key.charAt(0).toUpperCase() + header.key.slice(1).toLowerCase()}
+                                  {field.name ? field.name.charAt(0).toUpperCase() + field.name.slice(1).toLowerCase() : field.key.charAt(0).toUpperCase() + field.key.slice(1).toLowerCase()}
                                 </span>
                                 <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
                                   <IoChevronForward size={16} />
@@ -1322,50 +1366,65 @@ const EditSheetsModal = ({
             {step === 5 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure Data Filters</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected record templates. To add or remove templates, go back to the Record Templates section.</p>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected object fields. You can filter by text, numbers, dates, and more.</p>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {selectedRecordTypes.length === 0 && (
-                    <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No record templates selected. Go back to Record Templates to add some first.
-                    </div>
-                  )}
-                  {selectedRecordTypes.map((typeOfRecords) => {
-                    const template = allTemplates.find((t) => t.typeOfRecord === typeOfRecords);
-                    return (
-                      <div
-                        key={typeOfRecords}
-                        onClick={() => handleFilterClick(typeOfRecords)}
-                        className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        role="button"
-                        aria-label={`Filters for ${template?.name || typeOfRecords}`}
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleFilterClick(typeOfRecords);
-                          }
-                        }}
-                      >
-                        <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {template?.name
-                            ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase()
-                            : typeOfRecords.charAt(0).toUpperCase() + typeOfRecords.slice(1).toLowerCase()}
-                        </span>
-                        <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {getFilterSummary(typeOfRecords)}
-                        </span>
-                        <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          <IoChevronForward size={16} />
-                        </div>
+                  {(() => {
+                    const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
+                    const allObjectFields = templateObjects
+                      .filter(object => selectedObjectIds.includes(object.id))
+                      .flatMap(object => 
+                        (object.basicFields || []).map(field => ({
+                          ...field,
+                          objectId: object.id,
+                          objectName: object.name,
+                          key: `${field.key}_${object.id}`,
+                        }))
+                      );
+                    
+                    return allObjectFields.length === 0 ? (
+                      <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        No objects selected. Go back to Choose Data Types to select objects first.
                       </div>
+                    ) : (
+                      allObjectFields.map((field) => (
+                        <div
+                          key={field.key}
+                          onClick={() => handleObjectFieldFilterClick(field)}
+                          className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          role="button"
+                          aria-label={`Filters for ${field.name || field.key}`}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              handleObjectFieldFilterClick(field);
+                            }
+                          }}
+                        >
+                          <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {field.name
+                              ? field.name.charAt(0).toUpperCase() + field.name.slice(1).toLowerCase()
+                              : field.key.charAt(0).toUpperCase() + field.key.slice(1).toLowerCase()}
+                            <span className={`${styles.objectName} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              ({field.objectName})
+                            </span>
+                          </span>
+                          <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {getObjectFieldFilterSummary(field)}
+                          </span>
+                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <IoChevronForward size={16} />
+                          </div>
+                        </div>
+                      ))
                     );
-                  })}
+                  })()}
                 </div>
               </div>
             )}
             {step === 6 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which record types to include in this sheet. Selected templates will be available for filtering and display.</p>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which objects to include in this sheet. All templates within selected objects will be available for display.</p>
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {templateObjects.length === 0 ? (
                     <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1373,34 +1432,17 @@ const EditSheetsModal = ({
                     </div>
                   ) : (
                     templateObjects.map((object) => {
-                      const objectTemplates = object.templates || [];
-                      const selectedTemplatesForObject = selectedTemplates[object.id]?.selectedTemplates || [];
                       const isObjectSelected = selectedObjects[object.id]?.selected || false;
-                      const isExpanded = expandedObjects.has(object.id);
                       
                       return (
                         <div key={object.id}>
                           <div
                             className={`${styles.objectItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            onClick={() => {
-                              setExpandedObjects(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(object.id)) {
-                                  newSet.delete(object.id);
-                                } else {
-                                  newSet.add(object.id);
-                                }
-                                return newSet;
-                              });
-                            }}
                           >
                             <div className={styles.recordTypeRow}>
                               <span 
                                 className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleObjectSelection(object.id);
-                                }}
+                                onClick={() => toggleObjectSelection(object.id)}
                               >
                                 {isObjectSelected ? (
                                   <FaRegCheckCircle size={18} className={styles.checked} />
@@ -1411,31 +1453,11 @@ const EditSheetsModal = ({
                               <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
                                 {object.name}
                               </span>
-                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
-                              </div>
+                              <span className={`${styles.objectTemplatesCount} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {(object.templates || []).length} templates
+                              </span>
                             </div>
                           </div>
-                          {isExpanded && objectTemplates.map((template) => (
-                            <div
-                              key={template.typeOfRecord}
-                              className={`${styles.recordTypeItem} ${styles.templateItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              onClick={() => toggleTemplateInObject(object.id, template.typeOfRecord)}
-                            >
-                              <div className={styles.recordTypeRow}>
-                                <span className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {selectedTemplatesForObject.includes(template.typeOfRecord) ? (
-                                    <FaRegCheckCircle size={18} className={styles.checked} />
-                                  ) : (
-                                    <FaRegCircle size={18} />
-                                  )}
-                                </span>
-                                <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {template.name ? template.name.charAt(0).toUpperCase() + template.name.slice(1).toLowerCase() : template.typeOfRecord.charAt(0).toUpperCase() + template.typeOfRecord.slice(1).toLowerCase()}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
                         </div>
                       );
                     })
@@ -1444,7 +1466,7 @@ const EditSheetsModal = ({
               </div>
             )}
             {step === 7 && (
-              selectedRecordTypeForFilter ? (
+              (selectedRecordTypeForFilter || selectedObjectFieldForFilter) ? (
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Set Up Filters</h2>
                   <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up filters to narrow down the data shown in this sheet. You can filter by text, numbers, dates, and more.</p>
@@ -1470,15 +1492,21 @@ const EditSheetsModal = ({
                   </div>
                   
                   <div className={`${styles.filterListSection}`}>
-                    <RecordTypeFilterLikeFilterModal
-                      recordType={selectedRecordTypeForFilter}
-                      headers={allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.headers || []}
-                      tempData={tempData}
-                      setTempData={setTempData}
-                      isDarkTheme={isDarkTheme}
-                      showOnlyUserFilter={false}
-                      filterType={null}
-                    />
+                    {selectedObjectFieldForFilter ? (
+                      <div className={`${styles.objectFieldFilter} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        <p>Object field filtering for {selectedObjectFieldForFilter.name || selectedObjectFieldForFilter.key} will be implemented here.</p>
+                      </div>
+                    ) : (
+                      <RecordTypeFilterLikeFilterModal
+                        recordType={selectedRecordTypeForFilter}
+                        headers={allTemplates.find((t) => t.typeOfRecord === selectedRecordTypeForFilter)?.headers || []}
+                        tempData={tempData}
+                        setTempData={setTempData}
+                        isDarkTheme={isDarkTheme}
+                        showOnlyUserFilter={false}
+                        filterType={null}
+                      />
+                    )}
                   </div>
                   <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <button
