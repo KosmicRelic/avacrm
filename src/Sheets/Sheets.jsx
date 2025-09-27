@@ -41,9 +41,8 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  try {
-    console.log('🔍 Sheets component rendered');
-    const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
+  console.log('🔍 Sheets component rendered');
+  const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
@@ -60,7 +59,6 @@ const Sheets = ({
 
   const [spinnerVisible, setSpinnerVisible] = useState(false);
   const [spinnerFading, setSpinnerFading] = useState(false);
-  const [showObjects, setShowObjects] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -87,176 +85,83 @@ const Sheets = ({
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
     
-    // Choose data source based on showObjects toggle
-    const dataSource = showObjects ? objects : records;
-    const typeField = showObjects ? 'typeOfObject' : 'typeOfRecord';
+    // Choose data source - always objects
+    const dataSource = objects;
+    const typeField = 'typeOfObject';
     
     console.log('🔍 sheetRecords calculation:', {
-      showObjects,
       dataSourceLength: dataSource.length,
       sheetRecordTypes
     });
     
     // For objects, apply objectTypeFilters. For records, filter by sheet configuration
-    if (showObjects) {
-      // Apply objectTypeFilters to objects
-      return dataSource.filter((object) => {
-        const filters = objectTypeFilters[object.typeOfObject] || {};
-        return Object.entries(filters).every(([field, filter]) => {
-          if (field === 'userFilter') {
-            if (filter.headerKey && filter.condition === 'equals') {
-              const objectValue = object[filter.headerKey];
-              return objectValue === user.uid;
+    // Apply objectTypeFilters to objects
+    return dataSource.filter((object) => {
+      const filters = objectTypeFilters[object.typeOfObject] || {};
+      return Object.entries(filters).every(([field, filter]) => {
+        if (field === 'userFilter') {
+          if (filter.headerKey && filter.condition === 'equals') {
+            const objectValue = object[filter.headerKey];
+            return objectValue === user.uid;
+          }
+          return true;
+        }
+
+        const header = headers.find((h) => h.key === field);
+        const value = object[field];
+        if (!filter || !header) {
+          return true;
+        }
+
+        switch (header.type) {
+          case 'number':
+            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+            const numValue = Number(value) || 0;
+            if (filter.start || filter.end) {
+              const startNum = filter.start ? Number(filter.start) : -Infinity;
+              const endNum = filter.end ? Number(filter.end) : Infinity;
+              return numValue >= startNum && numValue <= endNum;
             }
-            return true;
-          }
-
-          const header = headers.find((h) => h.key === field);
-          const value = object[field];
-          if (!filter || !header) {
-            return true;
-          }
-
-          switch (header.type) {
-            case 'number':
-              if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
-              const numValue = Number(value) || 0;
-              if (filter.start || filter.end) {
-                const startNum = filter.start ? Number(filter.start) : -Infinity;
-                const endNum = filter.end ? Number(filter.end) : Infinity;
-                return numValue >= startNum && numValue <= endNum;
-              }
-              if (!filter.value || !filter.order) return true;
-              const filterNum = Number(filter.value);
-              switch (filter.order) {
-                case 'greater':
-                  return numValue > filterNum;
-                case 'less':
-                  return numValue < filterNum;
-                case 'greaterOrEqual':
-                  return numValue >= filterNum;
-                case 'lessOrEqual':
-                  return numValue <= filterNum;
-                default:
-                  return numValue === filterNum;
-              }
-            case 'date':
-              if (!filter.sortOrder) return true;
-              return true;
-            case 'dropdown':
-              if (!filter.values || filter.values.length === 0) return true;
-              return filter.values.includes(value);
-            case 'text':
-              if (!filter.value || !filter.condition) return true;
-              const strValue = String(value || '').toLowerCase();
-              const filterStr = filter.value.toLowerCase();
-              switch (filter.condition) {
-                case 'contains':
-                  return strValue.includes(filterStr);
-                case 'startsWith':
-                  return strValue.startsWith(filterStr);
-                case 'endsWith':
-                  return strValue.endsWith(filterStr);
-                default:
-                  return strValue === filterStr;
-              }
-            default:
-              return true;
-          }
-        });
-      });
-    }
-    
-
-    // Create a Set for O(1) lookup of record types
-    const sheetRecordTypesSet = new Set(sheetRecordTypes);
-    
-    // Pre-filter by record types first (usually eliminates most records quickly)
-    // Use Set.has() for O(1) lookup instead of Array.includes() O(n)
-    // If no record types are configured, show all records
-    // If record doesn't have typeOfRecord, include it if sheetRecordTypes is empty
-    let relevantRecords = sheetRecordTypes.length > 0 
-      ? dataSource.filter((record) => {
-          const recordType = record[typeField];
-          return recordType && sheetRecordTypesSet.has(recordType);
-        })
-      : dataSource;
-    
-    // If filtering resulted in 0 records but we have data, show all records as fallback
-    if (relevantRecords.length === 0 && dataSource.length > 0 && sheetRecordTypes.length > 0) {
-      console.log('🔍 Fallback: Showing all records because filtering by type resulted in 0');
-      relevantRecords = dataSource;
-    }
-    
-    console.log('🔍 After record type filtering:', relevantRecords.length);
-    
-    // Then apply record type filters (only on relevant records)
-    return relevantRecords.filter((record) => {
-      const filters = recordTypeFilters[record[typeField]] || {};
-        return Object.entries(filters).every(([field, filter]) => {
-          if (field === 'userFilter') {
-            if (filter.headerKey && filter.condition === 'equals') {
-              const recordValue = record[filter.headerKey];
-              return recordValue === user.uid;
+            if (!filter.value || !filter.order) return true;
+            const filterNum = Number(filter.value);
+            switch (filter.order) {
+              case 'greater':
+                return numValue > filterNum;
+              case 'less':
+                return numValue < filterNum;
+              case 'greaterOrEqual':
+                return numValue >= filterNum;
+              case 'lessOrEqual':
+                return numValue <= filterNum;
+              default:
+                return numValue === filterNum;
             }
+          case 'date':
+            if (!filter.sortOrder) return true;
             return true;
-          }
-
-          const header = headers.find((h) => h.key === field);
-          const value = record[field];
-          if (!filter || !header) {
+          case 'dropdown':
+            if (!filter.values || filter.values.length === 0) return true;
+            return filter.values.includes(value);
+          case 'text':
+            if (!filter.value || !filter.condition) return true;
+            const strValue = String(value || '').toLowerCase();
+            const filterStr = filter.value.toLowerCase();
+            switch (filter.condition) {
+              case 'contains':
+                return strValue.includes(filterStr);
+              case 'startsWith':
+                return strValue.startsWith(filterStr);
+              case 'endsWith':
+                return strValue.endsWith(filterStr);
+              default:
+                return strValue === filterStr;
+            }
+          default:
             return true;
-          }
-
-          switch (header.type) {
-            case 'number':
-              if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
-              const numValue = Number(value) || 0;
-              if (filter.start || filter.end) {
-                const startNum = filter.start ? Number(filter.start) : -Infinity;
-                const endNum = filter.end ? Number(filter.end) : Infinity;
-                return numValue >= startNum && numValue <= endNum;
-              }
-              if (!filter.value || !filter.order) return true;
-              const filterNum = Number(filter.value);
-              switch (filter.order) {
-                case 'greater':
-                  return numValue > filterNum;
-                case 'less':
-                  return numValue < filterNum;
-                case 'greaterOrEqual':
-                  return numValue >= filterNum;
-                case 'lessOrEqual':
-                  return numValue <= filterNum;
-                default:
-                  return numValue === filterNum;
-              }
-            case 'date':
-              if (!filter.sortOrder) return true;
-              return true;
-            case 'dropdown':
-              if (!filter.values || filter.values.length === 0) return true;
-              return filter.values.includes(value);
-            case 'text':
-              if (!filter.value || !filter.condition) return true;
-              const strValue = String(value || '').toLowerCase();
-              const filterStr = filter.value.toLowerCase();
-              switch (filter.condition) {
-                case 'contains':
-                  return strValue.includes(filterStr);
-                case 'startsWith':
-                  return strValue.startsWith(filterStr);
-                case 'endsWith':
-                  return strValue.endsWith(filterStr);
-                default:
-                  return strValue === filterStr;
-              }
-            default:
-              return true;
-          }
-        });
+        }
       });
-  }, [records, objects, showObjects, sheetRecordTypes, recordTypeFilters, objectTypeFilters, headers, user.uid]);
+    });
+  }, [objects, sheetRecordTypes, objectTypeFilters, headers, user.uid]);
 
   console.log('🔍 Final sheetRecords result:', sheetRecords.length);
 
@@ -854,7 +759,7 @@ const Sheets = ({
       style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <ImSpinner2 className={styles.iconSpinner} size={32} style={{ marginRight: 12 }} />
-      <span>Loading {showObjects ? 'objects' : 'records'}...</span>
+      <span>Loading objects...</span>
     </div>
   );
 
@@ -872,14 +777,6 @@ const Sheets = ({
                 onClick={onFilter}
               >
                 <MdFilterAlt size={20} />
-              </button>
-            )}
-            {!isSelectMode && (
-              <button
-                className={`${styles.toggleButton} ${showObjects ? styles.active : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={() => setShowObjects(!showObjects)}
-              >
-                {showObjects ? 'Objects' : 'Records'}
               </button>
             )}
           </div>
@@ -1095,7 +992,7 @@ const Sheets = ({
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
-              isObjectMode={showObjects}
+              isObjectMode={true}
             />
           </div>
         )}
@@ -1130,17 +1027,13 @@ const Sheets = ({
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
-              isObjectMode={showObjects}
+              isObjectMode={true}
             />
           </div>
         </>
       )}
     </div>
   );
-  } catch (error) {
-    console.error('🔍 Sheets component error:', error);
-    return <div>Error loading sheets: {error.message}</div>;
-  }
 };
 
 Sheets.propTypes = {
