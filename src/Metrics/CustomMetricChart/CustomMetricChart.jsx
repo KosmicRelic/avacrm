@@ -1,6 +1,5 @@
-import React, { useRef, useEffect, Component } from 'react';
+import { useRef, useEffect, Component } from 'react';
 import PropTypes from 'prop-types';
-import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -68,7 +67,7 @@ const CustomMetricChart = ({
   size = 'large', // Add size prop with default 'large'
 }) => {
   const appleBlue = '#007AFF';
-  const backgroundColor = isDarkTheme ? '#222' : '#f7f7f7';
+  const _backgroundColor = isDarkTheme ? '#222' : '#f7f7f7';
   const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
   const chartContainerRef = useRef(null);
   const resizeObserverRef = useRef(null);
@@ -94,7 +93,7 @@ const CustomMetricChart = ({
       }
       debouncedResize.cancel();
     };
-  }, []);
+  }, [debouncedResize]);
 
   // Helper function to get latest field value and timestamp
   const getLatestFieldValueAndTimestamp = (record, fieldKey, dateHeaderKey) => {
@@ -287,7 +286,7 @@ const CustomMetricChart = ({
       if (granularity === 'daily' && dateList.length > 0) {
         let lastMonth = null;
         sortedLabels = [];
-        dateList.forEach((date, idx) => {
+        dateList.forEach((date) => {
           const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
           const day = date.getDate().toString().padStart(2, '0');
           if (lastMonth !== date.getMonth()) {
@@ -303,7 +302,7 @@ const CustomMetricChart = ({
               return new Date(`01 ${label} 2025`).getTime();
             } else if (granularity === 'weekly') {
               const [start, rest] = label.split('-');
-              const [end, month] = rest.split('/');
+              const [_end, month] = rest.split('/');
               return new Date(`2025-${month}-${start}`).getTime();
             } else if (granularity === 'daily') {
               const parts = label.split(', ');

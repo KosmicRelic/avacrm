@@ -189,7 +189,7 @@ export const VALIDATION_CONSTANTS = {
   // Patterns
   PATTERNS: {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    PHONE: /^\+?[\d\s\-\(\)]+$/,
+    PHONE: /^\+?[\d\s\-()]+$/ ,
     URL: /^https?:\/\/.+/,
   },
 };

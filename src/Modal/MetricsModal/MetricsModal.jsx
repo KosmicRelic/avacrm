@@ -4,8 +4,6 @@ import styles from './MetricsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 import { v4 as uuidv4 } from 'uuid';
-import { FaRegCircle, FaRegCheckCircle, FaPlus, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart';
 import { computeMetricData } from '../../Metrics/metricsUtils';
 
 // Helper to evaluate the formula for number output
@@ -47,7 +45,7 @@ const evaluateNumberFormula = (formula, records, templateKey, headers) => {
   return Number.isFinite(result) ? result : '';
 };
 
-const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, isDarkTheme }) => {
+const _MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, _isDarkTheme }) => {
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -93,7 +91,7 @@ const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, s
 
 const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const mainContext = useContext(MainContext);
-  const { metrics = [], isDarkTheme, records, recordTemplates, headers = [] } = mainContext;
+  const { metrics = [], isDarkTheme, records, recordTemplates, _headers = [] } = mainContext;
 
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [currentCategories, setCurrentCategories] = useState(() =>
@@ -117,12 +115,12 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(null);
   const [activeMetricIndex, setActiveMetricIndex] = useState(-1);
   const [selectedRecordTemplate, setSelectedRecordTemplate] = useState(null);
-  const [dateRangeMode, setDateRangeMode] = useState({});
-  const [numberRangeMode, setNumberRangeMode] = useState({});
-  const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const [_dateRangeMode, setDateRangeMode] = useState({});
+  const [_numberRangeMode, setNumberRangeMode] = useState({});
+  const [_activeFilterIndex, setActiveFilterIndex] = useState(null);
   const [activeSectionIndex, setActiveSectionIndex] = useState(null);
   const [navigationDirection, setNavigationDirection] = useState(null);
-  const filterActionsRef = useRef(null);
+  const _filterActionsRef = useRef(null);
   const hasInitialized = useRef(false);
   const prevCategoriesRef = useRef(currentCategories);
   const prevConfigRef = useRef(null);
@@ -140,8 +138,8 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
 
   // Colors for Apple-inspired UI
   const appleBlue = '#007AFF';
-  const backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
-  const textColor = isDarkTheme ? '#FFFFFF' : '#000000';
+  const _backgroundColor = isDarkTheme ? '#1C2526' : '#FFFFFF';
+  const _textColor = isDarkTheme ? '#FFFFFF' : '#000000';
 
   // Validation functions
   const validateCategory = useCallback((name, existingCategories, isUpdate = false, index = null) => {
@@ -261,7 +259,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
   }, []);
 
   // Section toggling helper
-  const toggleSection = useCallback((sectionIndex) => {
+  const _toggleSection = useCallback((sectionIndex) => {
     setActiveSectionIndex((prev) => (prev === sectionIndex ? null : sectionIndex));
   }, []);
 
@@ -1379,7 +1377,7 @@ const MetricsModal = ({ tempData, setTempData, handleClose }) => {
                         </div>
                         {/* Formula preview */}
                         <div style={{ marginTop: 8, color: isDarkTheme ? '#fff' : '#222', fontWeight: 500 }}>
-                          Formula: {Array.isArray(metricForm.formula) && metricForm.formula.length > 0 ? metricForm.formula.map((part, idx) => ('header' in part) ? `${recordTemplates.find(t => (t.name || t.typeOfRecord) === metricForm.recordTemplates[0])?.headers?.find(h => h.key === part.header)?.name || 'Select Header'} (${part.calc})` : part.op).join(' ') : '—'}
+                          Formula: {Array.isArray(metricForm.formula) && metricForm.formula.length > 0 ? metricForm.formula.map((part, _idx) => ('header' in part) ? `${recordTemplates.find(t => (t.name || t.typeOfRecord) === metricForm.recordTemplates[0])?.headers?.find(h => h.key === part.header)?.name || 'Select Header'} (${part.calc})` : part.op).join(' ') : '—'}
                         </div>
                         {/* Result preview */}
                         <div style={{ marginTop: 4, color: '#888', fontSize: 13 }}>

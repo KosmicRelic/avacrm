@@ -1,5 +1,5 @@
 // src/Account Componenets/SignIn/Forgot Password/ForgotPassword.jsx
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import styles from './ForgotPassword.module.css';
 import { IoClose } from 'react-icons/io5';
 import { ImSpinner2 } from 'react-icons/im';

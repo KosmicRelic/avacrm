@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSwipeable } from 'react-swipeable';
 import styles from './WidgetSizeModal.module.css';
@@ -27,7 +27,7 @@ const WidgetSizeModal = ({ handleClose, onSelectSize }) => {
     });
 
     registerModalSteps({ steps });
-  }, []);
+  }, [registerModalSteps, setModalConfig]);
 
   const widgetSizes = [
     {

@@ -2,7 +2,7 @@
  * Service Worker for caching static assets and enabling offline functionality
  */
 
-const CACHE_NAME = 'avacrm-v1.0.1';
+const _CACHE_NAME = 'avacrm-v1.0.1';
 const STATIC_CACHE = 'avacrm-static-v1.0.1';
 const DYNAMIC_CACHE = 'avacrm-dynamic-v1.0.1';
 

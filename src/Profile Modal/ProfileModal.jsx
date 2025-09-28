@@ -1,7 +1,7 @@
 // src/ProfileModal/ProfileModal.jsx
 import { useNavigate } from 'react-router-dom';
 import styles from "./ProfileModal.module.css";
-import { FaUser, FaFolder, FaChartBar, FaCog } from "react-icons/fa"; // Added FaCog for Settings
+import { FaUser, FaCog } from "react-icons/fa"; // Added FaCog for Settings
 import { useContext, useState, useRef, useEffect } from "react";
 import { MainContext } from "../Contexts/MainContext";
 import PropTypes from "prop-types";
@@ -13,10 +13,10 @@ const ProfileModal = ({
   isOpen,
   onClose,
   setActiveOption,
-  onOpenSheetsModal,
-  onOpenMetricsModal, // Added prop
+  _onOpenSheetsModal,
+  _onOpenMetricsModal, // Added prop
 }) => {
-  const { isDarkTheme, setIsDarkTheme, user } = useContext(MainContext);
+  const { isDarkTheme, user } = useContext(MainContext);
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef(null);
   const navigate = useNavigate();

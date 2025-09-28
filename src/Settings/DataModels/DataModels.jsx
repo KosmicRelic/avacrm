@@ -3,14 +3,13 @@ import PropTypes from "prop-types";
 import styles from "./DataModels.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { FaPlus, FaSearch, FaRegCircle, FaRegCheckCircle, FaDownload, FaTrash, FaDatabase, FaLayerGroup, FaEdit, FaCheck, FaTimes, FaArrowLeft, FaSave, FaFileAlt } from "react-icons/fa";
-import { IoChevronForward, IoAdd, IoGitBranch, IoCreate, IoTrash } from "react-icons/io5";
-import { BsDashCircle } from "react-icons/bs";
+import { IoChevronForward, IoAdd, IoGitBranch, IoTrash } from "react-icons/io5";
 import { MdDragIndicator } from "react-icons/md";
 
 import { v4 as uuidv4 } from "uuid";
 import isEqual from "lodash/isEqual";
 import { db } from '../../firebase';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { updateRecordTemplatesAndRecordsFunction } from '../../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
 const DataModels = forwardRef(({ onSave, onBack }, ref) => {
@@ -52,7 +51,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   const [currentBasicFields, setCurrentBasicFields] = useState([]);
   const [selectedObjectForBasic, setSelectedObjectForBasic] = useState(null);
   const [editingBasicFieldIndex, setEditingBasicFieldIndex] = useState(null);
-  const [isEditingBasicField, setIsEditingBasicField] = useState(false);
+  const [_isEditingBasicField, _setIsEditingBasicField] = useState(false);
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
 
   // Object management state - use local state to prevent Firestore overwrites
@@ -97,8 +96,8 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
 
   // Template management state
   const [showTemplateForm, setShowTemplateForm] = useState(false);
-  const [editingTemplateIndex, setEditingTemplateIndex] = useState(null);
-  const [editingTemplateName, setEditingTemplateName] = useState("");
+  const [_editingTemplateIndex, _setEditingTemplateIndex] = useState(null);
+  const [_editingTemplateName, _setEditingTemplateName] = useState("");
 
   // Pipeline management state
   const [newPipelineName, setNewPipelineName] = useState("");
@@ -108,6 +107,40 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   const [showPipelineForm, setShowPipelineForm] = useState(false);
   const [editingPipelineIndex, setEditingPipelineIndex] = useState(null);
 
+  // Reset pipeline form
+  const resetPipelineForm = useCallback(() => {
+    setNewPipelineName("");
+    setPipelineSourceTemplate("");
+    setPipelineTargetTemplate("");
+    setPipelineFieldMappings([]);
+    setEditingPipelineIndex(null);
+  }, []);
+
+  // Create new pipeline
+  const createPipeline = useCallback(() => {
+    // TODO: Implement pipeline creation
+    console.log('Create pipeline:', { newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings });
+    setShowPipelineForm(false);
+    resetPipelineForm();
+  }, [newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, resetPipelineForm]);
+
+  // Update existing pipeline
+  const updatePipeline = useCallback(() => {
+    // TODO: Implement pipeline update
+    console.log('Update pipeline:', { editingPipelineIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings });
+    setShowPipelineForm(false);
+    resetPipelineForm();
+  }, [editingPipelineIndex, newPipelineName, pipelineSourceTemplate, pipelineTargetTemplate, pipelineFieldMappings, resetPipelineForm]);
+
+  // Edit existing pipeline
+  const editPipeline = useCallback((index) => {
+    // TODO: Implement pipeline editing
+    console.log('Edit pipeline at index:', index);
+    setEditingPipelineIndex(index);
+    setShowPipelineForm(true);
+    // Populate form with existing pipeline data
+  }, []);
+
   // Section editing state
   const [editingSectionIndex, setEditingSectionIndex] = useState(null);
   const [editingSectionName, setEditingSectionName] = useState("");
@@ -116,7 +149,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
 
   // Field creation state
   const [showFieldForm, setShowFieldForm] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [_hasUnsavedChanges, _setHasUnsavedChanges] = useState(false);
 
   const keyRefs = useRef(new Map());
   const sectionRefs = useRef(new Map());
@@ -131,6 +164,12 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       }))
     );
   }, [templateObjects]);
+
+  // Helper function to get fields of a template by name
+  const getTemplateFields = useCallback((templateName) => {
+    const template = getAllTemplates().find(t => t.name === templateName);
+    return template ? template.headers || [] : [];
+  }, [getAllTemplates]);
 
   const lastTempDataRef = useRef({ deletedHeaderKeys, templateObjects });
   const initialStateRef = useRef(null); // Track initial state to detect changes
@@ -170,7 +209,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         templateObjects: JSON.parse(JSON.stringify(templateObjects))
       };
     }
-  }, []); // No dependencies - only set initial state once on mount
+  }, [deletedHeaderKeys, templateObjects]); // No dependencies - only set initial state once on mount
 
   // Function to detect if there are any changes from initial state (excluding updatedAt)
   const hasChanges = useCallback(() => {
@@ -258,10 +297,10 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   }, [contextTemplateObjects, templateObjects.length, setTemplateObjects, deletedHeaderKeys]);
 
   // Track unsaved changes
-  useEffect(() => {
-    const changes = hasChanges();
-    setHasUnsavedChanges(changes);
-  }, [hasChanges]);
+  // useEffect(() => {
+  //   const changes = hasChanges();
+  //   setHasUnsavedChanges(changes);
+  // }, [hasChanges]);
 
   // Navigation functions
   const navigateToView = useCallback((view, params = {}) => {
@@ -432,7 +471,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
           const objectTemplates = (object.templates || [])
             .filter(template => template.action !== "remove")
             .map(template => {
-              const { isModified, action, ...cleanTemplate } = template;
+              const { _isModified, _action, ...cleanTemplate } = template;
               return cleanTemplate;
             });
           
@@ -648,13 +687,13 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     setNewHeaderOptions([...(field.options || [])]);
     setNewHeaderSection("Basic Information");
     setEditingBasicFieldIndex(index);
-    setIsEditingBasicField(true);
+    // setIsEditingBasicField(true);
     setActiveHeaderIndex(-2); // Special index
     setShowFieldForm(true);
   }, [templateObjects, selectedObjectIndex]);
 
   // Save basic field
-  const saveBasicField = useCallback(() => {
+  const _saveBasicField = useCallback(() => {
     if (editingBasicFieldIndex === null) return;
     const updatedFields = [...templateObjects[selectedObjectIndex].basicFields];
     updatedFields[editingBasicFieldIndex] = {
@@ -667,7 +706,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     resetHeaderForm();
     setEditingBasicFieldIndex(null);
     setActiveHeaderIndex(null);
-  }, [editingBasicFieldIndex, newHeaderName, newHeaderType, newHeaderOptions, templateObjects, selectedObjectIndex, updateBasicFields]);
+  }, [editingBasicFieldIndex, newHeaderName, newHeaderType, newHeaderOptions, templateObjects, selectedObjectIndex, updateBasicFields, resetHeaderForm]);
 
   // Validate header name
   const validateHeader = useCallback(
@@ -897,7 +936,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       setActiveHeaderIndex(null);
       goBack();
     },
-    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, templateObjects, validateHeader, goBack]
+    [newHeaderName, newHeaderType, newHeaderSection, newHeaderOptions, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, templateObjects, validateHeader, goBack, resetHeaderForm]
   );
 
   // Save header (add or update)
@@ -917,13 +956,13 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       updateBasicFields(selectedObjectIndex, updatedFields);
       resetHeaderForm();
       setEditingBasicFieldIndex(null);
-      setIsEditingBasicField(false);
+      // setIsEditingBasicField(false);
       setActiveHeaderIndex(null);
       goBack();
     } else if (activeHeaderIndex !== null) {
       updateHeader(activeHeaderIndex);
     }
-  }, [activeHeaderIndex, addHeader, updateHeader]);
+  }, [activeHeaderIndex, addHeader, updateHeader, editingBasicFieldIndex, goBack, newHeaderName, newHeaderOptions, newHeaderType, resetHeaderForm, selectedObjectIndex, templateObjects, updateBasicFields]);
 
   // Add dropdown option
   const addOption = useCallback(() => {
@@ -1040,7 +1079,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   }, [newTemplateName, getAllTemplates, selectedObjectIndex, templateObjects]);
 
   // Add new section
-  const addSection = useCallback(() => {
+  const _addSection = useCallback(() => {
     if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
     setTemplateObjects((prev) => {
       const newObjects = [...prev];
@@ -1060,7 +1099,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       newObjects[selectedObjectIndex] = currentObject;
       return newObjects;
     });
-  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects]);
+  }, [selectedObjectIndex, selectedTemplateIndex]);
 
   // Update section name
   const updateSectionName = useCallback(
@@ -1100,7 +1139,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         return newObjects;
       });
     },
-    [selectedObjectIndex, selectedTemplateIndex, templateObjects]
+    [selectedObjectIndex, selectedTemplateIndex]
   );
 
   // Section editing functions
@@ -1162,7 +1201,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     });
     
     setNewSectionName("");
-  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, newSectionName]);
+  }, [selectedObjectIndex, selectedTemplateIndex, newSectionName]);
 
   // Drag-and-drop handlers
   const handleDragStart = useCallback((e, sectionIndex, index) => {
@@ -1179,7 +1218,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     e.dataTransfer.effectAllowed = "move";
     const element = keyRefs.current.get(`${sectionIndex}-${index}`);
     if (element) element.classList.add(styles.dragging);
-  }, [selectedTemplateIndex, templateObjects]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects]);
 
   const handleTouchStart = useCallback((e, sectionIndex, index) => {
     if (selectedObjectIndex === null || selectedTemplateIndex === null) return;
@@ -1202,7 +1241,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       const element = keyRefs.current.get(`${sectionIndex}-${index}`);
       if (element) element.classList.add(styles.dragging);
     }
-  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects, styles.dragIcon]);
+  }, [selectedObjectIndex, selectedTemplateIndex, templateObjects]);
 
   const handleDragOver = useCallback(
     (e, sectionIndex, targetIndex) => {
@@ -1267,7 +1306,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         setTimeout(() => setDraggedIndex(newIndex), 0);
       }
     },
-    [draggedIndex, touchStartY, touchTargetIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]
+    [draggedIndex, draggedSectionIndex, touchStartY, touchTargetIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -1292,7 +1331,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     e.dataTransfer.effectAllowed = 'move';
     const element = sectionRefs.current.get(index);
     if (element) element.classList.add(styles.dragging);
-  }, [styles.dragging]);
+  }, []);
 
   const handleSectionTouchStart = useCallback((e, index) => {
     const isDragIcon = e.target.classList.contains(styles.dragIcon) ||
@@ -1306,7 +1345,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       const element = sectionRefs.current.get(index);
       if (element) element.classList.add(styles.dragging);
     }
-  }, [styles.dragIcon]);
+  }, []);
 
   const handleSectionDragOver = useCallback((e, index) => {
     e.preventDefault();
@@ -1328,7 +1367,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       return newObjects;
     });
     setDraggedSectionOrderIndex(index);
-  }, [draggedSectionOrderIndex, selectedObjectIndex, selectedTemplateIndex, templateObjects]);
+  }, [draggedSectionOrderIndex, selectedObjectIndex, selectedTemplateIndex]);
 
   const handleSectionTouchMove = useCallback((e) => {
     if (draggedSectionOrderIndex === null || sectionTouchStartY === null || selectedObjectIndex === null || selectedTemplateIndex === null) return;
@@ -1363,7 +1402,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     const element = sectionRefs.current.get(draggedSectionOrderIndex);
     if (element) element.classList.remove(styles.dragging);
     setDraggedSectionOrderIndex(null);
-  }, [draggedSectionOrderIndex, styles.dragging]);
+  }, [draggedSectionOrderIndex]);
 
   const handleSectionTouchEnd = useCallback(() => {
     const element = sectionRefs.current.get(draggedSectionOrderIndex);
@@ -1371,7 +1410,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     setDraggedSectionOrderIndex(null);
     setSectionTouchStartY(null);
     setSectionTouchTargetIndex(null);
-  }, [draggedSectionOrderIndex, styles.dragging]);
+  }, [draggedSectionOrderIndex]);
 
   useEffect(() => {
     const cleanupDrag = () => draggedIndex !== null && handleDragEnd();
@@ -1384,10 +1423,10 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       window.removeEventListener("pointerup", cleanupDrag);
       window.removeEventListener("touchend", cleanupTouch);
     };
-  }, [handleDragEnd, handleTouchEnd]);
+  }, [handleDragEnd, handleTouchEnd, draggedIndex]);
 
   // Open template editor
-  const handleOpenEditor = useCallback(
+  const _handleOpenEditor = useCallback(
     (template = null) => {
       if (template && selectedObjectIndex !== null) {
         const object = templateObjects[selectedObjectIndex];
@@ -1728,7 +1767,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
         return newObjects;
       });
     },
-    [selectedObjectIndex, selectedTemplateIndex, templateObjects, getAllTemplates]
+    [selectedObjectIndex, selectedTemplateIndex, getAllTemplates]
   );
 
   // Edit section
@@ -1866,7 +1905,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       setActiveHeaderIndex(-1); // Set to -1 to indicate we're creating a new field
       setShowFieldForm(true);
     }
-  }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex]);
+  }, [templateObjects, selectedObjectIndex, selectedTemplateIndex, currentSectionIndex, resetHeaderForm]);
 
   // Export records for the current template
   const exportRecords = useCallback(async () => {

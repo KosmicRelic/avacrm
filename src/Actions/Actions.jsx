@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase'; // Adjust path to your Firebase config
@@ -6,7 +6,7 @@ import styles from './Actions.module.css';
 import { FaChevronLeft } from 'react-icons/fa';
 
 const Actions = () => {
-  const { recordTemplates, businessId, isDarkTheme, actions = [], setActions } = useContext(MainContext);
+  const { recordTemplates, businessId, isDarkTheme, actions = [], _setActions } = useContext(MainContext);
   const [selectedAction, setSelectedAction] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [moneyHeader, setMoneyHeader] = useState('');
@@ -116,7 +116,7 @@ const Actions = () => {
   };
 
   // Calculate preview lead score (maximum potential)
-  const calculateLeadScore = () => {
+  const _calculateLeadScore = () => {
     const validationError = validateConfig();
     if (validationError) {
       setError(validationError);

@@ -2,7 +2,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { Resend } = require('resend');
 const cors = require('cors');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { Timestamp } = require('firebase-admin/firestore');
 
 // Initialize Firebase Admin
@@ -34,7 +33,7 @@ const corsAllOrigins = cors({
 });
 
 // Backend-safe helper to get headers for a given record template key
-function getHeaders(templateKey, recordTemplatesArr) {
+function _getHeaders(templateKey, recordTemplatesArr) {
   if (!Array.isArray(recordTemplatesArr)) return [];
   const template = recordTemplatesArr.find(
     t => (t.name || t.typeOfRecords) === templateKey
@@ -42,7 +41,7 @@ function getHeaders(templateKey, recordTemplatesArr) {
   return template && Array.isArray(template.headers) ? template.headers : [];
 }
 
-exports.businessSignUp = functions.https.onCall(async (data, context) => {
+exports.businessSignUp = functions.https.onCall(async (data, _context) => {
   try {
     // Log raw data to inspect its structure
     functions.logger.info('businessSignUp started', { rawData: data });
@@ -110,7 +109,7 @@ exports.businessSignUp = functions.https.onCall(async (data, context) => {
         name: businessName || 'Unnamed Business',
         createdAt: new Date(),
         ownerUid: user.uid,
-        name: name || '',
+        ownerName: name || '',
         surname: surname || '',
       },
     });
@@ -357,7 +356,7 @@ exports.sendInvitationEmail = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.teamMemberSignUp = functions.https.onCall(async (data, context) => {
+exports.teamMemberSignUp = functions.https.onCall(async (data, _context) => {
   try {
     functions.logger.info('teamMemberSignUp started', { rawData: data });
 
@@ -872,7 +871,7 @@ exports.updateRecordTemplatesAndRecords = functions.https.onRequest((req, res) =
   });
 });
 
-exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
+exports.deleteTeamMember = functions.https.onCall(async (data, _context) => {
   try {
     // Accept data in the same structure as teamMemberSignUp
     const {
@@ -880,11 +879,11 @@ exports.deleteTeamMember = functions.https.onCall(async (data, context) => {
       businessId,
       callerUid, // still needed for permission check
       // Accept but ignore these for deletion
-      email,
-      phone,
-      invitationCode,
-      name,
-      surname,
+    _email,
+    _phone,
+    _invitationCode,
+    _name,
+    _surname,
     } = data.data || data || {};
 
     if (!callerUid || !businessId || !teamMemberUid) {
@@ -973,7 +972,8 @@ exports.createNewRecord = functions.https.onRequest((req, res) => {
       if (req.get('Content-Type') === 'application/json') {
         try {
           body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-        } catch (error) {
+        // eslint-disable-next-line no-unused-vars
+        } catch (__error) {
           return res.status(400).json({ error: 'Invalid JSON payload' });
         }
       } else {

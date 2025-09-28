@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import styles from './FilterModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { IoMdArrowDropdown, IoMdFunnel, IoMdOptions } from 'react-icons/io';
+import { IoMdArrowDropdown } from 'react-icons/io';
 
-const FilterModal = ({ headers, rows, tempData, setTempData }) => {
+const FilterModal = ({ headers, tempData, setTempData }) => {
   const { recordTemplates, isDarkTheme, teamMembers, user } = useContext(MainContext);
   const { registerModalSteps, setModalConfig } = useContext(ModalNavigatorContext);
   const [numberRangeMode, setNumberRangeMode] = useState(
@@ -22,7 +22,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   const [showSortFor, setShowSortFor] = useState(false);
   const hasInitialized = useRef(false);
 
-  const toggleFilter = useCallback((index) => {
+  const _toggleFilter = useCallback((index) => {
     setActiveFilterIndex((prev) => (prev === index ? null : index));
   }, []);
 
@@ -55,10 +55,10 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   }, [tempData, setTempData]);
 
   // Initialize sortFor from existing filterValues
-  const filterValues = tempData.filterValues || {};
+  const filterValues = useMemo(() => tempData.filterValues || {}, [tempData.filterValues]);
 
   useEffect(() => {
-    const existingSort = Object.entries(filterValues).find(([_, filter]) => filter.sortOrder);
+    const existingSort = Object.entries(filterValues).find(([, filter]) => filter.sortOrder);
     if (existingSort) {
       const [headerKey, filter] = existingSort;
       setSortFor({ headerKey, order: filter.sortOrder });
@@ -156,7 +156,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     [filterValues, applyFilters]
   );
 
-  const handleDropdownChange = useCallback(
+  const _handleDropdownChange = useCallback(
     (headerKey, e) => {
       const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
       handleFilterChange(headerKey, selectedValues, 'values');
@@ -181,7 +181,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
     [filterValues, applyFilters]
   );
 
-  const clearFilter = useCallback(
+  const _clearFilter = useCallback(
     (headerKey) => {
       const updatedFilters = { ...filterValues, [headerKey]: {} };
       applyFilters(updatedFilters);
@@ -206,7 +206,7 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
       if (isFilterEmpty(filter)) return 'None';
 
       switch (header.type) {
-        case 'number':
+        case 'number': {
           if (numberRangeMode[header.key]) {
             const start = filter.start || '';
             const end = filter.end || '';
@@ -219,30 +219,36 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
             const orderText = { equals: '=', greaterOrEqual: '≥', lessOrEqual: '≤', greater: '>', less: '<' }[order];
             return `${orderText}${value ? ` ${value}` : ''}${sortOrder ? ` (${sortOrder})` : ''}`.trim();
           }
-        case 'date':
+        }
+        case 'date': {
           const sortOrder = filter.sortOrder || '';
           return sortOrder ? sortOrder : 'None';
-        case 'dropdown':
+        }
+        case 'dropdown': {
           const values = filter.values || [];
           return values.length > 0 ? values.join(', ') : 'None';
-        case 'multi-select':
+        }
+        case 'multi-select': {
           const multiValues = filter.values || [];
           return multiValues.length > 0 ? multiValues.join(', ') : 'None';
-        case 'text':
+        }
+        case 'text': {
           const condition = filter.condition || 'equals';
           // Always treat value as string for summary
           const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
           return value ? `${condition} "${value}"` : 'None';
-        default:
+        }
+        default: {
           return filter.value !== undefined && filter.value !== null
             ? `"${String(filter.value)}"`
             : 'None';
+        }
       }
     },
     [filterValues, numberRangeMode]
   );
 
-  const getTeamMemberName = (uid) => {
+  const _getTeamMemberName = (uid) => {
     if (!uid) return '';
     if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
     const member = teamMembers?.find((tm) => tm.uid === uid);
@@ -541,70 +547,6 @@ const FilterModal = ({ headers, rows, tempData, setTempData }) => {
   );
 };
 
-// Utility: filter rows locally based on filterValues and headers (supports multi-select)
-export function filterRowsLocally(rows, filterValues, headers) {
-  return rows.filter(row => {
-    return Object.entries(filterValues).every(([key, filter]) => {
-      if (!filter || Object.keys(filter).length === 0) return true;
-      const header = headers.find(h => h.key === key);
-      if (!header) return true;
-      const value = row[key];
-      if (header.type === 'number') {
-        if (filter.start !== undefined && filter.start !== '' && Number(value) < Number(filter.start)) return false;
-        if (filter.end !== undefined && filter.end !== '' && Number(value) > Number(filter.end)) return false;
-        if (filter.order && filter.value !== undefined && filter.value !== '') {
-          const numVal = Number(filter.value);
-          if (filter.order === 'equals' && Number(value) !== numVal) return false;
-          if (filter.order === 'greater' && Number(value) <= numVal) return false;
-          if (filter.order === 'less' && Number(value) >= numVal) return false;
-          if (filter.order === 'greaterOrEqual' && Number(value) < numVal) return false;
-          if (filter.order === 'lessOrEqual' && Number(value) > numVal) return false;
-        }
-        return true;
-      }
-      if (header.type === 'dropdown') {
-        if (Array.isArray(filter.values) && filter.values.length > 0) {
-          // Dropdown: value can be string or array, filter.values is array
-          if (Array.isArray(value)) {
-            // If value is array, match if any selected value is present
-            return value.some(v => filter.values.includes(v));
-          } else {
-            // If value is string, match if it's included in selected values
-            return filter.values.includes(value);
-          }
-        }
-        return true;
-      }
-      if (header.type === 'multi-select') {
-        if (Array.isArray(filter.values) && filter.values.length > 0) {
-          // Multi-select: value is array, filter.values is array
-          if (!Array.isArray(value)) return false;
-          // Match if any selected value is present in the row's value array
-          return value.some(v => filter.values.includes(v));
-        }
-        return true;
-      }
-      if (header.type === 'text') {
-        if (filter.value !== undefined && filter.value !== '') {
-          const strVal = String(value || '');
-          const cond = filter.condition || 'equals';
-          if (cond === 'equals' && strVal !== filter.value) return false;
-          if (cond === 'contains' && !strVal.includes(filter.value)) return false;
-          if (cond === 'startsWith' && !strVal.startsWith(filter.value)) return false;
-          if (cond === 'endsWith' && !strVal.endsWith(filter.value)) return false;
-        }
-        return true;
-      }
-      if (header.type === 'date') {
-        // Implement date filtering if needed
-        return true;
-      }
-      // Default: no filter
-      return true;
-    });
-  });
-}
-
 FilterModal.propTypes = {
   headers: PropTypes.arrayOf(
     PropTypes.shape({
@@ -615,7 +557,6 @@ FilterModal.propTypes = {
       options: PropTypes.array,
     })
   ).isRequired,
-  rows: PropTypes.array.isRequired,
   tempData: PropTypes.shape({
     filterValues: PropTypes.object,
   }).isRequired,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import styles from "./Modal.module.css";
 import { useContext } from "react";
@@ -6,7 +6,7 @@ import { ModalNavigatorContext } from "../Contexts/ModalNavigator";
 import { FaChevronLeft } from "react-icons/fa";
 import { MainContext } from "../Contexts/MainContext";
 
-const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonClick }) => {
+const Modal = ({ children, onClose, onSave, onLeftButtonClick }) => {
   const { isDarkTheme } = useContext(MainContext);
   const { modalConfig, goBack, currentStep } = useContext(ModalNavigatorContext);
   const [isClosing, setIsClosing] = useState(false);
@@ -23,7 +23,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
     };
   }, []);
 
-  const handleClose = (options = {}) => {
+  const handleClose = useCallback((options = {}) => {
     if (currentStep !== 1) {
       return;
     }
@@ -36,7 +36,7 @@ const Modal = ({ children, onClose, onSave, modalType, tempData, onLeftButtonCli
         onSave();
       }
     }, timeoutDuration);
-  };
+  }, [currentStep, onClose, onSave]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -169,14 +169,11 @@ Modal.propTypes = {
   children: PropTypes.node,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func,
-  modalType: PropTypes.string.isRequired,
-  tempData: PropTypes.object,
   onLeftButtonClick: PropTypes.func,
 };
 
 Modal.defaultProps = {
   onSave: null,
-  tempData: null,
   onLeftButtonClick: null,
 };
 

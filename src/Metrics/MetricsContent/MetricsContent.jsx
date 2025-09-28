@@ -1,11 +1,11 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import styles from './MetricsContent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import CustomMetricChart from '../CustomMetricChart/CustomMetricChart';
 
-const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, isDarkTheme }) => {
+const MetricsLineChartControls = ({ granularity, setGranularity, currentMonth, setCurrentMonth, currentYear, setCurrentYear, _isDarkTheme }) => {
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'

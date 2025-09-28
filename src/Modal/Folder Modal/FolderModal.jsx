@@ -1,9 +1,8 @@
-import React, { useState, useContext, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useContext, useEffect, useRef, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import styles from "./FolderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaRegCircle, FaRegCheckCircle, FaFolder, FaFileAlt, FaPlus, FaTrash, FaArrowLeft } from "react-icons/fa";
 
 const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleClose }) => {
   const { sheets, isDarkTheme, setActiveSheetName: setActiveSheetNameWithRef } = useContext(MainContext);
@@ -16,7 +15,7 @@ const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleC
   const hasInitialized = useRef(false);
 
   const folder = sheets.structure.find((item) => item.folderName === folderName);
-  const folderSheets = folder ? folder.sheets : [];
+  const folderSheets = useMemo(() => folder ? folder.sheets : [], [sheets, folderName]);
 
   // Compute set of all nested sheets across all folders, including pending actions
   const nestedSheetsSet = useMemo(() => {

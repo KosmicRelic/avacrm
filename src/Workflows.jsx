@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Workflows = () => {
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>

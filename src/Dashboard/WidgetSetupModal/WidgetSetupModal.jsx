@@ -1,12 +1,12 @@
 // src/Dashboard/WidgetSetupModal.jsx
-import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from './WidgetSetupModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
 
 const WidgetSetupModal = ({ tempData, setTempData, setActiveModalData, handleClose }) => {
-  const { metrics, isDarkTheme, dashboards, setDashboards } = useContext(MainContext);
+  const { metrics, isDarkTheme, _dashboards, setDashboards } = useContext(MainContext);
   const { registerModalSteps, setModalConfig, goToStep, currentStep } = useContext(ModalNavigatorContext);
   const [selectedCategory, setSelectedCategory] = useState(tempData.category || '');
   const [selectedMetric, setSelectedMetric] = useState(tempData.metric || '');

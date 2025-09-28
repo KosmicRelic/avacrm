@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from './PipelineManagement.module.css';
 import { IoAdd, IoGitBranch, IoCreate, IoTrash, IoCheckmark, IoClose } from 'react-icons/io5';

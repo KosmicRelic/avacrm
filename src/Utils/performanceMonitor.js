@@ -112,7 +112,7 @@ export const measureComputation = (name, computation) => {
 };
 
 // HOC for component performance monitoring
-export const withPerformanceMonitoring = (ComponentName) => (WrappedComponent) => {
+export const withPerformanceMonitoring = (ComponentName) => (_WrappedComponent) => {
   return React.memo((props) => {
     return performanceMonitor.measureRender(ComponentName, () => (
       <WrappedComponent {...props} />

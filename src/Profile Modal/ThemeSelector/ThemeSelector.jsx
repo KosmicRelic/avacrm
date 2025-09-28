@@ -1,5 +1,5 @@
 // src/Profile Modal/ThemeSelector/ThemeSelector.jsx
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { MainContext } from '../../Contexts/MainContext';
 import styles from './ThemeSelector.module.css';
 import { FiSun, FiMoon, FiSmartphone } from 'react-icons/fi';

@@ -110,16 +110,15 @@ export const MainContextProvider = ({ children }) => {
 
   const memoizedSheets = useMemo(() => sheets, [sheets]);
   const memoizedRecords = useMemo(() => records, [records]);
-  const memoizedTemplateObjects = useMemo(() => templateObjects, [templateObjects]);
   const memoizedMetrics = useMemo(() => metrics, [metrics]);
   const memoizedDashboards = useMemo(() => dashboards, [dashboards]);
 
-  const addBannerMessage = (message, type = 'success') => {
+  const addBannerMessage = useCallback((message, type = 'success') => {
     const messageId = `${message}-${type}-${Date.now()}`;
     if (displayedMessages.current.has(messageId)) return;
     displayedMessages.current.add(messageId);
     setBannerQueue((prev) => [...prev, { message, type, id: messageId }]);
-  };
+  }, []);
 
   useEffect(() => {
     themeRef.current = isDarkTheme ? 'dark' : 'light';
@@ -254,7 +253,7 @@ export const MainContextProvider = ({ children }) => {
               }
             }
           }
-        } catch (e) {
+        } catch {
           // fallback: treat as business user
           // console.log('[MainContext] Error fetching user/teamMember doc', e);
         }
@@ -291,13 +290,9 @@ export const MainContextProvider = ({ children }) => {
             const fetches = [];
             if ((currentRoute === '/sheets' || currentRoute.startsWith('/sheets/')) && !hasFetched.current.sheets) {
               let sheetNameFromUrl = null;
-              let recordIdFromUrl = null;
               const match = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
               if (match) {
                 sheetNameFromUrl = decodeURIComponent(match[1]);
-                if (match[2]) {
-                  recordIdFromUrl = decodeURIComponent(match[2]);
-                }
               }
               if (sheetNameFromUrl) {
                 fetches.push(
@@ -411,7 +406,7 @@ export const MainContextProvider = ({ children }) => {
       isMounted = false;
       unsubscribeAuth();
     };
-  }, [navigate, isSignup, location.pathname]);
+  }, [navigate, isSignup, location.pathname, activeSheetName]);
 
   // Cleanup unsubscribe functions when component unmounts
   useEffect(() => {
@@ -422,7 +417,7 @@ export const MainContextProvider = ({ children }) => {
         }
       });
     };
-  }, []); // Only run on unmount
+  }, [unsubscribeFunctions]); // Only run on unmount
 
   // Cleanup when businessId changes
   useEffect(() => {
@@ -603,7 +598,7 @@ export const MainContextProvider = ({ children }) => {
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }
-  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetRecordsFetched]);
+  }, [user, businessId, activeSheetName, location.pathname, sheets.allSheets, sheetRecordsFetched, addBannerMessage, recordsCache]);
 
   // Utility to normalize sheet names (replace dashes with spaces, ignore recordId if present)
   const normalizeSheetName = (name) => {
@@ -765,7 +760,7 @@ export const MainContextProvider = ({ children }) => {
             console.log('📝 Adding record to batch:', record);
             docRef = doc(stateConfig.records.collectionPath()); // Firestore will generate ID
             addedRecordsMap.set(record, docRef.id); // Map original record to new Firestore ID
-            const { isModified, action, docId, sheetName, ...recordData } = record;
+            const { isModified: _isModified, action: _action, docId: _docId, sheetName: _sheetName, ...recordData } = record;
             
             // Clean up undefined values for Firestore
             const cleanRecordData = {};
@@ -783,7 +778,7 @@ export const MainContextProvider = ({ children }) => {
             hasChanges = true;
           } else if (record.action === 'update') {
             docRef = doc(stateConfig.records.collectionPath(), record.docId);
-            const { isModified, action, docId, sheetName, ...recordData } = record;
+            const { isModified: _isModified, action: _action, docId: _docId, sheetName: _sheetName, ...recordData } = record;
             
             // Clean up undefined values for Firestore
             const cleanRecordData = {};
@@ -807,7 +802,7 @@ export const MainContextProvider = ({ children }) => {
               batch.delete(docRef);
               hasChanges = true;
             } else if (dashboard.action === 'add' || dashboard.action === 'update') {
-              const { isModified, action, docId, ...dashboardData } = dashboard;
+              const { isModified: _isModified, action: _action, docId: _docId, ...dashboardData } = dashboard;
               batch.set(docRef, dashboardData);
               hasChanges = true;
             }
@@ -836,7 +831,7 @@ export const MainContextProvider = ({ children }) => {
               batch.delete(docRef);
               hasChanges = true;
             } else if (metric.action === 'add' || metric.action === 'update') {
-              const { isModified, action, ...metricData } = metric;
+              const { isModified: _isModified, action: _action, ...metricData } = metric;
               batch.set(docRef, metricData);
               hasChanges = true;
             }
@@ -859,7 +854,7 @@ export const MainContextProvider = ({ children }) => {
 
             collectionChanges.added.forEach((item) => {
               const docRef = doc(config.collectionPath(), item.docId);
-              const { docId, isModified, action, filters, ...data } = item;
+              const { docId: _docId, isModified: _isModified, action: _action, filters: _filters, ...data } = item;
               batch.set(docRef, data);
               hasChanges = true;
             });
@@ -867,7 +862,7 @@ export const MainContextProvider = ({ children }) => {
             collectionChanges.updated.forEach((item) => {
               if (item.isModified && item.action !== 'filter') {
                 const docRef = doc(config.collectionPath(), item.docId);
-                const { docId, isModified, action, filters, ...data } = item;
+                const { docId: _docId, isModified: _isModified, action: _action, filters: _filters, ...data } = item;
                 batch.set(docRef, data, { merge: true });
                 hasChanges = true;
               }
@@ -940,7 +935,7 @@ export const MainContextProvider = ({ children }) => {
               .map((record) => {
                 if (record.isModified) {
                   const newDocId = addedRecordsMap.get(record) || record.docId;
-                  const { isModified, action, ...cleanRecord } = record;
+                  const { isModified: _isModified, action: _action, ...cleanRecord } = record;
                   return { ...cleanRecord, docId: newDocId };
                 }
                 return record;
@@ -961,7 +956,7 @@ export const MainContextProvider = ({ children }) => {
                 .filter((dashboard) => !(dashboard.isModified && dashboard.action === 'remove'))
                 .map((dashboard) => {
                   if (dashboard.isModified) {
-                    const { isModified, action, ...cleanDashboard } = dashboard;
+                    const { isModified: _isModified, action: _action, ...cleanDashboard } = dashboard;
                     return cleanDashboard;
                   }
                   return dashboard;
@@ -973,7 +968,7 @@ export const MainContextProvider = ({ children }) => {
                 .filter((metric) => !(metric.isModified && metric.action === 'remove'))
                 .map((metric) => {
                   if (metric.isModified) {
-                    const { isModified, action, ...cleanMetric } = metric;
+                    const { isModified: _isModified, action: _action, ...cleanMetric } = metric;
                     return cleanMetric;
                   }
                   return metric;
@@ -984,14 +979,14 @@ export const MainContextProvider = ({ children }) => {
               ...prev,
               allSheets: prev.allSheets.map((sheet) => {
                 if (sheet.isModified && sheet.action !== 'filter') {
-                  const { isModified, action, ...cleanSheet } = sheet;
+                  const { isModified: _isModified, action: _action, ...cleanSheet } = sheet;
                   return cleanSheet;
                 }
                 return sheet;
               }),
               structure: prev.structure.map((item) => {
                 if (item.isModified) {
-                  const { isModified, action, ...cleanItem } = item;
+                  const { isModified: _isModified, action: _action, ...cleanItem } = item;
                   return cleanItem;
                 }
                 return item;
@@ -1052,7 +1047,7 @@ export const MainContextProvider = ({ children }) => {
     };
 
     processUpdates();
-  }, [user, businessId, memoizedSheets, memoizedRecords, memoizedMetrics, memoizedDashboards, isDataLoaded]);
+  }, [user, businessId, memoizedSheets, memoizedRecords, memoizedMetrics, memoizedDashboards, isDataLoaded, recordsCache, activeSheetName, dashboards, metrics, records, sheets]);
 
   // Utility: shallow compare for arrays/objects
   const shallowEqual = (a, b) => {
@@ -1172,7 +1167,7 @@ export const MainContextProvider = ({ children }) => {
     actions,
     setActions,
     dataLoading, // New: expose loading state for Firestore data
-  }), [sheets, records, isDarkTheme, themeMode, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetRecordsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading]);
+  }), [sheets, records, isDarkTheme, themeMode, tempData, selectedTemplateIndex, currentSectionIndex, editMode, dashboards, metrics, user, userAuthChecked, isSignup, activeSheetName, sheetRecordsFetched, businessId, pendingInvitations, teamMembers, bannerQueue, actions, dataLoading, copyCurrentTheme, objects, optimisticUpdateRecord, recordsCache, setActiveSheetNameWithRef, setTheme, templateObjects]);
 
   // Debounce for sheet record fetches
   const debounceRef = useRef();

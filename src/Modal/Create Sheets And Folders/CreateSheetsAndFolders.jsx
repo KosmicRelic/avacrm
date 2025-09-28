@@ -3,14 +3,14 @@ import PropTypes from "prop-types";
 import styles from "./CreateSheetsAndFolders.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
-import { FaRegCircle, FaRegCheckCircle, FaFileAlt, FaFolder, FaPlus, FaSearch } from "react-icons/fa";
+import { FaRegCheckCircle, FaFileAlt, FaFolder, FaPlus } from "react-icons/fa";
 
 const CreateSheetsAndFolders = ({
-  tempData,
-  setTempData,
+  _tempData,
+  _setTempData,
   sheets,
-  setSheets,
-  onSheetChange,
+  _setSheets,
+  _onSheetChange,
   handleSheetSave,
   handleFolderSave,
   handleClose,
@@ -115,7 +115,7 @@ const CreateSheetsAndFolders = ({
     }));
   }, [setModalConfig]);
 
-  const handleToggleType = useCallback(() => {
+  const _handleToggleType = useCallback(() => {
     setAddType((prev) => (prev === "sheet" ? "folder" : "sheet"));
     setNewSheetName("");
     setNewFolderName("");

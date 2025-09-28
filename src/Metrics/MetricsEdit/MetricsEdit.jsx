@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useCallback, useRef, useState } from 'react';
+import { useContext, useEffect, useCallback, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './MetricsEdit.module.css';
 import { MainContext } from '../../Contexts/MainContext';
@@ -148,7 +148,7 @@ const MetricsCategories = ({ widget: initialWidget, tempData: initialTempData, s
         };
 
     setModalConfig(config);
-  }, [isEditMode, selectedCategories, handleDeleteCategories, setModalConfig, localWidget?.category, handleClose, currentStep, localTempData]);
+  }, [isEditMode, selectedCategories, handleDeleteCategories, setModalConfig, localWidget?.category, handleClose, currentStep, localTempData, localTempData?.selectedMetric?.name]);
 
   // Reset hasInitialized when modal closes
   useEffect(() => {

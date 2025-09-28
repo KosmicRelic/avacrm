@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styles from './DashboardPlane.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { FaCircleMinus } from 'react-icons/fa6';
@@ -7,7 +7,7 @@ import CustomMetricChart from '../../Metrics/CustomMetricChart/CustomMetricChart
 
 // Window component
 const Window = ({ size, widget, style, onDelete, editMode, onDragStart, dashboardId, index, isAnimating, animationTransform, onWidgetClick }) => {
-  const { isDarkTheme, metrics, records, recordTemplates } = useContext(MainContext);
+  const { isDarkTheme, metrics, recordTemplates } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
 
   const metric = widget?.metricId
@@ -240,7 +240,6 @@ const DashboardPlane = ({
   dashboardId,
   initialWidgets = [],
   editMode,
-  updateWidgets,
   onDragStart,
   onDrop,
   onWidgetClick,
@@ -260,29 +259,29 @@ const DashboardPlane = ({
     occupied: Array(4).fill().map(() => Array(2).fill(false)),
   });
 
-  const windowSizes = {
+  const windowSizes = useMemo(() => ({
     verySmall: { width: 1, height: 1 },
     small: { width: 1, height: 2 },
     medium: { width: 2, height: 2 },
     large: { width: 2, height: 4 },
-  };
+  }), []);
 
-  const windowScores = {
+  const windowScores = useMemo(() => ({
     verySmall: 10,
     small: 20,
     medium: 40,
     large: 80,
-  };
+  }), []);
 
-  const sizeMap = {
+  const sizeMap = useMemo(() => ({
     tiny: 'verySmall',
     verySmall: 'verySmall',
     small: 'small',
     medium: 'medium',
     large: 'large',
-  };
+  }), []);
 
-  const addWidget = useCallback(() => {
+  const _addWidget = useCallback(() => {
     const newWidget = {
       id: `widget-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       size: 'verySmall',
@@ -309,7 +308,7 @@ const DashboardPlane = ({
 
   const calculateScore = useCallback((windows) => {
     return windows.reduce((sum, w) => (windowScores[w.size] || 0) + sum, 0);
-  }, []);
+  }, [windowScores]);
 
   const canPlaceWindow = useCallback((size, row, col, skipWidgets = [], customGrid = null, currentWindows = windows) => {
     const { width, height } = windowSizes[size] || windowSizes.small;
@@ -351,9 +350,9 @@ const DashboardPlane = ({
       }
     }
     return true;
-  }, [windows]);
+  }, [windows, windowSizes]);
 
-  const getValidPosition = useCallback((size, row, col) => {
+  const _getValidPosition = useCallback((size, row, col) => {
     switch (size) {
       case 'verySmall':
         return { row, col };
@@ -495,7 +494,7 @@ const DashboardPlane = ({
     try {
       const widgetInfo = JSON.parse(e.dataTransfer.getData('text/plain'));
       updateValidDropCells(widgetInfo);
-    } catch (error) {
+    } catch {
       setValidDropCells([]);
     }
   }, [updateValidDropCells]);
@@ -545,7 +544,7 @@ const DashboardPlane = ({
 
       onDrop({ dashboardId, row, col });
     }
-  }, [dashboardId, onDrop, editMode, swapWidgets, windows]);
+  }, [dashboardId, onDrop, editMode, swapWidgets, windows, windowSizes]);
 
   useEffect(() => {
     if (areWidgetsEqual(prevWidgetsRef.current, initialWidgets)) {
@@ -648,7 +647,7 @@ const DashboardPlane = ({
     } catch (error) {
       console.error('Error in DashboardPlane useEffect:', error);
     }
-  }, [initialWidgets, dashboardId, setDashboards, calculateScore, canPlaceWindow, findFreePosition]);
+  }, [initialWidgets, dashboardId, setDashboards, calculateScore, canPlaceWindow, findFreePosition, areWidgetsEqual, sizeMap, windowScores, windowSizes]);
 
   return (
     <div

@@ -16,7 +16,7 @@ class EnhancedErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Generate unique error ID for tracking
     const errorId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 

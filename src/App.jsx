@@ -113,14 +113,14 @@ function App() {
     setBannerQueue,
     activeSheetName,
     setActiveSheetName,
-    sheetRecordsFetched,
+    sheetRecordsFetched: _sheetRecordsFetched,
     setSheetRecordsFetched,
     setRecordsCache,
   } = useContext(MainContext);
 
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams();
+  const _params = useParams();
   const sheetModal = useModal();
   const filterModal = useModal();
   const sheetsModal = useModal();
@@ -152,7 +152,7 @@ function App() {
     if (location.pathname === '/dashboard' && !hasDashboardAccess(user)) {
       navigate('/sheets', { replace: true });
     }
-  }, [user, userAuthChecked, location.pathname]);
+  }, [user, userAuthChecked, location.pathname, navigate]);
 
   // Handle banner display and animation
   useEffect(() => {
@@ -189,7 +189,7 @@ function App() {
     return dashboards.find((d) => d.id === activeDashboardId) || dashboards[0];
   }, [dashboards, activeDashboardId]);
 
-  const { handleSheetChange, handleSaveSheet } = useSheets(sheets, setSheets, activeSheetName);
+  const { handleSheetChange, handleSaveSheet: _handleSaveSheet } = useSheets(sheets, setSheets, activeSheetName);
 
   const resolvedHeaders = useMemo(() => {
     if (!activeSheet) return [];

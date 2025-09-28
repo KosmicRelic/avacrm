@@ -44,7 +44,7 @@ const fetchUserData = async ({
   };
 
   // Check if user is a team member
-  const isTeamMember = async () => {
+  const _isTeamMember = async () => {
     const user = auth.currentUser;
     if (!user || user.uid === businessId) return false; // Business owner
     const teamMemberDoc = await getDoc(doc(db, 'businesses', businessId, 'teamMembers', user.uid));
@@ -372,11 +372,7 @@ const fetchUserData = async ({
         
         // Return combined unsubscribe function for any listeners that were set up
         return () => {
-          unsubscribeFunctions.forEach(unsub => {
-            if (typeof unsub === 'function') {
-              unsub();
-            }
-          });
+          // No listeners were set up in catch block
         };
       }
     } else {
@@ -430,7 +426,7 @@ const fetchUserData = async ({
     const sheetId = activeSheet.docId;
     const typeOfRecordsToDisplay = activeSheet.typeOfRecordsToDisplay || [];
     const recordTypeFilters = activeSheet.recordTypeFilters || {};
-    const objectTypeFilters = activeSheet.objectTypeFilters || {};
+    const _objectTypeFilters = activeSheet.objectTypeFilters || {};
 
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {

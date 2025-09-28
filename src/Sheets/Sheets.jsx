@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -19,7 +19,7 @@ import RecordsEditor from './Records Editor/RecordsEditor';
 
 // Context and utilities
 import { MainContext } from '../Contexts/MainContext';
-import { filterRowsLocally } from '../Modal/FilterModal/FilterModal';
+import { filterRowsLocally } from '../Modal/FilterModal/filterUtils';
 import { decodeSheetName, toMillis, isPrimarySheet, getSheetLoadingState } from './sheetsUtils';
 
 // Styles
@@ -28,16 +28,13 @@ import styles from './Sheets.module.css';
 const Sheets = ({
   headers,
   sheets,
-  setSheets,
   activeSheetName,
   onSheetChange,
   onEditSheet,
   onFilter,
   onRowClick,
   onRecordSave,
-  onRecordDelete,
   onOpenSheetsModal,
-  onOpenTransportModal,
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
@@ -57,28 +54,28 @@ const Sheets = ({
   const sheetId = activeSheet?.docId;
   const isLoading = useMemo(() => getSheetLoadingState(sheetId, sheetRecordsFetched), [sheetId, sheetRecordsFetched]);
 
-  const [spinnerVisible, setSpinnerVisible] = useState(false);
-  const [spinnerFading, setSpinnerFading] = useState(false);
+  const [_spinnerVisible, _setSpinnerVisible] = useState(false);
+  const [_spinnerFading, _setSpinnerFading] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
-      setSpinnerVisible(true);
-      setSpinnerFading(false);
-    } else if (spinnerVisible) {
-      setSpinnerFading(true);
+      _setSpinnerVisible(true);
+      _setSpinnerFading(false);
+    } else if (_spinnerVisible) {
+      _setSpinnerFading(true);
       const timeout = setTimeout(() => {
-        setSpinnerVisible(false);
-        setSpinnerFading(false);
-      }, 400);
+        _setSpinnerVisible(false);
+        _setSpinnerFading(false);
+      }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading]);
+  }, [isLoading, _spinnerVisible]);
 
   const sheetRecordTypes = useMemo(() => activeSheet?.typeOfRecordsToDisplay || [], [activeSheet]);
   const recordTypeFilters = useMemo(() => activeSheet?.recordTypeFilters || {}, [activeSheet]);
   const objectTypeFilters = useMemo(() => activeSheet?.objectTypeFilters || {}, [activeSheet]);
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
-  const isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
+  const _isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
 
     console.log('🔍 Sheet configuration:', { activeSheet, sheetRecordTypes, recordTypeFilters, objectTypeFilters, globalFilters });
 
@@ -87,7 +84,7 @@ const Sheets = ({
     
     // Choose data source - always objects
     const dataSource = objects;
-    const typeField = 'typeOfObject';
+    const _typeField = 'typeOfObject';
     
     console.log('🔍 sheetRecords calculation:', {
       dataSourceLength: dataSource.length,
@@ -114,7 +111,7 @@ const Sheets = ({
         }
 
         switch (header.type) {
-          case 'number':
+          case 'number': {
             if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
             const numValue = Number(value) || 0;
             if (filter.start || filter.end) {
@@ -122,7 +119,7 @@ const Sheets = ({
               const endNum = filter.end ? Number(filter.end) : Infinity;
               return numValue >= startNum && numValue <= endNum;
             }
-            if (!filter.value || !filter.order) return true;
+            if (!filter.value) return true;
             const filterNum = Number(filter.value);
             switch (filter.order) {
               case 'greater':
@@ -136,13 +133,14 @@ const Sheets = ({
               default:
                 return numValue === filterNum;
             }
+          }
           case 'date':
             if (!filter.sortOrder) return true;
             return true;
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(value);
-          case 'text':
+          case 'text': {
             if (!filter.value || !filter.condition) return true;
             const strValue = String(value || '').toLowerCase();
             const filterStr = filter.value.toLowerCase();
@@ -156,12 +154,13 @@ const Sheets = ({
               default:
                 return strValue === filterStr;
             }
+          }
           default:
             return true;
         }
       });
     });
-  }, [objects, sheetRecordTypes, objectTypeFilters, headers, user.uid]);
+  }, [objects, sheetRecordTypes, objectTypeFilters, headers, user.uid, activeSheet]);
 
   console.log('🔍 Final sheetRecords result:', sheetRecords.length);
 
@@ -175,7 +174,7 @@ const Sheets = ({
         }
 
         switch (header.type) {
-          case 'number':
+          case 'number': {
             if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
             const numValue = Number(rowValue) || 0;
             if (filter.start || filter.end) {
@@ -197,13 +196,14 @@ const Sheets = ({
               default:
                 return numValue === filterNum;
             }
+          }
           case 'date':
             if (!filter.sortOrder) return true;
             return true;
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(rowValue);
-          case 'text':
+          case 'text': {
             if (!filter.value) return true;
             const strValue = String(rowValue || '').toLowerCase();
             const filterStr = filter.value.toLowerCase();
@@ -217,6 +217,7 @@ const Sheets = ({
               default:
                 return strValue === filterStr;
             }
+          }
           default:
             return true;
         }
@@ -236,7 +237,7 @@ const Sheets = ({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
   const [editButtonPosition, setEditButtonPosition] = useState({ top: 0, left: 0 });
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const [_scrollOffset, _setScrollOffset] = useState(0);
 
   const isMobile = windowWidth <= 1024;
 
@@ -383,17 +384,17 @@ const Sheets = ({
     return globallyFiltered.filter((row) =>
       visibleHeaders.some((header) => String(row[header.key] || '').toLowerCase().includes(query))
     );
-  }, [filteredWithGlobalFilters, globalFilters, searchQuery, visibleHeaders, activeSheetName]);
+  }, [filteredWithGlobalFilters, globalFilters, searchQuery, visibleHeaders]);
 
   const sortedRows = useMemo(() => {
     const sorted = [...filteredRows];
     // Only use globalFilters (FilterModal) for client-side sorting
     const sortCriteria = Object.entries(globalFilters)
-      .filter(([_, filter]) => filter.sortOrder)
-      .map(([field, filter]) => ({
-        key: field,
-        sortOrder: filter.sortOrder,
-        type: headers.find((h) => h.key === field)?.type || 'text',
+      .filter((entry) => entry[1].sortOrder)
+      .map((entry) => ({
+        key: entry[0],
+        sortOrder: entry[1].sortOrder,
+        type: headers.find((h) => h.key === entry[0])?.type || 'text',
       }));
 
     if (sortCriteria.length > 0) {
@@ -424,7 +425,7 @@ const Sheets = ({
       });
     }
     return sorted;
-  }, [filteredRows, globalFilters, headers, activeSheetName]);
+  }, [filteredRows, globalFilters, headers]);
 
   const finalRows = useMemo(() => sortedRows, [sortedRows]);
 
@@ -446,21 +447,15 @@ const Sheets = ({
     (sheetName) => {
       const urlSheetName = sheetName.replace(/ /g, "-");
       const newUrl = `/sheets/${urlSheetName}`;
-      if (window.location.pathname !== newUrl) {
-        window.history.pushState({}, '', newUrl);
-      }
-      if (sheetName !== activeSheetName) {
-        setActiveSheetNameWithRef(sheetName);
-        onSheetChange(sheetName);
-      }
+      navigate(newUrl);
     },
-    [activeSheetName, onSheetChange, setActiveSheetNameWithRef]
+    [navigate]
   );
 
   const prevActiveSheetNameRef = useRef();
   useEffect(() => {
-    setSpinnerVisible(false);
-    setSpinnerFading(false);
+    _setSpinnerVisible(false);
+    _setSpinnerFading(false);
     setIsEditorOpen(false);
     setSelectedRow(null);
     setIsSelectMode(false);
@@ -470,20 +465,24 @@ const Sheets = ({
   }, [activeSheetName]);
 
   useEffect(() => {
-    // console.log('[Sheets.jsx][CONTEXT] activeSheetName from context changed:', activeSheetName);
-  }, [activeSheetName]);
+    if (params.sheetName) {
+      const sheetName = decodeSheetName(params.sheetName);
+      if (sheetName !== activeSheetName) {
+        setActiveSheetNameWithRef(sheetName);
+        onSheetChange(sheetName);
+      }
+    }
+  }, [params.sheetName, activeSheetName, setActiveSheetNameWithRef, onSheetChange]);
 
   const handleFolderClick = useCallback(
     (folderName) => {
       onOpenFolderModal(folderName, (sheetName) => {
-        setActiveSheetNameWithRef(sheetName);
-        onSheetChange(sheetName);
         const urlSheetName = sheetName.replace(/ /g, "-");
         const newUrl = `/sheets/${urlSheetName}`;
-        window.history.pushState({}, '', newUrl);
+        navigate(newUrl);
       });
     },
-    [onOpenFolderModal, onSheetChange, setActiveSheetNameWithRef]
+    [onOpenFolderModal, navigate]
   );
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
@@ -518,7 +517,7 @@ const Sheets = ({
         }
       }
     },
-    []
+    [selectedRowForEdit?.docId]
   );
 
   const handleRowEdit = useCallback(
@@ -649,7 +648,8 @@ const Sheets = ({
       setSelectedRow(newRecordData);
       setIsEditorOpen(false);
     },
-    [records, objects, onRecordSave, setObjects]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [records, objects, onRecordSave, setObjects, businessId, setRecords]
   );
 
   const handleInlineSave = useCallback(
@@ -675,7 +675,7 @@ const Sheets = ({
         onRecordSave(newRecordData);
       }
     },
-    [records, onRecordSave]
+    [records, onRecordSave, setRecords]
   );
 
   const handleOpenNewRecord = useCallback(
@@ -753,7 +753,7 @@ const Sheets = ({
   };
 
   // Define loading UI
-  const LoadingUI = (
+  const _LoadingUI = (
     <div
       className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
       style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -815,7 +815,7 @@ const Sheets = ({
             </div>
           ))}
         </div>
-        {spinnerVisible ? (
+        {_spinnerVisible ? (
           <div style={{
             display: 'flex',
             justifyContent: 'center',

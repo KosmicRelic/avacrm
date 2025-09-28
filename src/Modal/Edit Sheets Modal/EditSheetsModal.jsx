@@ -1,35 +1,12 @@
-import React, { useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle, FaGripVertical } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff, MdDragIndicator } from 'react-icons/md';
 import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
 import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
-
-// Utility function to convert various date formats to milliseconds
-function toMillis(dateValue) {
-  if (
-    dateValue &&
-    typeof dateValue === 'object' &&
-    typeof dateValue.seconds === 'number' &&
-    typeof dateValue.nanoseconds === 'number'
-  ) {
-    return dateValue.seconds * 1000 + Math.floor(dateValue.nanoseconds / 1e6);
-  }
-  if (dateValue && typeof dateValue.toDate === 'function') {
-    return dateValue.toDate().getTime();
-  }
-  if (dateValue instanceof Date) {
-    return dateValue.getTime();
-  }
-  if (typeof dateValue === 'string') {
-    const parsed = Date.parse(dateValue);
-    if (!isNaN(parsed)) return parsed;
-  }
-  return NaN;
-}
 
 const EditSheetsModal = ({
   isEditMode = false,
@@ -122,12 +99,12 @@ const EditSheetsModal = ({
   const [filterType, setFilterType] = useState(null);
   const [filterOrder, setFilterOrder] = useState(tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown']);
   const headerRefs = useRef(new Map());
-  const filterRefs = useRef(new Map());
+  const _filterRefs = useRef(new Map());
   const hasInitialized = useRef(false);
   const prevStepRef = useRef(currentStep);
   const prevModalConfig = useRef(null);
-  const [draggedHeaderIndex, setDraggedHeaderIndex] = useState(null);
-  const [dragOverHeaderIndex, setDragOverHeaderIndex] = useState(null);
+  const [_draggedHeaderIndex, _setDraggedHeaderIndex] = useState(null);
+  const [_dragOverHeaderIndex, _setDragOverHeaderIndex] = useState(null);
 
   // Ensure recordTypeFilters, objectTypeFilters, recordsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
@@ -231,7 +208,7 @@ const EditSheetsModal = ({
   }, [selectedObjects, templateObjects, tempData, setTempData]);
 
   // Compute filter summary for display
-  const getFilterSummary = useCallback(
+  const _getFilterSummary = useCallback(
     (recordType) => {
       const filters = tempData.recordTypeFilters?.[recordType] || {};
       const summaries = [];
@@ -428,9 +405,13 @@ const EditSheetsModal = ({
     setTempData,
     tempData.sheetName,
     tempData.recordTypeFilters,
+    tempData.objectTypeFilters,
+    tempData.typeOfRecordsToDisplay,
     setActiveSheetName,
     clearFetchedSheets,
     handleClose,
+    sheetId,
+    templateObjects,
     allTemplates,
   ]);
 
@@ -653,7 +634,7 @@ const EditSheetsModal = ({
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, selectedObjects, tempData.recordTypeFilters, tempData.selectedObjects, setTempData]);
+  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, selectedObjects, tempData.recordTypeFilters, tempData.selectedObjects, setTempData, tempData.currentHeaders, tempData.filterOrder, tempData.recordsPerSearch, tempData.sheetName, tempData.typeOfRecordsToDisplay]);
 
   // Sync state from tempData changes (for loading existing sheets)
   useEffect(() => {
@@ -741,7 +722,7 @@ const EditSheetsModal = ({
     });
   }, []);
 
-  const toggleTemplateInObject = useCallback((objectId, typeOfRecord) => {
+  const _toggleTemplateInObject = useCallback((objectId, typeOfRecord) => {
     setSelectedTemplates(prev => {
       const newSelected = { ...prev };
       if (!newSelected[objectId]) return prev;
@@ -867,7 +848,7 @@ const EditSheetsModal = ({
     [sheetId]
   );
 
-  const handleFilterClick = useCallback(
+  const _handleFilterClick = useCallback(
     (typeOfRecords) => {
       if (!typeOfRecords) return;
       if (!tempData.recordTypeFilters?.[typeOfRecords]) {
@@ -907,7 +888,7 @@ const EditSheetsModal = ({
     [goToStep, tempData, setTempData]
   );
 
-  const handleAddFilterClick = useCallback(
+  const _handleAddFilterClick = useCallback(
     (typeOfRecords, filterType) => {
       setSelectedRecordTypeForFilter(typeOfRecords);
       setFilterType(filterType);
@@ -926,7 +907,7 @@ const EditSheetsModal = ({
     [goToStep]
   );
 
-  const handleAddRecordTemplateClick = useCallback((e) => {
+  const _handleAddRecordTemplateClick = useCallback((e) => {
     e.stopPropagation();
     setNavigationDirection('forward');
     goToStep(6);
@@ -966,7 +947,7 @@ const EditSheetsModal = ({
     e.dataTransfer.effectAllowed = 'move';
     const element = headerRefs.current.get(index);
     if (element) element.classList.add(styles.dragging);
-  }, [styles.dragging]);
+  }, []);
 
   const handleTouchStart = useCallback((e, index) => {
     if (e.target.classList.contains(styles.dragIcon)) {
@@ -977,7 +958,7 @@ const EditSheetsModal = ({
       const element = headerRefs.current.get(index);
       if (element) element.classList.add(styles.dragging);
     }
-  }, [styles.dragIcon]);
+  }, []);
 
   const handleDragOver = useCallback((e, index) => {
     e.preventDefault();
@@ -991,7 +972,7 @@ const EditSheetsModal = ({
     });
   }, [draggedIndex, setCurrentHeaders]);
 
-  const handleTouchMove = useCallback((e, index) => {
+  const handleTouchMove = useCallback((e) => {
     if (draggedIndex === null || touchStartY === null) return;
     e.preventDefault();
     const touchY = e.touches[0].clientY;
@@ -1013,7 +994,7 @@ const EditSheetsModal = ({
     const element = headerRefs.current.get(draggedIndex);
     if (element) element.classList.remove(styles.dragging);
     setDraggedIndex(null);
-  }, [draggedIndex, styles.dragging]);
+  }, [draggedIndex]);
 
   const handleTouchEnd = useCallback(() => {
     const element = headerRefs.current.get(draggedIndex);
@@ -1021,7 +1002,7 @@ const EditSheetsModal = ({
     setDraggedIndex(null);
     setTouchStartY(null);
     setTouchTargetIndex(null);
-  }, [draggedIndex, styles.dragging]);
+  }, [draggedIndex]);
 
   return (
     <div className={`${styles.sheetModal} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1708,7 +1689,7 @@ function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTem
   });
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
-  const filterValues = tempData.recordTypeFilters?.[recordType] || {};
+  const filterValues = useMemo(() => tempData.recordTypeFilters?.[recordType] || {}, [tempData.recordTypeFilters, recordType]);
 
   // Build visibleHeaders for the main filter list (exclude user fields)
   const visibleHeaders = useMemo(() => {
@@ -1828,7 +1809,7 @@ function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTem
     applyFilters(updatedFilters);
   }, [filterValues, applyFilters]);
 
-  const handleReset = useCallback(() => {
+  const _handleReset = useCallback(() => {
     let clearedFilters = { ...filterValues };
     if (showOnlyUserFilter) {
       clearedFilters = { ...filterValues, userFilter: {} };

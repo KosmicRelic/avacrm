@@ -1,10 +1,9 @@
 // RowComponent.js
-import React, { useContext, useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useContext, useState, useRef, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 
 const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onInlineSave, teamMembers }) => {
@@ -200,7 +199,7 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
     }
   };
 
-  const handleSelectClick = (e) => {
+  const _handleSelectClick = (e) => {
     e.stopPropagation();
     if (!isAddNew) {
       onSelect(rowData);

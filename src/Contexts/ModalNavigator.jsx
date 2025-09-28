@@ -106,7 +106,7 @@ export const ModalNavigatorProvider = ({ children }) => {
       setCurrentStep(previousStep);
       setHistory(newHistory); // Update history
     },
-    [history, modalSteps, getStepTitle, getStepButton]
+    [history, getStepTitle, getStepButton]
   );
 
   return (

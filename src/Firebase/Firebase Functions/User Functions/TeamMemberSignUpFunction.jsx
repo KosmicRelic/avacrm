@@ -28,19 +28,20 @@ export const TeamMemberSignUpFunction = async ({ email, password, phone, name, s
         const invitationDoc = invitationsSnap.docs[0];
         await deleteDoc(doc(db, 'invitations', invitationDoc.id));
       }
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Proceed even if deletion fails, as Cloud Function should have handled it
     }
 
     return result.data.userData;
-  } catch (error) {
+  } catch (_error) {
     let errorMessage = 'Failed to create account';
-    if (error.code === 'already-exists') {
+    if (_error.code === 'already-exists') {
       errorMessage = 'Email is already in use';
-    } else if (error.code === 'invalid-argument' || error.code === 'not-found' || error.code === 'failed-precondition') {
-      errorMessage = error.message;
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (_error.code === 'invalid-argument' || _error.code === 'not-found' || _error.code === 'failed-precondition') {
+      errorMessage = _error.message;
+    } else if (_error.message) {
+      errorMessage = _error.message;
     }
     throw new Error(errorMessage);
   }

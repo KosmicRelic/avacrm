@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import styles from './DatePicker.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 
@@ -52,7 +52,7 @@ const DatePicker = () => {
     const handleResize = () => updateHighlight(activeOption);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [activeOption]);
+  }, [activeOption, updateHighlight]);
 
   return (
     <div

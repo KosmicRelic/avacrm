@@ -24,5 +24,13 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
+  globals: {
+    require: "readonly",
+    exports: "writable",
+    module: "readonly",
+    process: "readonly",
+    console: "readonly",
+    Buffer: "readonly",
+    global: "readonly",
+  },
 };

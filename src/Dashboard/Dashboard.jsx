@@ -1,11 +1,7 @@
-import React, { useRef, useContext, useState, useMemo, useCallback } from 'react';
+import { useContext, useState, useMemo, useCallback } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
-import DashboardPlane from './Dashboard Plane/DashboardPlane';
-import { FaPlus } from 'react-icons/fa';
 import useModal from '../Modal/Hooks/UseModal';
-import Modal from '../Modal/Modal';
-import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 
 const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   const { isDarkTheme, dashboards, setDashboards } = useContext(MainContext);
@@ -14,24 +10,24 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const widgetSizeModal = useModal();
 
-  const windowSizes = {
+  const windowSizes = useMemo(() => ({
     verySmall: { width: 1, height: 1 },
     small: { width: 1, height: 2 },
     medium: { width: 2, height: 2 },
     large: { width: 2, height: 4 },
-  };
+  }), []);
 
-  const windowScores = {
+  const windowScores = useMemo(() => ({
     verySmall: 10,
     small: 20,
     medium: 40,
     large: 80,
-  };
+  }), []);
 
-  const getWidgetArea = (size) => {
+  const getWidgetArea = useCallback((size) => {
     const { width, height } = windowSizes[size] || windowSizes.small;
     return width * height;
-  };
+  }, [windowSizes]);
 
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => !prev);
@@ -44,7 +40,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       return sum + (windowScores[size] || 0);
     }, 0);
     return totalScore <= 80;
-  }, []);
+  }, [windowScores]);
 
   const canPlaceWidget = useCallback((dashboard, widget, row, col, skipWidgets = [], customGrid = null) => {
     const size = widget.size;
@@ -95,7 +91,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       }
     }
     return true;
-  }, []);
+  }, [windowSizes]);
 
   const findFreePosition = useCallback((dashboard, size, skipWidgets = [], customGrid = null) => {
     const possiblePositions = [];
@@ -633,7 +629,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
       setDraggedWidget(null);
       return prev;
     });
-  }, [draggedWidget, editMode, isInitialized, setDashboards, validateDashboardScore, cleanupEmptyDashboards, getValidPosition, canPlaceWidget, findFreePosition]);
+  }, [draggedWidget, editMode, isInitialized, setDashboards, validateDashboardScore, cleanupEmptyDashboards, getValidPosition, canPlaceWidget, findFreePosition, windowSizes, reassignOverlappingWidgets]);
 
   const handleDragStart = useCallback((e, widgetInfo) => {
     if (!editMode) return;
@@ -699,7 +695,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
     onWidgetClick(payload);
   }, [onWidgetClick]);
 
-  const swapWidgets = useCallback(({ dashboardId, row, col, targetWidget }) => {
+  const swapWidgets = useCallback(({ dashboardId, row, col }) => {
     if (!draggedWidget || !editMode || !isInitialized) {
       return false;
     }
@@ -835,7 +831,7 @@ const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
               // Mark as occupied
               const { width, height } = windowSizes[ow.size] || windowSizes.small;
               for (let r = pos.row; r < pos.row + height; r++) {
-                for (let c = pos.col; c < w.position.col + width; c++) {
+                for (let c = pos.col; c < pos.col + width; c++) {
                   tempGrid[r][c] = true;
                 }
               }

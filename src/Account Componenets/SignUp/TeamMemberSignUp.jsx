@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './BusinessSignUp.module.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -42,7 +42,7 @@ export default function TeamMemberSignUp() {
   const [invitationDetails, setInvitationDetails] = useState(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [_signupSuccess, _setSignupSuccess] = useState(false);
   const [signupError, setSignupError] = useState('');
 
   // Redirect if user is already logged in
@@ -159,13 +159,13 @@ export default function TeamMemberSignUp() {
 
         // Delay success and navigation to allow Firestore listener to process
         setTimeout(() => {
-          setSignupSuccess(true);
+          _setSignupSuccess(true);
           setIsSubmitting(false);
           navigate('/sheets');
         }, 1500); // Increased to 1.5s to ensure banner triggers
       } catch (error) {
         setIsSubmitting(false);
-        setSignupSuccess(false);
+        _setSignupSuccess(false);
         setIsSignup(false);
         let errorMessage = t('teamMemberSignUp.error.generic');
         switch (error.code) {

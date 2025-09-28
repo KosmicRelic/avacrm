@@ -1,4 +1,3 @@
-import React from 'react';
 import EditSheetsModal from '../Modal/Edit Sheets Modal/EditSheetsModal';
 import FilterModal from '../Modal/FilterModal/FilterModal';
 import ReOrderModal from '../Modal/Re Order Modal/ReOrderModal';
@@ -9,8 +8,6 @@ import WidgetSizeModal from '../Modal/WidgetSizeModal/WidgetSizeModal';
 import MetricsCategories from '../Metrics/MetricsEdit/MetricsEdit';
 import WidgetSetupModal from '../Dashboard/WidgetSetupModal/WidgetSetupModal';
 import MetricsModal from '../Modal/MetricsModal/MetricsModal';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { updateRecordTemplatesAndRecordsFunction } from '../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
 // Utility function to recursively clean objects and arrays, converting undefined to null and removing null if desired
 const cleanObject = (obj, convertUndefinedToNull = true) => {
@@ -41,24 +38,24 @@ export const handleModalSave = async ({
   data,
   setSheets,
   activeSheetName,
-  isSheetModalEditMode,
-  setTemplateObjects,
+  _isSheetModalEditMode,
+  _setTemplateObjects,
   setEditMode,
   setSelectedTemplateIndex,
   setCurrentSectionIndex,
   setTempData,
   handleSheetChange,
   setDashboards,
-  activeDashboard,
+  _activeDashboard,
   setMetrics,
   sheets,
   metrics,
   dashboards,
   setActiveModal,
-  templateObjects,
-  businessId,
-  records,
-  setRecords,
+  _templateObjects,
+  _businessId,
+  _records,
+  _setRecords,
 }) => {
   switch (modalType) {
     case 'headers':
@@ -208,7 +205,7 @@ export const handleModalSave = async ({
               return { ...sheet };
             });
             // Remove isModified before saving to Firestore
-            const allSheetsNoIsModified = allSheets.map(({ isModified, ...rest }) => rest);
+            const allSheetsNoIsModified = allSheets.map(({ _isModified, ...rest }) => rest);
             return {
               ...prev,
               structure: newStructure,
@@ -237,17 +234,21 @@ export const handleModalSave = async ({
     case 'folderModal':
       if (data?.tempData) {
         if (data.tempData.actions) {
+          // empty block
         } else {
+          // empty block
         }
         if (data.tempData.action) {
+          // empty block
         }
       } else {
+        // empty block
       }
       if (data?.tempData?.actions && Array.isArray(data.tempData.actions)) {
         setSheets((prev) => {
           let currentStructure = [...prev.structure];
           const modifiedSheets = new Set();
-          data.tempData.actions.forEach((actionData, idx) => {
+          data.tempData.actions.forEach((actionData, _idx) => {
             if (
               actionData.action === 'removeSheets' &&
               actionData.selectedSheets &&
@@ -376,6 +377,7 @@ export const handleModalSave = async ({
           };
         });
       } else {
+        // empty block
       }
       break;
     case 'widgetView':
@@ -419,7 +421,7 @@ export const handleModalSave = async ({
                 ...dashboard.dashboardWidgets,
                 { ...data.updatedWidget, dashboardId: data.dashboardId },
               ];
-          const { isModified, action, ...cleanDashboard } = dashboard;
+          const { _isModified, _action, ...cleanDashboard } = dashboard;
           return {
             ...cleanDashboard,
             dashboardWidgets: updatedWidgets,
@@ -555,13 +557,15 @@ export const renderModalContent = ({
   handleDeleteSheet,
   handleModalClose,
   resolvedRows,
-  templateObjects,
+  _templateObjects,
   handleSheetChange,
   handleSheetSave,
   handleFolderSave,
   setSheets,
-  businessId,
+  _businessId,
   clearFetchedSheets,
+  activeDashboard,
+  metrics,
 }) => {
   if (!activeModal) return null;
   const setActiveModalData = (newData) =>
@@ -705,7 +709,7 @@ export const onEditSheet = ({
   activeSheetName,
   resolvedHeaders,
   activeSheet,
-  clearFetchedSheets,
+  _clearFetchedSheets,
 }) => {
   if (!sheets) return;
   setIsSheetModalEditMode(true);

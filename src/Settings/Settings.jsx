@@ -1,11 +1,10 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
-import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash, FaCheck } from 'react-icons/fa';
-import { IoGitBranch } from 'react-icons/io5';
+import { FaRegCircle, FaRegCheckCircle, FaChevronRight, FaArrowLeft, FaTrash } from 'react-icons/fa';
 import { getAuth } from 'firebase/auth';
 import { DeleteTeamMemberFunction } from '../Firebase/Firebase Functions/User Functions/DeleteTeamMemberFunction';
 import DataModels from './DataModels/DataModels';
@@ -38,7 +37,7 @@ export default function Settings() {
   });
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [selectedTheme, setSelectedTheme] = useState('business');
+  const [_selectedTheme, _setSelectedTheme] = useState('business');
   const dataModelsRef = useRef(null);  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);

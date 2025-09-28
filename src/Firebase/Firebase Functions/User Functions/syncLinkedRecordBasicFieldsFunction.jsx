@@ -1,5 +1,5 @@
 import { db } from '../../../firebase';
-import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 
 export const syncLinkedRecordBasicFieldsFunction = async (businessId, updatedRecord) => {
   try {
@@ -58,7 +58,7 @@ export const syncLinkedRecordBasicFieldsFunction = async (businessId, updatedRec
       // Copy basic field values from the updated record
       syncableBasicFields.forEach(field => {
         const fieldKey = field.key;
-        if (updatedRecord.hasOwnProperty(fieldKey) && updatedRecord[fieldKey] !== recordData[fieldKey]) {
+        if (fieldKey in updatedRecord && updatedRecord[fieldKey] !== recordData[fieldKey]) {
           updateData[fieldKey] = updatedRecord[fieldKey];
         }
       });

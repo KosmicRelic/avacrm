@@ -1,4 +1,4 @@
-import { format, startOfDay, addDays, startOfMonth, addMonths } from 'date-fns';
+import { format, startOfDay, startOfMonth } from 'date-fns';
 
 // Helper to convert timestamp to Date
 export const timestampToDate = (timestamp) => {
@@ -170,7 +170,7 @@ export const getFieldChanges = (
 };
 
 // Aggregate data for pie chart
-export const aggregateForPie = (history, groupBy, fields, recordTemplates) => {
+export const aggregateForPie = (history, groupBy, _fields, _recordTemplates) => {
   const grouped = history.reduce((acc, entry) => {
     const groupKey = groupBy === 'field' ? entry.field : groupBy ? entry[groupBy] : entry.recordType;
     acc[groupKey] = (acc[groupKey] || 0) + 1;
@@ -200,9 +200,7 @@ export const aggregateByDay = (
   aggregation,
   groupBy = 'recordType',
   dateRange = null,
-  granularity = 'monthly',
-  fields,
-  recordTemplates
+  granularity = 'monthly'
 ) => {
   if (!history.length) {
     return {
@@ -302,9 +300,7 @@ export const aggregateByDay = (
 // Compute metric data for number visualization
 export const computeNumberMetric = (
   history,
-  aggregation,
-  fields,
-  recordTemplates
+  aggregation
 ) => {
   const numericValues = history
     .map((entry) => parseFloat(entry.newValue))
@@ -356,8 +352,7 @@ export const aggregateByDayForComparison = (
   aggregation,
   comparisonFields,
   dateRange,
-  granularity,
-  recordTemplates
+  granularity
 ) => {
   if (!history.length) {
     return {
@@ -375,7 +370,7 @@ export const aggregateByDayForComparison = (
   }
 
   // Sort history by timestamp
-  const sortedHistory = [...history].sort((a, b) => timestampToDate(a.timestamp) - timestampToDate(b.timestamp));
+  const _sortedHistory = [...history].sort((a, b) => timestampToDate(a.timestamp) - timestampToDate(b.timestamp));
 
   // Use dateRange if provided
   let startDate = granularity === 'monthly' ? startOfMonth(timestampToDate(dateRange.start)) : startOfDay(timestampToDate(dateRange.start));
@@ -449,8 +444,7 @@ export const aggregateByDayForComparison = (
 // Compute scatter data for two fields
 export const computeScatterData = (
   history,
-  comparisonFields,
-  recordTemplates
+  comparisonFields
 ) => {
   if (comparisonFields.length !== 2) {
     return {

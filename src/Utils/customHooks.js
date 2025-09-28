@@ -89,7 +89,7 @@ export function useAsync(asyncFunction, dependencies = []) {
     } finally {
       setLoading(false);
     }
-  }, dependencies);
+  }, [asyncFunction, ...dependencies]);
 
   return { data, loading, error, execute };
 }

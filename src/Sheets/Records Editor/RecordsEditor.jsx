@@ -1,12 +1,10 @@
-import React, { useContext, useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { useContext, useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
-import { IoMdArrowDropdown } from 'react-icons/io';
-import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(({
+import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -15,7 +13,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
   preSelectedSheet,
   isObjectMode: propIsObjectMode,
 }) => {
-  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, setTemplateObjects: contextSetTemplateObjects } = useContext(MainContext);
+  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'modeSelection');
   const [isObjectMode, setIsObjectMode] = useState(() => {
     if (propIsObjectMode !== undefined) return propIsObjectMode;
@@ -435,7 +433,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       setIsEditing(false);
       setFormData(newRecordData);
     }
-  }, [formData, templateObjects, user?.email, onOpenNewRecord, onClose, selectedSheet, preSelectedSheet]);
+  }, [formData, user?.email, onOpenNewRecord, onClose, selectedSheet, preSelectedSheet]);
 
 
 
@@ -673,6 +671,8 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     onClose,
     records,
     user,
+    isObjectMode,
+    objects,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -710,14 +710,6 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
         : [...prev, sectionName]
     );
   }, []);
-
-  const handleViewHistory = useCallback(() => {
-    if (!formData.history || formData.history.length === 0) {
-      alert('No history available for this record.');
-      return;
-    }
-    setIsHistoryModalOpen(true);
-  }, [formData.history]);
 
   const handleHistoryDateSelect = useCallback((historyDate) => {
     setSelectedHistoryDate(historyDate);
@@ -780,7 +772,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [fieldHistoryPopup.isOpen, closeFieldHistoryPopup]);
 
-  const HistoryModal = () => {
+  const _HistoryModal = () => {
     const formattedHistory = getFormattedHistory(formData, user, teamMembers);
     const recordCreator = getRecordCreator(formData, user, teamMembers);
     const lastModifier = getLastModifier(formData, user, teamMembers);
@@ -872,7 +864,7 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     );
   };
 
-  const FieldHistoryPopup = () => {
+  const _FieldHistoryPopup = () => {
     const fieldHistory = getFieldHistory(fieldHistoryPopup.field);
     const fieldName = selectedSections
       .flatMap(section => section.fields)
