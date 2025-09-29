@@ -775,10 +775,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 0 rgba(0, 122, 255, 0.1);
   border: 1.5px solid rgba(0, 122, 255, 0.25);
-  transform: translateY(-1px) scale(1.001);
   position: relative;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  animation: selectedPulse 0.6s ease-out;
+  transition: all 0.15s ease-out;
 }
 
 .selectedRow::after {
@@ -816,7 +814,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     inset 0 -1px 0 rgba(0, 122, 255, 0.15);
   border-color: rgba(0, 122, 255, 0.35);
-  transform: translateY(-2px) scale(1.002);
 }
 
 .selectedRow.darkTheme:hover {
@@ -861,7 +858,6 @@
 
 @keyframes selectedPulse {
   0% {
-    transform: translateY(-1px) scale(1.001);
     box-shadow:
       0 2px 12px rgba(0, 122, 255, 0.15),
       0 4px 24px rgba(0, 122, 255, 0.08),
@@ -869,15 +865,13 @@
       inset 0 -1px 0 rgba(0, 122, 255, 0.1);
   }
   50% {
-    transform: translateY(-2px) scale(1.003);
     box-shadow:
-      0 4px 20px rgba(0, 122, 255, 0.25),
-      0 8px 40px rgba(0, 122, 255, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -1px 0 rgba(0, 122, 255, 0.15);
+      0 3px 16px rgba(0, 122, 255, 0.2),
+      0 6px 32px rgba(0, 122, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(0, 122, 255, 0.12);
   }
   100% {
-    transform: translateY(-1px) scale(1.001);
     box-shadow:
       0 2px 12px rgba(0, 122, 255, 0.15),
       0 4px 24px rgba(0, 122, 255, 0.08),

@@ -10,8 +10,18 @@ import { FiEdit } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
-import { doc, setDoc, query, where, onSnapshot, collection } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../firebase';
+
+// Debug logging utility
+const addDebugLog = (message) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = `[${timestamp}] ${message}`;
+  if (window.debugLogs) {
+    window.debugLogs.push(logEntry);
+  }
+  console.log(logEntry);
+};
 
 // Local components
 import RowComponent from './Row Template/RowComponent';
@@ -38,6 +48,7 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
+  addDebugLog('📋 Sheets component mounted with onRecordSave: ' + !!onRecordSave + ', isSelectMode: ' + false);
   const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers, templateObjects } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
@@ -94,10 +105,13 @@ const Sheets = ({
     return selected;
   }, [activeSheet, templateObjects]);
 
+  const selectedObjectNames = useMemo(() => 
+    Object.values(selectedObjects).filter(obj => obj.selected).map(obj => obj.name),
+    [selectedObjects]
+  );
+
   // Set up objects listener based on selected objects
   useEffect(() => {
-    const selectedObjectNames = Object.values(selectedObjects).filter(obj => obj.selected).map(obj => obj.name);
-    
     if (selectedObjectNames.length === 0) {
       setObjects([]);
       setObjectsLoading(false);
@@ -110,20 +124,43 @@ const Sheets = ({
       query(collection(db, 'businesses', businessId, 'objects'), where('typeOfObject', 'in', selectedObjectNames)),
       (snapshot) => {
         const fetchedObjects = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
-        if (window.debugLogs) {
-          window.debugLogs.push(`[${new Date().toLocaleTimeString()}] 📦 Fetched ${fetchedObjects.length} objects for sheet: ${fetchedObjects.map(obj => `${obj.typeOfObject || 'unknown'} (id: ${obj.objectId || 'missing'}, doc: ${obj.docId})`).join(', ')}`);
-        }
-        console.log(`📦 Fetched ${fetchedObjects.length} objects for sheet: ${fetchedObjects.map(obj => `${obj.typeOfObject || 'unknown'} (id: ${obj.objectId || 'missing'}, doc: ${obj.docId})`).join(', ')}`);
+        addDebugLog('📦 Fetched ' + fetchedObjects.length + ' objects for types: ' + selectedObjectNames.join(', '));
         setObjects(fetchedObjects);
         setObjectsLoading(false);
       },
       (error) => {
         console.error('Error in objects listener:', error);
+        addDebugLog('❌ Error in objects listener: ' + error.message);
       }
     );
 
     return unsubscribe;
-  }, [selectedObjects, businessId]);
+  }, [selectedObjectNames, businessId]);
+
+  // Process object deletions
+  useEffect(() => {
+    const objectsToDelete = objects.filter(obj => obj.action === 'remove' && obj.isModified);
+    
+    if (objectsToDelete.length > 0) {
+      const deleteObjects = async () => {
+        try {
+          for (const obj of objectsToDelete) {
+            await deleteDoc(doc(db, `businesses/${businessId}/objects/${obj.docId}`));
+          }
+          
+          // Remove deleted objects from local state
+          setObjects(prev => {
+            const filtered = prev.filter(obj => !objectsToDelete.some(delObj => delObj.docId === obj.docId));
+            return filtered;
+          });
+        } catch (error) {
+          console.error('Failed to delete objects:', error);
+        }
+      };
+      
+      deleteObjects();
+    }
+  }, [objects, businessId]);
 
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const _isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
@@ -299,6 +336,11 @@ const Sheets = ({
   const [_scrollOffset, _setScrollOffset] = useState(0);
 
   const isMobile = windowWidth <= 1024;
+
+  // Log select mode changes
+  useEffect(() => {
+    addDebugLog('🔄 Select mode changed to: ' + isSelectMode);
+  }, [isSelectMode]);
 
   // Animation trigger for opening and closing (both mobile and desktop)
   useEffect(() => {
@@ -715,26 +757,59 @@ const Sheets = ({
     (updatedRowData) => {
       const rowId = updatedRowData.docId;
       
+      // Determine if this is an object record or regular record
+      const isObjectRecord = updatedRowData.isObject;
+      const recordArray = isObjectRecord ? objects : records;
+      const setRecordArray = isObjectRecord ? setObjects : setRecords;
+      
       // Find the original record to compare
-      const originalRecord = records.find(record => record.docId === rowId);
-      if (!originalRecord) return;
+      const originalRecord = recordArray.find(record => record.docId === rowId);
+      if (!originalRecord) {
+        return;
+      }
       
       // Check if any data actually changed (excluding system fields)
       const systemFields = ['updatedAt', 'createdAt', 'createdBy', 'lastModifiedBy'];
-      const hasDataChanges = Object.keys(updatedRowData).some(key => {
-        if (systemFields.includes(key)) return false;
-        return JSON.stringify(updatedRowData[key]) !== JSON.stringify(originalRecord[key]);
-      });
+      let hasDataChanges = false;
+      let changedField = null;
+      
+      for (const key of Object.keys(updatedRowData)) {
+        if (systemFields.includes(key)) continue;
+        
+        const newValue = updatedRowData[key];
+        const oldValue = originalRecord[key];
+        
+        // More robust comparison
+        let valuesEqual = false;
+        if (newValue === oldValue) {
+          valuesEqual = true;
+        } else if (newValue == null && oldValue == null) {
+          valuesEqual = true;
+        } else if (typeof newValue === 'string' && typeof oldValue === 'string') {
+          valuesEqual = newValue.trim() === oldValue.trim();
+        } else if (Array.isArray(newValue) && Array.isArray(oldValue)) {
+          valuesEqual = JSON.stringify(newValue.sort()) === JSON.stringify(oldValue.sort());
+        } else {
+          // Try string comparison as fallback
+          valuesEqual = String(newValue) === String(oldValue);
+        }
+        
+        if (!valuesEqual) {
+          hasDataChanges = true;
+          changedField = key;
+          break; // Found a change, no need to check further
+        }
+      }
       
       if (hasDataChanges) {
         const newRecordData = { ...updatedRowData, isModified: true, action: 'update' };
-        setRecords((prev) =>
+        setRecordArray((prev) =>
           prev.map((record) => (record.docId === rowId ? newRecordData : record))
         );
         onRecordSave(newRecordData);
       }
     },
-    [records, onRecordSave, setRecords]
+    [records, objects, onRecordSave, setRecords, setObjects]
   );
 
   const handleOpenNewRecord = useCallback(
@@ -754,9 +829,11 @@ const Sheets = ({
   );
 
   const handleSelectToggle = useCallback(() => {
-    setIsSelectMode((prev) => !prev);
-    if (isSelectMode) setSelectedRowIds([]);
-  }, [isSelectMode]);
+    setIsSelectMode((prev) => {
+      if (prev) setSelectedRowIds([]); // Clear selections when exiting select mode
+      return !prev;
+    });
+  }, []);
 
   const handleRowSelect = useCallback(
     (rowData) => {
@@ -791,6 +868,18 @@ const Sheets = ({
     setSelectedRowIds([]);
     setIsSelectMode(false);
   }, [selectedRowIds, setRecords]);
+
+  const handleDeleteSelectedObjects = useCallback(() => {
+    setObjects((prev) =>
+      prev.map((object) =>
+        selectedRowIds.includes(object.docId)
+          ? { ...object, isModified: true, action: 'remove' }
+          : object
+      )
+    );
+    setSelectedRowIds([]);
+    setIsSelectMode(false);
+  }, [selectedRowIds, setObjects]);
 
   // Ensure URL always matches the current active sheet
   useEffect(() => {
@@ -958,12 +1047,20 @@ const Sheets = ({
               <button
                 className={`${styles.actionTabButton} ${styles.deleteTab} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={() => {
+                  // Check if selected items are objects or records
+                  const selectedObjects = objects.filter(obj => selectedRowIds.includes(obj.docId));
+                  const isDeletingObjects = selectedObjects.length > 0;
+                  
                   if (
                     window.confirm(
-                      'Are you sure you want to delete the selected records? This action cannot be undone.'
+                      `Are you sure you want to delete the selected ${isDeletingObjects ? 'objects' : 'records'}? This action cannot be undone.`
                     )
                   ) {
-                    handleDeleteSelected();
+                    if (isDeletingObjects) {
+                      handleDeleteSelectedObjects();
+                    } else {
+                      handleDeleteSelected();
+                    }
                   }
                 }}
               >

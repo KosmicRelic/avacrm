@@ -2,6 +2,8 @@ import React, { useState, useCallback, useMemo, useContext, useEffect, Suspense,
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from './firebase.jsx';
 import AppHeader from './App Header/AppHeader';
 import { MainContext } from './Contexts/MainContext';
 import styles from './App.module.css';
@@ -29,6 +31,16 @@ import {
 import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
 import ErrorBoundary from './Utils/ErrorBoundary';
 import DebugPanel from './Utils/DebugPanel';
+
+// Debug logging utility
+const addDebugLog = (message) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = `[${timestamp}] ${message}`;
+  if (window.debugLogs) {
+    window.debugLogs.push(logEntry);
+  }
+  console.log(logEntry);
+};
 
 // Memoized ProtectedRoute to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
@@ -293,6 +305,32 @@ function App() {
       }
     },
     [setSheets, sheets, activeSheetName, setActiveSheetName, handleSheetChange, businessId]
+  );
+
+  const handleRecordSave = useCallback(
+    async (recordData) => {
+      if (!businessId) {
+        return;
+      }
+
+      if (!recordData.docId) {
+        return;
+      }
+
+      try {
+        // Determine the correct collection based on record type
+        const collectionName = recordData.isObject ? 'objects' : 'records';
+        const docPath = `businesses/${businessId}/${collectionName}/${recordData.docId}`;
+        
+        // Create a clean copy without system fields that might cause issues
+        const { isModified, action, ...cleanRecordData } = recordData;
+        
+        await setDoc(doc(db, docPath), cleanRecordData);
+      } catch (error) {
+        console.error('Failed to save record to Firebase:', error);
+      }
+    },
+    [businessId]
   );
 
   const handleSheetSave = useCallback(
@@ -601,7 +639,7 @@ function App() {
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
                     onFilter={() => onFilter(modalUtilsProps)}
                     onRowClick={() => {}}
-                    onRecordSave={() => {}}
+                    onRecordSave={handleRecordSave}
                     onRecordDelete={() => {}}
                     onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                     onOpenTransportModal={(action, selectedRowIds, onComplete) =>
@@ -627,7 +665,7 @@ function App() {
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
                     onFilter={() => onFilter(modalUtilsProps)}
                     onRowClick={() => {}}
-                    onRecordSave={() => {}}
+                    onRecordSave={handleRecordSave}
                     onRecordDelete={() => {}}
                     onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                     onOpenTransportModal={(action, selectedRowIds, onComplete) =>
@@ -653,7 +691,7 @@ function App() {
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
                     onFilter={() => onFilter(modalUtilsProps)}
                     onRowClick={() => {}}
-                    onRecordSave={() => {}}
+                    onRecordSave={handleRecordSave}
                     onRecordDelete={() => {}}
                     onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
                     onOpenTransportModal={(action, selectedRowIds, onComplete) =>

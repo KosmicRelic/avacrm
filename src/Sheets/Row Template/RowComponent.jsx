@@ -242,14 +242,11 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
   };
 
   const handleCellDoubleClick = (e, headerKey, currentValue, rawValue, header) => {
-    // In select mode, allow the click to bubble up to the row for selection
-    if (isSelectMode) {
-      return;
-    }
-    
     // Prevent row click when double-clicking on cells
     e.stopPropagation();
-    if (isAddNew || isFieldReadOnly(headerKey) || isSelectMode) return;
+    if (isAddNew || isFieldReadOnly(headerKey)) {
+      return;
+    }
     
     setEditingCell(headerKey);
     

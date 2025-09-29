@@ -6,7 +6,9 @@ import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
 import { IoMdArrowDropdown } from 'react-icons/io';
-import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(({
+import { MdHistory, MdDelete } from 'react-icons/md';
+
+const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -681,11 +683,13 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
     if (window.confirm(isObjectMode ? 'Are you sure you want to delete this object?' : 'Are you sure you want to delete this record? This action will remove it from all sheets.')) {
       if (isObjectMode) {
         setObjects((prev) =>
-          prev.map((object) =>
-            object.docId === initialRowData.docId
-              ? { ...object, isModified: true, action: 'remove' }
-              : object
-          )
+          prev.map((object) => {
+            if (object.docId === initialRowData.docId) {
+              const updatedObject = { ...object, isModified: true, action: 'remove' };
+              return updatedObject;
+            }
+            return object;
+          })
         );
       } else {
         setRecords((prev) =>
@@ -908,6 +912,8 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
       </div>
     );
   };
+
+  const FieldHistoryPopup = _FieldHistoryPopup;
 
   const SingleSelectDropdown = ({ options, value, onChange, placeholder, disabled, isDarkTheme }) => {
     const [open, setOpen] = useState(false);

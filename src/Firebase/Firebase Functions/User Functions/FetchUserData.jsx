@@ -297,7 +297,7 @@ const fetchUserData = async ({
                   }))
                 }));
                 setTemplateObjects(objects);
-                addDebugLog(`🏗️ Loaded ${objects.length} template objects: ${objects.map(obj => `${obj.name} (${obj.id})`).join(', ')}`);
+                // addDebugLog(`🏗️ Loaded ${objects.length} template objects: ${objects.map(obj => `${obj.name} (${obj.id})`).join(', ')}`);
                 templateObjectNames = objects.map(obj => obj.name);
               }
             },
