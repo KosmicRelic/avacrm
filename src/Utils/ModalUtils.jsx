@@ -120,7 +120,6 @@ export const handleModalSave = async ({
                   ...sheet,
                   sheetName: data.sheetName,
                   headers: data.currentHeaders,
-                  typeOfRecordsToDisplay: data.typeOfRecordsToDisplay || [],
                   recordTypeFilters: cleanedRecordTypeFilters,
                   objectTypeFilters: cleanedObjectTypeFilters,
                   recordsPerSearch: data.recordsPerSearch ?? sheet.recordsPerSearch,
@@ -580,7 +579,6 @@ export const renderModalContent = ({
             activeModal.data || {
               sheetName: isSheetModalEditMode ? activeSheetName : '',
               currentHeaders: resolvedHeaders || [],
-              typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
               recordTypeFilters: activeSheet?.recordTypeFilters || {},
               objectTypeFilters: activeSheet?.objectTypeFilters || {},
               recordsPerSearch: activeSheet?.recordsPerSearch ?? null,
@@ -718,7 +716,6 @@ export const onEditSheet = ({
     data: {
       sheetName: activeSheetName,
       currentHeaders: resolvedHeaders || [],
-      typeOfRecordsToDisplay: activeSheet?.typeOfRecordsToDisplay || [],
       recordTypeFilters: activeSheet?.recordTypeFilters || {},
       objectTypeFilters: activeSheet?.objectTypeFilters || {},
       recordsPerSearch: activeSheet?.recordsPerSearch ?? null,

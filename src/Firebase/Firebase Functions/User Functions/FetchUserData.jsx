@@ -32,7 +32,6 @@ const fetchUserData = async ({
   activeSheetName,
   updateSheets = false,
 }) => {
-  addDebugLog(`🚀 fetchUserData called with route: ${route} activeSheetName: ${activeSheetName} updateSheets: ${updateSheets}`);
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
     try {
@@ -120,6 +119,7 @@ const fetchUserData = async ({
         const isBusinessUser = auth.currentUser?.uid === businessId;
         allowedSheetIds = await getAllowedSheetIds();
         const unsubscribeFunctions = [];
+        let templateObjectNames = [];
 
         if (!isBusinessUser) {
           // For team members, set up real-time listeners for their allowed sheets
@@ -297,6 +297,8 @@ const fetchUserData = async ({
                   }))
                 }));
                 setTemplateObjects(objects);
+                addDebugLog(`🏗️ Loaded ${objects.length} template objects: ${objects.map(obj => `${obj.name} (${obj.id})`).join(', ')}`);
+                templateObjectNames = objects.map(obj => obj.name);
               }
             },
             (error) => {
@@ -306,25 +308,6 @@ const fetchUserData = async ({
           
           // Store the unsubscribe function
           unsubscribeFunctions.push(templateObjectsUnsubscribe);
-          
-          // Set up real-time listener for objects
-          const objectsUnsubscribe = onSnapshot(
-            collection(db, 'businesses', businessId, 'objects'),
-            (objectsSnapshot) => {
-              setObjects && setObjects(
-                objectsSnapshot.docs.map((doc) => ({
-                  docId: doc.id,
-                  ...doc.data(),
-                }))
-              );
-            },
-            (error) => {
-              console.error('Error in objects real-time listener:', error);
-            }
-          );
-          
-          // Store the unsubscribe function
-          unsubscribeFunctions.push(objectsUnsubscribe);
           
           // Set up real-time listener for metrics
           const metricsUnsubscribe = onSnapshot(
@@ -436,46 +419,49 @@ const fetchUserData = async ({
     }
 
     const sheetId = activeSheet.docId;
-    const typeOfRecordsToDisplay = activeSheet.typeOfRecordsToDisplay || [];
+    const selectedObjects = activeSheet.selectedObjects || {};
     const recordTypeFilters = activeSheet.recordTypeFilters || {};
-    const _objectTypeFilters = activeSheet.objectTypeFilters || {};
+    const objectTypeFilters = activeSheet.objectTypeFilters || {};
+
+    // Get the IDs of selected objects
+    const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
 
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {
       fetchedSheets.set(sheetId, new Map());
     }
 
-    // Fetch records based on typeOfRecordsToDisplay and recordTypeFilters with real-time updates
+    // Fetch objects based on selectedObjects and objectTypeFilters with real-time updates
     try {
-      if (!Array.isArray(typeOfRecordsToDisplay) || typeOfRecordsToDisplay.length === 0) {
+      if (!Array.isArray(selectedObjectIds) || selectedObjectIds.length === 0) {
         setRecords && setRecords([]);
         return () => {}; // Return empty unsubscribe function
       }
 
       const unsubscribeFunctions = [];
-      const recordsByType = new Map(); // Store records by type locally
+      const objectsByType = new Map(); // Store objects by type locally
 
-      for (const type of typeOfRecordsToDisplay) {
-        // Invalidate cache if recordTypeFilters have changed
-        const cachedFilters = fetchedSheets.get(sheetId)?.get(type)?.filters;
-        const currentFilters = recordTypeFilters[type] || {};
+      for (const objectId of selectedObjectIds) {
+        // Invalidate cache if objectTypeFilters have changed
+        const cachedFilters = fetchedSheets.get(sheetId)?.get(objectId)?.filters;
+        const currentFilters = objectTypeFilters[objectId] || {};
         if (cachedFilters && JSON.stringify(cachedFilters) !== JSON.stringify(currentFilters)) {
-          fetchedSheets.get(sheetId).delete(type);
+          fetchedSheets.get(sheetId).delete(objectId);
         }
 
-        // Check if this record type has already been fetched for this sheet
-        if (fetchedSheets.get(sheetId).has(type)) {
+        // Check if this object type has already been fetched for this sheet
+        if (fetchedSheets.get(sheetId).has(objectId)) {
           continue;
         }
-        fetchedSheets.get(sheetId).set(type, { filters: currentFilters });
+        fetchedSheets.get(sheetId).set(objectId, { filters: currentFilters });
 
-        let recordQuery = query(
-          collection(db, 'businesses', businessId, 'records'),
-          where('typeOfRecord', '==', type)
+        let objectQuery = query(
+          collection(db, 'businesses', businessId, 'objects'),
+          where('objectId', '==', objectId)
         );
 
-        // Apply recordTypeFilters for this record type
-        const filters = recordTypeFilters[type] || {};
+        // Apply objectTypeFilters for this object type
+        const filters = objectTypeFilters[objectId] || {};
         const clientSideFilters = [];
 
         // Remove all orderBy logic: only apply .where() for range/value filters
@@ -484,10 +470,10 @@ const fetchUserData = async ({
           if (filter.start || filter.end) {
             // Range filter
             if (filter.start) {
-              recordQuery = query(recordQuery, where(field, '>=', filter.start));
+              objectQuery = query(objectQuery, where(field, '>=', filter.start));
             }
             if (filter.end) {
-              recordQuery = query(recordQuery, where(field, '<=', filter.end));
+              objectQuery = query(objectQuery, where(field, '<=', filter.end));
             }
           } else if (filter.value && filter.order) {
             // Single value filter
@@ -502,14 +488,14 @@ const fetchUserData = async ({
               after: '>',
             };
             const operator = operatorMap[filter.order] || '==';
-            recordQuery = query(recordQuery, where(field, operator, filter.value));
+            objectQuery = query(objectQuery, where(field, operator, filter.value));
           } else if (filter.values && filter.values.length > 0) {
             // Dropdown (array contains) filter
-            recordQuery = query(recordQuery, where(field, 'in', filter.values));
+            objectQuery = query(objectQuery, where(field, 'in', filter.values));
           } else if (filter.condition && filter.value) {
             // Text filter
             if (filter.condition === 'equals') {
-              recordQuery = query(recordQuery, where(field, '==', filter.value));
+              objectQuery = query(objectQuery, where(field, '==', filter.value));
             } else {
               // Non-equals text filters (contains, startsWith, endsWith) are handled client-side
               clientSideFilters.push({ field, filter });
@@ -521,10 +507,10 @@ const fetchUserData = async ({
         let updateBatch = [];
         let batchTimeout = null;
         
-        const unsubscribe = onSnapshot(recordQuery, (snapshot) => {
+        const unsubscribe = onSnapshot(objectQuery, (snapshot) => {
           // Collect all changes in a batch instead of processing immediately
           snapshot.docChanges().forEach((change) => {
-            updateBatch.push({ change, type, clientSideFilters });
+            updateBatch.push({ change, objectId, clientSideFilters });
           });
 
           // Debounce updates to handle rapid changes efficiently
@@ -535,8 +521,8 @@ const fetchUserData = async ({
             // Process entire batch at once (much more efficient)
             let hasAnyChanges = false;
 
-            updateBatch.forEach(({ change, type: batchType, clientSideFilters: filters }) => {
-              let recordData = {
+            updateBatch.forEach(({ change, objectId: batchObjectId, clientSideFilters: filters }) => {
+              let objectData = {
                 docId: change.doc.id,
                 ...change.doc.data(),
               };
@@ -545,58 +531,60 @@ const fetchUserData = async ({
               let passesFilter = true;
               if (filters.length > 0) {
                 passesFilter = filters.every(({ field, filter }) => {
-                  const recordValue = String(recordData[field] || '').toLowerCase();
+                  const objectValue = String(objectData[field] || '').toLowerCase();
                   const filterValue = filter.value?.toLowerCase() || '';
                   switch (filter.condition) {
-                    case 'contains': return recordValue.includes(filterValue);
-                    case 'startsWith': return recordValue.startsWith(filterValue);
-                    case 'endsWith': return recordValue.endsWith(filterValue);
+                    case 'contains': return objectValue.includes(filterValue);
+                    case 'startsWith': return objectValue.startsWith(filterValue);
+                    case 'endsWith': return objectValue.endsWith(filterValue);
                     default: return true;
                   }
                 });
               }
 
-              // Get current records for this type (use array for O(1) operations)
-              let currentRecords = recordsByType.get(batchType) || [];
+              // Get current objects for this type (use array for O(1) operations)
+              let currentObjects = objectsByType.get(batchObjectId) || [];
 
               if (change.type === 'added' && passesFilter) {
                 // Direct push instead of spread (much faster)
-                currentRecords.push(recordData);
+                currentObjects.push(objectData);
                 hasAnyChanges = true;
               } else if (change.type === 'modified') {
                 // Find and update in place (O(n) but unavoidable)
-                const index = currentRecords.findIndex(record => record.docId === recordData.docId);
+                const index = currentObjects.findIndex(object => object.docId === objectData.docId);
                 if (passesFilter) {
                   if (index >= 0) {
-                    currentRecords[index] = recordData; // In-place update
+                    currentObjects[index] = objectData; // In-place update
                   } else {
-                    currentRecords.push(recordData); // Add if not found
+                    currentObjects.push(objectData); // Add if not found
                   }
                   hasAnyChanges = true;
                 } else if (index >= 0) {
-                  currentRecords.splice(index, 1); // Remove if doesn't pass filter
+                  currentObjects.splice(index, 1); // Remove if doesn't pass filter
                   hasAnyChanges = true;
                 }
               } else if (change.type === 'removed') {
-                const index = currentRecords.findIndex(record => record.docId === recordData.docId);
+                const index = currentObjects.findIndex(object => object.docId === objectData.docId);
                 if (index >= 0) {
-                  currentRecords.splice(index, 1);
+                  currentObjects.splice(index, 1);
                   hasAnyChanges = true;
                 }
               }
 
-              recordsByType.set(batchType, currentRecords);
+              objectsByType.set(batchObjectId, currentObjects);
             });
 
             // Single state update for entire batch (MASSIVE performance gain)
-            if (hasAnyChanges && setRecords) {
-              const allRealTimeRecords = [];
-              for (const recordType of typeOfRecordsToDisplay) {
-                const recordsForType = recordsByType.get(recordType) || [];
-                allRealTimeRecords.push(...recordsForType);
+            if (hasAnyChanges && setObjects) {
+              const allRealTimeObjects = [];
+              for (const objectId of selectedObjectIds) {
+                const objectsForType = objectsByType.get(objectId) || [];
+                allRealTimeObjects.push(...objectsForType);
               }
               
-              setRecords(allRealTimeRecords);
+              addDebugLog(`📊 Sheet "${sheetNameToUse}" objects updated: ${allRealTimeObjects.length} total objects (${selectedObjectIds.length} types selected)`);
+              
+              setObjects(allRealTimeObjects);
             }
 
             // Clear batch for next round
@@ -610,26 +598,26 @@ const fetchUserData = async ({
       // Return combined unsubscribe function
       return () => {
         unsubscribeFunctions.forEach(unsub => unsub());
-        // Clean up the temporary real-time records storage
-        if (window.realTimeRecords) {
-          for (const type of typeOfRecordsToDisplay) {
-            window.realTimeRecords.delete(type);
+        // Clean up the temporary real-time objects storage
+        if (window.realTimeObjects) {
+          for (const objectId of selectedObjectIds) {
+            window.realTimeObjects.delete(objectId);
           }
         }
       };
     } catch (error) {
-      console.error('Error fetching records:', {
+      console.error('Error fetching objects:', {
         code: error.code,
         message: error.message,
         businessId,
         sheetId,
         sheetName: sheetNameToUse,
-        typeOfRecordsToDisplay,
-        recordTypeFilters,
+        selectedObjectIds,
+        objectTypeFilters,
         userId: auth.currentUser?.uid || 'unknown',
         timestamp: new Date().toISOString(),
       });
-      setRecords && setRecords([]);
+      setObjects && setObjects([]);
       return () => {}; // Return empty unsubscribe function
     }
   } else if (route === '/dashboard' || route === '/metrics') {

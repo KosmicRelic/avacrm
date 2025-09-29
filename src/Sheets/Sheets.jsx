@@ -10,7 +10,7 @@ import { FiEdit } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, query, where, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Local components
@@ -38,15 +38,10 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  console.log('🔍 Sheets component rendered');
-  const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers } = useContext(MainContext);
+  const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers, templateObjects } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
 
-  // --- LOGGING FOR DEBUGGING DATA LOADING ---
-  console.log('🔍 Context data:', { recordsLength: records.length, objectsLength: objects.length, sheetRecordsFetched, activeSheetName });
-  
-  // --- LOGGING FOR DEBUGGING RECORD LOADING ---
   const decodedActiveSheetName = decodeSheetName(activeSheetName);
 
   const activeSheet = sheets.allSheets.find((sheet) => sheet.sheetName === decodedActiveSheetName);
@@ -56,9 +51,10 @@ const Sheets = ({
 
   const [_spinnerVisible, _setSpinnerVisible] = useState(false);
   const [_spinnerFading, _setSpinnerFading] = useState(false);
+  const [objectsLoading, setObjectsLoading] = useState(true);
 
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading || objectsLoading) {
       _setSpinnerVisible(true);
       _setSpinnerFading(false);
     } else if (_spinnerVisible) {
@@ -69,15 +65,68 @@ const Sheets = ({
       }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading, _spinnerVisible]);
+  }, [isLoading, objectsLoading, _spinnerVisible]);
 
-  const sheetRecordTypes = useMemo(() => activeSheet?.typeOfRecordsToDisplay || [], [activeSheet]);
+  const sheetRecordTypes = useMemo(() => [], [activeSheet]); // No longer used since we work with objects
   const recordTypeFilters = useMemo(() => activeSheet?.recordTypeFilters || {}, [activeSheet]);
   const objectTypeFilters = useMemo(() => activeSheet?.objectTypeFilters || {}, [activeSheet]);
+  const selectedObjects = useMemo(() => {
+    let selected = activeSheet?.selectedObjects || {};
+    
+    // If no objects are selected, try to infer from sheet name
+    if (Object.keys(selected).length === 0 && templateObjects.length > 0) {
+      const sheetName = activeSheet?.sheetName?.toLowerCase();
+      if (sheetName) {
+        // Find template object that matches sheet name (singular/plural)
+        const matchingObject = templateObjects.find(obj => {
+          const objName = obj.name.toLowerCase();
+          return objName === sheetName || 
+                 objName === sheetName.replace(/s$/, '') || // Remove trailing 's'
+                 objName + 's' === sheetName; // Add trailing 's'
+        });
+        
+        if (matchingObject) {
+          selected = { [matchingObject.id]: { selected: true, name: matchingObject.name } };
+        }
+      }
+    }
+    
+    return selected;
+  }, [activeSheet, templateObjects]);
+
+  // Set up objects listener based on selected objects
+  useEffect(() => {
+    const selectedObjectNames = Object.values(selectedObjects).filter(obj => obj.selected).map(obj => obj.name);
+    
+    if (selectedObjectNames.length === 0) {
+      setObjects([]);
+      setObjectsLoading(false);
+      return;
+    }
+
+    setObjectsLoading(true);
+
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'businesses', businessId, 'objects'), where('typeOfObject', 'in', selectedObjectNames)),
+      (snapshot) => {
+        const fetchedObjects = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+        if (window.debugLogs) {
+          window.debugLogs.push(`[${new Date().toLocaleTimeString()}] 📦 Fetched ${fetchedObjects.length} objects for sheet: ${fetchedObjects.map(obj => `${obj.typeOfObject || 'unknown'} (id: ${obj.objectId || 'missing'}, doc: ${obj.docId})`).join(', ')}`);
+        }
+        console.log(`📦 Fetched ${fetchedObjects.length} objects for sheet: ${fetchedObjects.map(obj => `${obj.typeOfObject || 'unknown'} (id: ${obj.objectId || 'missing'}, doc: ${obj.docId})`).join(', ')}`);
+        setObjects(fetchedObjects);
+        setObjectsLoading(false);
+      },
+      (error) => {
+        console.error('Error in objects listener:', error);
+      }
+    );
+
+    return unsubscribe;
+  }, [selectedObjects, businessId]);
+
   const globalFilters = useMemo(() => activeSheet?.filters || {}, [activeSheet]);
   const _isPrimarySheetFlag = useMemo(() => isPrimarySheet(activeSheet), [activeSheet]);
-
-    console.log('🔍 Sheet configuration:', { activeSheet, sheetRecordTypes, recordTypeFilters, objectTypeFilters, globalFilters });
 
   const sheetRecords = useMemo(() => {
     if (!activeSheet) return [];
@@ -86,14 +135,24 @@ const Sheets = ({
     const dataSource = objects;
     const _typeField = 'typeOfObject';
     
-    console.log('🔍 sheetRecords calculation:', {
-      dataSourceLength: dataSource.length,
-      sheetRecordTypes
-    });
+    // First filter by selected object types
+    const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
+    let filteredObjects = dataSource;
     
-    // For objects, apply objectTypeFilters. For records, filter by sheet configuration
-    // Apply objectTypeFilters to objects
-    return dataSource.filter((object) => {
+    if (selectedObjectIds.length > 0) {
+      // Get the names of selected template objects
+      const selectedObjectNames = selectedObjectIds.map(id => {
+        const templateObj = templateObjects.find(obj => obj.id === id);
+        return templateObj?.name;
+      }).filter(name => name);
+      
+      filteredObjects = dataSource.filter(object => 
+        selectedObjectNames.includes(object.typeOfObject)
+      );
+    }
+    
+    // Then apply detailed objectTypeFilters to the selected objects
+    filteredObjects = filteredObjects.filter((object) => {
       const filters = objectTypeFilters[object.typeOfObject] || {};
       return Object.entries(filters).every(([field, filter]) => {
         if (field === 'userFilter') {
@@ -160,9 +219,9 @@ const Sheets = ({
         }
       });
     });
-  }, [objects, sheetRecordTypes, objectTypeFilters, headers, user.uid, activeSheet]);
-
-  console.log('🔍 Final sheetRecords result:', sheetRecords.length);
+    
+    return filteredObjects;
+  }, [objects, sheetRecordTypes, objectTypeFilters, selectedObjects, headers, user.uid, activeSheet]);
 
   const filteredWithGlobalFilters = useMemo(() => {
     return sheetRecords.filter((row) =>
@@ -439,7 +498,7 @@ const Sheets = ({
 
   useEffect(() => {
     if (activeSheet && Array.isArray(sheets.allSheets) && sheets.allSheets.length > 0) {
-      // console.log('[Sheets][DEBUG] Attempting to load records for activeSheet:', activeSheet.sheetName, 'with docId:', activeSheet.docId);
+      // console.log('[Sheets][DEBUG] Attempting to load records for activeSheet:', activeSheet?.sheetName, 'with docId:', activeSheet?.docId);
     }
   }, [activeSheet, sheets.allSheets]);
 

@@ -201,12 +201,8 @@ import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(
 
   useEffect(() => {
     if (selectedSheet && !isEditing) {
-      const sheet = sheets.allSheets.find((s) => s.sheetName === selectedSheet);
-      if (sheet?.typeOfRecordsToDisplay?.length === 1) {
-        setSelectedRecordType(sheet.typeOfRecordsToDisplay[0]);
-      } else {
-        setSelectedRecordType('');
-      }
+      // No longer auto-select record type since we work with objects
+      setSelectedRecordType('');
     }
   }, [selectedSheet, sheets, isEditing]);
 

@@ -54,39 +54,10 @@ const EditSheetsModal = ({
     });
     return objectsMap;
   });
-  const [selectedTemplates, setSelectedTemplates] = useState(() => {
-    // Initialize from tempData.typeOfRecordsToDisplay
-    const selectedTypes = tempData.typeOfRecordsToDisplay || [];
-    const templatesMap = {};
-    
-    templateObjects.forEach(object => {
-      templatesMap[object.id] = {
-        selectedTemplates: []
-      };
-    });
-    
-    selectedTypes.forEach(typeOfRecord => {
-      const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
-      if (template) {
-        const objectId = template.objectId;
-        if (!templatesMap[objectId]) {
-          templatesMap[objectId] = { selectedTemplates: [] };
-        }
-        templatesMap[objectId].selectedTemplates.push(typeOfRecord);
-      }
-    });
-    
-    return templatesMap;
-  });
-  const [selectedRecordTypes, setSelectedRecordTypes] = useState(tempData.typeOfRecordsToDisplay || []);
+  const [selectedRecordTypes, setSelectedRecordTypes] = useState([]);
   const [navigationDirection, setNavigationDirection] = useState(null);
   const [isInEditMode, setIsInEditMode] = useState(false);
 
-  // Sync selectedRecordTypes from selectedTemplates
-  useEffect(() => {
-    const allSelectedTypes = Object.values(selectedTemplates).flatMap(obj => obj.selectedTemplates);
-    setSelectedRecordTypes(allSelectedTypes);
-  }, [selectedTemplates]);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedRecordTypeForFilter, setSelectedRecordTypeForFilter] = useState(null);
   const [selectedObjectFieldForFilter] = useState(null);
@@ -380,7 +351,6 @@ const EditSheetsModal = ({
     setTempData({
       sheetName,
       currentHeaders,
-      typeOfRecordsToDisplay: selectedRecordTypes,
       recordTypeFilters: cleanedRecordTypeFilters,
       objectTypeFilters: cleanedObjectTypeFilters,
       recordsPerSearch,
@@ -388,14 +358,10 @@ const EditSheetsModal = ({
       selectedObjects,
     });
     
-    // Clear cache when sheet name changes or when typeOfRecordsToDisplay changes
-    const typeOfRecordsChanged = JSON.stringify(selectedRecordTypes) !== JSON.stringify(tempData.typeOfRecordsToDisplay);
+    // Clear cache when sheet name changes
     if (sheetName !== tempData.sheetName) {
       setActiveSheetName(sheetName);
       clearFetchedSheets();
-    } else if (typeOfRecordsChanged) {
-      // Clear cache for current sheet when record types change
-      clearFetchedSheets(sheetId);
     }
     
     handleClose({ fromSave: true });
@@ -410,7 +376,6 @@ const EditSheetsModal = ({
     tempData.sheetName,
     tempData.recordTypeFilters,
     tempData.objectTypeFilters,
-    tempData.typeOfRecordsToDisplay,
     setActiveSheetName,
     clearFetchedSheets,
     handleClose,
@@ -622,7 +587,6 @@ const EditSheetsModal = ({
     const newTempData = {
       sheetName,
       currentHeaders,
-      typeOfRecordsToDisplay: selectedRecordTypes,
       recordTypeFilters: tempData.recordTypeFilters || {},
       recordsPerSearch,
       filterOrder,
@@ -631,7 +595,6 @@ const EditSheetsModal = ({
     if (
       newTempData.sheetName !== tempData.sheetName ||
       JSON.stringify(newTempData.currentHeaders) !== JSON.stringify(tempData.currentHeaders) ||
-      JSON.stringify(newTempData.typeOfRecordsToDisplay) !== JSON.stringify(tempData.typeOfRecordsToDisplay) ||
       JSON.stringify(newTempData.recordTypeFilters) !== JSON.stringify(tempData.recordTypeFilters) ||
       newTempData.recordsPerSearch !== tempData.recordsPerSearch ||
       JSON.stringify(newTempData.filterOrder) !== JSON.stringify(tempData.filterOrder) ||
@@ -639,7 +602,7 @@ const EditSheetsModal = ({
     ) {
       setTempData(newTempData);
     }
-  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, selectedObjects, tempData.recordTypeFilters, tempData.selectedObjects, setTempData, tempData.currentHeaders, tempData.filterOrder, tempData.recordsPerSearch, tempData.sheetName, tempData.typeOfRecordsToDisplay]);
+  }, [sheetName, currentHeaders, selectedRecordTypes, recordsPerSearch, filterOrder, selectedObjects, tempData.recordTypeFilters, tempData.selectedObjects, setTempData, tempData.currentHeaders, tempData.filterOrder, tempData.recordsPerSearch, tempData.sheetName]);
 
   // Sync state from tempData changes (for loading existing sheets)
   useEffect(() => {
@@ -657,32 +620,6 @@ const EditSheetsModal = ({
       setCurrentHeaders(uniqueHeaders);
     }
   }, [tempData.currentHeaders]);
-
-  useEffect(() => {
-    if (tempData.typeOfRecordsToDisplay) {
-      const selectedTypes = tempData.typeOfRecordsToDisplay;
-      const templatesMap = {};
-      
-      templateObjects.forEach(object => {
-        templatesMap[object.id] = {
-          selectedTemplates: []
-        };
-      });
-      
-      selectedTypes.forEach(typeOfRecord => {
-        const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
-        if (template) {
-          const objectId = template.objectId;
-          if (!templatesMap[objectId]) {
-            templatesMap[objectId] = { selectedTemplates: [] };
-          }
-          templatesMap[objectId].selectedTemplates.push(typeOfRecord);
-        }
-      });
-      
-      setSelectedTemplates(templatesMap);
-    }
-  }, [tempData.typeOfRecordsToDisplay, allTemplates, templateObjects]);
 
   useEffect(() => {
     if (tempData.sheetName !== undefined) {
@@ -756,32 +693,6 @@ const EditSheetsModal = ({
       return newState;
     });
   }, [setTempData, templateObjects]);
-
-  const _toggleTemplateInObject = useCallback((objectId, typeOfRecord) => {
-    setSelectedTemplates(prev => {
-      const newSelected = { ...prev };
-      if (!newSelected[objectId]) return prev;
-      
-      const templateIndex = newSelected[objectId].selectedTemplates.indexOf(typeOfRecord);
-      if (templateIndex > -1) {
-        // Remove template
-        newSelected[objectId].selectedTemplates.splice(templateIndex, 1);
-        // Clean up filters
-        const updatedFilters = { ...tempData.recordTypeFilters };
-        delete updatedFilters[typeOfRecord];
-        setTempData({ ...tempData, recordTypeFilters: updatedFilters });
-        // Remove headers
-        const template = allTemplates.find(t => t.typeOfRecord === typeOfRecord);
-        if (template) {
-          setCurrentHeaders(current => current.filter(h => !(h.objectId == null && template.headers.some(th => th.key === h.key))));
-        }
-      } else {
-        // Add template
-        newSelected[objectId].selectedTemplates.push(typeOfRecord);
-      }
-      return newSelected;
-    });
-  }, [tempData, setTempData, allTemplates]);
 
   const toggleHeaderSelection = useCallback((header, objectId = null) => {
     setCurrentHeaders((prev) => {
@@ -1847,7 +1758,6 @@ EditSheetsModal.propTypes = {
         objectId: PropTypes.string,
       })
     ),
-    typeOfRecordsToDisplay: PropTypes.arrayOf(PropTypes.string),
     recordTypeFilters: PropTypes.object,
     recordsPerSearch: PropTypes.number,
     filterOrder: PropTypes.arrayOf(PropTypes.string),

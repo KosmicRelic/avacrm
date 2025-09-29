@@ -647,18 +647,15 @@ export const MainContextProvider = ({ children }) => {
 
     const currentSheet = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const currentRecordTypeFilters = currentSheet?.recordTypeFilters || {};
-    const currentTypeOfRecordsToDisplay = currentSheet?.typeOfRecordsToDisplay || [];
     
     const prevSheet = prevStates.current.sheets.allSheets.find(
       (s) => s.sheetName === activeSheetName
     );
     const prevRecordTypeFilters = prevSheet?.recordTypeFilters || {};
-    const prevTypeOfRecordsToDisplay = prevSheet?.typeOfRecordsToDisplay || [];
 
     const recordTypeFiltersChanged = JSON.stringify(currentRecordTypeFilters) !== JSON.stringify(prevRecordTypeFilters);
-    const typeOfRecordsToDisplayChanged = JSON.stringify(currentTypeOfRecordsToDisplay) !== JSON.stringify(prevTypeOfRecordsToDisplay);
 
-    if (recordTypeFiltersChanged || typeOfRecordsToDisplayChanged) {
+    if (recordTypeFiltersChanged) {
       if (currentSheet?.docId) {
         setSheetRecordsFetched((prev) => {
           const newFetched = { ...prev };
@@ -740,9 +737,9 @@ export const MainContextProvider = ({ children }) => {
         // Filtering and mapping
         const modifiedRecords = records.filter((record) => record.isModified);
         const accessibleSheets = sheets.allSheets;
-        const accessibleRecordTypes = new Set(
+        const accessibleObjectIds = new Set(
           accessibleSheets.flatMap((sheet) =>
-            Array.isArray(sheet.typeOfRecordsToDisplay) ? sheet.typeOfRecordsToDisplay : []
+            Object.keys(sheet.selectedObjects || {}).filter(id => sheet.selectedObjects[id]?.selected)
           )
         );
 
@@ -751,10 +748,8 @@ export const MainContextProvider = ({ children }) => {
 
         // Batch add for records
         for (const record of modifiedRecords) {
-          const isRecordAccessible = isBusinessUser || accessibleRecordTypes.has(record.typeOfRecord);
-          if (!isRecordAccessible) {
-            continue;
-          }
+          // For now, allow all records to be saved (remove type-based access control)
+          const isRecordAccessible = true;
           let docRef;
           if (record.action === 'add') {
             console.log('📝 Adding record to batch:', record);
