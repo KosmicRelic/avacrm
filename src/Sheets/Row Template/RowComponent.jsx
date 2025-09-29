@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 import styles from './RowComponent.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
+import { validateField, formatCurrency, formatPhone, getAllCountryCodes } from '../../Utils/fieldValidation';
 
 const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, isSelectMode, onSelect, getTeamMemberName, onInlineSave, teamMembers }) => {
   const isAddNew = rowData.isAddNew;
@@ -47,9 +48,56 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
     return readOnlyFields.includes(fieldKey);
   };
 
+  // Helper functions for phone number handling
+  const detectCountryFromPhoneNumber = (phoneNumber) => {
+    if (!phoneNumber || typeof phoneNumber !== 'string') return '+1';
+
+    // Remove all non-digits
+    const digits = phoneNumber.replace(/\D/g, '');
+
+    // Greek phone number patterns
+    if (digits.length === 10) {
+      // Greek mobile numbers start with 69
+      if (digits.startsWith('69')) {
+        return '+30';
+      }
+      // Greek landline numbers start with area codes (2x)
+      if (digits.startsWith('2')) {
+        return '+30';
+      }
+    }
+
+    // Add more country detection logic here as needed
+    // For now, default to US
+    return '+1';
+  };
+
+  const getCountryCode = (phoneValue) => {
+    if (!phoneValue || typeof phoneValue !== 'string') return '+1';
+    if (phoneValue.startsWith('+')) {
+      // Extract country code
+      const match = phoneValue.match(/^(\+\d+)/);
+      return match ? match[1] : '+1';
+    }
+    // Try to detect country from phone number pattern
+    return detectCountryFromPhoneNumber(phoneValue);
+  };
+
+  const getPhoneNumber = (phoneValue) => {
+    if (!phoneValue || typeof phoneValue !== 'string') return '';
+    if (phoneValue.startsWith('+')) {
+      // Remove country code
+      const parts = phoneValue.split(' ');
+      return parts.slice(1).join(' ') || '';
+    }
+    return phoneValue;
+  };
+
   // Helper function to get field type from header
   const getFieldType = (header) => {
     if (header.key === 'assignedTo') return 'assignedTo'; // Special case
+    // Convert legacy picklist to dropdown for backwards compatibility
+    if (header.type === 'picklist') return 'dropdown';
     return header.type || 'text';
   };
 
@@ -83,10 +131,18 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
       const header = headers.find(h => h.key === editingCell);
       let processedValue = editValue;
       
-      // Process value based on field type
+      // Validate the field
       if (header) {
         const fieldType = getFieldType(header);
+        const validation = validateField(fieldType, editValue);
         
+        if (!validation.isValid) {
+          // Show validation error - could add a toast or alert here
+          alert(validation.error);
+          return; // Don't save if validation fails
+        }
+        
+        // Process value based on field type
         if (fieldType === 'multi-select') {
           // Convert comma-separated string to array
           if (typeof editValue === 'string') {
@@ -110,6 +166,16 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
           } else {
             processedValue = '';
           }
+        } else if (fieldType === 'currency') {
+          // Convert to number for currency fields
+          const numValue = parseFloat(editValue);
+          processedValue = isNaN(numValue) ? '' : numValue;
+        } else if (fieldType === 'email') {
+          // Keep email as string but trim whitespace
+          processedValue = typeof editValue === 'string' ? editValue.trim() : editValue;
+        } else if (fieldType === 'phone') {
+          // Keep phone as string but trim whitespace
+          processedValue = typeof editValue === 'string' ? editValue.trim() : editValue;
         }
       }
       
@@ -571,6 +637,81 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
           />
         );
       
+      case 'currency':
+        return (
+          <div className={styles.currencyWrapper}>
+            <span className={`${styles.currencySymbol} ${isDarkTheme ? styles.darkTheme : ''}`}>$</span>
+            <input
+              ref={dropdownRef}
+              type="number"
+              step="0.01"
+              min="0"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleEditSave}
+              onKeyDown={handleKeyDown}
+              className={`${styles.editInput} ${styles.currencyInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+              autoFocus
+            />
+          </div>
+        );
+      
+      case 'email':
+        return (
+          <input
+            ref={dropdownRef}
+            type="email"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleEditSave}
+            onKeyDown={handleKeyDown}
+            className={`${styles.editInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+            autoFocus
+          />
+        );
+      
+      case 'phone':
+        return (
+          <div className={styles.phoneWrapper}>
+            <select
+              value={getCountryCode(editValue)}
+              onChange={(e) => {
+                const countryCode = e.target.value;
+                const phoneNumber = getPhoneNumber(editValue);
+                setEditValue(phoneNumber ? `${countryCode} ${phoneNumber}` : countryCode);
+              }}
+              className={`${styles.countryCodeSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                  e.preventDefault();
+                  handleEditSave();
+                }
+              }}
+            >
+              {getAllCountryCodes().map((country, index) => (
+                <option key={`${country.code}-${index}`} value={country.code}>
+                  {country.code} ({country.country})
+                </option>
+              ))}
+            </select>
+            <input
+              ref={dropdownRef}
+              type="tel"
+              value={getPhoneNumber(editValue)}
+              onChange={(e) => {
+                const countryCode = getCountryCode(editValue);
+                const phoneNumber = e.target.value.replace(/\D/g, '');
+                setEditValue(phoneNumber ? `${countryCode} ${phoneNumber}` : '');
+              }}
+              onBlur={handleEditSave}
+              onKeyDown={handleKeyDown}
+              className={`${styles.editInput} ${styles.phoneInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+              autoFocus
+            />
+          </div>
+        );
+      
       default:
         return (
           <input
@@ -607,6 +748,12 @@ const RowComponent = memo(({ rowData, headers, onClick, isSelected, onAddRow, is
             displayValue = formatFirestoreTimestamp(value);
           } else if (header.type === 'multi-select' && Array.isArray(value)) {
             displayValue = value.join(', ');
+          } else if (header.type === 'currency') {
+            displayValue = formatCurrency(value);
+          } else if (header.type === 'phone') {
+            displayValue = formatPhone(value);
+          } else if (header.type === 'email') {
+            displayValue = value || '';
           } else {
             displayValue = value !== undefined ? String(value) : '';
           }

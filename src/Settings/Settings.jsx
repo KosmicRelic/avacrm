@@ -559,7 +559,6 @@ export default function Settings() {
               <FaChevronRight className={styles.arrowIcon} />
             </button>
           </div>
-          {/* Pipeline Management moved to Actions → Record Templates */}
         </div>
 
         <div

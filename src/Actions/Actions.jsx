@@ -47,9 +47,9 @@ const Actions = () => {
   const templateHeaders = templateObj?.headers || [];
 
   // Filter headers by type
-  const numberHeaders = templateHeaders.filter(header => header.type === 'number');
+  const numberHeaders = templateHeaders.filter(header => header.type === 'number' || header.type === 'currency');
   const dropdownHeaders = templateHeaders.filter(header => header.type === 'dropdown');
-  const textHeaders = templateHeaders.filter(header => header.type === 'text');
+  const textHeaders = templateHeaders.filter(header => header.type === 'text' || header.type === 'email' || header.type === 'phone');
 
   // Get values for a dropdown header
   const getDropdownValues = headerKey => {

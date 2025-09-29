@@ -820,6 +820,90 @@
   appearance: textfield;
 }
 
+/* Currency Input Styles */
+.currencyWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currencySymbol {
+  position: absolute;
+  left: 12px;
+  color: #6e6e73;
+  font-weight: 500;
+  font-size: 14px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.currencySymbol.darkTheme {
+  color: #a1a1a6;
+}
+
+.currencyInput {
+  padding-left: 28px !important;
+}
+
+.currencyInput.darkTheme {
+  padding-left: 28px !important;
+}
+
+/* Phone Input Styles */
+.phoneWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.countryCodeSelect {
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid #d1d1d6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1c1c1e;
+  font-size: 14px;
+  font-weight: 400;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.countryCodeSelect:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+.countryCodeSelect.darkTheme {
+  background: #2c2c2e;
+  border-color: #48484a;
+  color: #ffffff;
+}
+
+.countryCodeSelect.darkTheme:focus {
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
+}
+
+.phoneInput {
+  flex: 1;
+}
+
+/* Hide number input spinner arrows for phone inputs */
+.phoneInput::-webkit-outer-spin-button,
+.phoneInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.phoneInput[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 /* Field Select - Compact design */
 .fieldSelect {
   width: 100%;
@@ -2339,4 +2423,27 @@
 
 .modeButton.darkTheme:hover .modeButtonArrow {
   color: #0a84ff;
+}
+/* Field Error Styles */
+.fieldError {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ff3b30;
+  font-weight: 500;
+  animation: fadeInError 0.2s ease-in-out;
+}
+
+.fieldError.darkTheme {
+  color: #ff453a;
+}
+
+@keyframes fadeInError {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

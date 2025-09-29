@@ -5,6 +5,7 @@ import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
+import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete } from 'react-icons/md';
 
@@ -36,6 +37,9 @@ const RecordsEditor = memo(({
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [fieldHistoryPopup, setFieldHistoryPopup] = useState({ isOpen: false, field: null, position: null });
+
+  // Validation state
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // --- FIX: Manage showInputs state for each date field at the top level ---
   const [showInputsMap, setShowInputsMap] = useState({});
@@ -77,7 +81,7 @@ const RecordsEditor = memo(({
             return {
               key,
               name: header?.name || formatFieldName(key),
-              type: header?.type || 'text',
+              type: header?.type === 'picklist' ? 'dropdown' : (header?.type || 'text'),
               options: header?.options || [],
             };
           }),
@@ -304,6 +308,14 @@ const RecordsEditor = memo(({
       }
       if (!isViewingHistory) {
         let formattedValue = value;
+
+        // Validate the field
+        const validation = validateField(fieldType, value);
+        setFieldErrors(prev => ({
+          ...prev,
+          [key]: validation.isValid ? null : validation.error
+        }));
+
         if (fieldType === 'date') {
           let prevDate = formData[key];
           let dateObj;
@@ -363,6 +375,63 @@ const RecordsEditor = memo(({
     },
     [isViewingHistory, formData]
   );
+
+  // Helper functions for phone number handling
+  const detectCountryFromPhoneNumber = (phoneNumber) => {
+    if (!phoneNumber || typeof phoneNumber !== 'string') return '+1';
+
+    // Remove all non-digits
+    const digits = phoneNumber.replace(/\D/g, '');
+
+    // Greek phone number patterns
+    if (digits.length === 10) {
+      // Greek mobile numbers start with 69
+      if (digits.startsWith('69')) {
+        return '+30';
+      }
+      // Greek landline numbers start with area codes (2x)
+      if (digits.startsWith('2')) {
+        return '+30';
+      }
+    }
+
+    // Add more country detection logic here as needed
+    // For now, default to US
+    return '+1';
+  };
+
+  const getCountryCode = (phoneValue) => {
+    if (!phoneValue || typeof phoneValue !== 'string') return '+1';
+    if (phoneValue.startsWith('+')) {
+      // Extract country code
+      const match = phoneValue.match(/^(\+\d+)/);
+      return match ? match[1] : '+1';
+    }
+    // Try to detect country from phone number pattern
+    return detectCountryFromPhoneNumber(phoneValue);
+  };
+
+  const getPhoneNumber = (phoneValue) => {
+    if (!phoneValue || typeof phoneValue !== 'string') return '';
+    if (phoneValue.startsWith('+')) {
+      // Remove country code
+      const parts = phoneValue.split(' ');
+      return parts.slice(1).join(' ') || '';
+    }
+    return phoneValue;
+  };
+
+  const handleCountryCodeChange = useCallback((key, countryCode, currentPhone) => {
+    const phoneNumber = getPhoneNumber(currentPhone);
+    const newValue = phoneNumber ? `${countryCode} ${phoneNumber}` : countryCode;
+    handleInputChange(key, newValue, 'phone');
+  }, [handleInputChange]);
+
+  const handlePhoneNumberChange = useCallback((key, countryCode, phoneNumber) => {
+    const cleanedNumber = phoneNumber.replace(/\D/g, '');
+    const newValue = cleanedNumber ? `${countryCode} ${cleanedNumber}` : '';
+    handleInputChange(key, newValue, 'phone');
+  }, [handleInputChange]);
 
   // Get available pipelines for current record type (filter out already used ones)
   const getAvailablePipelines = useCallback(() => {
@@ -1425,6 +1494,59 @@ const RecordsEditor = memo(({
                                     </div>
                                   );
                                 })()
+                              ) : field.type === 'email' ? (
+                                <input
+                                  type="email"
+                                  value={historicalFormData[field.key] || ''}
+                                  onChange={e => handleInputChange(field.key, e.target.value, field.type)}
+                                  className={`${styles.fieldInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                  placeholder={`Enter ${field.name}`}
+                                  aria-label={`Enter ${field.name}`}
+                                  readOnly={isViewingHistory}
+                                  disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                />
+                              ) : field.type === 'phone' ? (
+                                <div className={styles.phoneWrapper}>
+                                      <select
+                                        value={getCountryCode(historicalFormData[field.key] || '')}
+                                        onChange={e => handleCountryCodeChange(field.key, e.target.value, historicalFormData[field.key] || '')}
+                                        className={`${styles.countryCodeSelect} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                        disabled={isViewingHistory || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                        aria-label={`Country code for ${field.name}`}
+                                      >
+                                        {getAllCountryCodes().map((country, index) => (
+                                          <option key={`${country.code}-${index}`} value={country.code}>
+                                            {country.code} ({country.country})
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <input
+                                        type="tel"
+                                        value={getPhoneNumber(historicalFormData[field.key] || '')}
+                                        onChange={e => handlePhoneNumberChange(field.key, getCountryCode(historicalFormData[field.key] || ''), e.target.value)}
+                                        className={`${styles.fieldInput} ${styles.phoneInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                        placeholder={`Enter ${field.name}`}
+                                        aria-label={`Enter ${field.name}`}
+                                        readOnly={isViewingHistory}
+                                        disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                      />
+                                    </div>
+                              ) : field.type === 'currency' ? (
+                                <div className={styles.currencyWrapper}>
+                                  <span className={`${styles.currencySymbol} ${isDarkTheme ? styles.darkTheme : ''}`}>$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={historicalFormData[field.key] || ''}
+                                    onChange={e => handleInputChange(field.key, e.target.value, field.type)}
+                                    className={`${styles.fieldInput} ${styles.currencyInput} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
+                                    placeholder={`Enter ${field.name}`}
+                                    aria-label={`Enter ${field.name}`}
+                                    readOnly={isViewingHistory}
+                                    disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                  />
+                                </div>
                               ) : (
                                 <input
                                   type={field.key === 'id' ? 'text' : field.type === 'number' ? 'number' : 'text'}
@@ -1437,6 +1559,12 @@ const RecordsEditor = memo(({
                                   disabled={field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                 />
                               )}
+                            {fieldErrors[field.key] && (
+                              <div className={`${styles.fieldError} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {fieldErrors[field.key]}
+                              </div>
+                            )}
+
                             </div>
                           ))
                         ) : (

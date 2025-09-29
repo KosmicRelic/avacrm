@@ -236,6 +236,31 @@ const Sheets = ({
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(value);
+          case 'currency': {
+            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+            const numValue = Number(value) || 0;
+            if (filter.start || filter.end) {
+              const startNum = filter.start ? Number(filter.start) : -Infinity;
+              const endNum = filter.end ? Number(filter.end) : Infinity;
+              return numValue >= startNum && numValue <= endNum;
+            }
+            if (!filter.value) return true;
+            const filterNum = Number(filter.value);
+            switch (filter.order) {
+              case 'greater':
+                return numValue > filterNum;
+              case 'less':
+                return numValue < filterNum;
+              case 'greaterOrEqual':
+                return numValue >= filterNum;
+              case 'lessOrEqual':
+                return numValue <= filterNum;
+              default:
+                return numValue === filterNum;
+            }
+          }
+          case 'email':
+          case 'phone':
           case 'text': {
             if (!filter.value || !filter.condition) return true;
             const strValue = String(value || '').toLowerCase();
@@ -299,6 +324,31 @@ const Sheets = ({
           case 'dropdown':
             if (!filter.values || filter.values.length === 0) return true;
             return filter.values.includes(rowValue);
+          case 'currency': {
+            if (!filter.start && !filter.end && !filter.value && !filter.sortOrder) return true;
+            const numValue = Number(rowValue) || 0;
+            if (filter.start || filter.end) {
+              const startNum = filter.start ? Number(filter.start) : -Infinity;
+              const endNum = filter.end ? Number(filter.end) : Infinity;
+              return numValue >= startNum && numValue <= endNum;
+            }
+            if (!filter.value) return true;
+            const filterNum = Number(filter.value);
+            switch (filter.order) {
+              case 'greater':
+                return numValue > filterNum;
+              case 'less':
+                return numValue < filterNum;
+              case 'greaterOrEqual':
+                return numValue >= filterNum;
+              case 'lessOrEqual':
+                return numValue <= filterNum;
+              default:
+                return numValue === filterNum;
+            }
+          }
+          case 'email':
+          case 'phone':
           case 'text': {
             if (!filter.value) return true;
             const strValue = String(rowValue || '').toLowerCase();

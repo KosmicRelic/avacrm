@@ -299,6 +299,96 @@
   border: none;
 }
 
+/* Currency Input Styles */
+.currencyWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.currencySymbol {
+  position: absolute;
+  left: 4px;
+  color: #6e6e73;
+  font-weight: 500;
+  font-size: 12px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.currencySymbol.darkTheme {
+  color: #a1a1a6;
+}
+
+.currencyInput {
+  padding-left: 16px !important;
+  text-align: center;
+}
+
+.currencyInput.darkTheme {
+  padding-left: 16px !important;
+}
+
+/* Phone Input Styles */
+.phoneWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 4px;
+}
+
+.countryCodeSelect {
+  min-width: 70px;
+  padding: 2px 4px;
+  border: 1px solid #d1d1d6;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1c1c1e;
+  font-size: 12px;
+  font-weight: 400;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.countryCodeSelect:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.2);
+}
+
+.countryCodeSelect.darkTheme {
+  background: #2c2c2e;
+  border-color: #48484a;
+  color: #ffffff;
+}
+
+.countryCodeSelect.darkTheme:focus {
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.3);
+}
+
+.phoneInput {
+  flex: 1;
+  text-align: center;
+}
+
+/* Hide number input spinner arrows for phone inputs */
+.phoneInput::-webkit-outer-spin-button,
+.phoneInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.phoneInput[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .editSelect {
   cursor: pointer;
   -webkit-appearance: none;

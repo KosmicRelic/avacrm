@@ -208,6 +208,7 @@ function App() {
     if (!activeSheet) return [];
     return (activeSheet.headers || []).map((header) => ({
       ...header,
+      type: header.type === 'picklist' ? 'dropdown' : header.type, // Convert legacy picklist to dropdown
       visible: header.visible !== false,
       hidden: header.hidden || false,
     }));

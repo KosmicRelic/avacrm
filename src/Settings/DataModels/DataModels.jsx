@@ -193,11 +193,11 @@ const DataModelsTemp = ({ onSave, onBack }) => {
       ...object,
       basicFields: object.basicFields || [
         { key: "fullName", name: "Full Name", type: "text" },
-        { key: "email", name: "Email", type: "text" },
-        { key: "phoneNumber", name: "Phone Number", type: "text" },
+        { key: "email", name: "Email", type: "email" },
+        { key: "phoneNumber", name: "Phone Number", type: "phone" },
         { key: "address", name: "Address", type: "text" },
-        { key: "priority", name: "Priority", type: "picklist", options: ["Low", "Medium", "High"] },
-        { key: "status", name: "Status", type: "picklist", options: ["New", "Active", "Inactive", "Closed Won", "Closed Lost"] },
+        { key: "priority", name: "Priority", type: "dropdown", options: ["Low", "Medium", "High"] },
+        { key: "status", name: "Status", type: "dropdown", options: ["New", "Active", "Inactive", "Closed Won", "Closed Lost"] },
       ]
     })));
   }, []);
@@ -714,7 +714,7 @@ const DataModelsTemp = ({ onSave, onBack }) => {
       ...updatedFields[editingBasicFieldIndex],
       name: newHeaderName.trim(),
       type: newHeaderType,
-      options: newHeaderType === "picklist" ? [...newHeaderOptions] : [],
+      options: newHeaderType === "dropdown" ? [...newHeaderOptions] : [],
     };
     updateBasicFields(selectedObjectIndex, updatedFields);
     resetHeaderForm();
@@ -953,7 +953,7 @@ const DataModelsTemp = ({ onSave, onBack }) => {
         ...updatedFields[editingBasicFieldIndex],
         name: newHeaderName.trim(),
         type: newHeaderType,
-        options: newHeaderType === "picklist" ? [...newHeaderOptions] : [],
+        options: newHeaderType === "dropdown" ? [...newHeaderOptions] : [],
       };
       updateBasicFields(selectedObjectIndex, updatedFields);
       resetHeaderForm();
@@ -3179,8 +3179,10 @@ const DataModelsTemp = ({ onSave, onBack }) => {
                       >
                         <option value="text">Text</option>
                         <option value="number">Number</option>
-                        <option value="date">Date</option>
                         <option value="currency">Currency</option>
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                        <option value="date">Date</option>
                         <option value="dropdown">Dropdown</option>
                         <option value="multi-select">Multi-Select</option>
                       </select>
@@ -3947,7 +3949,7 @@ const DataModelsTemp = ({ onSave, onBack }) => {
                       onChange={(e) => {
                         const newFields = [...currentBasicFields];
                         newFields[index].type = e.target.value;
-                        if (e.target.value !== 'picklist') {
+                        if (e.target.value !== 'dropdown') {
                           newFields[index].options = [];
                         }
                         setCurrentBasicFields(newFields);
@@ -3957,9 +3959,9 @@ const DataModelsTemp = ({ onSave, onBack }) => {
                       <option value="text">Text</option>
                       <option value="number">Number</option>
                       <option value="date">Date</option>
-                      <option value="picklist">Picklist</option>
+                      <option value="dropdown">Dropdown</option>
                     </select>
-                    {field.type === 'picklist' && (
+                    {field.type === 'dropdown' && (
                       <input
                         type="text"
                         value={field.options.join(', ')}
