@@ -9,8 +9,8 @@
   overflow: visible;
   background: transparent;
   z-index: 50;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
+  border-top-left-radius: 36px;
+  border-top-right-radius: 36px;
 }
 
 .sheetWrapper.darkTheme {
