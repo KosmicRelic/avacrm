@@ -103,7 +103,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     <header className={`${styles.headerContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.headerTop}>
         <div className={styles.logoContainer}>
-          <h1 className={styles.avaTitle}>AVA</h1>
+          <h1 className={`${styles.avaTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>AVA</h1>
           {isMobile && (
             <>
               <button

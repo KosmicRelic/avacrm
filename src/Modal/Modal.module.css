@@ -123,10 +123,15 @@
     margin-left: 10px;
     margin-right: 10px;
     margin-bottom: 10px;
-    height: 80vh;
+    height:40vh;
     border-radius: 36px;
     transform: translateY(100%);
     animation: slideUp 0.3s ease-out forwards;
+    transition: height 0.3s ease;
+  }
+
+  .modalContent.expanded {
+    height: 85vh;
   }
 
   .modalContent.darkTheme {
@@ -159,9 +164,9 @@
   align-items: center;
   justify-content: center; /* Center the title by default */
   margin-bottom: 20px;
-  padding: 0;
   position: relative;
-  width: 100%;
+  width: calc(100% - 16px);
+  margin: auto;
   min-height: 44px;
 }
 

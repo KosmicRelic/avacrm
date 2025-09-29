@@ -207,9 +207,9 @@
   gap: 12px;
   overflow-x: auto;
   padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(50px);
-  -webkit-backdrop-filter: blur(50px);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.08),
     0 2px 16px rgba(0, 0, 0, 0.04),
@@ -232,19 +232,11 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 50px;
   /* iOS-style subtle gradient */
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.3) 0%,
-    rgba(255, 255, 255, 0.2) 100%
-  );
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .sheetTabs.darkTheme {
-  background: linear-gradient(
-    180deg,
-    rgba(28, 28, 30, 0.3) 0%,
-    rgba(20, 20, 22, 0.2) 100%
-  );
+  background: rgba(20, 20, 22, 0.5);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 2px 16px rgba(0, 0, 0, 0.2),

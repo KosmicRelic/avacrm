@@ -4,12 +4,16 @@
   width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   z-index: 1000;
-  padding: 0 20px;
+  padding: 0 16px;
   box-sizing: border-box;
   overflow: visible;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* iOS-style subtle gradient */
-  background: transparent
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0);
+}
+
+.headerContainer.darkTheme {
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .headerTop {
@@ -17,7 +21,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 64px;
+  height: 52px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -31,15 +35,16 @@
 
 .avaTitle {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #007aff 0%, #5856d6 50%, #ff2d55 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
   letter-spacing: -0.01em;
   flex-shrink: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+.avaTitle.darkTheme {
+  color: #ffffff;
 }
 
 .themeContainer {
@@ -273,117 +278,55 @@
 
 .menuButton {
   color: #000000;
-  background: rgba(245, 245, 247, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 18px;
-  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  /* iOS-style subtle gradient */
-  background: linear-gradient(
-    135deg,
-    rgba(245, 245, 247, 0.8) 0%,
-    rgba(240, 240, 242, 0.6) 100%
-  );
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.menuButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
 .menuButton:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(229, 229, 234, 0.9) 0%,
-    rgba(220, 220, 225, 0.8) 100%
-  );
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.menuButton:hover::before {
-  left: 100%;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .menuButton:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .menuButton.darkTheme {
-  color: rgb(235, 235, 245);
-  background: linear-gradient(
-    135deg,
-    rgba(58, 58, 60, 0.8) 0%,
-    rgba(48, 48, 50, 0.7) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .menuButton.darkTheme:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(72, 72, 74, 0.9) 0%,
-    rgba(62, 62, 64, 0.8) 100%
-  );
-  color: #0a84ff;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.menuButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .menuDropdown {
   position: absolute;
   top: 100%;
-  left: 20px;
-  right: 20px;
+  left: 16px;
+  right: 16px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(80px);
-  -webkit-backdrop-filter: blur(80px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 16px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blu(4px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 50px;
-  /* iOS-style subtle gradient */
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(255, 255, 255, 0.6) 100%
-  );
   z-index: 1003;
   margin-top: 8px;
-  animation: popFromButton 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: slideDown 0.2s ease-out;
+  transition: all 0.3s ease;
   scrollbar-width: none;
   -ms-overflow-style: none;
   user-select: none;
@@ -395,16 +338,8 @@
 }
 
 .menuDropdown.darkTheme {
-  background: linear-gradient(
-    180deg,
-    rgba(28, 28, 30, 0.8) 0%,
-    rgba(20, 20, 22, 0.6) 100%
-  );
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 2px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(28, 28, 30, 0.9);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .menuDropdown .navButton {
@@ -439,7 +374,7 @@
 .desktopNav {
   display: flex;
   align-items: center;
-  gap: 64px;
+  gap: 24px;
   justify-content: center;
   margin: 0 20px;
 }
@@ -448,24 +383,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 8px 12px;
   font-size: 15px;
   font-weight: 500;
-  color: rgba(110, 110, 115, 0.85);
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.1) 100%),
-    linear-gradient(145deg, rgba(245, 245, 247, 0.6) 0%, rgba(240, 240, 242, 0.45) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 18px;
+  color: #6e6e73;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  backdrop-filter: blur(50px) saturate(150%);
-  -webkit-backdrop-filter: blur(50px) saturate(150%);
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: -0.01em;
   min-width: fit-content;
@@ -477,64 +403,27 @@
   overflow: hidden;
 }
 
-.navButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
 .navButton:hover {
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.18) 100%),
-    linear-gradient(145deg, rgba(229, 229, 234, 0.7) 0%, rgba(220, 220, 225, 0.55) 100%);
-  backdrop-filter: blur(60px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.1),
-    0 3px 8px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-}
-
-.navButton:hover::before {
-  left: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  color: #1d1d1f;
 }
 
 .navButton:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .navButton.darkTheme {
-  color: rgba(235, 235, 245, 0.85);
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(58, 58, 60, 0.65) 0%, rgba(48, 48, 50, 0.5) 100%);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  color: #aeaeb2;
+  background: transparent;
 }
 
 .navButton.darkTheme:hover {
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.12) 100%),
-    linear-gradient(145deg, rgba(72, 72, 74, 0.7) 0%, rgba(62, 62, 64, 0.55) 100%);
-  color: rgba(10, 132, 255, 0.9);
-  backdrop-filter: blur(60px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.35),
-    0 3px 8px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.navButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .iconWrapper {
@@ -543,297 +432,100 @@
 }
 
 .activeDashboard {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 149, 0, 0.12) 0%,
-    rgba(255, 149, 0, 0.08) 100%
-  );
-  color: #FF9500;
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
   font-weight: 600;
-  border-color: rgba(255, 149, 0, 0.25);
-  box-shadow:
-    0 2px 12px rgba(255, 149, 0, 0.15),
-    0 1px 4px rgba(255, 149, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeDashboard.darkTheme {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 159, 10, 0.18) 0%,
-    rgba(255, 159, 10, 0.12) 100%
-  );
-  color: #FF9F0A;
-  border-color: rgba(255, 159, 10, 0.35);
-  box-shadow:
-    0 2px 12px rgba(255, 159, 10, 0.2),
-    0 1px 4px rgba(255, 159, 10, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(255, 159, 10, 0.2);
+  color: #ff9f0a;
 }
 
 .activeWorkflows {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 86, 214, 0.12) 0%,
-    rgba(88, 86, 214, 0.08) 100%
-  );
+  background: rgba(88, 86, 214, 0.1);
   color: #5856d6;
   font-weight: 600;
-  border-color: rgba(88, 86, 214, 0.25);
-  box-shadow:
-    0 2px 12px rgba(88, 86, 214, 0.15),
-    0 1px 4px rgba(88, 86, 214, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeWorkflows.darkTheme {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 86, 214, 0.18) 0%,
-    rgba(88, 86, 214, 0.12) 100%
-  );
+  background: rgba(88, 86, 214, 0.2);
   color: #5856d6;
-  border-color: rgba(88, 86, 214, 0.35);
-  box-shadow:
-    0 2px 12px rgba(88, 86, 214, 0.2),
-    0 1px 4px rgba(88, 86, 214, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeSheets {
-  background: 
-    linear-gradient(145deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.04) 50%, rgba(0, 122, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(240, 248, 255, 0.12) 100%);
-  color: rgba(0, 122, 255, 0.8);
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
   font-weight: 600;
-  border: 0.5px solid rgba(0, 122, 255, 0.2);
-  border-radius: 18px;
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
-  box-shadow:
-    0 6px 24px rgba(0, 122, 255, 0.15),
-    0 2px 6px rgba(0, 122, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 122, 255, 0.08);
-  transform: translateY(-1px) scale(1.02);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .activeSheets.darkTheme {
-  background: 
-    linear-gradient(145deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.04) 50%, rgba(10, 132, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(28, 28, 30, 0.5) 0%, rgba(20, 30, 40, 0.3) 100%);
-  color: rgba(10, 132, 255, 0.8);
-  border-color: rgba(10, 132, 255, 0.25);
-  box-shadow:
-    0 6px 24px rgba(10, 132, 255, 0.2),
-    0 2px 6px rgba(10, 132, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(10, 132, 255, 0.1);
-}
-
-.activeSheets:hover {
-  background: 
-    linear-gradient(145deg, rgba(0, 122, 255, 0.22) 0%, rgba(0, 122, 255, 0.1) 50%, rgba(0, 122, 255, 0.16) 100%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-  backdrop-filter: blur(35px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 122, 255, 0.25),
-    0 3px 8px rgba(0, 122, 255, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 122, 255, 0.12);
-}
-
-.activeSheets.darkTheme:hover {
-  background: 
-    linear-gradient(145deg, rgba(10, 132, 255, 0.25) 0%, rgba(10, 132, 255, 0.12) 50%, rgba(10, 132, 255, 0.18) 100%),
-    linear-gradient(145deg, rgba(28, 28, 30, 0.6) 0%, rgba(20, 30, 40, 0.4) 100%);
-  backdrop-filter: blur(35px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(10, 132, 255, 0.3),
-    0 3px 8px rgba(10, 132, 255, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(10, 132, 255, 0.15);
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
 }
 
 .activeFinancials {
-  background: linear-gradient(
-    135deg,
-    rgba(52, 199, 89, 0.12) 0%,
-    rgba(52, 199, 89, 0.08) 100%
-  );
+  background: rgba(52, 199, 89, 0.1);
   color: #34c759;
   font-weight: 600;
-  border-color: rgba(52, 199, 89, 0.25);
-  box-shadow:
-    0 2px 12px rgba(52, 199, 89, 0.15),
-    0 1px 4px rgba(52, 199, 89, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeFinancials.darkTheme {
-  background: linear-gradient(
-    135deg,
-    rgba(52, 199, 89, 0.18) 0%,
-    rgba(52, 199, 89, 0.12) 100%
-  );
+  background: rgba(52, 199, 89, 0.2);
   color: #34c759;
-  border-color: rgba(52, 199, 89, 0.35);
-  box-shadow:
-    0 2px 12px rgba(52, 199, 89, 0.2),
-    0 1px 4px rgba(52, 199, 89, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .activeActions {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 45, 85, 0.12) 0%,
-    rgba(255, 45, 85, 0.08) 100%
-  );
-  color: #FF2D55;
+  background: rgba(255, 45, 85, 0.1);
+  color: #ff2d55;
   font-weight: 600;
-  border-color: rgba(255, 45, 85, 0.25);
-  box-shadow:
-    0 2px 12px rgba(255, 45, 85, 0.15),
-    0 1px 4px rgba(255, 45, 85, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeActions.darkTheme {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 45, 85, 0.18) 0%,
-    rgba(255, 45, 85, 0.12) 100%
-  );
-  color: #FF2D55;
-  border-color: rgba(255, 45, 85, 0.35);
-  box-shadow:
-    0 2px 12px rgba(255, 45, 85, 0.2),
-    0 1px 4px rgba(255, 45, 85, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(255, 45, 85, 0.2);
+  color: #ff2d55;
 }
 
 .activeMetrics {
-  background: linear-gradient(
-    135deg,
-    rgba(175, 82, 222, 0.12) 0%,
-    rgba(175, 82, 222, 0.08) 100%
-  );
-  color: #AF52DE;
+  background: rgba(175, 82, 222, 0.1);
+  color: #af52de;
   font-weight: 600;
-  border-color: rgba(175, 82, 222, 0.25);
-  box-shadow:
-    0 2px 12px rgba(175, 82, 222, 0.15),
-    0 1px 4px rgba(175, 82, 222, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .activeMetrics.darkTheme {
-  background: linear-gradient(
-    135deg,
-    rgba(175, 82, 222, 0.18) 0%,
-    rgba(175, 82, 222, 0.12) 100%
-  );
-  color: #AF52DE;
-  border-color: rgba(175, 82, 255, 0.35);
-  box-shadow:
-    0 2px 12px rgba(175, 82, 222, 0.2),
-    0 1px 4px rgba(175, 82, 222, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(175, 82, 222, 0.2);
+  color: #af52de;
 }
 
 .objectButton {
   color: #007aff;
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.1) 100%),
-    linear-gradient(145deg, rgba(245, 245, 247, 0.6) 0%, rgba(240, 240, 242, 0.45) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 18px;
-  padding: 10px;
+  background: transparent;
+  border: none;
+  padding: 8px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  backdrop-filter: blur(50px) saturate(150%);
-  -webkit-backdrop-filter: blur(50px) saturate(150%);
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  border-radius: 8px;
   flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.objectButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
 }
 
 .objectButton:hover {
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.18) 100%),
-    linear-gradient(145deg, rgba(229, 229, 234, 0.7) 0%, rgba(220, 220, 225, 0.55) 100%);
-  backdrop-filter: blur(60px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.1),
-    0 3px 8px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-}
-
-.objectButton:hover::before {
-  left: 100%;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .objectButton:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .objectButton.darkTheme {
   color: #0a84ff;
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(58, 58, 60, 0.65) 0%, rgba(48, 48, 50, 0.5) 100%);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
 .objectButton.darkTheme:hover {
-  background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.12) 100%),
-    linear-gradient(145deg, rgba(72, 72, 74, 0.7) 0%, rgba(62, 62, 64, 0.55) 100%);
-  backdrop-filter: blur(60px) saturate(160%);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.35),
-    0 3px 8px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.objectButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes slideDown {
@@ -885,45 +577,19 @@
     display: none;
   }
   .avaTitle {
-    font-size: 18px;
+    font-size: 16px;
   }
   .navButton {
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 12px;
+    padding: 6px 10px;
     height: auto;
-  }
-  .navButton:hover {
-    background: 
-      linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.18) 100%),
-      linear-gradient(145deg, rgba(229, 229, 234, 0.7) 0%, rgba(220, 220, 225, 0.55) 100%);
-    backdrop-filter: blur(35px) saturate(160%);
-    transform: translateY(-1px) scale(1.02);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.1),
-      0 3px 8px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-    color: #1d1d1f;
-  }
-  .navButton.darkTheme:hover {
-    background: 
-      linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.12) 100%),
-      linear-gradient(145deg, rgba(72, 72, 74, 0.7) 0%, rgba(62, 62, 64, 0.55) 100%);
-    color: rgba(10, 132, 255, 0.9);
-    backdrop-filter: blur(35px) saturate(160%);
-    transform: translateY(-1px) scale(1.02);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.35),
-      0 3px 8px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   }
 }
 
 @media (min-width: 1024px) {
   .headerContainer {
-    height: 64px;
+    height: 52px;
     display: flex;
     flex-direction: column;
   }
@@ -935,32 +601,6 @@
   }
   .avaTitle {
     margin-right: 20px;
-  }
-  .navButton:hover {
-    background: 
-      linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.18) 100%),
-      linear-gradient(145deg, rgba(229, 229, 234, 0.7) 0%, rgba(220, 220, 225, 0.55) 100%);
-    backdrop-filter: blur(60px) saturate(160%);
-    transform: translateY(-1px) scale(1.02);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.1),
-      0 3px 8px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-    color: #1d1d1f;
-  }
-  .navButton.darkTheme:hover {
-    background: 
-      linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.12) 100%),
-      linear-gradient(145deg, rgba(72, 72, 74, 0.7) 0%, rgba(62, 62, 64, 0.55) 100%);
-    color: rgba(10, 132, 255, 0.9);
-    backdrop-filter: blur(35px) saturate(160%);
-    transform: translateY(-1px) scale(1.02);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.35),
-      0 3px 8px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   }
   .menuButton,
   .menuDropdown {

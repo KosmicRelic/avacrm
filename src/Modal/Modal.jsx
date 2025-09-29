@@ -75,7 +75,7 @@ const Modal = ({ children, onClose, onSave, onLeftButtonClick }) => {
       <div
         className={`${styles.modalContent} ${isClosing ? styles.closing : ""} ${
           isDarkTheme ? styles.darkTheme : ""
-        }`}
+        } ${currentStep > 1 ? styles.expanded : ""}`}
         ref={modalRef}
         onMouseDown={e => e.stopPropagation()} // Prevent modal from closing on inside click
       >

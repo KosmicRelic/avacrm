@@ -11,6 +11,7 @@ export const ModalNavigatorProvider = ({ children }) => {
     title: "",
     backButtonTitle: "",
     rightButton: null,
+    leftButton: null,
   });
   const [modalSteps, setModalSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
@@ -27,7 +28,10 @@ export const ModalNavigatorProvider = ({ children }) => {
   const getStepButton = useCallback(
     (stepIndex) => {
       const step = modalSteps[stepIndex];
-      return step?.rightButton || null;
+      return {
+        rightButton: step?.rightButton || null,
+        leftButton: step?.leftButton || null,
+      };
     },
     [modalSteps]
   );
@@ -43,7 +47,8 @@ export const ModalNavigatorProvider = ({ children }) => {
         showBackButton: false,
         title: getStepTitle(0, stepsConfig.args || {}),
         backButtonTitle: "",
-        rightButton: getStepButton(0),
+        rightButton: getStepButton(0).rightButton,
+        leftButton: getStepButton(0).leftButton,
       };
       setModalConfig(newConfig);
     },
@@ -59,7 +64,7 @@ export const ModalNavigatorProvider = ({ children }) => {
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
-      const rightButton = getStepButton(currentStepIndex);
+      const buttons = getStepButton(currentStepIndex);
 
       const newConfig = {
         showTitle: true,
@@ -67,7 +72,8 @@ export const ModalNavigatorProvider = ({ children }) => {
         showBackButton: history.length > 0, // Show back button if there's history
         title: newTitle,
         backButtonTitle: previousStepTitle,
-        rightButton,
+        rightButton: buttons.rightButton,
+        leftButton: buttons.leftButton,
       };
 
       setModalConfig(newConfig);
@@ -91,7 +97,7 @@ export const ModalNavigatorProvider = ({ children }) => {
       const newTitle = getStepTitle(currentStepIndex, args);
       const previousStepTitle =
         previousStepIndex >= 0 ? getStepTitle(previousStepIndex, args) : "";
-      const rightButton = getStepButton(currentStepIndex);
+      const buttons = getStepButton(currentStepIndex);
 
       const newConfig = {
         showTitle: true,
@@ -99,7 +105,8 @@ export const ModalNavigatorProvider = ({ children }) => {
         showBackButton: newHistory.length > 1, // Show back button if there's still history
         title: newTitle,
         backButtonTitle: previousStepTitle,
-        rightButton,
+        rightButton: buttons.rightButton,
+        leftButton: buttons.leftButton,
       };
 
       setModalConfig(newConfig);

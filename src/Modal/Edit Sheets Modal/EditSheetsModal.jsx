@@ -3,23 +3,22 @@ import PropTypes from 'prop-types';
 import styles from './EditSheetsModal.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { ModalNavigatorContext } from '../../Contexts/ModalNavigator';
-import { FaEye, FaEyeSlash, FaThumbtack, FaRegCircle, FaRegCheckCircle } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaRegCircle, FaRegCheckCircle, FaRegDotCircle } from 'react-icons/fa';
 import { MdFilterAlt, MdFilterAltOff, MdDragIndicator } from 'react-icons/md';
 import { IoMdList, IoMdOptions, IoMdFunnel, IoMdArrowDropdown } from 'react-icons/io';
-import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
+import { IoChevronForward } from 'react-icons/io5';
 
 const EditSheetsModal = ({
   isEditMode = false,
   tempData,
   setTempData,
   sheets = [],
-  onPinToggle,
   onDeleteSheet,
   handleClose,
   setActiveSheetName,
   clearFetchedSheets,
 }) => {
-  const { isDarkTheme, templateObjects } = useContext(MainContext);
+  const { isDarkTheme, templateObjects, user, teamMembers } = useContext(MainContext);
   
   // Get all templates directly from objects
   const allTemplates = useMemo(() => templateObjects.flatMap(object => 
@@ -44,17 +43,13 @@ const EditSheetsModal = ({
     });
     return uniqueHeaders;
   });
-  const [pinnedStates, setPinnedStates] = useState({});
   const [selectedObjects, setSelectedObjects] = useState(() => {
     // Initialize from tempData if available, otherwise as empty for independence
-    if (tempData.selectedObjects) {
-      return tempData.selectedObjects;
-    }
     const objectsMap = {};
     templateObjects.forEach(object => {
       objectsMap[object.id] = {
         name: object.name,
-        selected: false
+        selected: tempData.selectedObjects?.[object.id]?.selected || false
       };
     });
     return objectsMap;
@@ -85,7 +80,7 @@ const EditSheetsModal = ({
   });
   const [selectedRecordTypes, setSelectedRecordTypes] = useState(tempData.typeOfRecordsToDisplay || []);
   const [navigationDirection, setNavigationDirection] = useState(null);
-  const [expandedObjects, setExpandedObjects] = useState(new Set());
+  const [isInEditMode, setIsInEditMode] = useState(false);
 
   // Sync selectedRecordTypes from selectedTemplates
   useEffect(() => {
@@ -94,7 +89,7 @@ const EditSheetsModal = ({
   }, [selectedTemplates]);
   const [selectedTemplateForHeaders, setSelectedTemplateForHeaders] = useState(null);
   const [selectedRecordTypeForFilter, setSelectedRecordTypeForFilter] = useState(null);
-  const [selectedObjectFieldForFilter, setSelectedObjectFieldForFilter] = useState(null);
+  const [selectedObjectFieldForFilter] = useState(null);
   const [recordsPerSearch, setRecordsPerSearch] = useState(tempData.recordsPerSearch || '');
   const [filterType, setFilterType] = useState(null);
   const [filterOrder, setFilterOrder] = useState(tempData.filterOrder || ['user', 'text', 'number', 'date', 'dropdown']);
@@ -105,6 +100,12 @@ const EditSheetsModal = ({
   const prevModalConfig = useRef(null);
   const [_draggedHeaderIndex, _setDraggedHeaderIndex] = useState(null);
   const [_dragOverHeaderIndex, _setDragOverHeaderIndex] = useState(null);
+
+  // Filter-related state for step 5
+  const [numberRangeMode, setNumberRangeMode] = useState({});
+  const [activeFilterIndex, setActiveFilterIndex] = useState(null);
+  const [showSortFor, setShowSortFor] = useState(false);
+  const [sortFor, setSortFor] = useState(tempData.sortFor || { headerKey: '', order: '' });
 
   // Ensure recordTypeFilters, objectTypeFilters, recordsPerSearch, and filterOrder are initialized in tempData
   useEffect(() => {
@@ -118,6 +119,34 @@ const EditSheetsModal = ({
       });
     }
   }, [tempData, setTempData]);
+
+  // Update selectedObjects when templateObjects changes
+  useEffect(() => {
+    setSelectedObjects(prev => {
+      const newSelectedObjects = { ...prev };
+      let hasChanges = false;
+      
+      templateObjects.forEach(object => {
+        if (!newSelectedObjects[object.id]) {
+          newSelectedObjects[object.id] = {
+            name: object.name,
+            selected: false
+          };
+          hasChanges = true;
+        }
+      });
+      
+      // Remove objects that no longer exist
+      Object.keys(newSelectedObjects).forEach(id => {
+        if (!templateObjects.find(obj => obj.id === id)) {
+          delete newSelectedObjects[id];
+          hasChanges = true;
+        }
+      });
+      
+      return hasChanges ? newSelectedObjects : prev;
+    });
+  }, [templateObjects]);
 
   const sheetId = sheets.allSheets?.find((s) => s.sheetName === sheetName)?.docId;
 
@@ -207,6 +236,22 @@ const EditSheetsModal = ({
     }
   }, [selectedObjects, templateObjects, tempData, setTempData]);
 
+  // Sync sortFor with tempData
+  useEffect(() => {
+    if (!tempData.sortFor) return;
+    setSortFor(tempData.sortFor);
+  }, [tempData.sortFor]);
+
+  // Update tempData when sortFor changes
+  useEffect(() => {
+    if (sortFor.headerKey || sortFor.order) {
+      setTempData(prev => ({
+        ...prev,
+        sortFor: sortFor
+      }));
+    }
+  }, [sortFor, setTempData]);
+
   // Compute filter summary for display
   const _getFilterSummary = useCallback(
     (recordType) => {
@@ -254,47 +299,6 @@ const EditSheetsModal = ({
       return summaries.length > 0 ? summaries.join('; ') : 'None';
     },
     [tempData.recordTypeFilters, allTemplates]
-  );
-
-  // Compute filter summary for object fields
-  const getObjectFieldFilterSummary = useCallback(
-    (field) => {
-      const fieldKey = `${field.key}_${field.objectId}`;
-      const filters = tempData.objectTypeFilters?.[fieldKey] || {};
-      const summaries = [];
-
-      Object.entries(filters).forEach(([filterKey, filter]) => {
-        if (filterKey === 'userFilter') {
-          summaries.push(`${field.name || field.key} = Current User`);
-          return;
-        }
-
-        const fieldName = field.name || field.key;
-        if (field.type === 'number' && (filter.start || filter.end)) {
-          const start = filter.start || '';
-          const end = filter.end || '';
-          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
-          summaries.push(`${fieldName}: ${start}${start && end ? ' – ' : ''}${end}${sortOrder}`);
-        } else if (field.type === 'date' && filter.sortOrder) {
-          summaries.push(`${fieldName}: Sorted ${filter.sortOrder}`);
-        } else if (field.type === 'dropdown' && filter.values?.length) {
-          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
-          summaries.push(`${fieldName}: ${filter.values.join(', ')}${sortOrder}`);
-        } else if (filter.value) {
-          const condition = filter.condition || filter.order || 'equals';
-          const prefix = field.type === 'number'
-            ? { equals: '=', greater: '>', less: '<', greaterOrEqual: '≥', lessOrEqual: '≤' }[condition] || ''
-            : condition;
-          const sortOrder = filter.sortOrder ? ` (${filter.sortOrder})` : '';
-          summaries.push(`${fieldName}: ${prefix} ${filter.value}${sortOrder}`);
-        } else if (filter.sortOrder) {
-          summaries.push(`${fieldName}: (${filter.sortOrder})`);
-        }
-      });
-
-      return summaries.length > 0 ? summaries.join('; ') : 'None';
-    },
-    [tempData.objectTypeFilters]
   );
 
   // Handle save action
@@ -424,7 +428,15 @@ const EditSheetsModal = ({
   useEffect(() => {
     if (!hasInitialized.current) {
       const steps = [
-        { title: isEditMode ? 'Edit Sheet' : 'Create Sheet', rightButton: null },
+        { 
+          title: isEditMode ? 'Edit Sheet' : 'Create Sheet', 
+          rightButton: null,
+          leftButton: isEditMode ? {
+            label: isInEditMode ? 'Done' : 'Edit',
+            onClick: () => setIsInEditMode(!isInEditMode),
+            isActive: true
+          } : null
+        },
         { title: 'Headers', rightButton: null },
         { title: 'Select Templates', rightButton: null },
         { title: 'Select Headers', rightButton: null },
@@ -442,7 +454,11 @@ const EditSheetsModal = ({
         title: isEditMode ? 'Edit Sheet' : 'Create Sheet',
         backButtonTitle: '',
         rightButton: null,
-        leftButton: null,
+        leftButton: isEditMode ? {
+          label: isInEditMode ? 'Done' : 'Edit',
+          onClick: () => setIsInEditMode(!isInEditMode),
+          isActive: true
+        } : null,
         onDoneClick,
       };
       setModalConfig(initialConfig);
@@ -466,12 +482,16 @@ const EditSheetsModal = ({
     if (currentStep === 1) {
       config = {
         showTitle: true,
-        showDoneButton: true,
+        showDoneButton: !isInEditMode,
         showBackButton: false,
         allowClose: true,
         title: step1Title,
         backButtonTitle: '',
-        leftButton: null,
+        leftButton: isEditMode ? {
+          label: isInEditMode ? 'Done' : 'Edit',
+          onClick: () => setIsInEditMode(!isInEditMode),
+          isActive: true
+        } : null,
         rightButton: null,
         onDoneClick,
       };
@@ -589,28 +609,13 @@ const EditSheetsModal = ({
         leftButton: null,
         rightButton: null,
       };
-    } else if (currentStep === 9) {
-      config = {
-        showTitle: true,
-        showDoneButton: false,
-        showBackButton: true,
-        allowClose: false,
-        title: 'Select Object Fields',
-        backButtonTitle: 'Headers',
-        backButton: {
-          label: `< Headers`,
-          onClick: handleBackClick,
-        },
-        leftButton: null,
-        rightButton: null,
-      };
     }
 
     if (JSON.stringify(config) !== JSON.stringify(prevModalConfig.current)) {
       setModalConfig(config);
       prevModalConfig.current = config;
     }
-  }, [currentStep, isEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedRecordTypeForFilter, allTemplates, filterType]);
+  }, [currentStep, isEditMode, isInEditMode, handleBackClick, setModalConfig, onDoneClick, selectedTemplateForHeaders, selectedRecordTypeForFilter, allTemplates, filterType]);
 
   // Sync tempData with state changes
   useEffect(() => {
@@ -652,12 +657,6 @@ const EditSheetsModal = ({
       setCurrentHeaders(uniqueHeaders);
     }
   }, [tempData.currentHeaders]);
-
-  useEffect(() => {
-    if (tempData.selectedObjects) {
-      setSelectedObjects(tempData.selectedObjects);
-    }
-  }, [tempData.selectedObjects]);
 
   useEffect(() => {
     if (tempData.typeOfRecordsToDisplay) {
@@ -705,22 +704,58 @@ const EditSheetsModal = ({
 
   // New functions for object-based selection
   const toggleObjectSelection = useCallback((objectId) => {
-    setSelectedObjects(prev => {
-      const wasSelected = prev[objectId]?.selected;
-      const newSelected = !wasSelected;
-      if (!newSelected) {
-        // De-selecting, remove headers
-        setCurrentHeaders(current => current.filter(h => h.objectId !== objectId));
+    setSelectedObjects(currentSelectedObjects => {
+      const wasSelected = currentSelectedObjects[objectId]?.selected;
+      
+      // If already selected, do nothing (radio button behavior)
+      if (wasSelected) {
+        return currentSelectedObjects;
       }
-      return {
-        ...prev,
-        [objectId]: {
-          ...prev[objectId],
-          selected: newSelected
+      
+      // Select new one, deselect all others
+      const newState = {};
+      Object.keys(currentSelectedObjects).forEach(id => {
+        newState[id] = {
+          ...currentSelectedObjects[id],
+          selected: id === objectId
+        };
+      });
+      
+      // Update tempData
+      setTempData(prevTempData => ({
+        ...prevTempData,
+        selectedObjects: newState
+      }));
+      
+      // Update headers - remove all object headers and add all basicFields from the selected object
+      setCurrentHeaders(currentHeaders => {
+        // Remove all headers that belong to objects
+        const nonObjectHeaders = currentHeaders.filter(h => !h.objectId);
+        
+        // Find the selected object
+        const selectedObject = templateObjects.find(obj => obj.id === objectId);
+        if (!selectedObject || !selectedObject.basicFields) {
+          return nonObjectHeaders;
         }
-      };
+        
+        // Add all basicFields from the selected object
+        const newObjectHeaders = selectedObject.basicFields
+          .filter(field => field.key)
+          .map(field => ({
+            key: field.key,
+            name: field.name || field.key,
+            type: field.type || 'text',
+            objectId: selectedObject.id,
+            objectName: selectedObject.name,
+            options: field.options || []
+          }));
+        
+        return [...nonObjectHeaders, ...newObjectHeaders];
+      });
+      
+      return newState;
     });
-  }, []);
+  }, [setTempData, templateObjects]);
 
   const _toggleTemplateInObject = useCallback((objectId, typeOfRecord) => {
     setSelectedTemplates(prev => {
@@ -799,17 +834,6 @@ const EditSheetsModal = ({
     });
   }, [templateObjects]);
 
-  const togglePin = useCallback(
-    (headerKey) => {
-      setPinnedStates((prev) => ({
-        ...prev,
-        [headerKey]: !prev[headerKey],
-      }));
-      onPinToggle(headerKey);
-    },
-    [onPinToggle]
-  );
-
   const toggleVisible = useCallback((index) => {
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
@@ -822,18 +846,6 @@ const EditSheetsModal = ({
     setCurrentHeaders((prev) => {
       const newHeaders = [...prev];
       newHeaders[index] = { ...newHeaders[index], hidden: !newHeaders[index].hidden };
-      return newHeaders;
-    });
-  }, []);
-
-  const removeHeader = useCallback((headerKey) => {
-    setCurrentHeaders((prev) => {
-      const newHeaders = prev.filter((h) => h.key !== headerKey);
-      setPinnedStates((prev) => {
-        const newPinned = { ...prev };
-        delete newPinned[headerKey];
-        return newPinned;
-      });
       return newHeaders;
     });
   }, []);
@@ -861,27 +873,6 @@ const EditSheetsModal = ({
         });
       }
       setSelectedRecordTypeForFilter(typeOfRecords);
-      setNavigationDirection('forward');
-      goToStep(7);
-    },
-    [goToStep, tempData, setTempData]
-  );
-
-  const handleObjectFieldFilterClick = useCallback(
-    (field) => {
-      if (!field) return;
-      const fieldKey = `${field.key}_${field.objectId}`;
-      if (!tempData.objectTypeFilters?.[fieldKey]) {
-        setTempData({
-          ...tempData,
-          objectTypeFilters: {
-            ...tempData.objectTypeFilters,
-            [fieldKey]: {},
-          },
-        });
-      }
-      setSelectedObjectFieldForFilter(field);
-      setFilterType(null);
       setNavigationDirection('forward');
       goToStep(7);
     },
@@ -935,6 +926,120 @@ const EditSheetsModal = ({
       (!filter.start && !filter.end && !filter.value && !filter.values?.length && !filter.headerKey),
     []
   );
+
+  // Filter-related computed values and functions for step 5
+  const filterValues = useMemo(() => tempData.recordTypeFilters?.['objectFilters'] || {}, [tempData.recordTypeFilters]);
+
+  const applyFilters = useCallback(
+    (filters) => {
+      setTempData({
+        ...tempData,
+        recordTypeFilters: {
+          ...tempData.recordTypeFilters,
+          objectFilters: filters,
+        },
+      });
+    },
+    [setTempData, tempData]
+  );
+
+  const handleFilterChange = useCallback(
+    (headerKey, value, type = 'default') => {
+      const header = currentHeaders.find((h) => h.key === headerKey);
+      let newValue = value;
+      if (header && header.type === 'text' && type === 'value') {
+        newValue = String(value);
+      }
+      const newFilter = { ...filterValues[headerKey], [type]: newValue };
+      if (type === 'start' || type === 'end' || type === 'value' || type === 'sortOrder') {
+        if (value === '') delete newFilter[type];
+      }
+      const updatedFilters = { ...filterValues, [headerKey]: newFilter };
+      applyFilters(updatedFilters);
+    },
+    [filterValues, applyFilters, currentHeaders]
+  );
+
+  const toggleNumberRangeMode = useCallback(
+    (headerKey) => {
+      setNumberRangeMode((prev) => {
+        const newMode = !prev[headerKey];
+        const updatedFilters = {
+          ...filterValues,
+          [headerKey]: newMode
+            ? { start: filterValues[headerKey]?.start || '', end: filterValues[headerKey]?.end || '' }
+            : { value: filterValues[headerKey]?.value || '', order: 'equals' },
+        };
+        applyFilters(updatedFilters);
+        return { ...prev, [headerKey]: newMode };
+      });
+    },
+    [filterValues, applyFilters]
+  );
+
+  const getFilterSummary = useCallback(
+    (header) => {
+      const filter = filterValues[header.key] || {};
+      if (isFilterEmpty(filter)) return 'None';
+
+      switch (header.type) {
+        case 'number': {
+          if (numberRangeMode[header.key]) {
+            const start = filter.start || '';
+            const end = filter.end || '';
+            return `${start}${start && end ? ' – ' : ''}${end}`.trim();
+          } else {
+            const order = filter.order || 'equals';
+            const value = filter.value || '';
+            const orderText = { equals: '=', greaterOrEqual: '≥', lessOrEqual: '≤', greater: '>', less: '<' }[order];
+            return `${orderText}${value ? ` ${value}` : ''}`.trim();
+          }
+        }
+        case 'date': {
+          return filter.sortOrder || 'None';
+        }
+        case 'dropdown': {
+          const values = filter.values || [];
+          return values.length > 0 ? values.join(', ') : 'None';
+        }
+        case 'multi-select': {
+          const multiValues = filter.values || [];
+          return multiValues.length > 0 ? multiValues.join(', ') : 'None';
+        }
+        case 'text': {
+          const condition = filter.condition || 'equals';
+          const value = filter.value !== undefined && filter.value !== null ? String(filter.value) : '';
+          return value ? `${condition} "${value}"` : 'None';
+        }
+        default: {
+          return filter.value !== undefined && filter.value !== null
+            ? `"${String(filter.value)}"`
+            : 'None';
+        }
+      }
+    },
+    [filterValues, numberRangeMode, isFilterEmpty]
+  );
+
+  const handleReset = useCallback(() => {
+    const clearedFilters = {};
+    applyFilters(clearedFilters);
+    setNumberRangeMode({});
+    setActiveFilterIndex(null);
+    setSortFor({ headerKey: '', order: '' });
+    setRecordsPerSearch('');
+    setTempData(prev => ({
+      ...prev,
+      recordsPerSearch: null,
+    }));
+  }, [applyFilters]);
+
+  const _getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
 
   // --- DRAG STATE (restore old logic) ---
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -1022,105 +1127,91 @@ const EditSheetsModal = ({
             {step === 1 && (
               <>
                 <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sheet Details</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Give your sheet a name and choose what to manage.</p>
                   <input
                     type="text"
                     value={sheetName}
                     onChange={handleSheetNameChange}
                     placeholder={isEditMode ? 'Rename sheet' : 'Sheet Name'}
                     className={`${styles.sheetNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    disabled={sheetId === 'primarySheet'}
+                    disabled={!isInEditMode}
                   />
                 </div>
-                <div className={styles.section}>
-                  <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose What to Configure</h2>
-                  <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up the data types, columns, and filters for your sheet.</p>
-                  <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div
-                      onClick={() => {
-                        setNavigationDirection('forward');
-                        goToStep(6);
-                      }}
-                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      role="button"
-                      aria-label="Select Record Templates"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                {!isInEditMode && (
+                  <div className={styles.section}>
+                    <div className={`${styles.configGrid} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div
+                        onClick={() => {
                           setNavigationDirection('forward');
                           goToStep(6);
-                        }
-                      }}
-                    >
-                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <IoMdOptions size={28} />
-                      </div>
-                      <div className={styles.recordContent}>
-                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Data Types</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which record templates to include</p>
-                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {selectedRecordTypes.length} selected
+                        }}
+                        className={`${styles.gridButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        role="button"
+                        aria-label="Select Record Templates"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setNavigationDirection('forward');
+                            goToStep(6);
+                          }
+                        }}
+                      >
+                        <div className={`${styles.gridIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoMdOptions size={20} />
+                        </div>
+                        <div className={styles.gridContent}>
+                          <h3 className={`${styles.gridTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Data Types</h3>
                         </div>
                       </div>
-                    </div>
-                    <div
-                      onClick={() => {
-                        setNavigationDirection('forward');
-                        goToStep(2);
-                      }}
-                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      role="button"
-                      aria-label="Manage Headers"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                      <div
+                        onClick={() => {
                           setNavigationDirection('forward');
                           goToStep(2);
-                        }
-                      }}
-                    >
-                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <IoMdList size={28} />
-                      </div>
-                      <div className={styles.recordContent}>
-                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set up and organize your data columns</p>
-                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          {currentHeaders.length} configured
+                        }}
+                        className={`${styles.gridButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        role="button"
+                        aria-label="Manage Headers"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setNavigationDirection('forward');
+                            goToStep(2);
+                          }
+                        }}
+                      >
+                        <div className={`${styles.gridIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoMdList size={20} />
+                        </div>
+                        <div className={styles.gridContent}>
+                          <h3 className={`${styles.gridTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns</h3>
                         </div>
                       </div>
-                    </div>
-                    <div
-                      onClick={() => {
-                        setNavigationDirection('forward');
-                        goToStep(5);
-                      }}
-                      className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      role="button"
-                      aria-label="Manage Filters"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                      <div
+                        onClick={() => {
                           setNavigationDirection('forward');
                           goToStep(5);
-                        }
-                      }}
-                    >
-                      <div className={`${styles.recordIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <IoMdFunnel size={28} />
-                      </div>
-                      <div className={styles.recordContent}>
-                        <h3 className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h3>
-                        <p className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Filter and refine your data display</p>
-                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          Configure
+                        }}
+                        className={`${styles.gridButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        role="button"
+                        aria-label="Manage Filters"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setNavigationDirection('forward');
+                            goToStep(5);
+                          }
+                        }}
+                      >
+                        <div className={`${styles.gridIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoMdFunnel size={20} />
+                        </div>
+                        <div className={styles.gridContent}>
+                          <h3 className={`${styles.gridTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Filters</h3>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {isEditMode && sheetId !== 'primarySheet' && (
+                )}
+                {isInEditMode && isEditMode && sheetId !== 'primarySheet' && (
                   <div className={styles.section}>
                     <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Danger Zone</h2>
                     <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Permanently delete this sheet and all its data.</p>
@@ -1147,22 +1238,11 @@ const EditSheetsModal = ({
             {step === 2 && (
               <div className={styles.section}>
                 <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Manage Your Columns</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Add object fields as columns to your sheet. Drag to reorder, pin important ones, and toggle visibility.</p>
-                <button
-                  className={`${styles.addHeaderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  type="button"
-                  style={{ width: '100%', marginBottom: 12, textAlign: 'left' }}
-                  onClick={() => {
-                    setNavigationDirection('forward');
-                    goToStep(9);
-                  }}
-                >
-                  Add object field
-                </button>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Columns are automatically added when you select objects. Drag to reorder, pin important ones, and toggle visibility.</p>
                 <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {currentHeaders.length === 0 && (
                     <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No columns added yet. Tap "Add object field" to get started.
+                      No columns added yet. Go back to Choose Data Types to select objects first.
                     </div>
                   )}
                   {currentHeaders.map((header, index) => {
@@ -1196,20 +1276,6 @@ const EditSheetsModal = ({
                       >
                         <div className={styles.headerRow}>
                           <div className={styles.headerLeft}>
-                            <button
-                              onClick={() => togglePin(header.key)}
-                              className={`${styles.actionButton} ${pinnedStates[header.key] ? styles.pinned : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            >
-                              <FaThumbtack />
-                            </button>
-                            {pinnedStates[header.key] && (
-                              <button
-                                onClick={() => removeHeader(header.key)}
-                                className={`${styles.removeTextButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              >
-                                Remove
-                              </button>
-                            )}
                             <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</span>
                           </div>
                           <div className={styles.actions}>
@@ -1346,66 +1412,281 @@ const EditSheetsModal = ({
             )}
             {step === 5 && (
               <div className={styles.section}>
-                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure Data Filters</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Configure filters for your selected object fields. You can filter by text, numbers, dates, and more.</p>
-                <div className={`${styles.prioritizedHeadersList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {(() => {
-                    const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
-                    const allObjectFields = templateObjects
-                      .filter(object => selectedObjectIds.includes(object.id))
-                      .flatMap(object => 
-                        (object.basicFields || []).map(field => ({
-                          ...field,
-                          objectId: object.id,
-                          objectName: object.name,
-                          key: `${field.key}_${object.id}`,
-                        }))
-                      );
-                    
-                    return allObjectFields.length === 0 ? (
-                      <div className={`${styles.noPrioritizedHeaders} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        No objects selected. Go back to Choose Data Types to select objects first.
+                {/* Records per Search - moved to top */}
+                <div className={`${styles.configRecord} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <div className={styles.recordContent}>
+                    <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Records per Search</div>
+                    <div className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Set limit</div>
+                    <div className={styles.inputContainer}>
+                      <input
+                        type="number"
+                        value={recordsPerSearch}
+                        onChange={handleRecordsPerSearchChange}
+                        placeholder="No limit"
+                        className={`${styles.fetchLimitInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        min="1"
+                        step="1"
+                        aria-label="Records Fetch Limit"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sort By Record - Integrated Design */}
+                <div
+                  className={`${styles.configRecord} ${showSortFor ? styles.activeRecord : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => setShowSortFor((prev) => !prev)}
+                >
+                  <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setShowSortFor((prev) => !prev); }}>
+                    <div className={styles.recordContent}>
+                      <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort</div>
+                      <div className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        {(() => {
+                          if (!sortFor.headerKey || !sortFor.order) return 'Choose field and order';
+                          const header = currentHeaders.find(h => h.key === sortFor.headerKey);
+                          if (!header) return 'Choose field and order';
+                          return `${header.name} (${sortFor.order === 'ascending' ? '↑' : '↓'})`;
+                        })()}
+                        <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {(sortFor.headerKey && sortFor.order) ? 'Active' : ''}
+                        </div>
                       </div>
-                    ) : (
-                      allObjectFields.map((field) => (
-                        <div
-                          key={field.key}
-                          onClick={() => handleObjectFieldFilterClick(field)}
-                          className={`${styles.prioritizedHeaderItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          role="button"
-                          aria-label={`Filters for ${field.name || field.key}`}
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              handleObjectFieldFilterClick(field);
-                            }
-                          }}
+                    </div>
+                    <div className={`${styles.recordArrow} ${showSortFor ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <IoMdArrowDropdown />
+                    </div>
+                  </div>
+                  {showSortFor && (
+                    <>
+                      <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                      <div
+                        className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <select
+                          value={sortFor.headerKey}
+                          onChange={e => setSortFor(s => ({ ...s, headerKey: e.target.value }))}
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                         >
-                          <span className={`${styles.headerName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {field.name
-                              ? field.name.charAt(0).toUpperCase() + field.name.slice(1).toLowerCase()
-                              : field.key.charAt(0).toUpperCase() + field.key.slice(1).toLowerCase()}
-                            <span className={`${styles.objectName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              ({field.objectName})
-                            </span>
-                          </span>
-                          <span className={`${styles.filterSummary} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            {getObjectFieldFilterSummary(field)}
-                          </span>
-                          <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            <IoChevronForward size={16} />
+                          <option value="">Field</option>
+                          {currentHeaders.map((header) => (
+                            <option key={header.key} value={header.key}>{header.name}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={sortFor.order}
+                          onChange={e => setSortFor(s => ({ ...s, order: e.target.value }))}
+                          className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          <option value="">Order</option>
+                          <option value="ascending">↑ Ascending</option>
+                          <option value="descending">↓ Descending</option>
+                        </select>
+                        {(sortFor.headerKey && sortFor.order) && (
+                          <button
+                            onClick={() => {
+                              setSortFor({ headerKey: '', order: '' });
+                            }}
+                            className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            disabled={!(sortFor.headerKey && sortFor.order)}
+                          >
+                            Clear Sort
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {currentHeaders.length === 0 ? (
+                  <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    No fields selected
+                  </div>
+                ) : (
+                  currentHeaders.map((header, index) => (
+                    <div
+                      key={header.key}
+                      className={`${styles.configRecord} ${activeFilterIndex === index ? styles.activeRecord : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    >
+                      <div className={styles.recordHeader} onClick={(e) => { e.stopPropagation(); setActiveFilterIndex(activeFilterIndex === index ? null : index); }}>
+                        <div className={styles.recordContent}>
+                          <div className={`${styles.recordTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{header.name}</div>
+                          <div className={`${styles.recordDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            <div className={`${styles.recordBadge} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                              {getFilterSummary(header) !== 'None' ? 'Active' : ''}
+                            </div>
                           </div>
                         </div>
-                      ))
-                    );
-                  })()}
+                        <div className={`${styles.recordArrow} ${activeFilterIndex === index ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <IoMdArrowDropdown />
+                        </div>
+                      </div>
+                      {activeFilterIndex === index && (
+                        <>
+                          <div className={`${styles.recordDivider} ${isDarkTheme ? styles.darkTheme : ''}`}></div>
+                          <div
+                            className={`${styles.filterActions} ${styles.recordActions} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {header.type === 'number' ? (
+                              numberRangeMode[header.key] ? (
+                                <>
+                                  <input
+                                    type="number"
+                                    value={filterValues[header.key]?.start || ''}
+                                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'start')}
+                                    placeholder="From"
+                                    className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  />
+                                  <input
+                                    type="number"
+                                    value={filterValues[header.key]?.end || ''}
+                                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'end')}
+                                    placeholder="To"
+                                    className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  />
+                                  <button
+                                    onClick={() => toggleNumberRangeMode(header.key)}
+                                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  >
+                                    Value
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <select
+                                    value={filterValues[header.key]?.order || 'equals'}
+                                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'order')}
+                                    className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  >
+                                    <option value="equals">=</option>
+                                    <option value="greaterOrEqual">≥</option>
+                                    <option value="lessOrEqual">≤</option>
+                                    <option value="greater">&gt;</option>
+                                    <option value="less">&lt;</option>
+                                  </select>
+                                  <input
+                                    type="number"
+                                    value={filterValues[header.key]?.value || ''}
+                                    onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                                    placeholder="Value"
+                                    className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  />
+                                  <button
+                                    onClick={() => toggleNumberRangeMode(header.key)}
+                                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                  >
+                                    Range
+                                  </button>
+                                </>
+                              )
+                            ) : header.type === 'date' ? (
+                              <select
+                                value={filterValues[header.key]?.sortOrder || ''}
+                                onChange={(e) => handleFilterChange(header.key, e.target.value, 'sortOrder')}
+                                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                <option value="">All dates</option>
+                                <option value="newest">Newest</option>
+                                <option value="oldest">Oldest</option>
+                              </select>
+                            ) : header.type === 'dropdown' ? (
+                              <select
+                                multiple
+                                value={filterValues[header.key]?.values || []}
+                                onChange={(e) => {
+                                  const values = Array.from(e.target.selectedOptions, option => option.value);
+                                  handleFilterChange(header.key, values, 'values');
+                                }}
+                                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                {header.options?.map((option) => (
+                                  <option key={option} value={option}>{option}</option>
+                                ))}
+                              </select>
+                            ) : header.type === 'multi-select' ? (
+                              <select
+                                multiple
+                                value={filterValues[header.key]?.values || []}
+                                onChange={(e) => {
+                                  const values = Array.from(e.target.selectedOptions, option => option.value);
+                                  handleFilterChange(header.key, values, 'values');
+                                }}
+                                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                {header.options?.map((option) => (
+                                  <option key={option} value={option}>{option}</option>
+                                ))}
+                              </select>
+                            ) : header.key === 'assignedTo' || header.key === 'user' || header.key === 'createdBy' ? (
+                              <select
+                                value={filterValues[header.key]?.value || ''}
+                                onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                                className={`${styles.filterSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              >
+                                <option value="">All users</option>
+                                <option value={user?.uid || ''}>{user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me'}</option>
+                                {teamMembers?.filter(member => member.uid !== user?.uid).map((member) => (
+                                  <option key={member.uid} value={member.uid}>
+                                    {member.name && member.surname ? `${member.name} ${member.surname}` : member.email}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <>
+                                <select
+                                  value={filterValues[header.key]?.condition || 'equals'}
+                                  onChange={(e) => handleFilterChange(header.key, e.target.value, 'condition')}
+                                  className={`${styles.filterSelectNoChevron} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                >
+                                  <option value="equals">Equals</option>
+                                  <option value="contains">Contains</option>
+                                  <option value="startsWith">Starts with</option>
+                                  <option value="endsWith">Ends with</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={filterValues[header.key]?.value || ''}
+                                  onChange={(e) => handleFilterChange(header.key, e.target.value, 'value')}
+                                  placeholder="Value"
+                                  className={`${styles.filterInput} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                />
+                              </>
+                            )}
+                            <button
+                              onClick={() => {
+                                const newFilters = { ...filterValues };
+                                delete newFilters[header.key];
+                                applyFilters(newFilters);
+                              }}
+                              className={`${styles.clearButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              disabled={isFilterEmpty(filterValues[header.key] || {})}
+                            >
+                              Clear Filter
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+
+                {/* Reset All Filters Button */}
+                <div className={`${styles.footer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <button
+                    onClick={handleReset}
+                    className={`${styles.resetButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    disabled={Object.keys(filterValues).length === 0 || Object.values(filterValues).every(filter => isFilterEmpty(filter))}
+                  >
+                    Reset Filters
+                  </button>
                 </div>
               </div>
             )}
             {step === 6 && (
               <div className={styles.section}>
-                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose Data Types</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose which objects to include in this sheet. All templates within selected objects will be available for display.</p>
+                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Select Object Templates</h2>
+                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Select an object to include its templates in this sheet.</p>
                 <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {templateObjects.length === 0 ? (
                     <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1418,15 +1699,18 @@ const EditSheetsModal = ({
                       return (
                         <div key={object.id}>
                           <div
-                            className={`${styles.objectItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            className={`${styles.objectItem} ${isObjectSelected ? styles.selected : ''} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              toggleObjectSelection(object.id);
+                            }}
                           >
                             <div className={styles.recordTypeRow}>
                               <span 
                                 className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                onClick={() => toggleObjectSelection(object.id)}
                               >
                                 {isObjectSelected ? (
-                                  <FaRegCheckCircle size={18} className={styles.checked} />
+                                  <FaRegDotCircle size={18} className={styles.checked} />
                                 ) : (
                                   <FaRegCircle size={18} />
                                 )}
@@ -1541,93 +1825,6 @@ const EditSheetsModal = ({
                 </div>
               </div>
             )}
-            {step === 9 && (
-              <div className={styles.section}>
-                <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Select Object Fields</h2>
-                <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>Choose object-level fields to add as columns. These fields are shared across all templates within an object.</p>
-                <div className={`${styles.recordTypeList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {templateObjects.filter(object => selectedObjects[object.id]?.selected).length === 0 ? (
-                    <div className={`${styles.noRecords} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      No objects available. Create objects and templates first in the main app.
-                    </div>
-                  ) : (
-                    templateObjects.filter(object => selectedObjects[object.id]?.selected).map((object) => {
-                      const objectBasicFields = object.basicFields || [];
-                      const isExpanded = expandedObjects.has(object.id);
-                      
-                      return (
-                        <div key={object.id}>
-                          <div
-                            className={`${styles.objectItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                            onClick={() => {
-                              setExpandedObjects(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(object.id)) {
-                                  newSet.delete(object.id);
-                                } else {
-                                  newSet.add(object.id);
-                                }
-                                return newSet;
-                              });
-                            }}
-                          >
-                            <div className={styles.recordTypeRow}>
-                              <span className={`${styles.objectName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                {object.name || object.id}
-                              </span>
-                              <div className={`${styles.recordArrow} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
-                              </div>
-                            </div>
-                          </div>
-                          {isExpanded && objectBasicFields.length > 0 && (
-                            <div className={`${styles.templateList} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              {objectBasicFields.map((field) => {
-                                const isSelected = currentHeaders.some((h) => h.key === field.key && h.objectId === object.id);
-                                return (
-                                  <div
-                                    key={field.key}
-                                    className={`${styles.templateItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                    onClick={() => toggleHeaderSelection(field.key, object.id)}
-                                  >
-                                    <div className={styles.recordTypeRow}>
-                                      <span 
-                                        className={`${styles.customCheckbox} ${isDarkTheme ? styles.darkTheme : ''}`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleHeaderSelection(field.key, object.id);
-                                        }}
-                                      >
-                                        {isSelected ? (
-                                          <FaRegCheckCircle size={18} />
-                                        ) : (
-                                          <FaRegCircle size={18} />
-                                        )}
-                                      </span>
-                                      <span className={`${styles.recordTypeName} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                        {field.name || field.key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
-                                      </span>
-                                      <span className={`${styles.fieldType} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                        {field.type || 'text'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {isExpanded && objectBasicFields.length === 0 && (
-                            <div className={`${styles.noFields} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              No object fields defined for this object.
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
@@ -1665,7 +1862,6 @@ EditSheetsModal.propTypes = {
       })
     ),
   }),
-  onPinToggle: PropTypes.func.isRequired,
   onDeleteSheet: PropTypes.func.isRequired,
   handleClose: PropTypes.func,
   setActiveSheetName: PropTypes.func.isRequired,
@@ -1679,7 +1875,7 @@ EditSheetsModal.defaultProps = {
 };
 
 function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTempData, isDarkTheme, showOnlyUserFilter, filterType }) {
-  const { user } = useContext(MainContext);
+  const { user, teamMembers } = useContext(MainContext);
   const [numberRangeMode, setNumberRangeMode] = useState(() => {
     const initial = {};
     Object.entries(tempData.recordTypeFilters?.[recordType] || {}).forEach(([key, filter]) => {
@@ -1690,6 +1886,13 @@ function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTem
   const [activeFilterIndex, setActiveFilterIndex] = useState(null);
   const filterActionsRef = useRef(null);
   const filterValues = useMemo(() => tempData.recordTypeFilters?.[recordType] || {}, [tempData.recordTypeFilters, recordType]);
+
+  const _getTeamMemberName = (uid) => {
+    if (!uid) return '';
+    if (uid === user?.uid) return user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.email || 'Me';
+    const member = teamMembers?.find((tm) => tm.uid === uid);
+    return member ? `${member.name || ''} ${member.surname || ''}`.trim() : uid;
+  };
 
   // Build visibleHeaders for the main filter list (exclude user fields)
   const visibleHeaders = useMemo(() => {
@@ -1863,6 +2066,14 @@ function RecordTypeFilterLikeFilterModal({ recordType, headers, tempData, setTem
           return value ? `${condition} "${value}"` : 'None';
         }
         default: {
+          // Handle assignedTo and other user fields
+          if (header.key === 'assignedTo' || header.key === 'user' || header.key === 'createdBy') {
+            if (filter.value) {
+              const userName = _getTeamMemberName(filter.value);
+              return userName || filter.value;
+            }
+            return 'None';
+          }
           return filter.value !== undefined && filter.value !== null
             ? `"${String(filter.value)}"`
             : 'None';

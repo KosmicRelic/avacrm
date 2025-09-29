@@ -282,7 +282,7 @@ const FilterModal = ({ headers, tempData, setTempData }) => {
     <div className={`${styles.filterContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {/* Sort For Section */}
       <div className={`${styles.section} ${isDarkTheme ? styles.darkTheme : ''}`}>
-        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort & Filter</h2>
+        <h2 className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Sort</h2>
         <p className={`${styles.sectionDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
           Configure sorting and filtering options for your data
         </p>
