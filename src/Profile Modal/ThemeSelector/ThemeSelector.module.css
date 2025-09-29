@@ -41,6 +41,10 @@
   line-height: 1.3;
 }
 
+.themeSelector.dark .title {
+  color: #ffffff;
+}
+
 .subtitle {
   font-size: 13px;
   font-weight: 400;
