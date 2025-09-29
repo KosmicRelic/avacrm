@@ -2,6 +2,7 @@ import { useContext, useState, useMemo, useCallback } from 'react';
 import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import useModal from '../Modal/Hooks/UseModal';
+import DashboardPlane from './Dashboard Plane/DashboardPlane';
 
 const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   const { isDarkTheme, dashboards, setDashboards } = useContext(MainContext);

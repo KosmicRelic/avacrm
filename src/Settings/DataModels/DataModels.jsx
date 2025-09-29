@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import styles from "./DataModels.module.css";
 import { MainContext } from "../../Contexts/MainContext";
@@ -12,16 +12,12 @@ import { db } from '../../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { updateRecordTemplatesAndRecordsFunction } from '../../Firebase/Firebase Functions/User Functions/updateRecordTemplatesAndRecordsFunction';
 
-const DataModels = forwardRef(({ onSave, onBack }, ref) => {
-  return <DataModelsInner onSave={onSave} onBack={onBack} ref={ref} />;
-});
-
-const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
+const DataModelsTemp = ({ onSave, onBack }) => {
   const {
-    isDarkTheme,
-    businessId,
-    templateObjects: contextTemplateObjects,
-    setTemplateObjects: contextSetTemplateObjects
+    isDarkTheme = false,
+    businessId = null,
+    templateObjects: contextTemplateObjects = [],
+    setTemplateObjects: contextSetTemplateObjects = () => {}
   } = useContext(MainContext);
 
   // Navigation state - replace modal steps with local views
@@ -55,39 +51,7 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
   const [copiedHeaderId, setCopiedHeaderId] = useState(false);
 
   // Object management state - use local state to prevent Firestore overwrites
-  const [templateObjects, setTemplateObjects] = useState(() => {
-    const objects = contextTemplateObjects || [];
-    // Process objects to ensure templates have proper structure
-    return objects.map(object => ({
-      ...object,
-      basicFields: object.basicFields || [],
-      templates: (object.templates || []).map((t) => {
-        // Remove duplicate headers based on key
-        const seenKeys = new Set();
-        const uniqueHeaders = t.headers?.filter(header => {
-          if (seenKeys.has(header.key)) {
-            return false;
-          }
-          seenKeys.add(header.key);
-          return true;
-        }) || [];
-
-        return {
-          ...t,
-          headers: uniqueHeaders.map((h) => ({
-            ...h,
-            isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecord" || h.key === "typeOfObject" || h.key === "assignedTo" ? true : h.isUsed ?? false,
-          })),
-          sections: t.sections.map((s) => ({
-            ...s,
-            keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecord") || s.keys.includes("typeOfObject") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
-          })),
-          isModified: t.isModified || false,
-          action: t.action || null,
-        };
-      })
-    }));
-  });
+  const [templateObjects, setTemplateObjects] = useState([]);
   const [selectedObjectIndex, setSelectedObjectIndex] = useState(null);
   const [newObjectName, setNewObjectName] = useState("");
   const [showObjectForm, setShowObjectForm] = useState(false);
@@ -173,6 +137,44 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
 
   const lastTempDataRef = useRef({ deletedHeaderKeys, templateObjects });
   const initialStateRef = useRef(null); // Track initial state to detect changes
+
+  // Initialize templateObjects from context
+  useEffect(() => {
+    if (contextTemplateObjects && contextTemplateObjects.length > 0 && templateObjects.length === 0) {
+      const objects = contextTemplateObjects;
+      // Process objects to ensure templates have proper structure
+      const processedObjects = objects.map(object => ({
+        ...object,
+        basicFields: object.basicFields || [],
+        templates: (object.templates || []).map((t) => {
+          // Remove duplicate headers based on key
+          const seenKeys = new Set();
+          const uniqueHeaders = t.headers?.filter(header => {
+            if (seenKeys.has(header.key)) {
+              return false;
+            }
+            seenKeys.add(header.key);
+            return true;
+          }) || [];
+
+          return {
+            ...t,
+            headers: uniqueHeaders.map((h) => ({
+              ...h,
+              isUsed: h.key === "docId" || h.key === "linkId" || h.key === "typeOfRecord" || h.key === "typeOfObject" || h.key === "assignedTo" ? true : h.isUsed ?? false,
+            })),
+            sections: t.sections.map((s) => ({
+              ...s,
+              keys: s.keys.includes("docId") || s.keys.includes("linkId") || s.keys.includes("typeOfRecord") || s.keys.includes("typeOfObject") || s.keys.includes("assignedTo") ? s.keys : [...s.keys],
+            })),
+            isModified: t.isModified || false,
+            action: t.action || null,
+          };
+        })
+      }));
+      setTemplateObjects(processedObjects);
+    }
+  }, [contextTemplateObjects, templateObjects.length]);
 
   // Update context when local state changes
   useEffect(() => {
@@ -692,6 +694,18 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     setShowFieldForm(true);
   }, [templateObjects, selectedObjectIndex]);
 
+  // Reset header form
+  const resetHeaderForm = useCallback(() => {
+    setNewHeaderName("");
+    setNewHeaderType("text");
+    setNewHeaderSection("");
+    setNewHeaderOptions([]);
+    setNewOption("");
+    setDeletedHeaderKeys([]);
+    setCopiedHeaderId(false);
+    setActiveHeaderIndex(null);
+  }, []);
+
   // Save basic field
   const _saveBasicField = useCallback(() => {
     if (editingBasicFieldIndex === null) return;
@@ -757,18 +771,6 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     },
     [selectedObjectIndex, templateObjects, goBack]
   );
-
-  // Reset header form
-  const resetHeaderForm = useCallback(() => {
-    setNewHeaderName("");
-    setNewHeaderType("text");
-    setNewHeaderSection("");
-    setNewHeaderOptions([]);
-    setNewOption("");
-    setDeletedHeaderKeys([]);
-    setCopiedHeaderId(false);
-    setActiveHeaderIndex(null);
-  }, []);
 
   // Add new header
   const addHeader = useCallback(() => {
@@ -3907,11 +3909,6 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
     );
   };
 
-  // Expose save function to parent component
-  useImperativeHandle(ref, () => ({
-    saveDataModels: saveChanges
-  }));
-
   // Main render
   return (
     <div className={`${styles.pageContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
@@ -4024,16 +4021,11 @@ const DataModelsInner = forwardRef(({ onSave, onBack }, ref) => {
       {currentView === 'field-create' && renderFieldCreateView()}
     </div>
   );
-});
+};
 
-DataModelsInner.propTypes = {
+DataModelsTemp.propTypes = {
   onSave: PropTypes.func,
   onBack: PropTypes.func,
 };
 
-DataModels.propTypes = {
-  onSave: PropTypes.func,
-  onBack: PropTypes.func,
-};
-
-export default DataModels;
+export default DataModelsTemp;

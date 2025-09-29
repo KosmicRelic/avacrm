@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { MainContext } from '../Contexts/MainContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
@@ -38,7 +38,7 @@ export default function Settings() {
   const [currentStep, setCurrentStep] = useState('main');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [_selectedTheme, _setSelectedTheme] = useState('business');
-  const dataModelsRef = useRef(null);  useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
@@ -928,7 +928,6 @@ export default function Settings() {
 
             {currentStep === 'dataModels' && (
               <DataModels
-                ref={dataModelsRef}
                 onSave={handleDataModelsSave}
                 onBack={() => handleStepChange('main')}
               />

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Metrics.module.css';
 import { MainContext } from '../Contexts/MainContext';
+import MetricsContent from './MetricsContent/MetricsContent';
 
 const Metrics = ({ selectedMetricData, onEditMetrics, onMetricDataChange }) => {
   const { isDarkTheme, metrics } = useContext(MainContext);

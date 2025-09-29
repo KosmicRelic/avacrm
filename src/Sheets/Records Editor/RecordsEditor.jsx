@@ -4,7 +4,9 @@ import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
 import { Timestamp } from 'firebase/firestore';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
-import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';const RecordsEditor = memo(({
+import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
+import { IoMdArrowDropdown } from 'react-icons/io';
+import { MdHistory, MdDelete } from 'react-icons/md';const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
