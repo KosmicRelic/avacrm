@@ -8,7 +8,7 @@ import { MainContext } from "../Contexts/MainContext";
 
 const Modal = ({ children, onClose, onSave, onLeftButtonClick }) => {
   const { isDarkTheme } = useContext(MainContext);
-  const { modalConfig, goBack, currentStep } = useContext(ModalNavigatorContext);
+  const { modalConfig, goBack, currentStep, modalType } = useContext(ModalNavigatorContext);
   const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
   const [isClickOutsideEnabled, setIsClickOutsideEnabled] = useState(false);
@@ -75,7 +75,7 @@ const Modal = ({ children, onClose, onSave, onLeftButtonClick }) => {
       <div
         className={`${styles.modalContent} ${isClosing ? styles.closing : ""} ${
           isDarkTheme ? styles.darkTheme : ""
-        } ${currentStep > 1 ? styles.expanded : ""}`}
+        } ${modalType === 'sheet' && currentStep === 1 ? styles.small : styles.extended}`}
         ref={modalRef}
         onMouseDown={e => e.stopPropagation()} // Prevent modal from closing on inside click
       >

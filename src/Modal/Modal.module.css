@@ -134,6 +134,15 @@
     height: 85vh;
   }
 
+  .modalContent.small {
+    height: 40vh;
+  }
+
+  .modalContent.extended {
+    max-width: 800px;
+    height: 90vh;
+  }
+
   .modalContent.darkTheme {
     /* Match menuDropdown dark theme styling */
     background: rgba(20, 20, 22, 0.5);

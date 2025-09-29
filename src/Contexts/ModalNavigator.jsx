@@ -1,7 +1,25 @@
 import { createContext, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 
-export const ModalNavigatorContext = createContext();
+export const ModalNavigatorContext = createContext({
+  modalConfig: {
+    showTitle: false,
+    showDoneButton: false,
+    showBackButton: false,
+    title: "",
+    backButtonTitle: "",
+    rightButton: null,
+    leftButton: null,
+  },
+  setModalConfig: () => {},
+  modalSteps: [],
+  currentStep: 1,
+  setCurrentStep: () => {},
+  registerModalSteps: () => {},
+  goToStep: () => {},
+  goBack: () => {},
+  modalType: null,
+});
 
 export const ModalNavigatorProvider = ({ children }) => {
   const [modalConfig, setModalConfig] = useState({
@@ -16,6 +34,7 @@ export const ModalNavigatorProvider = ({ children }) => {
   const [modalSteps, setModalSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [history, setHistory] = useState([1]); // Initialize history with step 1
+  const [modalType, setModalType] = useState(null);
 
   const getStepTitle = useCallback(
     (stepIndex, args) => {
@@ -39,6 +58,7 @@ export const ModalNavigatorProvider = ({ children }) => {
   const registerModalSteps = useCallback(
     (stepsConfig) => {
       setModalSteps(stepsConfig.steps);
+      setModalType(stepsConfig.modalType || null);
       setCurrentStep(1);
       setHistory([1]); // Reset history when registering new steps
       const newConfig = {
@@ -127,6 +147,7 @@ export const ModalNavigatorProvider = ({ children }) => {
         registerModalSteps,
         goToStep,
         goBack,
+        modalType,
       }}
     >
       {children}

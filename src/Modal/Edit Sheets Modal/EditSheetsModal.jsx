@@ -446,7 +446,7 @@ const EditSheetsModal = ({
         { title: 'Add Filter', rightButton: null },
         { title: 'Select Object Fields', rightButton: null },
       ];
-      registerModalSteps({ steps });
+      registerModalSteps({ steps, modalType: 'sheet' });
       const initialConfig = {
         showTitle: true,
         showDoneButton: true,
