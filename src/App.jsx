@@ -28,6 +28,7 @@ import {
 } from './Utils/ModalUtils.jsx';
 import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
 import ErrorBoundary from './Utils/ErrorBoundary';
+import DebugPanel from './Utils/DebugPanel';
 
 // Memoized ProtectedRoute to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
@@ -746,6 +747,7 @@ function App() {
           onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
           onOpenMetricsModal={() => onManageMetrics(modalUtilsProps)}
         />
+        <DebugPanel />
       </div>
     </div>
     </ErrorBoundary>

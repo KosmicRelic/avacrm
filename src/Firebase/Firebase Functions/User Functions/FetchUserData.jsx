@@ -5,6 +5,17 @@ import { db, auth } from '../../../firebase';
 const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfRecord to { filters }
 let currentBusinessId = null;
 
+// Global debug logs array
+window.debugLogs = window.debugLogs || [];
+
+// Helper function to add debug logs
+const addDebugLog = (message) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = `[${timestamp}] ${message}`;
+  window.debugLogs.push(logEntry);
+  console.log(logEntry); // Keep console logging for development
+};
+
 // Helper: Derive structure from sheets
 const deriveStructureFromSheets = (sheets) => sheets.map((sheet) => ({ sheetName: sheet.sheetName }));
 
@@ -21,6 +32,7 @@ const fetchUserData = async ({
   activeSheetName,
   updateSheets = false,
 }) => {
+  addDebugLog(`🚀 fetchUserData called with route: ${route} activeSheetName: ${activeSheetName} updateSheets: ${updateSheets}`);
   // Helper to fetch collection data with error handling
   const fetchCollection = async (path, setState, defaultValue, errorMessage) => {
     try {
