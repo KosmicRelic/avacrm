@@ -117,7 +117,6 @@ const ProfileModal = ({
           )}
         </div>
         <div className={styles.section}>
-          <h3 className={isDarkTheme ? styles.darkTheme : ""}>Appearance</h3>
           <ThemeSelector />
         </div>
         <div className={`${styles.buildInfo} ${isDarkTheme ? styles.darkTheme : ""}`}>

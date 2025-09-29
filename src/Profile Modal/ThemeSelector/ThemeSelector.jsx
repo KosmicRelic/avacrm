@@ -1,14 +1,11 @@
 // src/Profile Modal/ThemeSelector/ThemeSelector.jsx
-import { useContext, useState } from 'react';
+import { useContext } from 'react';
 import { MainContext } from '../../Contexts/MainContext';
 import styles from './ThemeSelector.module.css';
 import { FiSun, FiMoon, FiSmartphone } from 'react-icons/fi';
 
 const ThemeSelector = () => {
   const { themeMode, setTheme, isDarkTheme } = useContext(MainContext);
-  const [justSwitched, setJustSwitched] = useState(null);
-
-
 
   const themeOptions = [
     {
@@ -25,57 +22,42 @@ const ThemeSelector = () => {
     },
     {
       id: 'system',
-      label: 'System',
+      label: 'Auto',
       icon: FiSmartphone,
       description: 'Follow device settings'
     }
   ];
 
   const handleThemeSelect = (theme) => {
-    setJustSwitched(theme);
     setTheme(theme);
-    
-    setTimeout(() => {
-      setJustSwitched(null);
-    }, 2000);
   };
 
   return (
     <div className={`${styles.themeSelector} ${isDarkTheme ? styles.dark : ''}`}>
-      <div className={styles.optionsGrid}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>Appearance</h3>
+        <p className={styles.subtitle}>Choose how the app looks to you</p>
+      </div>
+
+      <div className={styles.segmentedControl}>
         {themeOptions.map((option) => {
           const IconComponent = option.icon;
           const isSelected = themeMode === option.id;
-          
+
           return (
             <button
               key={option.id}
-              className={`${styles.themeOption} ${isSelected ? styles.selected : ''}`}
+              className={`${styles.segment} ${isSelected ? styles.selected : ''}`}
               onClick={() => handleThemeSelect(option.id)}
             >
-              <div className={styles.iconWrapper}>
-                <IconComponent size={20} />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.optionLabel}>{option.label}</span>
-                <span className={styles.optionDescription}>{option.description}</span>
-              </div>
-              <div className={`${styles.selectionIndicator} ${isSelected ? styles.active : ''}`}>
-                <div className={styles.dot} />
+              <div className={styles.segmentContent}>
+                <IconComponent size={14} className={styles.segmentIcon} />
+                <span className={styles.segmentLabel}>{option.label}</span>
               </div>
             </button>
           );
         })}
       </div>
-      
-      {justSwitched && (
-        <div className={`${styles.switchFeedback} ${styles.fadeIn}`}>
-          <span className={styles.feedbackText}>
-            Switched to {justSwitched === 'system' ? 'system' : justSwitched} theme
-            {justSwitched === 'system' && ` (${isDarkTheme ? 'dark' : 'light'} mode)`}
-          </span>
-        </div>
-      )}
     </div>
   );
 };

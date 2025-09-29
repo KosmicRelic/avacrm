@@ -9,11 +9,11 @@
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out forwards;
-  background-color: rgba(134, 134, 134, 0.5);
+  background-color: rgba(0, 0, 0, 0.1);
 }
-
+  
 .modalOverlay.darkTheme {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .modalOverlay.closing {
@@ -22,12 +22,13 @@
 
 @media (max-width: 767px) {
   .modalOverlay {
+    background: rgba(0, 0, 0, 0.4); /* Keep desktop background color */
     align-items: flex-end; /* Keep mobile positioning */
     animation: fadeIn 0.2s ease-out forwards; /* Use desktop animation for consistency */
   }
 
   .modalOverlay.darkTheme {
-    background: rgba(0, 0, 0, 0.6); /* Keep desktop background color */
+    background: rgba(0, 0, 0, 0.4); /* Keep desktop background color */
     animation: fadeIn 0.2s ease-out forwards; /* Use desktop animation for consistency */
   }
 
@@ -71,14 +72,14 @@
 }
 
 .modalContent {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.08),
-      0 2px 16px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.06);  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);  padding: 20px;
   border-radius: 20px;
   width: 100%;
   max-width: 480px;
@@ -94,13 +95,12 @@
 }
 
 .modalContent.darkTheme {
-
-    background: rgba(20, 20, 22, 0.5);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      0 2px 16px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 22, 0.8);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .modalContent::-webkit-scrollbar {
@@ -110,7 +110,7 @@
 @media (max-width: 767px) {
   .modalContent {
     /* Match menuDropdown glassmorphism styling */
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow:
@@ -145,7 +145,7 @@
 
   .modalContent.darkTheme {
     /* Match menuDropdown dark theme styling */
-    background: rgba(20, 20, 22, 0.5);
+    background: rgba(20, 20, 22, 0.8);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       0 2px 16px rgba(0, 0, 0, 0.2),
