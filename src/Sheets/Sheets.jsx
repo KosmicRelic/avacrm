@@ -712,8 +712,16 @@ const Sheets = ({
       setSelectedRow(null);
       setSelectedRowForEdit(null);
       setIsClosing(false);
+      
+      // Only navigate if we're on a record-specific URL (e.g., /sheets/Customers/record_123)
+      // to avoid triggering unnecessary refetches
+      const currentPath = window.location.pathname;
       const urlSheetName = activeSheetName.replace(/ /g, "-");
-      navigate(`/sheets/${urlSheetName}`, { replace: true });
+      const expectedPath = `/sheets/${urlSheetName}`;
+      
+      if (currentPath !== expectedPath) {
+        navigate(expectedPath, { replace: true });
+      }
     }, 300);
   }, [activeSheetName, navigate]);
 
@@ -733,36 +741,57 @@ const Sheets = ({
       const isObject = updatedRow.isObject === true;
 
       if (isObject) {
-        if (!isEditing) {
-          console.log('📝 Adding new object to state:', newRecordData);
-          setObjects((prev) => [...prev, newRecordData]);
-        } else {
-          console.log('📝 Updating existing object in state:', newRecordData);
-          setObjects((prev) =>
-            prev.map((object) => (object.docId === rowId ? newRecordData : object))
-          );
-        }
-        // Save object to Firebase
+        // Save object to Firebase first
         try {
-          console.log('💾 Saving object to Firebase:', newRecordData);
+          console.log('� Saving object to Firebase:', newRecordData);
           await setDoc(doc(db, `businesses/${businessId}/objects/${newRecordData.docId}`), newRecordData);
+          
+          // Update local state AFTER successful save
+          // The real-time listener will also pick this up, but we update here for immediate UI feedback
+          if (!isEditing) {
+            console.log('📝 Adding new object to state:', newRecordData);
+            setObjects((prev) => {
+              // Check if object already exists to prevent duplicates
+              const exists = prev.some(obj => obj.docId === newRecordData.docId);
+              if (exists) {
+                console.log('⚠️ Object already exists in state, skipping add');
+                return prev;
+              }
+              return [...prev, newRecordData];
+            });
+          } else {
+            console.log('� Updating existing object in state:', newRecordData);
+            setObjects((prev) =>
+              prev.map((object) => (object.docId === rowId ? newRecordData : object))
+            );
+          }
         } catch (error) {
           console.error('Failed to save object to Firebase:', error);
         }
       } else {
-        if (!isEditing) {
-          console.log('📝 Adding new record to state:', newRecordData);
-          setRecords((prev) => [...prev, newRecordData]);
-        } else {
-          console.log('📝 Updating existing record in state:', newRecordData);
-          setRecords((prev) =>
-            prev.map((record) => (record.docId === rowId ? newRecordData : record))
-          );
-        }
-        // Save record to Firebase
+        // Save record to Firebase first
         try {
-          console.log('💾 Saving record to Firebase:', newRecordData);
+          console.log('� Saving record to Firebase:', newRecordData);
           await setDoc(doc(db, `businesses/${businessId}/records/${newRecordData.docId}`), newRecordData);
+          
+          // Update local state AFTER successful save
+          if (!isEditing) {
+            console.log('📝 Adding new record to state:', newRecordData);
+            setRecords((prev) => {
+              // Check if record already exists to prevent duplicates
+              const exists = prev.some(rec => rec.docId === newRecordData.docId);
+              if (exists) {
+                console.log('⚠️ Record already exists in state, skipping add');
+                return prev;
+              }
+              return [...prev, newRecordData];
+            });
+          } else {
+            console.log('� Updating existing record in state:', newRecordData);
+            setRecords((prev) =>
+              prev.map((record) => (record.docId === rowId ? newRecordData : record))
+            );
+          }
         } catch (error) {
           console.error('Failed to save record to Firebase:', error);
         }
@@ -793,8 +822,6 @@ const Sheets = ({
             console.error('Failed to update related object:', error);
           }
         }
-
-        onRecordSave(newRecordData);
       }
       setSelectedRow(newRecordData);
       setIsEditorOpen(false);

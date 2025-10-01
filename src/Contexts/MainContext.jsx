@@ -72,6 +72,7 @@ export const MainContextProvider = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const lastSheetNameFromClickRef = useRef(null);
+  const previousPathnameRef = useRef(null); // Track previous pathname to detect sheet changes
 
   // Optimistic update helper for records
   const optimisticUpdateRecord = useCallback(async (recordData, operation = 'update') => {
@@ -284,6 +285,32 @@ export const MainContextProvider = ({ children }) => {
 
         // Defer Firestore fetches to after UI is ready
         const currentRoute = location.pathname;
+        
+        // Check if only the record ID changed (navigating within the same sheet)
+        // e.g., /sheets/Customers -> /sheets/Customers/record_123 or vice versa
+        const previousRoute = previousPathnameRef.current;
+        const isRecordIdOnlyChange = previousRoute && currentRoute && (() => {
+          const prevMatch = previousRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
+          const currMatch = currentRoute.match(/^\/sheets\/([^/]+)(?:\/(.+))?$/);
+          
+          if (prevMatch && currMatch) {
+            const prevSheet = decodeURIComponent(prevMatch[1]);
+            const currSheet = decodeURIComponent(currMatch[1]);
+            // Same sheet, only record ID changed
+            return prevSheet === currSheet;
+          }
+          return false;
+        })();
+        
+        // Store current pathname for next comparison
+        previousPathnameRef.current = currentRoute;
+        
+        // Skip refetch if only record ID changed within the same sheet
+        if (isRecordIdOnlyChange) {
+          setDataLoading(false);
+          return;
+        }
+        
         setDataLoading(true); // New: set loading true before fetch
         (async () => {
           try {
@@ -753,8 +780,14 @@ export const MainContextProvider = ({ children }) => {
           let docRef;
           if (record.action === 'add') {
             console.log('📝 Adding record to batch:', record);
-            docRef = doc(stateConfig.records.collectionPath()); // Firestore will generate ID
-            addedRecordsMap.set(record, docRef.id); // Map original record to new Firestore ID
+            // Use the record's docId if it exists, otherwise let Firestore generate one
+            if (record.docId) {
+              docRef = doc(stateConfig.records.collectionPath(), record.docId);
+              addedRecordsMap.set(record, record.docId); // Map original record to its docId
+            } else {
+              docRef = doc(stateConfig.records.collectionPath()); // Firestore will generate ID
+              addedRecordsMap.set(record, docRef.id); // Map original record to new Firestore ID
+            }
             const { isModified: _isModified, action: _action, docId: _docId, sheetName: _sheetName, ...recordData } = record;
             
             // Clean up undefined values for Firestore

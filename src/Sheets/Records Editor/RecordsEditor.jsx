@@ -44,6 +44,9 @@ const RecordsEditor = memo(({
   // --- FIX: Manage showInputs state for each date field at the top level ---
   const [showInputsMap, setShowInputsMap] = useState({});
 
+  // Ref to prevent double-saves
+  const isSavingRef = useRef(false);
+
   const selectedSections = useMemo(() => {
     if (isObjectMode) {
       // Object mode: use basicFields from the selected object
@@ -573,14 +576,25 @@ const RecordsEditor = memo(({
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
-    console.log('🔍 RecordsEditor handleSave called:', { formData, isEditing, isObjectMode, selectedSheet });
+    console.log('🔍 RecordsEditor handleSave called:', { formData, isEditing, isObjectMode, selectedSheet, isSaving: isSavingRef.current });
+    
+    // Prevent double-saves
+    if (isSavingRef.current) {
+      console.log('⚠️ Save already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    isSavingRef.current = true;
+    
     if (!selectedSheet && !isObjectMode) {
       alert('No sheet selected.');
+      isSavingRef.current = false;
       return;
     }
     const template = isObjectMode ? null : recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecord : selectedRecordType));
     if (!isObjectMode && !template) {
       alert('Invalid record type selected.');
+      isSavingRef.current = false;
       return;
     }
     const hasData = Object.keys(formData).some(
@@ -588,6 +602,7 @@ const RecordsEditor = memo(({
     );
     if (!isEditing && !hasData && !isViewingHistory) {
       alert(isObjectMode ? 'Please fill in at least one field to create an object.' : 'Please fill in at least one field to create a record.');
+      isSavingRef.current = false;
       return;
     }
 
@@ -716,6 +731,7 @@ const RecordsEditor = memo(({
       setIsViewingHistory(false);
       setSelectedHistoryDate(null);
       setIsHistoryModalOpen(false);
+      isSavingRef.current = false;
       onClose();
       return;
     }
@@ -724,6 +740,7 @@ const RecordsEditor = memo(({
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
     setIsHistoryModalOpen(false);
+    isSavingRef.current = false;
     onClose();
   }, [
     formData,
@@ -1230,6 +1247,7 @@ const RecordsEditor = memo(({
             </h1>
             {view !== 'modeSelection' && (
               <button
+                type="button"
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={view === 'selection' ? handleSelectionNext : handleSave}
               >
