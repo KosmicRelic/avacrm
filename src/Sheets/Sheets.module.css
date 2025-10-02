@@ -777,7 +777,7 @@
 
 .searchBar.darkTheme {
   color: rgb(235, 235, 245);
-  background: rgba(58, 58, 60, 0.8);
+  background: rgba(44, 44, 46);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.2),
@@ -949,7 +949,7 @@
 
 .filterButton.darkTheme {
   color: rgb(235, 235, 245);
-  background: rgba(58, 58, 60, 0.8);
+  background: rgba(44, 44, 46);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.2),
