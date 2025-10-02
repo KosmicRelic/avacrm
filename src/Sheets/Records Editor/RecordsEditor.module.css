@@ -2447,3 +2447,136 @@
     transform: translateY(0);
   }
 }
+
+/* Related Records Section */
+.relatedRecordsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.relatedRecordItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.relatedRecordItem:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateX(4px);
+}
+
+.relatedRecordItem.darkTheme {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.relatedRecordItem.darkTheme:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.relatedRecordInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.relatedRecordType {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.relatedRecordType.darkTheme {
+  color: #f3f4f6;
+}
+
+.relatedRecordDetail {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.relatedRecordDetail.darkTheme {
+  color: #9ca3af;
+}
+
+.relatedRecordViewButton {
+  padding: 6px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.relatedRecordViewButton:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.relatedRecordViewButton.darkTheme {
+  background: #818cf8;
+}
+
+.relatedRecordViewButton.darkTheme:hover {
+  background: #6366f1;
+}
+
+/* Breadcrumb navigation for related records */
+.breadcrumbTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.breadcrumbButton {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumbButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.breadcrumbButton.darkTheme {
+  color: #0a84ff;
+}
+
+.breadcrumbButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.15);
+}
+
+.breadcrumbTitle .separator {
+  color: #c7c7cc;
+  font-weight: 300;
+}
+
+.breadcrumbTitle .separator.darkTheme {
+  color: #636366;
+}

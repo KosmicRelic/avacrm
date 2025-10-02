@@ -48,7 +48,6 @@ const Sheets = ({
   onOpenSheetFolderModal,
   onOpenFolderModal,
 }) => {
-  addDebugLog('📋 Sheets component mounted with onRecordSave: ' + !!onRecordSave + ', isSelectMode: ' + false);
   const { isDarkTheme, setRecords, records, objects, setObjects, setActiveSheetName: setActiveSheetNameWithRef, sheetRecordsFetched, user, businessId, teamMembers, templateObjects } = useContext(MainContext);
   const params = useParams();
   const navigate = useNavigate();
@@ -124,13 +123,11 @@ const Sheets = ({
       query(collection(db, 'businesses', businessId, 'objects'), where('typeOfObject', 'in', selectedObjectNames)),
       (snapshot) => {
         const fetchedObjects = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
-        addDebugLog('📦 Fetched ' + fetchedObjects.length + ' objects for types: ' + selectedObjectNames.join(', '));
         setObjects(fetchedObjects);
         setObjectsLoading(false);
       },
       (error) => {
         console.error('Error in objects listener:', error);
-        addDebugLog('❌ Error in objects listener: ' + error.message);
       }
     );
 

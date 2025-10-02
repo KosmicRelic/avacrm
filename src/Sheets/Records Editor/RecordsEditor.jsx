@@ -2,12 +2,26 @@ import { useContext, useState, useCallback, useMemo, useEffect, useRef, memo } f
 import PropTypes from 'prop-types';
 import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
 import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete } from 'react-icons/md';
+
+// Debug logging utility - Global function
+const addDebugLog = (message) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = `[${timestamp}] ${message}`;
+  if (typeof window !== 'undefined') {
+    if (!window.debugLogs) {
+      window.debugLogs = [];
+    }
+    window.debugLogs.push(logEntry);
+  }
+  console.log(logEntry);
+};
 
 const RecordsEditor = memo(({
   onClose,
@@ -18,7 +32,19 @@ const RecordsEditor = memo(({
   preSelectedSheet,
   isObjectMode: propIsObjectMode,
 }) => {
-  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
+  // Clear old debug logs when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.debugLogs = [];
+      addDebugLog('🚀 RecordsEditor mounted');
+      addDebugLog(`  - startInEditMode: ${startInEditMode}`);
+      addDebugLog(`  - propIsObjectMode: ${propIsObjectMode}`);
+      addDebugLog(`  - initialRowData?.typeOfRecord: ${initialRowData?.typeOfRecord}`);
+      addDebugLog(`  - initialRowData?.typeOfObject: ${initialRowData?.typeOfObject}`);
+    }
+  }, []);
+
+  const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'modeSelection');
   const [isObjectMode, setIsObjectMode] = useState(() => {
     if (propIsObjectMode !== undefined) return propIsObjectMode;
@@ -37,6 +63,13 @@ const RecordsEditor = memo(({
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [fieldHistoryPopup, setFieldHistoryPopup] = useState({ isOpen: false, field: null, position: null });
+  const [relatedRecords, setRelatedRecords] = useState([]);
+  const [expandedSections, setExpandedSections] = useState({ relatedRecords: true });
+  const [viewingRelatedRecord, setViewingRelatedRecord] = useState(null);
+  const [originalObjectData, setOriginalObjectData] = useState(null);
+  const [originalRecordType, setOriginalRecordType] = useState(null);
+  const [originalIsObjectMode, setOriginalIsObjectMode] = useState(null);
+  const [baseDataForComparison, setBaseDataForComparison] = useState(initialRowData ? { ...initialRowData } : {});
 
   // Validation state
   const [fieldErrors, setFieldErrors] = useState({});
@@ -47,15 +80,110 @@ const RecordsEditor = memo(({
   // Ref to prevent double-saves
   const isSavingRef = useRef(false);
 
+  // Add useEffect to fetch related records when viewing an object
+  useEffect(() => {
+    if (view === 'editor' && isObjectMode && formData.linkId && businessId) {
+      const unsubscribe = onSnapshot(
+        query(
+          collection(db, 'businesses', businessId, 'records'),
+          where('linkId', '==', formData.linkId)
+        ),
+        (snapshot) => {
+          const records = snapshot.docs.map(doc => ({ 
+            docId: doc.id, 
+            ...doc.data() 
+          }));
+          setRelatedRecords(records);
+        },
+        (error) => {
+          console.error('Error fetching related records:', error);
+          setRelatedRecords([]);
+        }
+      );
+      return () => unsubscribe();
+    } else {
+      setRelatedRecords([]);
+    }
+  }, [view, isObjectMode, formData.linkId, businessId]);
+
+  // Handler to navigate to a related record
+  const handleViewRelatedRecord = useCallback((record) => {
+    addDebugLog('🔀 SWITCHING TO RELATED RECORD');
+    addDebugLog(`📝 Record type: ${record.typeOfRecord}`);
+    addDebugLog(`🔗 Link ID: ${record.linkId}`);
+    addDebugLog(`📋 Current selectedRecordType: ${selectedRecordType}`);
+    addDebugLog(`🏢 Current isObjectMode: ${isObjectMode}`);
+    
+    // Store the original object data before switching
+    if (!viewingRelatedRecord) {
+      addDebugLog('💾 Storing original state');
+      addDebugLog(`  - Original formData.typeOfObject: ${formData.typeOfObject}`);
+      addDebugLog(`  - Original selectedRecordType: ${selectedRecordType}`);
+      addDebugLog(`  - Original isObjectMode: ${isObjectMode}`);
+      setOriginalObjectData(formData);
+      setOriginalRecordType(selectedRecordType);
+      setOriginalIsObjectMode(isObjectMode);
+    }
+    
+    // Switch to viewing the related record
+    addDebugLog(`✅ Setting new state:`);
+    addDebugLog(`  - New selectedRecordType: ${record.typeOfRecord}`);
+    addDebugLog(`  - New isObjectMode: false`);
+    addDebugLog(`  - New isEditing: true`);
+    addDebugLog(`  - Setting baseDataForComparison to record data`);
+    
+    setViewingRelatedRecord(record);
+    setFormData(record);
+    setBaseDataForComparison({ ...record }); // Set base data for change detection
+    setSelectedRecordType(record.typeOfRecord);
+    setIsObjectMode(false);
+    setIsEditing(true);
+    
+    // Collapse the related records section
+    setExpandedSections({ relatedRecords: false });
+  }, [viewingRelatedRecord, formData, selectedRecordType, isObjectMode]);
+
+  // Handler to go back to the original object
+  const handleBackToObject = useCallback(() => {
+    addDebugLog('⬅️ GOING BACK TO OBJECT');
+    if (originalObjectData) {
+      addDebugLog(`✅ Restoring original state:`);
+      addDebugLog(`  - Original typeOfObject: ${originalObjectData.typeOfObject}`);
+      addDebugLog(`  - Original selectedRecordType: ${originalRecordType}`);
+      addDebugLog(`  - Original isObjectMode: ${originalIsObjectMode}`);
+      addDebugLog(`  - Restoring baseDataForComparison to original object`);
+      
+      setFormData(originalObjectData);
+      setBaseDataForComparison({ ...originalObjectData }); // Restore base data
+      setSelectedRecordType(originalRecordType);
+      setIsObjectMode(originalIsObjectMode);
+      setIsEditing(!!originalObjectData.docId);
+      setViewingRelatedRecord(null);
+      setExpandedSections({ relatedRecords: true });
+    } else {
+      addDebugLog('❌ No original object data found!');
+    }
+  }, [originalObjectData, originalRecordType, originalIsObjectMode]);
+
   const selectedSections = useMemo(() => {
+    addDebugLog('🔍 CALCULATING selectedSections');
+    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
+    addDebugLog(`  - selectedRecordType: ${selectedRecordType}`);
+    addDebugLog(`  - formData.typeOfObject: ${formData.typeOfObject}`);
+    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
+    addDebugLog(`  - isEditing: ${isEditing}`);
+    
     if (isObjectMode) {
       // Object mode: use basicFields from the selected object
       const objectName = formData.typeOfObject || (isEditing ? initialRowData?.typeOfObject : selectedRecordType);
+      addDebugLog(`  - Looking for object: ${objectName}`);
       const object = templateObjects?.find((o) => o.name === objectName);
       
       if (!object || !object.basicFields) {
+        addDebugLog(`  ❌ Object not found or no basicFields`);
         return [];
       }
+      addDebugLog(`  ✅ Found object with ${object.basicFields.length} fields`);
 
       const basicFieldsSection = {
         name: 'Basic Information',
@@ -70,11 +198,15 @@ const RecordsEditor = memo(({
     } else {
       // Record mode: existing logic
       const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
+      addDebugLog(`  - Looking for template: ${templateName}`);
+      addDebugLog(`  - Available templates: ${recordTemplates?.map(t => t.name).join(', ')}`);
       const template = recordTemplates?.find((t) => t.name === templateName);
       
       if (!template || !template.sections) {
+        addDebugLog(`  ❌ Template not found or no sections`);
         return [];
       }
+      addDebugLog(`  ✅ Found template with ${template.sections.length} sections`);
 
       const templateSections = template.sections.map((section) => ({
         name: section.name,
@@ -576,10 +708,12 @@ const RecordsEditor = memo(({
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
+    addDebugLog('💾 ========== SAVE BUTTON CLICKED ==========');
     console.log('🔍 RecordsEditor handleSave called:', { formData, isEditing, isObjectMode, selectedSheet, isSaving: isSavingRef.current });
     
     // Prevent double-saves
     if (isSavingRef.current) {
+      addDebugLog('⚠️ Save already in progress, ignoring duplicate call');
       console.log('⚠️ Save already in progress, ignoring duplicate call');
       return;
     }
@@ -591,12 +725,25 @@ const RecordsEditor = memo(({
       isSavingRef.current = false;
       return;
     }
-    const template = isObjectMode ? null : recordTemplates?.find((t) => t.name === (isEditing ? initialRowData?.typeOfRecord : selectedRecordType));
+    addDebugLog('💾 ATTEMPTING TO SAVE');
+    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
+    addDebugLog(`  - isEditing: ${isEditing}`);
+    addDebugLog(`  - selectedRecordType: ${selectedRecordType}`);
+    addDebugLog(`  - initialRowData?.typeOfRecord: ${initialRowData?.typeOfRecord}`);
+    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
+    
+    const templateName = isEditing ? (formData.typeOfRecord || initialRowData?.typeOfRecord) : selectedRecordType;
+    addDebugLog(`  - Looking for template: ${templateName}`);
+    const template = isObjectMode ? null : recordTemplates?.find((t) => t.name === templateName);
+    
     if (!isObjectMode && !template) {
+      addDebugLog(`  ❌ TEMPLATE NOT FOUND!`);
+      addDebugLog(`  - Available templates: ${recordTemplates?.map(t => t.name).join(', ')}`);
       alert('Invalid record type selected.');
       isSavingRef.current = false;
       return;
     }
+    addDebugLog(`  ✅ Template found or in object mode`);
     const hasData = Object.keys(formData).some(
       (key) => key !== 'sheetName' && key !== 'typeOfRecord' && key !== 'typeOfObject' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
@@ -606,23 +753,28 @@ const RecordsEditor = memo(({
       return;
     }
 
+    addDebugLog('🔨 Building newRow object');
+    addDebugLog(`  - formData.docId: ${formData.docId}`);
+    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
+    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
+    
     let newRow = {
       ...formData,
-      docId: isEditing && initialRowData?.docId ? initialRowData.docId : (formData.docId || `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
-      linkId: isEditing && initialRowData?.linkId ? initialRowData.linkId : (formData.linkId || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
+      docId: formData.docId || (isEditing && initialRowData?.docId ? initialRowData.docId : `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
+      linkId: formData.linkId || (isEditing && initialRowData?.linkId ? initialRowData.linkId : `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
       isObject: isObjectMode, // Explicit flag to indicate if this is an object
       ...(isObjectMode ? {
-        typeOfObject: isEditing ? initialRowData?.typeOfObject : selectedRecordType,
+        typeOfObject: formData.typeOfObject || (isEditing ? initialRowData?.typeOfObject : selectedRecordType),
         records: initialRowData?.records || [], // Initialize records array for objects
       } : {
-        typeOfRecord: isEditing ? initialRowData?.typeOfRecord : template.name,
-        typeOfObject: (() => {
+        typeOfRecord: formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : template.name),
+        typeOfObject: formData.typeOfObject || (() => {
           // Find the object for this template to set typeOfObject
           if (template.objectId && templateObjects) {
             const object = templateObjects.find(e => e.id === template.objectId);
             return object ? object.name : '';
           }
-          return formData.typeOfObject || '';
+          return '';
         })(),
       }),
       assignedTo: formData.assignedTo || user?.email || '',
@@ -631,6 +783,11 @@ const RecordsEditor = memo(({
       isModified: true,
       action: isEditing ? 'update' : 'add',
     };
+    
+    addDebugLog(`  - newRow.docId: ${newRow.docId}`);
+    addDebugLog(`  - newRow.typeOfRecord: ${newRow.typeOfRecord}`);
+    addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
+    addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
 
     const requiredFields = isObjectMode 
       ? ['docId', 'linkId', 'typeOfObject', 'isObject', 'history', 'isModified', 'action']
@@ -669,27 +826,27 @@ const RecordsEditor = memo(({
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      const existingRecord = isObjectMode 
-        ? objects.find((object) => object.docId === initialRowData.docId)
-        : records.find((record) => record.docId === initialRowData.docId);
-      if (existingRecord) {
-        Object.keys(formData).forEach((key) => {
-          if (
-            key !== 'docId' &&
-            key !== 'sheetName' &&
-            (!isObjectMode ? key !== 'typeOfRecord' : true) &&
-            key !== 'history' &&
-            formData[key] !== existingRecord[key]
-          ) {
-            newHistory.push({
-              field: key,
-              value: formData[key] || '',
-              timestamp,
-              modifiedBy: user?.uid,
-            });
-          }
-        });
-      }
+      addDebugLog('📊 Comparing formData with baseDataForComparison');
+      // Compare current formData with baseDataForComparison to detect changes
+      Object.keys(formData).forEach((key) => {
+        if (
+          key !== 'docId' &&
+          key !== 'sheetName' &&
+          (!isObjectMode ? key !== 'typeOfRecord' : true) &&
+          key !== 'history' &&
+          formData[key] !== baseDataForComparison[key]
+        ) {
+          addDebugLog(`  - Changed field: ${key}`);
+          addDebugLog(`    Old value: ${baseDataForComparison[key]}`);
+          addDebugLog(`    New value: ${formData[key]}`);
+          newHistory.push({
+            field: key,
+            value: formData[key] || '',
+            timestamp,
+            modifiedBy: user?.uid,
+          });
+        }
+      });
       newRow.history = [...newRow.history, ...newHistory];
     } else {
       Object.keys(formData).forEach((key) => {
@@ -715,18 +872,27 @@ const RecordsEditor = memo(({
     // Determine if we should save based on whether there are actual changes
     let shouldSave = false;
     
+    addDebugLog('🔍 Checking if should save:');
+    addDebugLog(`  - isViewingHistory: ${isViewingHistory}`);
+    addDebugLog(`  - isEditing: ${isEditing}`);
+    addDebugLog(`  - newHistory.length: ${newHistory.length}`);
+    
     if (isViewingHistory && selectedHistoryDate) {
       // When viewing history, save if changes were made to historical data
       shouldSave = newHistory.length > 0;
+      addDebugLog(`  - Viewing history mode: shouldSave = ${shouldSave}`);
     } else if (isEditing) {
       // For existing records, only save if there are changes
       shouldSave = newHistory.length > 0;
+      addDebugLog(`  - Editing mode: shouldSave = ${shouldSave}`);
     } else {
       // For new records, always save (validation already checked hasData)
       shouldSave = true;
+      addDebugLog(`  - New record mode: shouldSave = ${shouldSave}`);
     }
 
     if (!shouldSave) {
+      addDebugLog('❌ No changes detected, closing without saving');
       // No changes detected, just close without saving
       setIsViewingHistory(false);
       setSelectedHistoryDate(null);
@@ -736,6 +902,10 @@ const RecordsEditor = memo(({
       return;
     }
 
+    addDebugLog('✅ Calling onSave with newRow');
+    addDebugLog(`  - newRow.docId: ${newRow.docId}`);
+    addDebugLog(`  - newRow.typeOfRecord: ${newRow.typeOfRecord}`);
+    addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
@@ -759,6 +929,7 @@ const RecordsEditor = memo(({
     user,
     isObjectMode,
     objects,
+    baseDataForComparison,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -1204,7 +1375,10 @@ const RecordsEditor = memo(({
               </button>
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={() => {
+                  addDebugLog('🔘 SAVE BUTTON CLICKED IN UI');
+                  handleSave();
+                }}
                 className={[styles.multiSelectDropdownButton, styles.save].join(' ')}
               >
                 Save
@@ -1243,7 +1417,20 @@ const RecordsEditor = memo(({
               </svg>
             </button>
             <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'modeSelection' ? 'Create New Item' : view === 'selection' ? 'Create a New Record' : 'New Record'}
+              {viewingRelatedRecord ? (
+                <div className={styles.breadcrumbTitle}>
+                  <button 
+                    className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={handleBackToObject}
+                  >
+                    ← Back to {originalObjectData?.typeOfObject}
+                  </button>
+                  <span className={styles.separator}>|</span>
+                  <span>{formData.typeOfRecord}</span>
+                </div>
+              ) : (
+                isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'modeSelection' ? 'Create New Item' : view === 'selection' ? 'Create a New Record' : 'New Record'
+              )}
             </h1>
             {view !== 'modeSelection' && (
               <button
@@ -1682,6 +1869,81 @@ const RecordsEditor = memo(({
                     </div>
                   );
                 })()}
+
+                {/* Related Records Section - Show for objects with linkId */}
+                {view === 'editor' && isObjectMode && !viewingRelatedRecord && relatedRecords.length > 0 && (
+                  <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${styles.active}`}>
+                    <div 
+                      className={styles.sectionHeader}
+                      onClick={() => {
+                        const newSections = { ...expandedSections };
+                        newSections['relatedRecords'] = !expandedSections['relatedRecords'];
+                        setExpandedSections(newSections);
+                      }}
+                    >
+                      <div className={styles.sectionText}>
+                        <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          Related Records ({relatedRecords.length})
+                        </span>
+                        <span className={`${styles.sectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          All records associated with this {formData.typeOfObject}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className={`${styles.expandButton} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections['relatedRecords'] ? styles.expanded : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newSections = { ...expandedSections };
+                          newSections['relatedRecords'] = !expandedSections['relatedRecords'];
+                          setExpandedSections(newSections);
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections['relatedRecords'] ? styles.expanded : ''}`}>
+                      <div className={styles.relatedRecordsList}>
+                        {relatedRecords.map((record) => (
+                          <div 
+                            key={record.docId} 
+                            className={`${styles.relatedRecordItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                            onClick={() => handleViewRelatedRecord(record)}
+                          >
+                            <div className={styles.relatedRecordInfo}>
+                              <span className={`${styles.relatedRecordType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {record.typeOfRecord}
+                              </span>
+                              {record.assignedTo && (
+                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Assigned to: {getTeamMemberName(record.assignedTo)}
+                                </span>
+                              )}
+                              {record.status && (
+                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Status: {record.status}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addDebugLog('🔘 View button clicked for record: ' + record.typeOfRecord);
+                                handleViewRelatedRecord(record);
+                              }}
+                            >
+                              View
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {isEditing && (
                   <div className={styles.deleteButtonWrapper}>
