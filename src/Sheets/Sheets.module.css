@@ -34,7 +34,7 @@
 }
 
 .tableContainer.darkTheme {
-  background: rgba(20, 20, 22);
+  background: rgba(28, 28, 30);
 }
 
 .tableContent {
@@ -864,7 +864,7 @@
 }
 
 .tableWrapper.darkTheme {
-  background: rgba(20, 20, 22);
+  background: rgba(28, 28, 30);
 }
 
 .header {
@@ -887,7 +887,7 @@
 }
 
 .header.darkTheme {
-  background-color: rgba(20, 20, 22);
+  background: rgba(28, 28, 30);
   color: rgb(235, 235, 245);
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
@@ -901,34 +901,15 @@
   padding: 16px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #6e6e73;
+  color: rgb(160, 160, 166);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   opacity: 0.8;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   position: relative;
 }
 
 .headerCell.darkTheme {
-  color: rgb(142, 142, 147);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.headerCell::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 122, 255, 0.3) 50%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.headerCell:hover::after {
-  opacity: 1;
+  color: rgb(160, 160, 166);
 }
 
 .emptyHeaderCell {
