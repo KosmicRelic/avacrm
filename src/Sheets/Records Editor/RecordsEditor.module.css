@@ -131,22 +131,284 @@
   background-clip: text;
 }
 
-/* Action Button */
-.actionButton {
-  padding: 14px 24px;
+/* Action Buttons Container */
+.actionButtons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Secondary Action Button */
+.secondaryActionButton {
+  padding: 12px 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   font-size: 15px;
-  font-weight: 600;
-  border: none;
-  border-radius: 16px;
+  font-weight: 500;
+  border: 1px solid rgba(0, 122, 255, 0.3);
+  border-radius: 14px;
   cursor: pointer;
-  color: #ffffff;
-  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   letter-spacing: -0.016em;
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.secondaryActionButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+  border-color: rgba(0, 122, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2);
+}
+
+.secondaryActionButton.darkTheme {
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.1);
+  border-color: rgba(10, 132, 255, 0.4);
+}
+
+.secondaryActionButton.darkTheme:hover {
+  background: rgba(10, 132, 255, 0.15);
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
+}
+
+.secondaryActionButton:active {
+  transform: translateY(0);
+}
+
+/* Create Record Section */
+.createRecordSection {
+  margin: 24px 0;
+}
+
+.createRecordCard {
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.createRecordCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+}
+
+.createRecordCard:active {
+  transform: translateY(0);
+}
+
+.createRecordIcon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.createRecordContent {
+  flex: 1;
+}
+
+.createRecordTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.022em;
+}
+
+.createRecordDescription {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.createRecordArrow {
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.createRecordCard:hover .createRecordArrow {
+  color: white;
+  transform: translateX(2px);
+}
+
+/* Related Templates View */
+.relatedTemplatesView {
+  padding: 20px 0;
+}
+
+/* Templates Grid */
+.templatesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Template Card */
+.templateCard {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.templateCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.templateCard.darkTheme {
+  background: rgba(28, 28, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.templateCard.darkTheme:hover {
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.templateCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.templateIcon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+}
+
+.templateCardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+  letter-spacing: -0.022em;
+}
+
+.templateCard.darkTheme .templateCardTitle {
+  color: #ffffff;
+}
+
+.templateCardDescription {
+  color: #636366;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0 0 16px 0;
+}
+
+.templateCard.darkTheme .templateCardDescription {
+  color: #c7c7cc;
+}
+
+.templateCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.linkIdBadge {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.templateCard.darkTheme .linkIdBadge {
+  background: rgba(10, 132, 255, 0.15);
+  color: #0a84ff;
+}
+
+.templateCreateButton {
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.templateCreateButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.templateCard.darkTheme .templateCreateButton {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+}
+
+/* No Templates Message */
+.noTemplatesMessage {
+  text-align: center;
+  padding: 60px 20px;
+  color: #636366;
+}
+
+.noTemplatesMessage.darkTheme {
+  color: #c7c7cc;
+}
+
+.noTemplatesIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.noTemplatesMessage h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+}
+
+.noTemplatesMessage.darkTheme h3 {
+  color: #ffffff;
+}
+
+.noTemplatesMessage p {
+  font-size: 15px;
+  margin: 0;
+  opacity: 0.8;
 }
 
 .actionButton::before {

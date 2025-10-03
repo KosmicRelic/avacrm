@@ -1395,27 +1395,29 @@ const RecordsEditor = memo(({
       <div className={styles.viewContainer}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <button
-              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={handleClose}
-              aria-label="Back"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            {view !== 'relatedTemplates' && (
+              <button
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={handleClose}
+                aria-label="Back"
               >
-                <path
-                  d="M10 12L6 8L10 4"
-                  stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 12L6 8L10 4"
+                    stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
             <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
               {viewingRelatedRecord ? (
                 <div className={styles.breadcrumbTitle}>
@@ -1426,13 +1428,28 @@ const RecordsEditor = memo(({
                     ← Back to {originalObjectData?.typeOfObject}
                   </button>
                   <span className={styles.separator}>|</span>
-                  <span>{formData.typeOfRecord}</span>
+                  <span className={styles.breadcrumbContext}>
+                    {originalObjectData?.typeOfObject} → {formData.typeOfRecord}
+                  </span>
+                </div>
+              ) : view === 'relatedTemplates' ? (
+                <div className={styles.breadcrumbTitle}>
+                  <button 
+                    className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => setView('editor')}
+                  >
+                    ← Back to {formData.typeOfObject}
+                  </button>
+                  <span className={styles.separator}>|</span>
+                  <span className={styles.breadcrumbContext}>
+                    {formData.typeOfObject} → Create Record
+                  </span>
                 </div>
               ) : (
                 isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'modeSelection' ? 'Create New Item' : view === 'selection' ? 'Create a New Record' : 'New Record'
               )}
             </h1>
-            {view !== 'modeSelection' && (
+            {view !== 'modeSelection' && view !== 'relatedTemplates' && (
               <button
                 type="button"
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -1787,6 +1804,30 @@ const RecordsEditor = memo(({
                   </p>
                 )}
                 
+                {/* Create Record Section - Show for records with linkId */}
+                {view === 'editor' && isEditing && formData.linkId && getAvailableTemplatesInCategory().length > 0 && (
+                  <div className={`${styles.createRecordSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.createRecordCard} onClick={() => setView('relatedTemplates')}>
+                      <div className={styles.createRecordIcon}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div className={styles.createRecordContent}>
+                        <h3 className={styles.createRecordTitle}>Create Record</h3>
+                        <p className={styles.createRecordDescription}>
+                          Create a new record linked to this {formData.typeOfObject}
+                        </p>
+                      </div>
+                      <div className={styles.createRecordArrow}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M6 12l4-4-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Pipeline Section - Only show for saved records with docId */}
                 {view === 'editor' && formData.docId && isEditing && formData.linkId && (() => {
                   const availablePipelines = getAvailablePipelines();
@@ -1821,46 +1862,6 @@ const RecordsEditor = memo(({
                                 className={`${styles.pipelineButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                               >
                                 Convert
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Related Templates Section - Show for records with linkId */}
-                {view === 'editor' && formData.linkId && (() => {
-                  const availableTemplates = getAvailableTemplatesInCategory();
-                  
-                  return availableTemplates.length > 0 && (
-                    <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${styles.active}`}>
-                      <div className={styles.sectionHeader}>
-                        <div className={styles.sectionText}>
-                          <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>Related Templates</span>
-                          <span className={`${styles.sectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            Create records using different templates for the same entity
-                          </span>
-                        </div>
-                      </div>
-                      <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
-                        <div className={styles.fieldGrid}>
-                          {availableTemplates.map((template) => (
-                            <div key={template.docId} className={`${styles.fieldItem} ${styles.templateFieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              <div className={styles.templateItemContent}>
-                                <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {template.name}
-                                </span>
-                                <span className={`${styles.templateDescription} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  Create a new {template.name} record with Link ID: {formData.linkId}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => createLinkedRecord(template)}
-                                className={`${styles.templateActionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              >
-                                Create
                               </button>
                             </div>
                           ))}
@@ -1960,6 +1961,52 @@ const RecordsEditor = memo(({
                   </div>
                 )}
               </>
+            )}
+            {view === 'relatedTemplates' && (
+              <div className={`${styles.sectionWrapper} ${styles.relatedTemplatesView} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.selectionHeader}>
+                  <h2 className={styles.selectionTitle}>Create Record</h2>
+                  <p className={styles.selectionSubtitle}>
+                    Choose a template to create a new record linked to this {formData.typeOfObject}
+                  </p>
+                </div>
+                <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
+                  <div className={styles.templatesGrid}>
+                    {getAvailableTemplatesInCategory().map((template) => (
+                      <div
+                        key={template.docId}
+                        className={`${styles.templateCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => createLinkedRecord(template)}
+                      >
+                        <div className={styles.templateCardHeader}>
+                          <div className={styles.templateIcon}>
+                            📄
+                          </div>
+                          <h3 className={styles.templateCardTitle}>{template.name}</h3>
+                        </div>
+                        <p className={styles.templateCardDescription}>
+                          Create a new {template.name} record that will be automatically linked to this {formData.typeOfObject}.
+                        </p>
+                        <div className={styles.templateCardFooter}>
+                          <span className={styles.linkIdBadge}>
+                            Link ID: {formData.linkId}
+                          </span>
+                          <button className={`${styles.templateCreateButton} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            Create →
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {getAvailableTemplatesInCategory().length === 0 && (
+                    <div className={styles.noTemplatesMessage}>
+                      <div className={styles.noTemplatesIcon}>📭</div>
+                      <h3>No Related Templates Available</h3>
+                      <p>All available templates for this object type have already been used.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
