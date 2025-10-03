@@ -795,11 +795,6 @@
   /* Add bottom padding to ensure content can scroll underneath tabs */
   padding-bottom: 130px;
   /* Subtle gradient for consistency */
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.3) 100%
-  );
 }
 
 .tableWrapper.darkTheme {
