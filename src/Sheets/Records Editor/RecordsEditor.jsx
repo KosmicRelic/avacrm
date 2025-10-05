@@ -8,7 +8,7 @@ import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
 import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
-import { MdHistory, MdDelete } from 'react-icons/md';
+import { MdHistory, MdDelete, MdLink } from 'react-icons/md';
 
 // Debug logging utility - Global function
 const addDebugLog = (message) => {
@@ -45,11 +45,8 @@ const RecordsEditor = memo(({
   }, []);
 
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
-  const [view, setView] = useState(startInEditMode ? 'editor' : 'modeSelection');
-  const [isObjectMode, setIsObjectMode] = useState(() => {
-    if (propIsObjectMode !== undefined) return propIsObjectMode;
-    return startInEditMode ? (initialRowData?.typeOfObject ? true : false) : false;
-  });
+  const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
+  const [isObjectMode, setIsObjectMode] = useState(true); // Always object mode
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
     ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
@@ -70,6 +67,9 @@ const RecordsEditor = memo(({
   const [originalRecordType, setOriginalRecordType] = useState(null);
   const [originalIsObjectMode, setOriginalIsObjectMode] = useState(null);
   const [baseDataForComparison, setBaseDataForComparison] = useState(initialRowData ? { ...initialRowData } : {});
+
+  // Track whether there are unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Validation state
   const [fieldErrors, setFieldErrors] = useState({});
@@ -321,6 +321,29 @@ const RecordsEditor = memo(({
     return recordTemplates?.map(template => template.name) || [];
   }, [recordTemplates]);
 
+  // Filter templateObjects based on current sheet compatibility
+  const filteredTemplateObjects = useMemo(() => {
+    if (!templateObjects || !preSelectedSheet || !sheets?.allSheets) return templateObjects || [];
+    
+    const currentSheet = sheets.allSheets.find(sheet => sheet.sheetName === preSelectedSheet);
+    if (!currentSheet?.headers) return templateObjects || [];
+    
+    // Get sheet header keys
+    const sheetHeaderKeys = currentSheet.headers.map(header => header.key);
+    
+    // Filter objects whose basicFields are compatible with the sheet
+    return templateObjects.filter(obj => {
+      if (!obj.basicFields) return false;
+      
+      // Check if all object fields can be mapped to sheet headers
+      return obj.basicFields.every(field => 
+        sheetHeaderKeys.includes(field.key) || 
+        // Also allow if the field key matches common fields that might not be in headers
+        ['docId', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'linkId', 'sheetName', 'typeOfObject', 'typeOfRecord'].includes(field.key)
+      );
+    });
+  }, [templateObjects, preSelectedSheet, sheets?.allSheets]);
+
   // Helper to get display name from uid
   const getTeamMemberName = (uid) => {
     if (!uid) return '';
@@ -383,6 +406,37 @@ const RecordsEditor = memo(({
       }
     }
   }, [isEditing, formData.typeOfRecord, formData.typeOfObject, recordTemplates, templateObjects]);
+
+  // Detect unsaved changes
+  useEffect(() => {
+    if (!isEditing && view === 'selection') {
+      // For new records in selection mode, always show save button
+      setHasUnsavedChanges(true);
+      return;
+    }
+
+    if (!baseDataForComparison || Object.keys(baseDataForComparison).length === 0) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+
+    // Compare current formData with baseDataForComparison to detect changes
+    const hasChanges = Object.keys(formData).some((key) => {
+      if (
+        key !== 'docId' &&
+        key !== 'sheetName' &&
+        (!isObjectMode ? key !== 'typeOfRecord' : true) &&
+        key !== 'history' &&
+        key !== 'isModified' &&
+        key !== 'action'
+      ) {
+        return formData[key] !== baseDataForComparison[key];
+      }
+      return false;
+    });
+
+    setHasUnsavedChanges(hasChanges);
+  }, [formData, baseDataForComparison, isEditing, view, isObjectMode]);
 
   const handleSelectionNext = useCallback(() => {
     if (!isObjectMode && !selectedSheet) {
@@ -910,6 +964,8 @@ const RecordsEditor = memo(({
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
     setIsHistoryModalOpen(false);
+    setHasUnsavedChanges(false); // Reset unsaved changes after successful save
+    setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
     isSavingRef.current = false;
     onClose();
   }, [
@@ -1395,61 +1451,59 @@ const RecordsEditor = memo(({
       <div className={styles.viewContainer}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {view !== 'relatedTemplates' && (
-              <button
-                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleClose}
-                aria-label="Back"
+            <button
+              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={viewingRelatedRecord ? handleBackToObject : view === 'relatedTemplates' ? () => setView('editor') : handleClose}
+              aria-label="Back"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 12L6 8L10 4"
-                    stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            )}
-            <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              {viewingRelatedRecord ? (
-                <div className={styles.breadcrumbTitle}>
-                  <button 
-                    className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={handleBackToObject}
-                  >
-                    ← Back to {originalObjectData?.typeOfObject}
-                  </button>
-                  <span className={styles.separator}>|</span>
-                  <span className={styles.breadcrumbContext}>
-                    {originalObjectData?.typeOfObject} → {formData.typeOfRecord}
-                  </span>
-                </div>
-              ) : view === 'relatedTemplates' ? (
-                <div className={styles.breadcrumbTitle}>
-                  <button 
-                    className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => setView('editor')}
-                  >
-                    ← Back to {formData.typeOfObject}
-                  </button>
-                  <span className={styles.separator}>|</span>
-                  <span className={styles.breadcrumbContext}>
-                    {formData.typeOfObject} → Create Record
-                  </span>
-                </div>
-              ) : (
-                isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'modeSelection' ? 'Create New Item' : view === 'selection' ? 'Create a New Record' : 'New Record'
-              )}
-            </h1>
-            {view !== 'modeSelection' && view !== 'relatedTemplates' && (
+                <path
+                  d="M10 12L6 8L10 4"
+                  stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <div className={styles.navContent}>
+              <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {viewingRelatedRecord ? (
+                  <div className={styles.breadcrumbTrail}>
+                    <span className={`${styles.breadcrumbItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      {originalObjectData?.typeOfObject}
+                    </span>
+                    <svg className={`${styles.breadcrumbArrow} ${isDarkTheme ? styles.darkTheme : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                    <span className={`${styles.breadcrumbItem} ${styles.breadcrumbItemCurrent} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      {formData.typeOfRecord}
+                    </span>
+                  </div>
+                ) : view === 'relatedTemplates' ? (
+                  <div className={styles.breadcrumbTrail}>
+                    <span className={`${styles.breadcrumbItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      {formData.typeOfObject}
+                    </span>
+                    <svg className={`${styles.breadcrumbArrow} ${isDarkTheme ? styles.darkTheme : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                    <span className={`${styles.breadcrumbItem} ${styles.breadcrumbItemCurrent} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      Create Record
+                    </span>
+                  </div>
+                ) : (
+                  isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'selection' ? 'Create New Object' : 'New Record'
+                )}
+              </h1>
+            </div>
+            {view !== 'relatedTemplates' && hasUnsavedChanges && (
               <button
                 type="button"
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -1460,91 +1514,93 @@ const RecordsEditor = memo(({
             )}
           </div>
           <div className={styles.contentWrapper}>
-            {view === 'modeSelection' && (
-              <div className={`${styles.sectionWrapper} ${styles.selectionView} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={styles.selectionHeader}>
-                  <h2 className={styles.selectionTitle}>✨ Create New Item</h2>
-                  <p className={styles.selectionSubtitle}>
-                    Choose what type of item you'd like to create
-                  </p>
-                </div>
-                <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
-                  <div className={styles.modeSelectionButtons}>
-                    <button
-                      className={`${styles.modeButton} ${styles.objectModeButton}`}
-                      onClick={() => {
-                        setIsObjectMode(true);
-                        setView('selection');
-                      }}
-                    >
-                      <div className={styles.modeButtonIcon}>🏗️</div>
-                      <div className={styles.modeButtonContent}>
-                        <h3>Create Object</h3>
-                        <p>Build custom data structures with flexible fields and properties</p>
-                      </div>
-                      <div className={styles.modeButtonArrow}>→</div>
-                    </button>
-                    <button
-                      className={`${styles.modeButton} ${styles.recordModeButton}`}
-                      onClick={() => {
-                        setIsObjectMode(false);
-                        setView('selection');
-                      }}
-                    >
-                      <div className={styles.modeButtonIcon}>�</div>
-                      <div className={styles.modeButtonContent}>
-                        <h3>Create Record</h3>
-                        <p>Use predefined templates to create structured data entries</p>
-                      </div>
-                      <div className={styles.modeButtonArrow}>→</div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
             {view === 'selection' && (
-              <div className={`${styles.sectionWrapper} ${styles.selectionView} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={styles.selectionHeader}>
-                  <h2 className={styles.selectionTitle}>Create New {isObjectMode ? 'Object' : 'Record'}</h2>
-                  <p className={styles.selectionSubtitle}>
-                    {isObjectMode 
-                      ? 'Choose an object type to get started'
-                      : 'Choose a sheet and record type to get started'
-                    }
+              <div className={`${styles.objectCreationView} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.objectCreationHeader}>
+                  <h1 className={styles.objectCreationTitle}>Create New Object</h1>
+                  <p className={styles.objectCreationSubtitle}>
+                    Choose which sheet to create the object in
                   </p>
                 </div>
-                <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
-                  {!isObjectMode && (
-                    <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        Sheet
-                      </span>
-                      <select
-                        value={selectedSheet}
-                        onChange={(e) => setSelectedSheet(e.target.value)}
-                        className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        aria-label="Select a sheet"
-                      >
-                        <option value="">Select a sheet</option>
-                        {sheetOptions.map((sheetName) => (
-                          <option key={sheetName} value={sheetName}>
-                            {sheetName}
-                          </option>
-                        ))}
-                      </select>
+
+                <div className={styles.objectCreationContent}>
+                  {/* Available Sheets */}
+                  {sheetOptions && sheetOptions.length > 0 && (
+                    <div className={styles.objectSection}>
+                      <h3 className={`${styles.objectSectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                        Available sheets
+                      </h3>
+                      <div className={styles.objectGrid}>
+                        {sheetOptions.map((sheetName) => {
+                          const sheet = sheets?.allSheets?.find(s => s.sheetName === sheetName);
+                          return (
+                            <button
+                              key={sheetName}
+                              className={`${styles.objectCard} ${styles.sheetCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                              onClick={() => {
+                                setSelectedSheet(sheetName);
+                                handleSelectionNext();
+                              }}
+                            >
+                              <div className={styles.objectCardIcon}>
+                                <span className={styles.objectEmoji}>
+                                  {sheetName.toLowerCase().includes('customer') ? '👥' :
+                                   sheetName.toLowerCase().includes('lead') ? '🎯' :
+                                   sheetName.toLowerCase().includes('contact') ? '📞' :
+                                   sheetName.toLowerCase().includes('company') ? '🏢' :
+                                   sheetName.toLowerCase().includes('project') ? '📋' :
+                                   sheetName.toLowerCase().includes('task') ? '✅' :
+                                   sheetName.toLowerCase().includes('deal') ? '💰' :
+                                   sheetName.toLowerCase().includes('product') ? '📦' :
+                                   sheetName.toLowerCase().includes('invoice') ? '📄' :
+                                   sheetName.toLowerCase().includes('quote') ? '💬' : '📊'}
+                                </span>
+                              </div>
+                              <div className={styles.objectCardContent}>
+                                <h4 className={styles.objectCardTitle}>{sheetName}</h4>
+                                <p className={styles.objectCardDescription}>
+                                  {sheet?.headers ? `${sheet.headers.length} columns available` : 'Create objects in this sheet'}
+                                </p>
+                              </div>
+                              <div className={styles.objectCardArrow}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                                </svg>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
-                  <div className={`${styles.fieldItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <span className={`${styles.fieldLabel} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {isObjectMode ? 'Object Type' : 'Record Type'}
-                    </span>
-                    <SingleSelectDropdown
-                      options={isObjectMode ? templateObjects?.map(obj => obj.name) || [] : recordTypeOptions}
-                      value={selectedRecordType}
-                      onChange={setSelectedRecordType}
-                      placeholder={isObjectMode ? 'Select an object type' : 'Select a record type'}
-                      isDarkTheme={isDarkTheme}
-                    />
+
+                  {/* Create New Sheet Option */}
+                  <div className={styles.objectSection}>
+                    <div className={styles.objectGrid}>
+                      <button
+                        className={`${styles.objectCard} ${styles.newSheetCard} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={() => {
+                          // This could open a modal to create a new sheet
+                          // For now, we'll just show an alert
+                          alert('New sheet creation would open here');
+                        }}
+                      >
+                        <div className={styles.objectCardIcon}>
+                          <span className={styles.objectEmoji}>➕</span>
+                        </div>
+                        <div className={styles.objectCardContent}>
+                          <h4 className={styles.objectCardTitle}>Create New Sheet</h4>
+                          <p className={styles.objectCardDescription}>
+                            Set up a new sheet for your objects
+                          </p>
+                        </div>
+                        <div className={styles.objectCardArrow}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1805,7 +1861,7 @@ const RecordsEditor = memo(({
                 )}
                 
                 {/* Create Record Section - Show for records with linkId */}
-                {view === 'editor' && isEditing && formData.linkId && getAvailableTemplatesInCategory().length > 0 && (
+                {view === 'editor' && isEditing && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
                   <div className={`${styles.createRecordSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <div className={styles.createRecordCard} onClick={() => setView('relatedTemplates')}>
                       <div className={styles.createRecordIcon}>
@@ -1874,38 +1930,20 @@ const RecordsEditor = memo(({
                 {/* Related Records Section - Show for objects with linkId */}
                 {view === 'editor' && isObjectMode && !viewingRelatedRecord && relatedRecords.length > 0 && (
                   <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${styles.active}`}>
-                    <div 
-                      className={styles.sectionHeader}
-                      onClick={() => {
-                        const newSections = { ...expandedSections };
-                        newSections['relatedRecords'] = !expandedSections['relatedRecords'];
-                        setExpandedSections(newSections);
-                      }}
-                    >
-                      <div className={styles.sectionText}>
-                        <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          Related Records ({relatedRecords.length})
-                        </span>
+                    <div className={styles.sectionHeader}>
+                      <div className={styles.sectionTextRecords}>
+                        <div className={styles.sectionTitleWithIcon}>
+                          <MdLink size={18} className={`${styles.sectionIcon} ${isDarkTheme ? styles.darkTheme : ''}`} />
+                          <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                            {formData.typeOfObject} Records
+                          </span>
+                        </div>
                         <span className={`${styles.sectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
                           All records associated with this {formData.typeOfObject}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        className={`${styles.expandButton} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections['relatedRecords'] ? styles.expanded : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newSections = { ...expandedSections };
-                          newSections['relatedRecords'] = !expandedSections['relatedRecords'];
-                          setExpandedSections(newSections);
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
                     </div>
-                    <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections['relatedRecords'] ? styles.expanded : ''}`}>
+                    <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${styles.expanded}`}>
                       <div className={styles.relatedRecordsList}>
                         {relatedRecords.map((record) => (
                           <div 
