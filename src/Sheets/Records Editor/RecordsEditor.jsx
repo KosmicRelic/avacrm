@@ -9,6 +9,7 @@ import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName
 import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete, MdLink } from 'react-icons/md';
+import { FaLayerGroup } from 'react-icons/fa';
 
 // Debug logging utility - Global function
 const addDebugLog = (message) => {
@@ -45,7 +46,7 @@ const RecordsEditor = memo(({
   }, []);
 
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
-  const [view, setView] = useState(startInEditMode ? 'editor' : 'selection');
+  const [view, setView] = useState(startInEditMode ? 'editor' : 'objectTypeSelection'); // 'objectTypeSelection' -> 'editor'
   const [isObjectMode, setIsObjectMode] = useState(true); // Always object mode
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
@@ -409,12 +410,35 @@ const RecordsEditor = memo(({
 
   // Detect unsaved changes
   useEffect(() => {
-    if (!isEditing && view === 'selection') {
-      // For new records in selection mode, always show save button
-      setHasUnsavedChanges(true);
+    // Skip if not in editor view
+    if (view !== 'editor') {
+      setHasUnsavedChanges(false);
       return;
     }
 
+    // For new objects (not editing), check if any meaningful data has been entered
+    if (!isEditing) {
+      const hasData = Object.keys(formData).some(
+        (key) => 
+          key !== 'sheetName' && 
+          key !== 'typeOfRecord' && 
+          key !== 'typeOfObject' && 
+          key !== 'docId' && 
+          key !== 'linkId' &&
+          key !== 'assignedTo' &&
+          key !== 'history' &&
+          key !== 'isModified' &&
+          key !== 'action' &&
+          key !== 'isObject' &&
+          key !== 'records' &&
+          formData[key] && 
+          formData[key].toString().trim() !== ''
+      );
+      setHasUnsavedChanges(hasData);
+      return;
+    }
+
+    // For existing objects, compare with baseDataForComparison
     if (!baseDataForComparison || Object.keys(baseDataForComparison).length === 0) {
       setHasUnsavedChanges(false);
       return;
@@ -439,49 +463,23 @@ const RecordsEditor = memo(({
   }, [formData, baseDataForComparison, isEditing, view, isObjectMode]);
 
   const handleSelectionNext = useCallback(() => {
-    if (!isObjectMode && !selectedSheet) {
-      alert('Please select a sheet.');
-      return;
-    }
+    // From object type selection to editor
     if (!selectedRecordType) {
-      alert(isObjectMode ? 'Please select an object type.' : 'Please select a record type.');
+      alert('Please select an object type.');
       return;
     }
     
-    if (isObjectMode) {
-      // Object mode: selectedRecordType is the object name
-      const object = templateObjects?.find((o) => o.name === selectedRecordType);
-      if (!object) {
-        alert('Invalid object type selected.');
-        return;
-      }
-      setFormData((prev) => ({
-        ...prev,
-        typeOfObject: object.name,
-      }));
-    } else {
-      // Record mode: existing logic
-      const template = recordTemplates?.find((t) => t.name === selectedRecordType);
-      if (!template) {
-        alert('Invalid record type selected.');
-        return;
-      }
-      setFormData((prev) => ({
-        ...prev,
-        sheetName: selectedSheet,
-        typeOfRecord: template.name,
-        typeOfObject: (() => {
-          // Find the object for this template to set typeOfObject
-          if (template.objectId && templateObjects) {
-            const object = templateObjects.find(e => e.id === template.objectId);
-            return object ? object.name : '';
-          }
-          return '';
-        })(),
-      }));
+    const object = templateObjects?.find((o) => o.name === selectedRecordType);
+    if (!object) {
+      alert('Invalid object type selected.');
+      return;
     }
+    setFormData((prev) => ({
+      ...prev,
+      typeOfObject: object.name,
+    }));
     setView('editor');
-  }, [isObjectMode, selectedSheet, selectedRecordType, recordTemplates, templateObjects]);
+  }, [selectedRecordType, templateObjects]);
 
   const handleClose = useCallback(() => {
     setIsViewingHistory(false);
@@ -843,14 +841,19 @@ const RecordsEditor = memo(({
     addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
     addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
 
+    // Define fields to keep (don't include action and isModified in final save)
     const requiredFields = isObjectMode 
-      ? ['docId', 'linkId', 'typeOfObject', 'isObject', 'history', 'isModified', 'action']
-      : ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'isObject', 'history', 'isModified', 'action'];
+      ? ['docId', 'linkId', 'typeOfObject', 'isObject', 'history', 'records']
+      : ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'isObject', 'history'];
     Object.keys(newRow).forEach((key) => {
       if (!requiredFields.includes(key) && (newRow[key] === null || newRow[key] === undefined || newRow[key] === '')) {
         delete newRow[key];
       }
     });
+    
+    // Remove action and isModified before saving
+    delete newRow.action;
+    delete newRow.isModified;
 
     const newHistory = [];
     const timestamp = Timestamp.now();
@@ -967,7 +970,50 @@ const RecordsEditor = memo(({
     setHasUnsavedChanges(false); // Reset unsaved changes after successful save
     setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
     isSavingRef.current = false;
-    onClose();
+    
+    // Keep the editor open after save and switch to editing mode if it was a new object
+    if (!isEditing) {
+      addDebugLog('🆕 New object saved, switching to edit mode');
+      setIsEditing(true);
+      setFormData({ ...newRow });
+    } else {
+      addDebugLog('✏️ Existing object updated, staying in edit mode');
+      setFormData({ ...newRow });
+      
+      // If this is a record (not an object), update the parent object's records array
+      if (!isObjectMode && newRow.linkId) {
+        addDebugLog('🔗 Updating parent object records array');
+        const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
+        if (parentObject) {
+          const recordInfo = {
+            docId: newRow.docId,
+            typeOfRecord: newRow.typeOfRecord
+          };
+          
+          // Initialize records array if it doesn't exist
+          if (!parentObject.records) {
+            parentObject.records = [];
+          }
+          
+          // Check if record already exists in the array
+          const existingIndex = parentObject.records.findIndex(r => r.docId === newRow.docId);
+          if (existingIndex >= 0) {
+            // Update existing record info
+            parentObject.records[existingIndex] = recordInfo;
+          } else {
+            // Add new record info
+            parentObject.records.push(recordInfo);
+          }
+          
+          // Update the object in context
+          setObjects(prev => prev.map(obj => 
+            obj.linkId === newRow.linkId ? { ...parentObject } : obj
+          ));
+          addDebugLog(`✅ Parent object records array updated with ${recordInfo.typeOfRecord}`);
+        }
+      }
+    }
+    // Editor stays open - user must manually close it
   }, [
     formData,
     historicalFormData,
@@ -1453,7 +1499,12 @@ const RecordsEditor = memo(({
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <button
               className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={viewingRelatedRecord ? handleBackToObject : view === 'relatedTemplates' ? () => setView('editor') : handleClose}
+              onClick={
+                viewingRelatedRecord ? handleBackToObject :
+                view === 'relatedTemplates' ? () => setView('editor') :
+                view === 'objectTypeSelection' ? handleClose :
+                handleClose
+              }
               aria-label="Back"
             >
               <svg
@@ -1499,112 +1550,100 @@ const RecordsEditor = memo(({
                     </span>
                   </div>
                 ) : (
-                  isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Record') : view === 'selection' ? 'Create New Object' : 'New Record'
+                  isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
+                  view === 'objectTypeSelection' ? 'Create New Object' : 'New Object'
                 )}
               </h1>
             </div>
-            {view !== 'relatedTemplates' && hasUnsavedChanges && (
+            {view === 'objectTypeSelection' && (
               <button
                 type="button"
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={view === 'selection' ? handleSelectionNext : handleSave}
+                onClick={handleSelectionNext}
+                disabled={!selectedRecordType}
               >
-                {view === 'selection' ? 'Next' : isViewingHistory ? 'Revert Data' : 'Save'}
+                Next
+              </button>
+            )}
+            {view === 'editor' && !viewingRelatedRecord && hasUnsavedChanges && (
+              <button
+                type="button"
+                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={handleSave}
+              >
+                {isViewingHistory ? 'Revert Data' : 'Save'}
               </button>
             )}
           </div>
           <div className={styles.contentWrapper}>
-            {view === 'selection' && (
-              <div className={`${styles.objectCreationView} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                <div className={styles.objectCreationHeader}>
-                  <h1 className={styles.objectCreationTitle}>Create New Object</h1>
-                  <p className={styles.objectCreationSubtitle}>
-                    Choose which sheet to create the object in
-                  </p>
-                </div>
+            {view === 'objectTypeSelection' && (() => {
+              // Get the preselected sheet's supported objects if available
+              const currentSheet = preSelectedSheet ? sheets?.allSheets?.find(s => s.sheetName === preSelectedSheet) : null;
+              const sheetSupportedObjectNames = currentSheet?.headers
+                ?.filter(h => h.key === 'typeOfObject')
+                .flatMap(h => h.options || [])
+                .filter(Boolean) || [];
+              
+              // Separate objects into sheet-supported and others
+              const supportedObjects = templateObjects?.filter(obj => 
+                sheetSupportedObjectNames.includes(obj.name)
+              ) || [];
+              
+              const otherObjects = templateObjects?.filter(obj => 
+                !sheetSupportedObjectNames.includes(obj.name)
+              ) || [];
 
-                <div className={styles.objectCreationContent}>
-                  {/* Available Sheets */}
-                  {sheetOptions && sheetOptions.length > 0 && (
-                    <div className={styles.objectSection}>
-                      <h3 className={`${styles.objectSectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        Available sheets
-                      </h3>
-                      <div className={styles.objectGrid}>
-                        {sheetOptions.map((sheetName) => {
-                          const sheet = sheets?.allSheets?.find(s => s.sheetName === sheetName);
-                          return (
-                            <button
-                              key={sheetName}
-                              className={`${styles.objectCard} ${styles.sheetCard} ${isDarkTheme ? styles.darkTheme : ''}`}
-                              onClick={() => {
-                                setSelectedSheet(sheetName);
-                                handleSelectionNext();
-                              }}
-                            >
-                              <div className={styles.objectCardIcon}>
-                                <span className={styles.objectEmoji}>
-                                  {sheetName.toLowerCase().includes('customer') ? '👥' :
-                                   sheetName.toLowerCase().includes('lead') ? '🎯' :
-                                   sheetName.toLowerCase().includes('contact') ? '📞' :
-                                   sheetName.toLowerCase().includes('company') ? '🏢' :
-                                   sheetName.toLowerCase().includes('project') ? '📋' :
-                                   sheetName.toLowerCase().includes('task') ? '✅' :
-                                   sheetName.toLowerCase().includes('deal') ? '💰' :
-                                   sheetName.toLowerCase().includes('product') ? '📦' :
-                                   sheetName.toLowerCase().includes('invoice') ? '📄' :
-                                   sheetName.toLowerCase().includes('quote') ? '💬' : '📊'}
-                                </span>
-                              </div>
-                              <div className={styles.objectCardContent}>
-                                <h4 className={styles.objectCardTitle}>{sheetName}</h4>
-                                <p className={styles.objectCardDescription}>
-                                  {sheet?.headers ? `${sheet.headers.length} columns available` : 'Create objects in this sheet'}
-                                </p>
-                              </div>
-                              <div className={styles.objectCardArrow}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M7 17L17 7M17 7H7M17 7V17"/>
-                                </svg>
-                              </div>
-                            </button>
-                          );
-                        })}
+              // Combine for dropdown: supported first, then separator, then others
+              const allObjects = [...supportedObjects, ...otherObjects];
+
+              return (
+                <div className={`${styles.objectCreationView} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  <div className={styles.objectCreationContent}>
+                    <div className={styles.objectSelectionContainer}>
+                      <div className={styles.objectSelectionHeader}>
+                        <div className={`${styles.objectSelectionIcon} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          <FaLayerGroup size={32} />
+                        </div>
+                        <h2 className={`${styles.objectSelectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          Select Object Type
+                        </h2>
+                        <p className={`${styles.objectSelectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                          {preSelectedSheet ? `Choose an object type${supportedObjects.length > 0 ? ` for ${preSelectedSheet}` : ''}` : 'Choose an object type to create'}
+                        </p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Create New Sheet Option */}
-                  <div className={styles.objectSection}>
-                    <div className={styles.objectGrid}>
-                      <button
-                        className={`${styles.objectCard} ${styles.newSheetCard} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => {
-                          // This could open a modal to create a new sheet
-                          // For now, we'll just show an alert
-                          alert('New sheet creation would open here');
-                        }}
-                      >
-                        <div className={styles.objectCardIcon}>
-                          <span className={styles.objectEmoji}>➕</span>
-                        </div>
-                        <div className={styles.objectCardContent}>
-                          <h4 className={styles.objectCardTitle}>Create New Sheet</h4>
-                          <p className={styles.objectCardDescription}>
-                            Set up a new sheet for your objects
-                          </p>
-                        </div>
-                        <div className={styles.objectCardArrow}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M7 17L17 7M17 7H7M17 7V17"/>
-                          </svg>
-                        </div>
-                      </button>
+                      
+                      <div className={styles.objectSelectionDropdown}>
+                        <select
+                          value={selectedRecordType}
+                          onChange={(e) => setSelectedRecordType(e.target.value)}
+                          className={`${styles.objectSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        >
+                          <option value="">Select an object type...</option>
+                          {supportedObjects.length > 0 && (
+                            <optgroup label={`${preSelectedSheet} Objects`}>
+                              {supportedObjects.map((object) => (
+                                <option key={object.id} value={object.name}>
+                                  {object.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {otherObjects.length > 0 && (
+                            <optgroup label="Other Objects">
+                              {otherObjects.map((object) => (
+                                <option key={object.id} value={object.name}>
+                                  {object.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             {view === 'editor' && (
               <>
                 {selectedSections.length > 0 ? (
