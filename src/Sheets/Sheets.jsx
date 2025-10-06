@@ -695,7 +695,7 @@ const Sheets = ({
 
   // Handle opening object and/or record from URL
   useEffect(() => {
-    if (!businessId) return;
+    if (!businessId || isCreatingObject) return;
     
     const loadFromUrl = async () => {
       console.log('🔄 [URL Effect] Running with:', { 
@@ -844,9 +844,22 @@ const Sheets = ({
       if (fullData?.docId) {
         const urlSheetName = activeSheetName.replace(/ /g, "-");
         // Use different URL pattern for objects vs records
-        const url = isObject 
-          ? `/sheets/${urlSheetName}/object/${fullData.docId}`
-          : `/sheets/${urlSheetName}/${fullData.docId}`;
+        let url;
+        if (isObject) {
+          url = `/sheets/${urlSheetName}/object/${fullData.docId}`;
+        } else {
+          // For records, check if they're linked to an object
+          if (fullData.typeOfObject) {
+            const relatedObject = objects.find(obj => obj.typeOfObject === fullData.typeOfObject || obj.name === fullData.typeOfObject);
+            if (relatedObject) {
+              url = `/sheets/${urlSheetName}/object/${relatedObject.docId}/record/${fullData.docId}`;
+            } else {
+              url = `/sheets/${urlSheetName}/${fullData.docId}`;
+            }
+          } else {
+            url = `/sheets/${urlSheetName}/${fullData.docId}`;
+          }
+        }
         navigate(url, { replace: false });
       }
       setSelectedRowForEdit(null); // Clear any existing selection
@@ -978,11 +991,13 @@ const Sheets = ({
             setObjects((prev) =>
               prev.map((object) => (object.docId === rowId ? updatedRow : object))
             );
-            setIsEditorOpen(false); // Close editor for existing object updates
+            // Keep editor open for existing object updates (like records)
+            // setIsEditorOpen(false); // Commented out to keep editor open
           }
         } catch (error) {
           console.error('Failed to save object to Firebase:', error);
           setIsEditorOpen(false); // Close on error
+          setIsCreatingObject(false); // Reset loading state on error
         } finally {
           // Reset loading state
           setIsCreatingObject(false);
@@ -1009,10 +1024,30 @@ const Sheets = ({
             });
 
             // For new records, update URL to match the actual record ID and keep editor open in edit mode
+            // Skip navigation if we're already on the correct URL (from pre-creation)
+            const currentPath = window.location.pathname;
             const urlSheetName = activeSheetName.replace(/ /g, "-");
-            const recordUrl = `/sheets/${urlSheetName}/record/${updatedRow.docId}`;
-            console.log('🔗 Updating URL for new record:', recordUrl);
-            navigate(recordUrl, { replace: true });
+            let recordUrl;
+            
+            // If this record is linked to an object, use the object route
+            if (updatedRow.typeOfObject) {
+              const relatedObject = objects.find(obj => obj.typeOfObject === updatedRow.typeOfObject || obj.name === updatedRow.typeOfObject);
+              if (relatedObject) {
+                recordUrl = `/sheets/${urlSheetName}/object/${relatedObject.docId}/record/${updatedRow.docId}`;
+              } else {
+                recordUrl = `/sheets/${urlSheetName}/${updatedRow.docId}`;
+              }
+            } else {
+              recordUrl = `/sheets/${urlSheetName}/${updatedRow.docId}`;
+            }
+            
+            // Only navigate if we're not already on the correct URL
+            if (currentPath !== recordUrl) {
+              console.log('🔗 Updating URL for new record:', recordUrl);
+              navigate(recordUrl, { replace: true });
+            } else {
+              console.log('🔗 Already on correct URL for new record:', recordUrl);
+            }
 
             // Update selectedRow to the saved record (this will switch RecordsEditor to edit mode)
             setSelectedRow(updatedRow);
@@ -1027,43 +1062,99 @@ const Sheets = ({
           }
         } catch (error) {
           console.error('Failed to save record to Firebase:', error);
+          setIsCreatingObject(false); // Reset loading state on error
+        } finally {
+          // Reset loading state for records
+          setIsCreatingObject(false);
         }
 
-        // Update the related object to include this record
-        if (updatedRow.typeOfObject && !isEditing) {
+        // Update the related object to include this record (for new records) or ensure it's included (for existing records)
+        if (updatedRow.linkId) {
+          console.log('🔄 [Sheets] Updating related object in Firestore:', {
+            recordDocId: updatedRow.docId,
+            recordLinkId: updatedRow.linkId,
+            recordTypeOfRecord: updatedRow.typeOfRecord,
+            isEditing,
+            isNewRecord: !isEditing
+          });
+          
           try {
-            // Find the object this record belongs to
-            const relatedObject = objects.find(obj => obj.typeOfObject === updatedRow.typeOfObject || obj.name === updatedRow.typeOfObject);
+            // Find the object this record belongs to by linkId
+            const relatedObject = objects.find(obj => obj.linkId === updatedRow.linkId);
+            console.log('🔍 [Sheets] Found related object for Firestore update:', relatedObject ? {
+              objDocId: relatedObject.docId,
+              objLinkId: relatedObject.linkId,
+              objTypeOfObject: relatedObject.typeOfObject,
+              objCurrentRecords: relatedObject.records
+            } : 'NOT FOUND');
+            
             if (relatedObject) {
+              // Ensure the records array exists
+              const currentRecords = relatedObject.records || [];
+              
+              // Check if this record is already in the array
+              const existingIndex = currentRecords.findIndex(r => r.docId === updatedRow.docId);
+              const recordInfo = { docId: updatedRow.docId, typeOfRecord: updatedRow.typeOfRecord };
+              
+              let updatedRecords;
+              if (existingIndex >= 0) {
+                // Update existing record info
+                updatedRecords = [...currentRecords];
+                updatedRecords[existingIndex] = recordInfo;
+                console.log('📝 [Sheets] Updated existing record in Firestore array at index', existingIndex);
+              } else {
+                // Add new record info
+                updatedRecords = [...currentRecords, recordInfo];
+                console.log('➕ [Sheets] Added new record to Firestore array');
+              }
+              
               // Update the object to include this record
               const updatedObject = {
                 ...relatedObject,
-                records: [...(relatedObject.records || []), updatedRow.docId],
+                records: updatedRecords,
                 lastModified: new Date().toISOString()
               };
+              
+              console.log('📝 [Sheets] Updated object data for Firestore:', {
+                objDocId: updatedObject.docId,
+                newRecordsCount: updatedObject.records.length,
+                newRecords: updatedObject.records
+              });
               
               // Update local state
               setObjects(prev => prev.map(obj => 
                 obj.docId === relatedObject.docId ? updatedObject : obj
               ));
+              console.log('✅ [Sheets] Local state updated with record reference');
               
               // Save to Firebase (remove client-side tracking fields)
               const { action, isModified, ...cleanObject } = updatedObject;
               await setDoc(doc(db, `businesses/${businessId}/objects/${relatedObject.docId}`), cleanObject);
-              console.log('Updated object with new record reference');
+              console.log('✅ [Sheets] Firestore updated with record reference');
+            } else {
+              console.error('❌ [Sheets] Related object not found for linkId:', updatedRow.linkId);
+              console.log('📊 [Sheets] Available objects:', objects.map(obj => ({
+                docId: obj.docId,
+                linkId: obj.linkId,
+                typeOfObject: obj.typeOfObject
+              })));
             }
           } catch (error) {
-            console.error('Failed to update related object:', error);
+            console.error('❌ [Sheets] Failed to update related object:', error);
           }
+        } else {
+          console.log('⏭️ [Sheets] Skipping related object update:', {
+            hasLinkId: !!updatedRow.linkId,
+            isEditing,
+            recordDocId: updatedRow.docId
+          });
         }
       }
       setSelectedRow(updatedRow);
       
-      // Only close editor for records or existing objects being edited
-      // Keep editor open for newly created objects (they switch to edit mode)
-      if (!isObject || isEditing) {
-        setIsEditorOpen(false);
-      }
+      // Keep editor open for all items (both objects and records, new and existing)
+      // They switch to edit mode and stay open for continued editing
+      // setIsEditorOpen(false); // Never close editor after save
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [records, objects, onRecordSave, setObjects, businessId, setRecords]
@@ -1127,71 +1218,117 @@ const Sheets = ({
     [records, objects, onRecordSave, setRecords, setObjects]
   );
 
-  const handleOpenNewRecord = useCallback(
-    (newRecordData) => {
-      console.log('🔍 handleOpenNewRecord called:', newRecordData);
-      // Add the new record to the records array
-      setRecords((prev) => [...prev, newRecordData]);
+  const handleCreateNewRecord = useCallback(
+    (templateData) => {
+      console.log('🔍 handleCreateNewRecord called:', {
+        templateData,
+        templateLinkId: templateData.linkId,
+        templateTypeOfRecord: templateData.typeOfRecord,
+        templateTypeOfObject: templateData.typeOfObject
+      });
       
-      // Save the record to Firestore
-      onRecordSave(newRecordData);
+      // Generate a docId immediately for the URL
+      const generatedDocId = `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Open the new record in the editor immediately
-      setSelectedRow(newRecordData);
+      // Create initial data for the new record (with generated docId for URL purposes)
+      const newRecordInitialData = {
+        docId: generatedDocId, // Include docId so URL can be constructed
+        linkId: templateData.linkId,
+        typeOfRecord: templateData.typeOfRecord,
+        typeOfObject: templateData.typeOfObject,
+        assignedTo: templateData.assignedTo || user?.email || '',
+        sheetName: templateData.sheetName,
+        // Mark as new record for the editor to know it's in create mode
+        isNewRecord: true,
+      };
+      
+      console.log('📝 Created new record initial data:', {
+        docId: newRecordInitialData.docId,
+        linkId: newRecordInitialData.linkId,
+        typeOfRecord: newRecordInitialData.typeOfRecord,
+        typeOfObject: newRecordInitialData.typeOfObject,
+        isNewRecord: newRecordInitialData.isNewRecord
+      });
+      
+      // Open the editor with the initial data
+      setSelectedRow(newRecordInitialData);
       setIsEditorOpen(true);
+      
+      // Set the parent object for breadcrumb display during creation
+      if (templateData.linkId && templateData.typeOfObject) {
+        const linkedObject = objects.find(obj => obj.linkId === templateData.linkId);
+        if (linkedObject) {
+          setParentObject(linkedObject);
+          console.log('🎯 Set parent object for breadcrumb:', {
+            parentDocId: linkedObject.docId,
+            parentLinkId: linkedObject.linkId,
+            parentTypeOfObject: linkedObject.typeOfObject
+          });
+        } else {
+          console.warn('⚠️ Parent object not found for breadcrumb:', templateData.linkId);
+        }
+      }
+      
+      // Navigate to the record URL immediately
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      let recordUrl;
+      
+      // For linked records, use the object/record URL
+      if (templateData.linkId && templateData.typeOfObject) {
+        const linkedObject = objects.find(obj => obj.linkId === templateData.linkId);
+        if (linkedObject) {
+          recordUrl = `/sheets/${urlSheetName}/object/${linkedObject.docId}/record/${generatedDocId}`;
+        } else {
+          recordUrl = `/sheets/${urlSheetName}/${generatedDocId}`;
+        }
+      } else {
+        recordUrl = `/sheets/${urlSheetName}/${generatedDocId}`;
+      }
+      
+      console.log('🔗 Navigating to new record URL:', recordUrl);
+      navigate(recordUrl, { replace: true });
     },
-    [onRecordSave, setRecords]
+    [user, activeSheetName, navigate, objects]
   );
 
-  // Handle navigation to a related record from an object
-  const handleNavigateToRelatedRecord = useCallback(
-    (recordData, currentFormData) => {
-      console.log('🔍 [Sheets] handleNavigateToRelatedRecord called');
-      console.log('  📄 Record data:', recordData);
-      console.log('  📋 Current form data:', currentFormData);
-      console.log('  🗂️ Stored parent object:', parentObject);
-      
-      // Special case: if recordData and currentFormData are the same object, navigate to object URL only
-      const isNavigatingToObject = recordData?.docId === currentFormData?.docId && 
-                                   (recordData?.isObject === true || objects.some(obj => obj.docId === recordData?.docId));
-      
-      if (isNavigatingToObject) {
-        // Navigate to object URL only
-        const urlSheetName = activeSheetName.replace(/ /g, "-");
-        const url = `/sheets/${urlSheetName}/object/${recordData.docId}`;
-        console.log('  🔗 Navigating to object URL:', url);
-        navigate(url, { replace: false });
-        return;
-      }
-      
-      // Determine the parent object:
-      // - If currentFormData is an object (check isObject flag or if it's in objects array), use it
-      // - Otherwise, currentFormData is a record, so use the stored parentObject
-      const isCurrentFormAnObject = currentFormData?.isObject === true || 
-                                   objects.some(obj => obj.docId === currentFormData?.docId);
-      
-      const parentObjectToUse = isCurrentFormAnObject 
-        ? currentFormData 
-        : parentObject;
-      
-      console.log('  🎯 Is current form an object?', isCurrentFormAnObject);
-      console.log('  🎯 Using parent object:', parentObjectToUse);
-      console.log('  ✓ Parent has docId:', !!parentObjectToUse?.docId);
-      console.log('  ✓ Record has docId:', !!recordData?.docId);
-      
-      if (recordData?.docId && parentObjectToUse?.docId) {
-        const urlSheetName = activeSheetName.replace(/ /g, "-");
-        const url = `/sheets/${urlSheetName}/object/${parentObjectToUse.docId}/record/${recordData.docId}`;
-        console.log('  🔗 Navigating to URL:', url);
-        navigate(url, { replace: false });
-      } else {
-        console.warn('  ⚠️ Cannot navigate - missing IDs:', {
-          recordDocId: recordData?.docId,
-          parentDocId: parentObjectToUse?.docId
-        });
-      }
+  const handleCreateNewObject = useCallback(
+    (objectData) => {
+      console.log('🔍 handleCreateNewObject called:', objectData);
+      setSelectedRow(objectData);
+      setIsEditorOpen(true);
     },
-    [activeSheetName, navigate, parentObject, objects]
+    []
+  );
+
+  // Handle navigation to object URLs
+  const handleNavigateToObject = useCallback(
+    (objectId) => {
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      const url = `/sheets/${urlSheetName}/object/${objectId}`;
+      console.log('🔗 Navigating to object URL:', url);
+      navigate(url, { replace: true });
+    },
+    [activeSheetName, navigate]
+  );
+
+  // Handle navigation to related record URLs with parent context
+  const handleNavigateToRelatedRecord = useCallback(
+    (targetRecord, currentFormData) => {
+      const urlSheetName = activeSheetName.replace(/ /g, "-");
+      let recordUrl;
+      
+      // If current form data is an object, navigate to record within object context
+      if (currentFormData?.isObject === true && currentFormData?.docId) {
+        recordUrl = `/sheets/${urlSheetName}/object/${currentFormData.docId}/record/${targetRecord.docId}`;
+      } else {
+        // Navigate to standalone record
+        recordUrl = `/sheets/${urlSheetName}/${targetRecord.docId}`;
+      }
+      
+      console.log('🔗 Navigating to related record URL:', recordUrl);
+      navigate(recordUrl, { replace: true });
+    },
+    [activeSheetName, navigate]
   );
 
   const handleSelectToggle = useCallback(() => {
@@ -1514,10 +1651,10 @@ const Sheets = ({
             }`}
           >
             <RecordsEditor
-              key={selectedRow?.docId || Date.now()}
+              key={selectedRow?.docId || (isCreatingObject ? 'new-object' : 'no-selection')}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
-              onOpenNewRecord={handleOpenNewRecord}
+              onOpenNewRecord={handleCreateNewRecord}
               onNavigateToRelatedRecord={handleNavigateToRelatedRecord}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
@@ -1551,11 +1688,13 @@ const Sheets = ({
           <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
           <div className={`${styles.recordDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? styles['animate-in'] : isClosing ? styles['animate-out'] : ''}`}>
             <RecordsEditor
-              key={selectedRow?.docId || Date.now()}
+              key={selectedRow?.docId || (isCreatingObject ? 'new-object' : 'no-selection')}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
-              onOpenNewRecord={handleOpenNewRecord}
+              onOpenNewRecord={handleCreateNewRecord}
               onNavigateToRelatedRecord={handleNavigateToRelatedRecord}
+              onNavigateToObject={handleNavigateToObject}
+              onCreateObject={handleCreateNewObject}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}

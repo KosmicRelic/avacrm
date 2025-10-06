@@ -29,6 +29,8 @@ const RecordsEditor = memo(({
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
   onNavigateToRelatedRecord, // New prop for navigating to related records with parent context
+  onNavigateToObject, // New prop for navigating to object URLs
+  onCreateObject, // New prop for creating objects (sets selectedRow)
   initialRowData,
   startInEditMode,
   preSelectedSheet,
@@ -69,7 +71,7 @@ const RecordsEditor = memo(({
     : null;
   const [selectedRecordType, setSelectedRecordType] = useState(initialTemplate?.name || '');
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
-  const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId);
+  const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId && !initialRowData.isNewRecord);
   const [openSections, setOpenSections] = useState([]);
   const [hasUserToggledSections, setHasUserToggledSections] = useState(false);
   const [isViewingHistory, setIsViewingHistory] = useState(false);
@@ -222,8 +224,33 @@ const RecordsEditor = memo(({
         onClick: null // Current page, no click
       });
     }
+    // When creating a new record (show parent object breadcrumb)
+    else if (!isObjectMode && !isEditing && formData.typeOfObject && formData.linkId) {
+      // Find the parent object from the linkId
+      const parentObject = parentObjectData || objects.find(obj => obj.linkId === formData.linkId);
+      if (parentObject && parentObject.typeOfObject) {
+        breadcrumbs.push({
+          label: parentObject.typeOfObject,
+          type: 'Object',
+          onClick: handleBackToObject
+        });
+      }
+      breadcrumbs.push({
+        label: formData.typeOfRecord || 'New Record',
+        type: 'Record',
+        onClick: null // Current page, no click
+      });
+    }
     // When viewing an object, just show the object name (no navigation needed)
     else if (isObjectMode && isEditing && formData.typeOfObject) {
+      breadcrumbs.push({
+        label: formData.typeOfObject,
+        type: 'Object',
+        onClick: null // Current page, no click
+      });
+    }
+    // When creating a new object, show the object type
+    else if (isObjectMode && !isEditing && formData.typeOfObject) {
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
@@ -460,11 +487,16 @@ const RecordsEditor = memo(({
   }, [view, selectedRecordType]);
 
   useEffect(() => {
-    if (selectedSheet && !isEditing) {
+    if (selectedSheet && !isEditing && !isObjectMode && view !== 'objectTypeSelection') {
       // No longer auto-select record type since we work with objects
       setSelectedRecordType('');
     }
-  }, [selectedSheet, sheets, isEditing]);
+  }, [selectedSheet, sheets, isEditing, isObjectMode, view]);
+
+  // Debug: Watch selectedRecordType changes
+  useEffect(() => {
+    // Removed debug log to reduce clutter
+  }, [selectedRecordType]);
 
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
@@ -608,24 +640,30 @@ const RecordsEditor = memo(({
   }, [formData, baseDataForComparison, isEditing, view, isObjectMode]);
 
   const handleSelectionNext = useCallback(() => {
+    addDebugLog(`[handleSelectionNext] Called with selectedRecordType: "${selectedRecordType}", isObjectMode: ${isObjectMode}, view: "${view}"`);
+
     // From object type selection to editor
     if (!selectedRecordType) {
+      addDebugLog('[handleSelectionNext] No selectedRecordType - showing alert');
       alert('Please select an object type.');
       return;
     }
-    
+
     const object = templateObjects?.find((o) => o.name === selectedRecordType);
     if (!object) {
+      addDebugLog(`[handleSelectionNext] Object not found for selectedRecordType: "${selectedRecordType}"`);
       alert('Invalid object type selected.');
       return;
     }
-    
+
     if (!object.basicFields || object.basicFields.length === 0) {
+      addDebugLog(`[handleSelectionNext] Object "${selectedRecordType}" has no basic fields`);
       alert('This object type has no basic fields defined. Please define basic fields for this object in the Data Models section.');
       return;
     }
-    
+
     const newObjectId = `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    addDebugLog(`[handleSelectionNext] Creating new object with ID: ${newObjectId}`);
     
     setFormData((prev) => ({
       ...prev,
@@ -633,11 +671,26 @@ const RecordsEditor = memo(({
       linkId: newObjectId, // For objects, linkId is the same as docId
       typeOfObject: object.name,
       isObject: true,
+      isNewRecord: true, // Mark as new object for editor to know it's in create mode
       action: 'add',
       isModified: true,
     }));
     setIsObjectMode(true); // Switch to object mode when creating a new object
     setView('editor');
+    
+    // Set selectedRow in parent to prevent re-mounting during save
+    if (onCreateObject) {
+      const newObjectData = {
+        docId: newObjectId,
+        linkId: newObjectId,
+        typeOfObject: object.name,
+        isObject: true,
+        isNewRecord: true,
+      };
+      onCreateObject(newObjectData);
+    }
+    
+    addDebugLog(`[handleSelectionNext] Completed successfully - switching to editor view`);
   }, [selectedRecordType, templateObjects]);
 
   const handleClose = useCallback(() => {
@@ -828,22 +881,17 @@ const RecordsEditor = memo(({
       return;
     }
 
-    const newRecordData = {
-      docId: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const templateData = {
       linkId: formData.linkId,
       typeOfRecord: targetTemplate.name,
       typeOfObject: formData.typeOfObject,
       assignedTo: formData.assignedTo || user?.email || '',
       sheetName: selectedSheet || preSelectedSheet,
-      action: 'add',
-      isModified: true,
-      history: [],
     };
 
-    // Close current editor and open new one
+    // Open editor for creating new record (will be created on save)
     if (onOpenNewRecord) {
-      onClose(); // Close current editor first
-      onOpenNewRecord(newRecordData);
+      onOpenNewRecord(templateData);
     } else {
       // Fallback: reset current editor to create new record
       setView('editor');
@@ -1078,12 +1126,14 @@ const RecordsEditor = memo(({
     }
 
     try {
-      await onSave(newRow, isEditing);
+      // Remove client-side only fields before saving
+      const { isNewRecord, ...cleanNewRow } = newRow;
+      await onSave(cleanNewRow, isEditing);
       setIsViewingHistory(false);
       setSelectedHistoryDate(null);
       setIsHistoryModalOpen(false);
       setHasUnsavedChanges(false); // Reset unsaved changes after successful save
-      setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
+      setBaseDataForComparison({ ...cleanNewRow }); // Update base data for future change detection
     } catch (error) {
       console.error('Save failed:', error);
       alert('Failed to save. Please try again.');
@@ -1092,17 +1142,12 @@ const RecordsEditor = memo(({
     }
     
     // If this is a record (not an object), update the parent object's records array in local context only
-    // (The Firestore update is now handled atomically in the batch save operation)
-    if (!isObjectMode && newRow.linkId) {
-      console.log('🔄 [RecordsEditor] Updating parent object records in local context:', {
-        isObjectMode,
-        linkId: newRow.linkId,
-        recordDocId: newRow.docId,
-        typeOfRecord: newRow.typeOfRecord
-      });
+    // For new records, update immediately for UI feedback. For existing records, Sheets.jsx will handle it.
+    if (!isObjectMode && newRow.linkId && !isEditing) {
+      addDebugLog(`🔄 [RecordsEditor] Updating parent object records in local context: isObjectMode=${isObjectMode}, linkId=${newRow.linkId}, recordDocId=${newRow.docId}, typeOfRecord=${newRow.typeOfRecord}, isEditing=${isEditing}`);
       
       const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
-      console.log('🔍 [RecordsEditor] Found parent object:', parentObject);
+      addDebugLog(`🔍 [RecordsEditor] Found parent object: ${parentObject ? `docId=${parentObject.docId}, linkId=${parentObject.linkId}, typeOfObject=${parentObject.typeOfObject}` : 'NOT FOUND'}`);
       
       if (parentObject) {
         const recordInfo = {
@@ -1113,21 +1158,24 @@ const RecordsEditor = memo(({
         // Initialize records array if it doesn't exist
         if (!parentObject.records) {
           parentObject.records = [];
+          addDebugLog(`📋 [RecordsEditor] Initialized empty records array for parent object`);
         }
         
-        console.log('📋 [RecordsEditor] Parent object current records:', parentObject.records);
+        addDebugLog(`📋 [RecordsEditor] Parent object current records: ${JSON.stringify(parentObject.records)}`);
         
         // Check if record already exists in the array
         const existingIndex = parentObject.records.findIndex(r => r.docId === newRow.docId);
         if (existingIndex >= 0) {
           // Update existing record info
           parentObject.records[existingIndex] = recordInfo;
+          addDebugLog(`📝 [RecordsEditor] Updated existing record at index ${existingIndex}`);
         } else {
           // Add new record info
           parentObject.records.push(recordInfo);
+          addDebugLog(`➕ [RecordsEditor] Added new record to parent object records array`);
         }
         
-        console.log('📋 [RecordsEditor] Parent object updated records:', parentObject.records);
+        addDebugLog(`📋 [RecordsEditor] Parent object updated records: ${JSON.stringify(parentObject.records)}`);
         
         // Update the object in context only (no Firestore save needed)
         setObjects(prev => prev.map(obj => 
@@ -1142,10 +1190,13 @@ const RecordsEditor = memo(({
           }));
         }
         
-        console.log('✅ [RecordsEditor] Local context updated');
+        addDebugLog(`✅ [RecordsEditor] Local context updated for parent object ${parentObject.docId}`);
       } else {
-        console.error('❌ [RecordsEditor] Parent object not found in local context');
+        addDebugLog(`❌ [RecordsEditor] Parent object not found in local context for linkId ${newRow.linkId}`);
+        addDebugLog(`📊 [RecordsEditor] Available objects: ${objects.map(obj => `docId=${obj.docId}, linkId=${obj.linkId}`).join('; ')}`);
       }
+    } else {
+      addDebugLog(`⏭️ [RecordsEditor] Skipping parent object update: isObjectMode=${isObjectMode}, hasLinkId=${!!newRow.linkId}, isEditing=${isEditing}`);
     }
     
     // Keep the editor open after save and switch to editing mode if it was a new object
@@ -1700,13 +1751,13 @@ const RecordsEditor = memo(({
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={handleSave}
               >
-                {isViewingHistory ? 'Revert Data' : (!isEditing ? (isObjectMode ? 'Create Object' : 'Create Record') : 'Save')}
+                {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
               </button>
             )}
           </div>
           <div className={styles.contentWrapper}>
-            {isCreatingObject && (
-              // Loading state for object creation - Apple HIG inspired design
+            {isCreatingObject && isEditing && !isObjectMode && (
+              // Loading state for object/record saving - Apple HIG inspired design
               <div className={`${styles.loadingContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={styles.loadingContent}>
                   <div className={styles.loadingSpinner}>
@@ -1758,7 +1809,10 @@ const RecordsEditor = memo(({
                       <div className={styles.objectSelectionDropdown}>
                         <select
                           value={selectedRecordType}
-                          onChange={(e) => setSelectedRecordType(e.target.value)}
+                          onChange={(e) => {
+                            addDebugLog(`[objectSelect-onChange] Changing selectedRecordType from "${selectedRecordType}" to "${e.target.value}"`);
+                            setSelectedRecordType(e.target.value);
+                          }}
                           className={`${styles.objectSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                         >
                           <option value="">Select an object type...</option>
@@ -2223,9 +2277,6 @@ const RecordsEditor = memo(({
                           Create a new {template.name} record that will be automatically linked to this {formData.typeOfObject}.
                         </p>
                         <div className={styles.templateCardFooter}>
-                          <span className={styles.linkIdBadge}>
-                            Link ID: {formData.linkId}
-                          </span>
                           <button className={`${styles.templateCreateButton} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             Create →
                           </button>
@@ -2257,6 +2308,8 @@ RecordsEditor.propTypes = {
   onSave: PropTypes.func.isRequired,
   onOpenNewRecord: PropTypes.func, // Optional callback for opening new records
   onNavigateToRelatedRecord: PropTypes.func, // Optional callback for navigating to related records with parent context
+  onNavigateToObject: PropTypes.func, // Optional callback for navigating to object URLs
+  onCreateObject: PropTypes.func, // Optional callback for creating objects (sets selectedRow)
   initialRowData: PropTypes.shape({
     docId: PropTypes.string,
     sheetName: PropTypes.string,
@@ -2286,6 +2339,8 @@ RecordsEditor.defaultProps = {
   startInEditMode: false,
   onOpenNewRecord: null,
   onNavigateToRelatedRecord: null,
+  onNavigateToObject: null,
+  onCreateObject: null,
   parentObjectData: null,
   isObjectMode: false,
   isCreatingObject: false,
