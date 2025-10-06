@@ -412,6 +412,7 @@ const Sheets = ({
   const [editButtonPosition, setEditButtonPosition] = useState({ top: 0, left: 0 });
   const [_scrollOffset, _setScrollOffset] = useState(0);
   const [parentObject, setParentObject] = useState(null); // Track parent object for records
+  const [isCreatingObject, setIsCreatingObject] = useState(false); // Loading state for object creation
   const loadedFromUrlRef = useRef(null); // Track what we've loaded from URL to prevent re-loading
 
   const isMobile = windowWidth <= 1024;
@@ -923,6 +924,11 @@ const Sheets = ({
   const handleEditorSave = useCallback(
     async (updatedRow, isEditing) => {
       console.log('🔍 handleEditorSave called:', { updatedRow, isEditing, businessId });
+      
+      // Set loading state for object/record creation
+      if (!isEditing && (updatedRow.isObject === true || updatedRow.typeOfRecord)) {
+        setIsCreatingObject(true);
+      }
       if (!businessId) {
         console.error('❌ Cannot save: businessId is null/undefined');
         alert('Cannot save: Business ID not available. Please refresh the page and try again.');
@@ -955,14 +961,31 @@ const Sheets = ({
               }
               return [...prev, updatedRow];
             });
+
+            // For new objects, update URL to match the actual object ID and keep editor open in edit mode
+            const urlSheetName = activeSheetName.replace(/ /g, "-");
+            const objectUrl = `/sheets/${urlSheetName}/object/${updatedRow.docId}`;
+            console.log('🔗 Updating URL for new object:', objectUrl);
+            navigate(objectUrl, { replace: true });
+
+            // Update selectedRow to the saved object (this will switch RecordsEditor to edit mode)
+            setSelectedRow(updatedRow);
+
+            // Don't close the editor - keep it open in edit mode
+            // setIsEditorOpen(false); // Commented out to keep editor open
           } else {
             console.log('� Updating existing object in state:', updatedRow);
             setObjects((prev) =>
               prev.map((object) => (object.docId === rowId ? updatedRow : object))
             );
+            setIsEditorOpen(false); // Close editor for existing object updates
           }
         } catch (error) {
           console.error('Failed to save object to Firebase:', error);
+          setIsEditorOpen(false); // Close on error
+        } finally {
+          // Reset loading state
+          setIsCreatingObject(false);
         }
       } else {
         // Save record to Firebase first
@@ -984,6 +1007,18 @@ const Sheets = ({
               }
               return [...prev, updatedRow];
             });
+
+            // For new records, update URL to match the actual record ID and keep editor open in edit mode
+            const urlSheetName = activeSheetName.replace(/ /g, "-");
+            const recordUrl = `/sheets/${urlSheetName}/record/${updatedRow.docId}`;
+            console.log('🔗 Updating URL for new record:', recordUrl);
+            navigate(recordUrl, { replace: true });
+
+            // Update selectedRow to the saved record (this will switch RecordsEditor to edit mode)
+            setSelectedRow(updatedRow);
+
+            // Don't close the editor - keep it open in edit mode
+            // setIsEditorOpen(false); // Commented out to keep editor open
           } else {
             console.log('� Updating existing record in state:', updatedRow);
             setRecords((prev) =>
@@ -1023,7 +1058,12 @@ const Sheets = ({
         }
       }
       setSelectedRow(updatedRow);
-      setIsEditorOpen(false);
+      
+      // Only close editor for records or existing objects being edited
+      // Keep editor open for newly created objects (they switch to edit mode)
+      if (!isObject || isEditing) {
+        setIsEditorOpen(false);
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [records, objects, onRecordSave, setObjects, businessId, setRecords]
@@ -1483,6 +1523,7 @@ const Sheets = ({
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
               parentObjectData={parentObject}
+              isCreatingObject={isCreatingObject}
             />
           </div>
         )}
@@ -1519,6 +1560,7 @@ const Sheets = ({
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
               parentObjectData={parentObject}
+              isCreatingObject={isCreatingObject}
             />
           </div>
         </>

@@ -34,6 +34,7 @@ const RecordsEditor = memo(({
   preSelectedSheet,
   parentObjectData, // Parent object data for breadcrumbs when viewing records
   isObjectMode: propIsObjectMode,
+  isCreatingObject, // Loading state for object creation from parent
 }) => {
   // Clear old debug logs when component mounts
   useEffect(() => {
@@ -920,7 +921,7 @@ const RecordsEditor = memo(({
     }
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     // Prevent double-saves
     if (isSavingRef.current) {
       return;
@@ -1076,13 +1077,19 @@ const RecordsEditor = memo(({
       return;
     }
 
-    onSave(newRow, isEditing);
-    setIsViewingHistory(false);
-    setSelectedHistoryDate(null);
-    setIsHistoryModalOpen(false);
-    setHasUnsavedChanges(false); // Reset unsaved changes after successful save
-    setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
-    isSavingRef.current = false;
+    try {
+      await onSave(newRow, isEditing);
+      setIsViewingHistory(false);
+      setSelectedHistoryDate(null);
+      setIsHistoryModalOpen(false);
+      setHasUnsavedChanges(false); // Reset unsaved changes after successful save
+      setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert('Failed to save. Please try again.');
+    } finally {
+      isSavingRef.current = false;
+    }
     
     // If this is a record (not an object), update the parent object's records array in local context only
     // (The Firestore update is now handled atomically in the batch save operation)
@@ -1693,12 +1700,26 @@ const RecordsEditor = memo(({
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={handleSave}
               >
-                {isViewingHistory ? 'Revert Data' : 'Save'}
+                {isViewingHistory ? 'Revert Data' : (!isEditing ? (isObjectMode ? 'Create Object' : 'Create Record') : 'Save')}
               </button>
             )}
           </div>
           <div className={styles.contentWrapper}>
-            {view === 'objectTypeSelection' && (() => {
+            {isCreatingObject && (
+              // Loading state for object creation - Apple HIG inspired design
+              <div className={`${styles.loadingContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <div className={styles.loadingContent}>
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.spinnerRing}></div>
+                    <div className={styles.spinnerRing}></div>
+                    <div className={styles.spinnerRing}></div>
+                  </div>
+                  <h2 className={styles.loadingTitle}>Creating {isObjectMode ? 'Object' : 'Record'}</h2>
+                  <p className={styles.loadingSubtitle}>Please wait while we set up your new {isObjectMode ? 'object' : 'record'}...</p>
+                </div>
+              </div>
+            )}
+            {!isCreatingObject && view === 'objectTypeSelection' && (() => {
               // Get the preselected sheet's supported objects if available
               const currentSheet = preSelectedSheet ? sheets?.allSheets?.find(s => s.sheetName === preSelectedSheet) : null;
               const sheetSupportedObjectNames = currentSheet?.headers
@@ -1773,7 +1794,7 @@ const RecordsEditor = memo(({
                 </div>
               );
             })()}
-            {view === 'editor' && (
+            {!isCreatingObject && view === 'editor' && (
               <>
                 
                 {selectedSections.length > 0 ? (
@@ -2176,7 +2197,7 @@ const RecordsEditor = memo(({
                 )}
               </>
             )}
-            {view === 'relatedTemplates' && (
+            {!isCreatingObject && view === 'relatedTemplates' && (
               <div className={`${styles.sectionWrapper} ${styles.relatedTemplatesView} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={styles.selectionHeader}>
                   <h2 className={styles.selectionTitle}>Create Record</h2>
@@ -2258,6 +2279,7 @@ RecordsEditor.propTypes = {
   preSelectedSheet: PropTypes.string,
   parentObjectData: PropTypes.object, // Parent object data for breadcrumbs
   isObjectMode: PropTypes.bool,
+  isCreatingObject: PropTypes.bool, // Loading state for object creation
 };
 
 RecordsEditor.defaultProps = {
@@ -2266,6 +2288,7 @@ RecordsEditor.defaultProps = {
   onNavigateToRelatedRecord: null,
   parentObjectData: null,
   isObjectMode: false,
+  isCreatingObject: false,
 };
 
 export default RecordsEditor;
