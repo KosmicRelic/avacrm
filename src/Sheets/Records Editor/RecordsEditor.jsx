@@ -28,26 +28,40 @@ const RecordsEditor = memo(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
+  onNavigateToRelatedRecord, // New prop for navigating to related records with parent context
   initialRowData,
   startInEditMode,
   preSelectedSheet,
+  parentObjectData, // Parent object data for breadcrumbs when viewing records
   isObjectMode: propIsObjectMode,
 }) => {
   // Clear old debug logs when component mounts
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.debugLogs = [];
-      addDebugLog('🚀 RecordsEditor mounted');
-      addDebugLog(`  - startInEditMode: ${startInEditMode}`);
-      addDebugLog(`  - propIsObjectMode: ${propIsObjectMode}`);
-      addDebugLog(`  - initialRowData?.typeOfRecord: ${initialRowData?.typeOfRecord}`);
-      addDebugLog(`  - initialRowData?.typeOfObject: ${initialRowData?.typeOfObject}`);
     }
   }, []);
 
+  // Log what data we receive
+  useEffect(() => {
+    console.log('🎨 [RecordsEditor] Mounted/Updated with initialRowData:', {
+      docId: initialRowData?.docId,
+      typeOfRecord: initialRowData?.typeOfRecord,
+      typeOfObject: initialRowData?.typeOfObject,
+      isObject: initialRowData?.isObject,
+      fullData: initialRowData
+    });
+  }, [initialRowData]);
+
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'objectTypeSelection'); // 'objectTypeSelection' -> 'editor'
-  const [isObjectMode, setIsObjectMode] = useState(true); // Always object mode
+  
+  // Determine if we're in object mode based on the initialRowData
+  // An item is an object if it has isObject flag OR if it has a typeOfObject but no typeOfRecord (child record)
+  const initialIsObjectMode = initialRowData?.isObject === true || 
+                              (initialRowData?.typeOfObject && !initialRowData?.typeOfRecord);
+  const [isObjectMode, setIsObjectMode] = useState(initialIsObjectMode);
+  
   const [selectedSheet, setSelectedSheet] = useState(initialRowData?.sheetName || preSelectedSheet || '');
   const initialTemplate = initialRowData?.typeOfRecord
     ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
@@ -81,6 +95,22 @@ const RecordsEditor = memo(({
   // Ref to prevent double-saves
   const isSavingRef = useRef(false);
 
+  // Update isObjectMode when initialRowData changes (e.g., navigating between records/objects)
+  useEffect(() => {
+    if (initialRowData) {
+      const shouldBeObjectMode = initialRowData.isObject === true || 
+                                 (initialRowData.typeOfObject && !initialRowData.typeOfRecord);
+      console.log('🔄 [RecordsEditor] Updating isObjectMode:', {
+        currentMode: isObjectMode,
+        shouldBe: shouldBeObjectMode,
+        hasIsObject: initialRowData.isObject,
+        hasTypeOfObject: !!initialRowData.typeOfObject,
+        hasTypeOfRecord: !!initialRowData.typeOfRecord
+      });
+      setIsObjectMode(shouldBeObjectMode);
+    }
+  }, [initialRowData?.docId]); // Only run when the docId changes (different record/object)
+
   // Add useEffect to fetch related records when viewing an object
   useEffect(() => {
     if (view === 'editor' && isObjectMode && formData.linkId && businessId) {
@@ -109,82 +139,150 @@ const RecordsEditor = memo(({
 
   // Handler to navigate to a related record
   const handleViewRelatedRecord = useCallback((record) => {
-    addDebugLog('🔀 SWITCHING TO RELATED RECORD');
-    addDebugLog(`📝 Record type: ${record.typeOfRecord}`);
-    addDebugLog(`🔗 Link ID: ${record.linkId}`);
-    addDebugLog(`📋 Current selectedRecordType: ${selectedRecordType}`);
-    addDebugLog(`🏢 Current isObjectMode: ${isObjectMode}`);
+    console.log('🔍 handleViewRelatedRecord called:', {
+      record: record,
+      formData: formData,
+      hasCallback: !!onNavigateToRelatedRecord,
+      hasFormDataDocId: !!formData?.docId,
+      hasRecordDocId: !!record?.docId
+    });
     
     // Store the original object data before switching
     if (!viewingRelatedRecord) {
-      addDebugLog('💾 Storing original state');
-      addDebugLog(`  - Original formData.typeOfObject: ${formData.typeOfObject}`);
-      addDebugLog(`  - Original selectedRecordType: ${selectedRecordType}`);
-      addDebugLog(`  - Original isObjectMode: ${isObjectMode}`);
       setOriginalObjectData(formData);
       setOriginalRecordType(selectedRecordType);
       setOriginalIsObjectMode(isObjectMode);
     }
     
-    // Switch to viewing the related record
-    addDebugLog(`✅ Setting new state:`);
-    addDebugLog(`  - New selectedRecordType: ${record.typeOfRecord}`);
-    addDebugLog(`  - New isObjectMode: false`);
-    addDebugLog(`  - New isEditing: true`);
-    addDebugLog(`  - Setting baseDataForComparison to record data`);
-    
-    setViewingRelatedRecord(record);
-    setFormData(record);
-    setBaseDataForComparison({ ...record }); // Set base data for change detection
-    setSelectedRecordType(record.typeOfRecord);
-    setIsObjectMode(false);
-    setIsEditing(true);
-    
-    // Collapse the related records section
-    setExpandedSections({ relatedRecords: false });
-  }, [viewingRelatedRecord, formData, selectedRecordType, isObjectMode]);
+    // If we have a navigation callback and both object and record have docIds, use URL navigation
+    if (onNavigateToRelatedRecord && formData?.docId && record?.docId) {
+      console.log('✅ Calling navigation callback');
+      onNavigateToRelatedRecord(record, formData);
+    } else {
+      console.log('⚠️ Using fallback navigation');
+      // Fallback to in-component navigation (old behavior)
+      // Switch to viewing the related record
+      setViewingRelatedRecord(record);
+      setFormData(record);
+      setBaseDataForComparison({ ...record }); // Set base data for change detection
+      setSelectedRecordType(record.typeOfRecord);
+      setIsObjectMode(false);
+      setIsEditing(true);
+      
+      // Collapse the related records section
+      setExpandedSections({ relatedRecords: false });
+    }
+  }, [viewingRelatedRecord, formData, selectedRecordType, isObjectMode, onNavigateToRelatedRecord]);
 
   // Handler to go back to the original object
   const handleBackToObject = useCallback(() => {
-    addDebugLog('⬅️ GOING BACK TO OBJECT');
-    if (originalObjectData) {
-      addDebugLog(`✅ Restoring original state:`);
-      addDebugLog(`  - Original typeOfObject: ${originalObjectData.typeOfObject}`);
-      addDebugLog(`  - Original selectedRecordType: ${originalRecordType}`);
-      addDebugLog(`  - Original isObjectMode: ${originalIsObjectMode}`);
-      addDebugLog(`  - Restoring baseDataForComparison to original object`);
-      
-      setFormData(originalObjectData);
-      setBaseDataForComparison({ ...originalObjectData }); // Restore base data
-      setSelectedRecordType(originalRecordType);
-      setIsObjectMode(originalIsObjectMode);
-      setIsEditing(!!originalObjectData.docId);
-      setViewingRelatedRecord(null);
-      setExpandedSections({ relatedRecords: true });
+    const targetObject = originalObjectData || parentObjectData;
+    
+    if (targetObject && targetObject.docId) {
+      // Use the navigation callback to navigate to the object URL
+      // Pass the object as both parameters to trigger object-only navigation
+      if (onNavigateToRelatedRecord) {
+        console.log('🔄 Navigating back to object via URL:', targetObject);
+        onNavigateToRelatedRecord(targetObject, targetObject); // Both params same = navigate to object URL
+      } else {
+        // Fallback: restore object data in current editor
+        console.log('⚠️ No navigation callback, restoring object data locally');
+        setFormData(targetObject);
+        setBaseDataForComparison({ ...targetObject });
+        setSelectedRecordType(originalRecordType || null);
+        setIsObjectMode(true);
+        setIsEditing(!!targetObject.docId);
+        setViewingRelatedRecord(null);
+        setExpandedSections({ relatedRecords: true });
+      }
     } else {
-      addDebugLog('❌ No original object data found!');
+      console.log('❌ No object data found for navigation!');
     }
-  }, [originalObjectData, originalRecordType, originalIsObjectMode]);
+  }, [originalObjectData, parentObjectData, originalRecordType, onNavigateToRelatedRecord]);
+
+  // Render breadcrumbs for navigation
+  const renderBreadcrumbs = () => {
+    const breadcrumbs = [];
+
+    // When viewing a record (either via navigation or direct URL), show Object > Record Type
+    if (!isObjectMode && isEditing && formData.typeOfRecord) {
+      // Try to get parent object info from parentObjectData prop, originalObjectData, or from context
+      const parentObject = parentObjectData || originalObjectData;
+      if (parentObject && parentObject.typeOfObject) {
+        breadcrumbs.push({
+          label: parentObject.typeOfObject,
+          type: 'Object',
+          onClick: handleBackToObject
+        });
+      }
+      breadcrumbs.push({
+        label: formData.typeOfRecord,
+        type: 'Record',
+        onClick: null // Current page, no click
+      });
+    }
+    // When viewing an object, just show the object name (no navigation needed)
+    else if (isObjectMode && isEditing && formData.typeOfObject) {
+      breadcrumbs.push({
+        label: formData.typeOfObject,
+        type: 'Object',
+        onClick: null // Current page, no click
+      });
+    }
+
+    if (breadcrumbs.length === 0) return null;
+
+    return (
+      <div className={`${styles.breadcrumbs} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        {breadcrumbs.map((crumb, index) => (
+          <div key={index} className={styles.breadcrumbItem}>
+            {index > 0 && (
+              <svg
+                className={styles.breadcrumbChevron}
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4.5 9L7.5 6L4.5 3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            <button
+              onClick={crumb.onClick}
+              className={`${styles.breadcrumbButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              disabled={!crumb.onClick} // Disable if no onClick (current page)
+            >
+              <div className={styles.breadcrumbLabel}>
+                {crumb.label}
+              </div>
+              {crumb.type && (
+                <div className={`${styles.breadcrumbType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {crumb.type}
+                </div>
+              )}
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const selectedSections = useMemo(() => {
-    addDebugLog('🔍 CALCULATING selectedSections');
-    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
-    addDebugLog(`  - selectedRecordType: ${selectedRecordType}`);
-    addDebugLog(`  - formData.typeOfObject: ${formData.typeOfObject}`);
-    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
-    addDebugLog(`  - isEditing: ${isEditing}`);
-    
     if (isObjectMode) {
       // Object mode: use basicFields from the selected object
       const objectName = formData.typeOfObject || (isEditing ? initialRowData?.typeOfObject : selectedRecordType);
-      addDebugLog(`  - Looking for object: ${objectName}`);
       const object = templateObjects?.find((o) => o.name === objectName);
       
       if (!object || !object.basicFields) {
-        addDebugLog(`  ❌ Object not found or no basicFields`);
         return [];
       }
-      addDebugLog(`  ✅ Found object with ${object.basicFields.length} fields`);
 
       const basicFieldsSection = {
         name: 'Basic Information',
@@ -199,15 +297,11 @@ const RecordsEditor = memo(({
     } else {
       // Record mode: existing logic
       const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
-      addDebugLog(`  - Looking for template: ${templateName}`);
-      addDebugLog(`  - Available templates: ${recordTemplates?.map(t => t.name).join(', ')}`);
       const template = recordTemplates?.find((t) => t.name === templateName);
       
       if (!template || !template.sections) {
-        addDebugLog(`  ❌ Template not found or no sections`);
         return [];
       }
-      addDebugLog(`  ✅ Found template with ${template.sections.length} sections`);
 
       const templateSections = template.sections.map((section) => ({
         name: section.name,
@@ -374,6 +468,7 @@ const RecordsEditor = memo(({
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
     if (initialRowData) {
+      console.log('📝 Setting up for editing existing record/object:', initialRowData);
       const newTemplate = initialRowData.typeOfRecord
         ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
         : null;
@@ -381,6 +476,7 @@ const RecordsEditor = memo(({
       setSelectedSheet(initialRowData.sheetName || preSelectedSheet || '');
       setSelectedRecordType(newTemplate?.name || '');
       setFormData({ ...initialRowData });
+      setBaseDataForComparison({ ...initialRowData });
       setIsEditing(!!initialRowData.docId);
       setView('editor');
       
@@ -462,6 +558,11 @@ const RecordsEditor = memo(({
     }
 
     // Compare current formData with baseDataForComparison to detect changes
+    const normalizeValue = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim();
+    };
+
     const hasChanges = Object.keys(formData).some((key) => {
       if (
         key !== 'docId' &&
@@ -472,9 +573,32 @@ const RecordsEditor = memo(({
         key !== 'isModified' &&
         key !== 'action' &&
         key !== 'isObject' &&
-        key !== 'records'
+        key !== 'records' &&
+        key !== 'linkId'
       ) {
-        return formData[key] !== baseDataForComparison[key];
+        const formValue = normalizeValue(formData[key]);
+        const baseValue = normalizeValue(baseDataForComparison[key]);
+        const isDifferent = formValue !== baseValue;
+        return isDifferent;
+      }
+      return false;
+    }) || Object.keys(baseDataForComparison).some((key) => {
+      if (
+        key !== 'docId' &&
+        key !== 'sheetName' &&
+        key !== 'typeOfRecord' &&
+        key !== 'typeOfObject' &&
+        key !== 'history' &&
+        key !== 'isModified' &&
+        key !== 'action' &&
+        key !== 'isObject' &&
+        key !== 'records' &&
+        key !== 'linkId' &&
+        !(key in formData)
+      ) {
+        const baseValue = normalizeValue(baseDataForComparison[key]);
+        const isDifferent = baseValue !== '';
+        return isDifferent;
       }
       return false;
     });
@@ -577,10 +701,13 @@ const RecordsEditor = memo(({
             formattedValue = '';
           }
         }
-        setFormData((prev) => ({ ...prev, [key]: formattedValue }));
+        setFormData((prev) => {
+          const newFormData = { ...prev, [key]: formattedValue };
+          return newFormData;
+        });
       }
     },
-    [isViewingHistory, formData]
+    [isViewingHistory]
   );
 
   // Helper functions for phone number handling
@@ -644,7 +771,7 @@ const RecordsEditor = memo(({
   const getAvailablePipelines = useCallback(() => {
     // Use formData.typeOfRecord first (for pipeline conversions), then fall back to other sources
     const templateName = formData.typeOfRecord || (isEditing ? initialRowData?.typeOfRecord : selectedRecordType);
-    const currentTemplate = recordTemplates?.find((t) => t.name === templateName);
+    const currentTemplate = recordTemplates?.find((t) => t.docId === templateName);
     
     if (!currentTemplate || !templateObjects) {
       return [];
@@ -780,13 +907,8 @@ const RecordsEditor = memo(({
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(() => {
-    addDebugLog('💾 ========== SAVE BUTTON CLICKED ==========');
-    console.log('🔍 RecordsEditor handleSave called:', { formData, isEditing, isObjectMode, selectedSheet, isSaving: isSavingRef.current });
-    
     // Prevent double-saves
     if (isSavingRef.current) {
-      addDebugLog('⚠️ Save already in progress, ignoring duplicate call');
-      console.log('⚠️ Save already in progress, ignoring duplicate call');
       return;
     }
     
@@ -797,25 +919,15 @@ const RecordsEditor = memo(({
       isSavingRef.current = false;
       return;
     }
-    addDebugLog('💾 ATTEMPTING TO SAVE');
-    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
-    addDebugLog(`  - isEditing: ${isEditing}`);
-    addDebugLog(`  - selectedRecordType: ${selectedRecordType}`);
-    addDebugLog(`  - initialRowData?.typeOfRecord: ${initialRowData?.typeOfRecord}`);
-    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
     
     const templateName = isEditing ? (formData.typeOfRecord || initialRowData?.typeOfRecord) : selectedRecordType;
-    addDebugLog(`  - Looking for template: ${templateName}`);
     const template = isObjectMode ? null : recordTemplates?.find((t) => t.name === templateName);
     
     if (!isObjectMode && !template) {
-      addDebugLog(`  ❌ TEMPLATE NOT FOUND!`);
-      addDebugLog(`  - Available templates: ${recordTemplates?.map(t => t.name).join(', ')}`);
       alert('Invalid record type selected.');
       isSavingRef.current = false;
       return;
     }
-    addDebugLog(`  ✅ Template found or in object mode`);
     const hasData = Object.keys(formData).some(
       (key) => key !== 'sheetName' && key !== 'typeOfRecord' && key !== 'typeOfObject' && key !== 'docId' && formData[key] && formData[key].toString().trim() !== ''
     );
@@ -825,11 +937,6 @@ const RecordsEditor = memo(({
       return;
     }
 
-    addDebugLog('🔨 Building newRow object');
-    addDebugLog(`  - formData.docId: ${formData.docId}`);
-    addDebugLog(`  - formData.typeOfRecord: ${formData.typeOfRecord}`);
-    addDebugLog(`  - isObjectMode: ${isObjectMode}`);
-    
     let newRow = {
       ...formData,
       docId: formData.docId || (isEditing && initialRowData?.docId ? initialRowData.docId : `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
@@ -853,11 +960,6 @@ const RecordsEditor = memo(({
       lastModifiedBy: user?.uid || user?.email || 'unknown',
       history: formData.history || [],
     };
-    
-    addDebugLog(`  - newRow.docId: ${newRow.docId}`);
-    addDebugLog(`  - newRow.typeOfRecord: ${newRow.typeOfRecord}`);
-    addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
-    addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
 
     // Clean up empty/null/undefined fields
     const requiredFields = isObjectMode 
@@ -897,7 +999,6 @@ const RecordsEditor = memo(({
         newRow[key] = historicalFormData[key];
       });
     } else if (isEditing) {
-      addDebugLog('📊 Comparing formData with baseDataForComparison');
       // Compare current formData with baseDataForComparison to detect changes
       Object.keys(formData).forEach((key) => {
         if (
@@ -907,9 +1008,6 @@ const RecordsEditor = memo(({
           key !== 'history' &&
           formData[key] !== baseDataForComparison[key]
         ) {
-          addDebugLog(`  - Changed field: ${key}`);
-          addDebugLog(`    Old value: ${baseDataForComparison[key]}`);
-          addDebugLog(`    New value: ${formData[key]}`);
           newHistory.push({
             field: key,
             value: formData[key] || '',
@@ -943,27 +1041,18 @@ const RecordsEditor = memo(({
     // Determine if we should save based on whether there are actual changes
     let shouldSave = false;
     
-    addDebugLog('🔍 Checking if should save:');
-    addDebugLog(`  - isViewingHistory: ${isViewingHistory}`);
-    addDebugLog(`  - isEditing: ${isEditing}`);
-    addDebugLog(`  - newHistory.length: ${newHistory.length}`);
-    
     if (isViewingHistory && selectedHistoryDate) {
       // When viewing history, save if changes were made to historical data
       shouldSave = newHistory.length > 0;
-      addDebugLog(`  - Viewing history mode: shouldSave = ${shouldSave}`);
     } else if (isEditing) {
       // For existing records, only save if there are changes
       shouldSave = newHistory.length > 0;
-      addDebugLog(`  - Editing mode: shouldSave = ${shouldSave}`);
     } else {
       // For new records, always save (validation already checked hasData)
       shouldSave = true;
-      addDebugLog(`  - New record mode: shouldSave = ${shouldSave}`);
     }
 
     if (!shouldSave) {
-      addDebugLog('❌ No changes detected, closing without saving');
       // No changes detected, just close without saving
       setIsViewingHistory(false);
       setSelectedHistoryDate(null);
@@ -973,14 +1062,6 @@ const RecordsEditor = memo(({
       return;
     }
 
-    addDebugLog('✅ Calling onSave with newRow');
-    addDebugLog(`  - newRow.docId: ${newRow.docId}`);
-    addDebugLog(`  - newRow.typeOfRecord: ${newRow.typeOfRecord}`);
-    addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
-    addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
-    addDebugLog('📤 Sending to Firestore:');
-    addDebugLog(`  - Number of fields: ${Object.keys(newRow).length}`);
-    
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
@@ -991,7 +1072,6 @@ const RecordsEditor = memo(({
     
     // If this is a record (not an object), update the parent object's records array
     if (!isObjectMode && newRow.linkId) {
-      addDebugLog('🔗 Updating parent object records array');
       const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
       if (parentObject) {
         const recordInfo = {
@@ -1009,11 +1089,9 @@ const RecordsEditor = memo(({
         if (existingIndex >= 0) {
           // Update existing record info
           parentObject.records[existingIndex] = recordInfo;
-          addDebugLog(`✅ Updated existing record in parent object: ${recordInfo.typeOfRecord}`);
         } else {
           // Add new record info
           parentObject.records.push(recordInfo);
-          addDebugLog(`✅ Added new record to parent object: ${recordInfo.typeOfRecord}`);
         }
         
         // Update the object in context and save to Firestore
@@ -1026,18 +1104,15 @@ const RecordsEditor = memo(({
         delete cleanParentObject.action;
         delete cleanParentObject.isModified;
         // Keep isObject as it's needed in Firestore
-        addDebugLog('📤 Saving parent object with updated records array');
         onSave(cleanParentObject, true); // Save parent object with updated records array
       }
     }
     
     // Keep the editor open after save and switch to editing mode if it was a new object
     if (!isEditing) {
-      addDebugLog('🆕 New record/object saved, switching to edit mode');
       setIsEditing(true);
       setFormData({ ...newRow });
     } else {
-      addDebugLog('✏️ Existing record/object updated, staying in edit mode');
       setFormData({ ...newRow });
     }
     // Editor stays open - user must manually close it
@@ -1504,10 +1579,7 @@ const RecordsEditor = memo(({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  addDebugLog('🔘 SAVE BUTTON CLICKED IN UI');
-                  handleSave();
-                }}
+                onClick={handleSave}
                 className={[styles.multiSelectDropdownButton, styles.save].join(' ')}
               >
                 Save
@@ -1524,63 +1596,39 @@ const RecordsEditor = memo(({
       <div className={styles.viewContainer}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <button
-              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={
-                viewingRelatedRecord ? handleBackToObject :
-                view === 'relatedTemplates' ? () => setView('editor') :
-                view === 'objectTypeSelection' ? handleClose :
-                handleClose
-              }
-              aria-label="Back"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            {/* Only show back button when viewing objects (not creating or viewing records) */}
+            {isObjectMode && !viewingRelatedRecord && isEditing && (
+              <button
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={handleClose}
+                aria-label="Back"
               >
-                <path
-                  d="M10 12L6 8L10 4"
-                  stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 12L6 8L10 4"
+                    stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
             <div className={styles.navContent}>
-              <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {viewingRelatedRecord ? (
-                  <div className={styles.breadcrumbTrail}>
-                    <span className={`${styles.breadcrumbItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {originalObjectData?.typeOfObject}
-                    </span>
-                    <svg className={`${styles.breadcrumbArrow} ${isDarkTheme ? styles.darkTheme : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                    <span className={`${styles.breadcrumbItem} ${styles.breadcrumbItemCurrent} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {formData.typeOfRecord}
-                    </span>
-                  </div>
-                ) : view === 'relatedTemplates' ? (
-                  <div className={styles.breadcrumbTrail}>
-                    <span className={`${styles.breadcrumbItem} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {formData.typeOfObject}
-                    </span>
-                    <svg className={`${styles.breadcrumbArrow} ${isDarkTheme ? styles.darkTheme : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                    <span className={`${styles.breadcrumbItem} ${styles.breadcrumbItemCurrent} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      Create Record
-                    </span>
-                  </div>
-                ) : (
-                  isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
-                  view === 'objectTypeSelection' ? 'Create New Object' : 'New Object'
-                )}
-              </h1>
+              {renderBreadcrumbs() || (
+                <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
+                  view === 'objectTypeSelection' ? 'Create New Object' : 
+                  view === 'relatedTemplates' ? 'Create Record' : 
+                  'New Object'}
+                </h1>
+              )}
             </div>
             {view === 'objectTypeSelection' && (
               <button
@@ -1592,7 +1640,7 @@ const RecordsEditor = memo(({
                 Next
               </button>
             )}
-            {view === 'editor' && !viewingRelatedRecord && hasUnsavedChanges && (
+            {view === 'editor' && hasUnsavedChanges && (
               <button
                 type="button"
                 className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -1673,6 +1721,7 @@ const RecordsEditor = memo(({
             })()}
             {view === 'editor' && (
               <>
+                
                 {selectedSections.length > 0 ? (
                   selectedSections.map((section, index) => (
                     <div key={`${section.name}-${index}`} className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${
@@ -1926,8 +1975,8 @@ const RecordsEditor = memo(({
                   </p>
                 )}
                 
-                {/* Create Record Section - Show for records with linkId */}
-                {view === 'editor' && isEditing && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
+                {/* Create Record Section - Show only for objects with linkId */}
+                {view === 'editor' && isEditing && isObjectMode && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
                   <div className={`${styles.createRecordSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <div className={styles.createRecordCard} onClick={() => setView('relatedTemplates')}>
                       <div className={styles.createRecordIcon}>
@@ -2037,7 +2086,14 @@ const RecordsEditor = memo(({
                               className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addDebugLog('🔘 View button clicked for record: ' + record.typeOfRecord);
+                                console.log('🔘 View button clicked for record:', {
+                                  recordType: record.typeOfRecord,
+                                  recordId: record.docId,
+                                  parentObject: formData.typeOfObject,
+                                  parentObjectId: formData.docId,
+                                  hasNavigationCallback: !!onNavigateToRelatedRecord,
+                                  willNavigateToURL: !!onNavigateToRelatedRecord && !!formData.docId && !!record.docId
+                                });
                                 handleViewRelatedRecord(record);
                               }}
                             >
@@ -2125,6 +2181,7 @@ RecordsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   onOpenNewRecord: PropTypes.func, // Optional callback for opening new records
+  onNavigateToRelatedRecord: PropTypes.func, // Optional callback for navigating to related records with parent context
   initialRowData: PropTypes.shape({
     docId: PropTypes.string,
     sheetName: PropTypes.string,
@@ -2145,12 +2202,15 @@ RecordsEditor.propTypes = {
   }),
   startInEditMode: PropTypes.bool,
   preSelectedSheet: PropTypes.string,
+  parentObjectData: PropTypes.object, // Parent object data for breadcrumbs
   isObjectMode: PropTypes.bool,
 };
 
 RecordsEditor.defaultProps = {
   startInEditMode: false,
   onOpenNewRecord: null,
+  onNavigateToRelatedRecord: null,
+  parentObjectData: null,
   isObjectMode: false,
 };
 

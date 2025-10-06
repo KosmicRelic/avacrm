@@ -10,7 +10,7 @@ import { FiEdit } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
-import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Debug logging utility
@@ -381,6 +381,8 @@ const Sheets = ({
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
   const [editButtonPosition, setEditButtonPosition] = useState({ top: 0, left: 0 });
   const [_scrollOffset, _setScrollOffset] = useState(0);
+  const [parentObject, setParentObject] = useState(null); // Track parent object for records
+  const loadedFromUrlRef = useRef(null); // Track what we've loaded from URL to prevent re-loading
 
   const isMobile = windowWidth <= 1024;
 
@@ -636,9 +638,21 @@ const Sheets = ({
   const clearSearch = useCallback(() => setSearchQuery(''), []);
 
   const recordIdFromUrl = params.recordId;
+  const objectIdFromUrl = params.objectId;
 
+  // Clear the loaded URL ref when the URL params change
   useEffect(() => {
-    if (recordIdFromUrl && records.length > 0) {
+    const urlKey = `${objectIdFromUrl || ''}_${recordIdFromUrl || ''}`;
+    if (loadedFromUrlRef.current && loadedFromUrlRef.current !== urlKey) {
+      console.log('🔄 URL changed, clearing loaded ref:', loadedFromUrlRef.current, '->', urlKey);
+      loadedFromUrlRef.current = null;
+    }
+  }, [objectIdFromUrl, recordIdFromUrl]);
+
+  // Handle opening record from URL (with optional parent object)
+  useEffect(() => {
+    // Skip if we have an objectId - will be handled in the object effect
+    if (recordIdFromUrl && !objectIdFromUrl && records.length > 0) {
       const record = records.find((c) => c.docId === recordIdFromUrl);
       if (record) {
         console.log('🔍 Opening editor for record from URL:', record);
@@ -646,7 +660,114 @@ const Sheets = ({
         setIsEditorOpen(true);
       }
     }
-  }, [recordIdFromUrl, records]);
+  }, [recordIdFromUrl, objectIdFromUrl, records]);
+
+  // Handle opening object and/or record from URL
+  useEffect(() => {
+    if (!businessId) return;
+    
+    const loadFromUrl = async () => {
+      console.log('🔄 [URL Effect] Running with:', { 
+        objectIdFromUrl, 
+        recordIdFromUrl, 
+        objectsLoading,
+        objectsCount: objects.length 
+      });
+      
+      // Check if we've already loaded this exact URL combination
+      const urlKey = `${objectIdFromUrl || ''}_${recordIdFromUrl || ''}`;
+      if (loadedFromUrlRef.current === urlKey && isEditorOpen && selectedRow?.docId) {
+        console.log('⏭️ Already loaded this URL, skipping to prevent remount');
+        return;
+      }
+      
+      // Case 1: We have an objectId in the URL
+      if (objectIdFromUrl) {
+        // Wait for objects to load if they haven't yet
+        if (objectsLoading) {
+          console.log('⏳ Waiting for objects to load...');
+          return;
+        }
+        
+        let object = objects.find((obj) => obj.docId === objectIdFromUrl);
+        
+        // If object not found in memory, try fetching from Firestore
+        if (!object && objects.length > 0) {
+          console.log('🔍 Object not in sheet, fetching from Firestore:', objectIdFromUrl);
+          try {
+            const objectRef = doc(db, 'businesses', businessId, 'objects', objectIdFromUrl);
+            const objectSnap = await getDoc(objectRef);
+            
+            if (objectSnap.exists()) {
+              object = { docId: objectSnap.id, ...objectSnap.data() };
+              console.log('✅ Object fetched from Firestore:', object);
+              
+              // Add to objects array
+              setObjects((prev) => {
+                const exists = prev.some(o => o.docId === object.docId);
+                return exists ? prev : [...prev, object];
+              });
+            } else {
+              console.warn('⚠️ Object not found in Firestore:', objectIdFromUrl);
+              return;
+            }
+          } catch (error) {
+            console.error('❌ Error fetching object:', error);
+            return;
+          }
+        }
+        
+        if (object) {
+          // Case 1a: We also have a recordId - fetch and open the record
+          if (recordIdFromUrl) {
+            console.log('🔍 Fetching record from URL with parent object:', recordIdFromUrl);
+            
+            try {
+              const recordRef = doc(db, 'businesses', businessId, 'records', recordIdFromUrl);
+              const recordSnap = await getDoc(recordRef);
+              
+              if (recordSnap.exists()) {
+                const record = { docId: recordSnap.id, ...recordSnap.data() };
+                console.log('✅ Record fetched from Firestore:', record);
+                console.log('📌 Setting selectedRow to RECORD:', record.docId);
+                
+                // Add the record to the records array if not already there
+                setRecords((prev) => {
+                  const exists = prev.some(r => r.docId === record.docId);
+                  return exists ? prev : [...prev, record];
+                });
+                
+                setParentObject(object); // Set the parent object for the record
+                setSelectedRow(record);
+                setIsEditorOpen(true);
+                
+                // Mark this URL as loaded
+                loadedFromUrlRef.current = `${objectIdFromUrl}_${recordIdFromUrl}`;
+              } else {
+                console.warn('⚠️ Record not found:', recordIdFromUrl);
+              }
+            } catch (error) {
+              console.error('❌ Error fetching record:', error);
+            }
+          } else {
+            // Case 1b: Only objectId - open the object
+            console.log('🔍 Opening editor for object from URL:', object);
+            console.log('📌 Setting selectedRow to OBJECT:', object.docId);
+            setParentObject(null); // Clear parent object when viewing an object
+            setSelectedRow(object);
+            setIsEditorOpen(true);
+            
+            // Mark this URL as loaded
+            loadedFromUrlRef.current = `${objectIdFromUrl}_`;
+          }
+        } else {
+          console.warn('⚠️ Object not found:', objectIdFromUrl);
+        }
+      }
+    };
+    
+    loadFromUrl();
+  }, [objectIdFromUrl, recordIdFromUrl, objects, objectsLoading, businessId, setRecords, setObjects]);
 
   const handleRowClick = useCallback(
     (rowData) => {
@@ -670,36 +791,72 @@ const Sheets = ({
 
   const handleRowEdit = useCallback(
     (rowData) => {
-      const fullRecord = records.find((record) => record.docId === rowData.docId) || rowData;
-      setSelectedRow(fullRecord);
+      // Check if this is an object or a record
+      const isObject = rowData.isObject === true || objects.some(obj => obj.docId === rowData.docId);
+      const fullData = isObject 
+        ? (objects.find((obj) => obj.docId === rowData.docId) || rowData)
+        : (records.find((record) => record.docId === rowData.docId) || rowData);
+      
+      // If this is a record, find its parent object by linkId
+      if (!isObject && fullData.linkId) {
+        const parent = objects.find(obj => obj.linkId === fullData.linkId);
+        setParentObject(parent || null);
+      } else {
+        setParentObject(null);
+      }
+      
+      setSelectedRow(fullData);
       setIsEditorOpen(true);
       setIsClosing(false);
-      onRowClick(fullRecord);
-      if (fullRecord?.docId) {
+      onRowClick(fullData);
+      
+      if (fullData?.docId) {
         const urlSheetName = activeSheetName.replace(/ /g, "-");
-        navigate(`/sheets/${urlSheetName}/${fullRecord.docId}`, { replace: false });
+        // Use different URL pattern for objects vs records
+        const url = isObject 
+          ? `/sheets/${urlSheetName}/object/${fullData.docId}`
+          : `/sheets/${urlSheetName}/${fullData.docId}`;
+        navigate(url, { replace: false });
       }
       setSelectedRowForEdit(null); // Clear any existing selection
     },
-    [records, onRowClick, activeSheetName, navigate]
+    [records, objects, onRowClick, activeSheetName, navigate]
   );
 
   const handleFloatingEditClick = useCallback(
     () => {
       if (selectedRowForEdit) {
-        const fullRecord = records.find((record) => record.docId === selectedRowForEdit.docId) || selectedRowForEdit;
-        setSelectedRow(fullRecord);
+        // Check if this is an object or a record
+        const isObject = selectedRowForEdit.isObject === true || objects.some(obj => obj.docId === selectedRowForEdit.docId);
+        const fullData = isObject
+          ? (objects.find((obj) => obj.docId === selectedRowForEdit.docId) || selectedRowForEdit)
+          : (records.find((record) => record.docId === selectedRowForEdit.docId) || selectedRowForEdit);
+        
+        // If this is a record, find its parent object by linkId
+        if (!isObject && fullData.linkId) {
+          const parent = objects.find(obj => obj.linkId === fullData.linkId);
+          setParentObject(parent || null);
+        } else {
+          setParentObject(null);
+        }
+        
+        setSelectedRow(fullData);
         setIsEditorOpen(true);
         setIsClosing(false);
-        onRowClick(fullRecord);
-        if (fullRecord?.docId) {
+        onRowClick(fullData);
+        
+        if (fullData?.docId) {
           const urlSheetName = activeSheetName.replace(/ /g, "-");
-          navigate(`/sheets/${urlSheetName}/${fullRecord.docId}`, { replace: false });
+          // Use different URL pattern for objects vs records
+          const url = isObject 
+            ? `/sheets/${urlSheetName}/object/${fullData.docId}`
+            : `/sheets/${urlSheetName}/${fullData.docId}`;
+          navigate(url, { replace: false });
         }
         setSelectedRowForEdit(null); // Clear selection after opening editor
       }
     },
-    [selectedRowForEdit, records, onRowClick, activeSheetName, navigate]
+    [selectedRowForEdit, records, objects, onRowClick, activeSheetName, navigate]
   );
 
   const handleEditorClose = useCallback(() => {
@@ -708,16 +865,27 @@ const Sheets = ({
       setIsEditorOpen(false);
       setSelectedRow(null);
       setSelectedRowForEdit(null);
+      setParentObject(null); // Clear parent object reference
+      loadedFromUrlRef.current = null; // Clear loaded URL ref
       setIsClosing(false);
       
-      // Only navigate if we're on a record-specific URL (e.g., /sheets/Customers/record_123)
-      // to avoid triggering unnecessary refetches
+      // Determine where to navigate back to
       const currentPath = window.location.pathname;
       const urlSheetName = activeSheetName.replace(/ /g, "-");
-      const expectedPath = `/sheets/${urlSheetName}`;
       
-      if (currentPath !== expectedPath) {
-        navigate(expectedPath, { replace: true });
+      // Check if we're viewing a record under an object
+      const objectRecordMatch = currentPath.match(/\/sheets\/[^/]+\/object\/([^/]+)\/record\//);
+      if (objectRecordMatch) {
+        // Navigate back to the parent object
+        const parentObjectId = objectRecordMatch[1];
+        const backToObjectPath = `/sheets/${urlSheetName}/object/${parentObjectId}`;
+        navigate(backToObjectPath, { replace: true });
+      } else {
+        // Check if we're viewing an object or record directly
+        const expectedPath = `/sheets/${urlSheetName}`;
+        if (currentPath !== expectedPath) {
+          navigate(expectedPath, { replace: true });
+        }
       }
     }, 300);
   }, [activeSheetName, navigate]);
@@ -898,6 +1066,57 @@ const Sheets = ({
       setIsEditorOpen(true);
     },
     [onRecordSave, setRecords]
+  );
+
+  // Handle navigation to a related record from an object
+  const handleNavigateToRelatedRecord = useCallback(
+    (recordData, currentFormData) => {
+      console.log('🔍 [Sheets] handleNavigateToRelatedRecord called');
+      console.log('  📄 Record data:', recordData);
+      console.log('  📋 Current form data:', currentFormData);
+      console.log('  🗂️ Stored parent object:', parentObject);
+      
+      // Special case: if recordData and currentFormData are the same object, navigate to object URL only
+      const isNavigatingToObject = recordData?.docId === currentFormData?.docId && 
+                                   (recordData?.isObject === true || objects.some(obj => obj.docId === recordData?.docId));
+      
+      if (isNavigatingToObject) {
+        // Navigate to object URL only
+        const urlSheetName = activeSheetName.replace(/ /g, "-");
+        const url = `/sheets/${urlSheetName}/object/${recordData.docId}`;
+        console.log('  🔗 Navigating to object URL:', url);
+        navigate(url, { replace: false });
+        return;
+      }
+      
+      // Determine the parent object:
+      // - If currentFormData is an object (check isObject flag or if it's in objects array), use it
+      // - Otherwise, currentFormData is a record, so use the stored parentObject
+      const isCurrentFormAnObject = currentFormData?.isObject === true || 
+                                   objects.some(obj => obj.docId === currentFormData?.docId);
+      
+      const parentObjectToUse = isCurrentFormAnObject 
+        ? currentFormData 
+        : parentObject;
+      
+      console.log('  🎯 Is current form an object?', isCurrentFormAnObject);
+      console.log('  🎯 Using parent object:', parentObjectToUse);
+      console.log('  ✓ Parent has docId:', !!parentObjectToUse?.docId);
+      console.log('  ✓ Record has docId:', !!recordData?.docId);
+      
+      if (recordData?.docId && parentObjectToUse?.docId) {
+        const urlSheetName = activeSheetName.replace(/ /g, "-");
+        const url = `/sheets/${urlSheetName}/object/${parentObjectToUse.docId}/record/${recordData.docId}`;
+        console.log('  🔗 Navigating to URL:', url);
+        navigate(url, { replace: false });
+      } else {
+        console.warn('  ⚠️ Cannot navigate - missing IDs:', {
+          recordDocId: recordData?.docId,
+          parentDocId: parentObjectToUse?.docId
+        });
+      }
+    },
+    [activeSheetName, navigate, parentObject, objects]
   );
 
   const handleSelectToggle = useCallback(() => {
@@ -1217,10 +1436,11 @@ const Sheets = ({
               onClose={handleEditorClose}
               onSave={handleEditorSave}
               onOpenNewRecord={handleOpenNewRecord}
+              onNavigateToRelatedRecord={handleNavigateToRelatedRecord}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
-              isObjectMode={true}
+              parentObjectData={parentObject}
             />
           </div>
         )}
@@ -1252,10 +1472,11 @@ const Sheets = ({
               onClose={handleEditorClose}
               onSave={handleEditorSave}
               onOpenNewRecord={handleOpenNewRecord}
+              onNavigateToRelatedRecord={handleNavigateToRelatedRecord}
               initialRowData={selectedRow}
               startInEditMode={!!selectedRow}
               preSelectedSheet={activeSheetName}
-              isObjectMode={true}
+              parentObjectData={parentObject}
             />
           </div>
         </>

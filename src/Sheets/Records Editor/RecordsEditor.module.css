@@ -69,7 +69,7 @@
   z-index: 20;
   border-radius: 20px 20px 0 0;
   margin: -16px -16px 20px -16px;
-  padding: 20px 20px;
+  padding: 10px 10px;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -481,7 +481,6 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
 }
 
 .deleteButton::before {
@@ -556,6 +555,143 @@
 .deleteButtonWrapper.darkTheme {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(28, 28, 30, 0.6);
+}
+
+/* Breadcrumb navigation - Apple-style design */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  padding: 0px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-size: 13px;
+  font-weight: 400;
+  border-radius: 50px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumbs.darkTheme {
+  background: transparent;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumbChevron {
+  margin: 0 8px;
+  color: rgba(0, 0, 0, 0.3);
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.darkTheme .breadcrumbChevron {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.breadcrumbButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  position: relative;
+  height: fit-content;
+}
+
+.breadcrumbLabel {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.breadcrumbType {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+
+.breadcrumbType.darkTheme {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.breadcrumbButton:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.9);
+  transform: translateY(-1px);
+}
+
+.breadcrumbButton:hover:not(:disabled) .breadcrumbLabel {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.breadcrumbButton:hover:not(:disabled) .breadcrumbType {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.breadcrumbButton:disabled {
+  cursor: default;
+  color: rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+}
+
+.breadcrumbButton:disabled .breadcrumbLabel {
+  color: rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+}
+
+.breadcrumbButton:disabled .breadcrumbType {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+.darkTheme .breadcrumbButton {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.darkTheme .breadcrumbButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.darkTheme .breadcrumbButton:hover:not(:disabled) .breadcrumbLabel {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.darkTheme .breadcrumbButton:hover:not(:disabled) .breadcrumbType {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.darkTheme .breadcrumbButton:disabled {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.darkTheme .breadcrumbButton:disabled .breadcrumbLabel {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.darkTheme .breadcrumbButton:disabled .breadcrumbType {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Responsive design for smaller screens */
@@ -1473,7 +1609,7 @@
 
 .darkTheme .multiSelectDropdownButton:hover:not(.save) {
   background: 
-    linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.1) 100%),
     linear-gradient(145deg, rgba(82, 82, 84, 0.5) 0%, rgba(72, 72, 74, 0.35) 100%);
   color: rgba(10, 132, 255, 0.9);
   transform: translateY(-1px) scale(1.02);
@@ -1638,7 +1774,7 @@
 }
 
 .emptySection.darkTheme {
-  color: #aeaeb2;
+   color: #aeaeb2;
   background: #2c2c2e;
   border-color: rgba(255, 255, 255, 0.1);
 }
@@ -2737,6 +2873,7 @@
 .modeButton.darkTheme:hover .modeButtonArrow {
   color: #0a84ff;
 }
+
 /* Field Error Styles */
 .fieldError {
   margin-top: 4px;
@@ -2928,7 +3065,7 @@
 }
 
 .breadcrumbButton:hover {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   transform: translateY(-1px);
 }
 

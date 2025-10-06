@@ -679,6 +679,58 @@ function App() {
               }
             />
             <Route
+              path="/sheets/:sheetName/object/:objectId/record/:recordId"
+              element={
+                <ProtectedRoute>
+                  <Sheets
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                    activeSheetName={activeSheetName}
+                    onSheetChange={handleSheetChange}
+                    onEditSheet={() => onEditSheet(modalUtilsProps)}
+                    onFilter={() => onFilter(modalUtilsProps)}
+                    onRowClick={() => {}}
+                    onRecordSave={handleRecordSave}
+                    onRecordDelete={() => {}}
+                    onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                    onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                      onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                    }
+                    onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenFolderModal={handleOpenFolderModal}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sheets/:sheetName/object/:objectId"
+              element={
+                <ProtectedRoute>
+                  <Sheets
+                    headers={resolvedHeaders}
+                    rows={resolvedRows}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                    activeSheetName={activeSheetName}
+                    onSheetChange={handleSheetChange}
+                    onEditSheet={() => onEditSheet(modalUtilsProps)}
+                    onFilter={() => onFilter(modalUtilsProps)}
+                    onRowClick={() => {}}
+                    onRecordSave={handleRecordSave}
+                    onRecordDelete={() => {}}
+                    onOpenSheetsModal={() => onOpenSheetsModal(modalUtilsProps)}
+                    onOpenTransportModal={(action, selectedRowIds, onComplete) =>
+                      onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
+                    }
+                    onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenFolderModal={handleOpenFolderModal}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/sheets/:sheetName/:recordId"
               element={
                 <ProtectedRoute>
