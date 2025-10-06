@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useContext, useEffect, Suspense,
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from './firebase.jsx';
 import AppHeader from './App Header/AppHeader';
 import { MainContext } from './Contexts/MainContext';
@@ -319,14 +319,74 @@ function App() {
       }
 
       try {
-        // Determine the correct collection based on record type
-        const collectionName = recordData.isObject ? 'objects' : 'records';
-        const docPath = `businesses/${businessId}/${collectionName}/${recordData.docId}`;
-        
-        // Create a clean copy without system fields that might cause issues
-        const { isModified, action, ...cleanRecordData } = recordData;
-        
-        await setDoc(doc(db, docPath), cleanRecordData);
+        // Check if this is a new record that needs to update parent object's records array
+        const isNewRecord = recordData.action === 'add' && recordData.linkId && !recordData.isObject;
+
+        if (isNewRecord) {
+          console.log('🔄 [handleRecordSave] Creating new record with batch update:', {
+            recordId: recordData.docId,
+            linkId: recordData.linkId,
+            typeOfRecord: recordData.typeOfRecord
+          });
+          
+          // Use batch write for atomic operation
+          const batch = writeBatch(db);
+
+          // 1. Save the new record
+          const recordDocPath = `businesses/${businessId}/records/${recordData.docId}`;
+          const { isModified, action, ...cleanRecordData } = recordData;
+          batch.set(doc(db, recordDocPath), cleanRecordData);
+
+          // 2. Update the parent object's records array
+          const parentObjectDocPath = `businesses/${businessId}/objects/${recordData.linkId}`;
+          const parentObjectRef = doc(db, parentObjectDocPath);
+
+          // Get current parent object data
+          const parentObjectSnap = await getDoc(parentObjectRef);
+          if (parentObjectSnap.exists()) {
+            console.log('✅ [handleRecordSave] Parent object exists in Firestore, proceeding with batch update');
+            const parentObjectData = parentObjectSnap.data();
+            const recordInfo = {
+              docId: recordData.docId,
+              typeOfRecord: recordData.typeOfRecord
+            };
+
+            // Initialize records array if it doesn't exist
+            const currentRecords = parentObjectData.records || [];
+            console.log('📋 [handleRecordSave] Current parent object records:', currentRecords);
+
+            // Check if record already exists (shouldn't for new records, but being safe)
+            const existingIndex = currentRecords.findIndex(r => r.docId === recordData.docId);
+            if (existingIndex >= 0) {
+              // Update existing record info
+              currentRecords[existingIndex] = recordInfo;
+            } else {
+              // Add new record info
+              currentRecords.push(recordInfo);
+            }
+
+            console.log('📋 [handleRecordSave] Updated parent object records:', currentRecords);
+            // Update the parent object with the new records array
+            batch.update(parentObjectRef, { records: currentRecords });
+          } else {
+            console.log('⚠️ [handleRecordSave] Parent object does not exist in Firestore yet, skipping batch update');
+            // Just save the record without updating parent object
+            // The parent object update will happen when the object is saved
+          }
+
+          // Commit the batch
+          await batch.commit();
+          console.log('✅ [handleRecordSave] Batch committed successfully');
+        } else {
+          // Regular save for existing records or objects
+          const collectionName = recordData.isObject ? 'objects' : 'records';
+          const docPath = `businesses/${businessId}/${collectionName}/${recordData.docId}`;
+
+          // Create a clean copy without system fields that might cause issues
+          const { isModified, action, ...cleanRecordData } = recordData;
+
+          await setDoc(doc(db, docPath), cleanRecordData);
+        }
       } catch (error) {
         console.error('Failed to save record to Firebase:', error);
       }

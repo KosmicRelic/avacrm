@@ -10,7 +10,7 @@ import { FiEdit } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
-import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Debug logging utility
@@ -141,17 +141,47 @@ const Sheets = ({
     if (objectsToDelete.length > 0) {
       const deleteObjects = async () => {
         try {
+          // Use batch operations for atomic deletes
+          const batch = writeBatch(db);
+          
           for (const obj of objectsToDelete) {
-            await deleteDoc(doc(db, `businesses/${businessId}/objects/${obj.docId}`));
+            // Delete all associated records first
+            if (obj.records && obj.records.length > 0) {
+              console.log(`🗑️ Deleting ${obj.records.length} records associated with object ${obj.docId}`);
+              for (const recordInfo of obj.records) {
+                const recordRef = doc(db, `businesses/${businessId}/records/${recordInfo.docId}`);
+                batch.delete(recordRef);
+              }
+            }
+            
+            // Delete the object itself
+            const objectRef = doc(db, `businesses/${businessId}/objects/${obj.docId}`);
+            batch.delete(objectRef);
           }
+          
+          // Commit all deletes atomically
+          await batch.commit();
+          console.log(`✅ Successfully deleted ${objectsToDelete.length} objects and their associated records`);
           
           // Remove deleted objects from local state
           setObjects(prev => {
             const filtered = prev.filter(obj => !objectsToDelete.some(delObj => delObj.docId === obj.docId));
             return filtered;
           });
+          
+          // Also remove associated records from local state
+          setRecords(prev => {
+            const deletedRecordIds = new Set();
+            objectsToDelete.forEach(obj => {
+              if (obj.records) {
+                obj.records.forEach(recordInfo => deletedRecordIds.add(recordInfo.docId));
+              }
+            });
+            return prev.filter(record => !deletedRecordIds.has(record.docId));
+          });
+          
         } catch (error) {
-          console.error('Failed to delete objects:', error);
+          console.error('Failed to delete objects and records:', error);
         }
       };
       
@@ -1149,6 +1179,7 @@ const Sheets = ({
   }, [finalRows, selectedRowIds]);
 
   const handleDeleteSelected = useCallback(() => {
+    // Mark selected records for deletion
     setRecords((prev) =>
       prev.map((record) =>
         selectedRowIds.includes(record.docId)
@@ -1156,9 +1187,24 @@ const Sheets = ({
           : record
       )
     );
+    
+    // Also remove these records from their parent objects' records arrays
+    setObjects((prev) =>
+      prev.map((object) => {
+        if (object.records) {
+          const updatedRecords = object.records.filter(r => !selectedRowIds.includes(r.docId));
+          if (updatedRecords.length !== object.records.length) {
+            // Records were removed, mark object for update
+            return { ...object, records: updatedRecords, isModified: true, action: 'update' };
+          }
+        }
+        return object;
+      })
+    );
+    
     setSelectedRowIds([]);
     setIsSelectMode(false);
-  }, [selectedRowIds, setRecords]);
+  }, [selectedRowIds, setRecords, setObjects]);
 
   const handleDeleteSelectedObjects = useCallback(() => {
     setObjects((prev) =>

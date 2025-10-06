@@ -618,10 +618,24 @@ const RecordsEditor = memo(({
       alert('Invalid object type selected.');
       return;
     }
+    
+    if (!object.basicFields || object.basicFields.length === 0) {
+      alert('This object type has no basic fields defined. Please define basic fields for this object in the Data Models section.');
+      return;
+    }
+    
+    const newObjectId = `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     setFormData((prev) => ({
       ...prev,
+      docId: newObjectId,
+      linkId: newObjectId, // For objects, linkId is the same as docId
       typeOfObject: object.name,
+      isObject: true,
+      action: 'add',
+      isModified: true,
     }));
+    setIsObjectMode(true); // Switch to object mode when creating a new object
     setView('editor');
   }, [selectedRecordType, templateObjects]);
 
@@ -1070,9 +1084,19 @@ const RecordsEditor = memo(({
     setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
     isSavingRef.current = false;
     
-    // If this is a record (not an object), update the parent object's records array
+    // If this is a record (not an object), update the parent object's records array in local context only
+    // (The Firestore update is now handled atomically in the batch save operation)
     if (!isObjectMode && newRow.linkId) {
+      console.log('🔄 [RecordsEditor] Updating parent object records in local context:', {
+        isObjectMode,
+        linkId: newRow.linkId,
+        recordDocId: newRow.docId,
+        typeOfRecord: newRow.typeOfRecord
+      });
+      
       const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
+      console.log('🔍 [RecordsEditor] Found parent object:', parentObject);
+      
       if (parentObject) {
         const recordInfo = {
           docId: newRow.docId,
@@ -1084,6 +1108,8 @@ const RecordsEditor = memo(({
           parentObject.records = [];
         }
         
+        console.log('📋 [RecordsEditor] Parent object current records:', parentObject.records);
+        
         // Check if record already exists in the array
         const existingIndex = parentObject.records.findIndex(r => r.docId === newRow.docId);
         if (existingIndex >= 0) {
@@ -1094,17 +1120,24 @@ const RecordsEditor = memo(({
           parentObject.records.push(recordInfo);
         }
         
-        // Update the object in context and save to Firestore
+        console.log('📋 [RecordsEditor] Parent object updated records:', parentObject.records);
+        
+        // Update the object in context only (no Firestore save needed)
         setObjects(prev => prev.map(obj => 
           obj.linkId === newRow.linkId ? { ...parentObject } : obj
         ));
         
-        // Also trigger a save of the parent object with updated records array
-        const cleanParentObject = { ...parentObject };
-        delete cleanParentObject.action;
-        delete cleanParentObject.isModified;
-        // Keep isObject as it's needed in Firestore
-        onSave(cleanParentObject, true); // Save parent object with updated records array
+        // Also update the current formData if we're editing the parent object
+        if (isObjectMode && formData.linkId === newRow.linkId) {
+          setFormData(prev => ({
+            ...prev,
+            records: parentObject.records
+          }));
+        }
+        
+        console.log('✅ [RecordsEditor] Local context updated');
+      } else {
+        console.error('❌ [RecordsEditor] Parent object not found in local context');
       }
     }
     
@@ -1153,6 +1186,7 @@ const RecordsEditor = memo(({
           })
         );
       } else {
+        // Mark record for deletion
         setRecords((prev) =>
           prev.map((record) =>
             record.docId === initialRowData.docId
@@ -1160,6 +1194,19 @@ const RecordsEditor = memo(({
               : record
           )
         );
+        
+        // Also remove this record from the parent object's records array
+        if (initialRowData.linkId) {
+          setObjects((prev) =>
+            prev.map((object) => {
+              if (object.linkId === initialRowData.linkId && object.records) {
+                const updatedRecords = object.records.filter(r => r.docId !== initialRowData.docId);
+                return { ...object, records: updatedRecords, isModified: true, action: 'update' };
+              }
+              return object;
+            })
+          );
+        }
       }
       onClose();
     }
@@ -1659,13 +1706,13 @@ const RecordsEditor = memo(({
                 .flatMap(h => h.options || [])
                 .filter(Boolean) || [];
               
-              // Separate objects into sheet-supported and others
+              // Separate objects into sheet-supported and others (only include objects with basicFields)
               const supportedObjects = templateObjects?.filter(obj => 
-                sheetSupportedObjectNames.includes(obj.name)
+                obj.basicFields && obj.basicFields.length > 0 && sheetSupportedObjectNames.includes(obj.name)
               ) || [];
               
               const otherObjects = templateObjects?.filter(obj => 
-                !sheetSupportedObjectNames.includes(obj.name)
+                obj.basicFields && obj.basicFields.length > 0 && !sheetSupportedObjectNames.includes(obj.name)
               ) || [];
 
               // Combine for dropdown: supported first, then separator, then others
@@ -1714,6 +1761,13 @@ const RecordsEditor = memo(({
                           )}
                         </select>
                       </div>
+                      {supportedObjects.length === 0 && otherObjects.length === 0 && (
+                        <div className={styles.noObjectsMessage}>
+                          <div className={styles.noObjectsIcon}>📭</div>
+                          <h3>No Objects Available</h3>
+                          <p>Objects need to have basic fields defined before they can be used to create instances. Please define basic fields for your objects in the Data Models section.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
