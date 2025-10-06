@@ -416,7 +416,7 @@ const RecordsEditor = memo(({
       return;
     }
 
-    // For new objects (not editing), check if any meaningful data has been entered
+    // For new records/objects (not editing), check if any meaningful data has been entered
     if (!isEditing) {
       const hasData = Object.keys(formData).some(
         (key) => 
@@ -438,9 +438,26 @@ const RecordsEditor = memo(({
       return;
     }
 
-    // For existing objects, compare with baseDataForComparison
+    // For existing records/objects, compare with baseDataForComparison
     if (!baseDataForComparison || Object.keys(baseDataForComparison).length === 0) {
-      setHasUnsavedChanges(false);
+      // If no base data, check if any meaningful data exists
+      const hasData = Object.keys(formData).some(
+        (key) => 
+          key !== 'sheetName' && 
+          key !== 'typeOfRecord' && 
+          key !== 'typeOfObject' && 
+          key !== 'docId' && 
+          key !== 'linkId' &&
+          key !== 'assignedTo' &&
+          key !== 'history' &&
+          key !== 'isModified' &&
+          key !== 'action' &&
+          key !== 'isObject' &&
+          key !== 'records' &&
+          formData[key] && 
+          formData[key].toString().trim() !== ''
+      );
+      setHasUnsavedChanges(hasData);
       return;
     }
 
@@ -449,10 +466,13 @@ const RecordsEditor = memo(({
       if (
         key !== 'docId' &&
         key !== 'sheetName' &&
-        (!isObjectMode ? key !== 'typeOfRecord' : true) &&
+        key !== 'typeOfRecord' &&
+        key !== 'typeOfObject' &&
         key !== 'history' &&
         key !== 'isModified' &&
-        key !== 'action'
+        key !== 'action' &&
+        key !== 'isObject' &&
+        key !== 'records'
       ) {
         return formData[key] !== baseDataForComparison[key];
       }
@@ -832,8 +852,6 @@ const RecordsEditor = memo(({
       assignedTo: formData.assignedTo || user?.email || '',
       lastModifiedBy: user?.uid || user?.email || 'unknown',
       history: formData.history || [],
-      isModified: true,
-      action: isEditing ? 'update' : 'add',
     };
     
     addDebugLog(`  - newRow.docId: ${newRow.docId}`);
@@ -841,7 +859,7 @@ const RecordsEditor = memo(({
     addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
     addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
 
-    // Define fields to keep (don't include action and isModified in final save)
+    // Clean up empty/null/undefined fields
     const requiredFields = isObjectMode 
       ? ['docId', 'linkId', 'typeOfObject', 'isObject', 'history', 'records']
       : ['docId', 'linkId', 'typeOfRecord', 'typeOfObject', 'isObject', 'history'];
@@ -850,10 +868,6 @@ const RecordsEditor = memo(({
         delete newRow[key];
       }
     });
-    
-    // Remove action and isModified before saving
-    delete newRow.action;
-    delete newRow.isModified;
 
     const newHistory = [];
     const timestamp = Timestamp.now();
@@ -963,6 +977,10 @@ const RecordsEditor = memo(({
     addDebugLog(`  - newRow.docId: ${newRow.docId}`);
     addDebugLog(`  - newRow.typeOfRecord: ${newRow.typeOfRecord}`);
     addDebugLog(`  - newRow.typeOfObject: ${newRow.typeOfObject}`);
+    addDebugLog(`  - newRow.isObject: ${newRow.isObject}`);
+    addDebugLog('📤 Sending to Firestore:');
+    addDebugLog(`  - Number of fields: ${Object.keys(newRow).length}`);
+    
     onSave(newRow, isEditing);
     setIsViewingHistory(false);
     setSelectedHistoryDate(null);
@@ -971,47 +989,56 @@ const RecordsEditor = memo(({
     setBaseDataForComparison({ ...newRow }); // Update base data for future change detection
     isSavingRef.current = false;
     
+    // If this is a record (not an object), update the parent object's records array
+    if (!isObjectMode && newRow.linkId) {
+      addDebugLog('🔗 Updating parent object records array');
+      const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
+      if (parentObject) {
+        const recordInfo = {
+          docId: newRow.docId,
+          typeOfRecord: newRow.typeOfRecord
+        };
+        
+        // Initialize records array if it doesn't exist
+        if (!parentObject.records) {
+          parentObject.records = [];
+        }
+        
+        // Check if record already exists in the array
+        const existingIndex = parentObject.records.findIndex(r => r.docId === newRow.docId);
+        if (existingIndex >= 0) {
+          // Update existing record info
+          parentObject.records[existingIndex] = recordInfo;
+          addDebugLog(`✅ Updated existing record in parent object: ${recordInfo.typeOfRecord}`);
+        } else {
+          // Add new record info
+          parentObject.records.push(recordInfo);
+          addDebugLog(`✅ Added new record to parent object: ${recordInfo.typeOfRecord}`);
+        }
+        
+        // Update the object in context and save to Firestore
+        setObjects(prev => prev.map(obj => 
+          obj.linkId === newRow.linkId ? { ...parentObject } : obj
+        ));
+        
+        // Also trigger a save of the parent object with updated records array
+        const cleanParentObject = { ...parentObject };
+        delete cleanParentObject.action;
+        delete cleanParentObject.isModified;
+        // Keep isObject as it's needed in Firestore
+        addDebugLog('📤 Saving parent object with updated records array');
+        onSave(cleanParentObject, true); // Save parent object with updated records array
+      }
+    }
+    
     // Keep the editor open after save and switch to editing mode if it was a new object
     if (!isEditing) {
-      addDebugLog('🆕 New object saved, switching to edit mode');
+      addDebugLog('🆕 New record/object saved, switching to edit mode');
       setIsEditing(true);
       setFormData({ ...newRow });
     } else {
-      addDebugLog('✏️ Existing object updated, staying in edit mode');
+      addDebugLog('✏️ Existing record/object updated, staying in edit mode');
       setFormData({ ...newRow });
-      
-      // If this is a record (not an object), update the parent object's records array
-      if (!isObjectMode && newRow.linkId) {
-        addDebugLog('🔗 Updating parent object records array');
-        const parentObject = objects.find(obj => obj.linkId === newRow.linkId);
-        if (parentObject) {
-          const recordInfo = {
-            docId: newRow.docId,
-            typeOfRecord: newRow.typeOfRecord
-          };
-          
-          // Initialize records array if it doesn't exist
-          if (!parentObject.records) {
-            parentObject.records = [];
-          }
-          
-          // Check if record already exists in the array
-          const existingIndex = parentObject.records.findIndex(r => r.docId === newRow.docId);
-          if (existingIndex >= 0) {
-            // Update existing record info
-            parentObject.records[existingIndex] = recordInfo;
-          } else {
-            // Add new record info
-            parentObject.records.push(recordInfo);
-          }
-          
-          // Update the object in context
-          setObjects(prev => prev.map(obj => 
-            obj.linkId === newRow.linkId ? { ...parentObject } : obj
-          ));
-          addDebugLog(`✅ Parent object records array updated with ${recordInfo.typeOfRecord}`);
-        }
-      }
     }
     // Editor stays open - user must manually close it
   }, [

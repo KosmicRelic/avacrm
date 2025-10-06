@@ -732,34 +732,33 @@ const Sheets = ({
       }
 
       const rowId = updatedRow.docId;
-      const newRecordData = { ...updatedRow, isModified: true, action: isEditing ? 'update' : 'add' };
-
+      
       // Check if this is an object using the explicit flag
       const isObject = updatedRow.isObject === true;
 
       if (isObject) {
         // Save object to Firebase first
         try {
-          console.log('� Saving object to Firebase:', newRecordData);
-          await setDoc(doc(db, `businesses/${businessId}/objects/${newRecordData.docId}`), newRecordData);
+          console.log('� Saving object to Firebase:', updatedRow);
+          await setDoc(doc(db, `businesses/${businessId}/objects/${updatedRow.docId}`), updatedRow);
           
           // Update local state AFTER successful save
           // The real-time listener will also pick this up, but we update here for immediate UI feedback
           if (!isEditing) {
-            console.log('📝 Adding new object to state:', newRecordData);
+            console.log('📝 Adding new object to state:', updatedRow);
             setObjects((prev) => {
               // Check if object already exists to prevent duplicates
-              const exists = prev.some(obj => obj.docId === newRecordData.docId);
+              const exists = prev.some(obj => obj.docId === updatedRow.docId);
               if (exists) {
                 console.log('⚠️ Object already exists in state, skipping add');
                 return prev;
               }
-              return [...prev, newRecordData];
+              return [...prev, updatedRow];
             });
           } else {
-            console.log('� Updating existing object in state:', newRecordData);
+            console.log('� Updating existing object in state:', updatedRow);
             setObjects((prev) =>
-              prev.map((object) => (object.docId === rowId ? newRecordData : object))
+              prev.map((object) => (object.docId === rowId ? updatedRow : object))
             );
           }
         } catch (error) {
@@ -768,25 +767,25 @@ const Sheets = ({
       } else {
         // Save record to Firebase first
         try {
-          console.log('� Saving record to Firebase:', newRecordData);
-          await setDoc(doc(db, `businesses/${businessId}/records/${newRecordData.docId}`), newRecordData);
+          console.log('� Saving record to Firebase:', updatedRow);
+          await setDoc(doc(db, `businesses/${businessId}/records/${updatedRow.docId}`), updatedRow);
           
           // Update local state AFTER successful save
           if (!isEditing) {
-            console.log('📝 Adding new record to state:', newRecordData);
+            console.log('📝 Adding new record to state:', updatedRow);
             setRecords((prev) => {
               // Check if record already exists to prevent duplicates
-              const exists = prev.some(rec => rec.docId === newRecordData.docId);
+              const exists = prev.some(rec => rec.docId === updatedRow.docId);
               if (exists) {
                 console.log('⚠️ Record already exists in state, skipping add');
                 return prev;
               }
-              return [...prev, newRecordData];
+              return [...prev, updatedRow];
             });
           } else {
-            console.log('� Updating existing record in state:', newRecordData);
+            console.log('� Updating existing record in state:', updatedRow);
             setRecords((prev) =>
-              prev.map((record) => (record.docId === rowId ? newRecordData : record))
+              prev.map((record) => (record.docId === rowId ? updatedRow : record))
             );
           }
         } catch (error) {
@@ -794,15 +793,15 @@ const Sheets = ({
         }
 
         // Update the related object to include this record
-        if (newRecordData.typeOfObject && !isEditing) {
+        if (updatedRow.typeOfObject && !isEditing) {
           try {
             // Find the object this record belongs to
-            const relatedObject = objects.find(obj => obj.typeOfObject === newRecordData.typeOfObject || obj.name === newRecordData.typeOfObject);
+            const relatedObject = objects.find(obj => obj.typeOfObject === updatedRow.typeOfObject || obj.name === updatedRow.typeOfObject);
             if (relatedObject) {
               // Update the object to include this record
               const updatedObject = {
                 ...relatedObject,
-                records: [...(relatedObject.records || []), newRecordData.docId],
+                records: [...(relatedObject.records || []), updatedRow.docId],
                 lastModified: new Date().toISOString()
               };
               
@@ -820,7 +819,7 @@ const Sheets = ({
           }
         }
       }
-      setSelectedRow(newRecordData);
+      setSelectedRow(updatedRow);
       setIsEditorOpen(false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -876,11 +875,10 @@ const Sheets = ({
       }
       
       if (hasDataChanges) {
-        const newRecordData = { ...updatedRowData, isModified: true, action: 'update' };
         setRecordArray((prev) =>
-          prev.map((record) => (record.docId === rowId ? newRecordData : record))
+          prev.map((record) => (record.docId === rowId ? updatedRowData : record))
         );
-        onRecordSave(newRecordData);
+        onRecordSave(updatedRowData);
       }
     },
     [records, objects, onRecordSave, setRecords, setObjects]
