@@ -937,8 +937,10 @@ const Sheets = ({
       if (isObject) {
         // Save object to Firebase first
         try {
-          console.log('� Saving object to Firebase:', updatedRow);
-          await setDoc(doc(db, `businesses/${businessId}/objects/${updatedRow.docId}`), updatedRow);
+          // Remove client-side tracking fields before saving to Firestore
+          const { action, isModified, ...cleanObject } = updatedRow;
+          console.log('� Saving object to Firebase:', cleanObject);
+          await setDoc(doc(db, `businesses/${businessId}/objects/${updatedRow.docId}`), cleanObject);
           
           // Update local state AFTER successful save
           // The real-time listener will also pick this up, but we update here for immediate UI feedback
@@ -965,8 +967,10 @@ const Sheets = ({
       } else {
         // Save record to Firebase first
         try {
-          console.log('� Saving record to Firebase:', updatedRow);
-          await setDoc(doc(db, `businesses/${businessId}/records/${updatedRow.docId}`), updatedRow);
+          // Remove client-side tracking fields before saving to Firestore
+          const { action, isModified, ...cleanRecord } = updatedRow;
+          console.log('� Saving record to Firebase:', cleanRecord);
+          await setDoc(doc(db, `businesses/${businessId}/records/${updatedRow.docId}`), cleanRecord);
           
           // Update local state AFTER successful save
           if (!isEditing) {
@@ -1008,8 +1012,9 @@ const Sheets = ({
                 obj.docId === relatedObject.docId ? updatedObject : obj
               ));
               
-              // Save to Firebase
-              await setDoc(doc(db, `businesses/${businessId}/objects/${relatedObject.docId}`), updatedObject);
+              // Save to Firebase (remove client-side tracking fields)
+              const { action, isModified, ...cleanObject } = updatedObject;
+              await setDoc(doc(db, `businesses/${businessId}/objects/${relatedObject.docId}`), cleanObject);
               console.log('Updated object with new record reference');
             }
           } catch (error) {
@@ -1188,23 +1193,14 @@ const Sheets = ({
       )
     );
     
-    // Also remove these records from their parent objects' records arrays
-    setObjects((prev) =>
-      prev.map((object) => {
-        if (object.records) {
-          const updatedRecords = object.records.filter(r => !selectedRowIds.includes(r.docId));
-          if (updatedRecords.length !== object.records.length) {
-            // Records were removed, mark object for update
-            return { ...object, records: updatedRecords, isModified: true, action: 'update' };
-          }
-        }
-        return object;
-      })
-    );
+    // Note: Parent objects' records arrays will be updated automatically by the
+    // atomic batch operation in MainContext when the records are deleted.
+    // We don't need to update objects state here - the real-time listener will
+    // pick up the changes after the batch commit.
     
     setSelectedRowIds([]);
     setIsSelectMode(false);
-  }, [selectedRowIds, setRecords, setObjects]);
+  }, [selectedRowIds, setRecords]);
 
   const handleDeleteSelectedObjects = useCallback(() => {
     setObjects((prev) =>

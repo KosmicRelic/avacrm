@@ -773,6 +773,9 @@ export const MainContextProvider = ({ children }) => {
         // Track added records to assign docIds
         const addedRecordsMap = new Map();
 
+        // Track which parent objects need to be updated (for record deletions)
+        const parentObjectUpdates = new Map(); // Map<parentObjectId, Set<recordIdsToRemove>>
+
         // Batch add for records
         for (const record of modifiedRecords) {
           // For now, allow all records to be saved (remove type-based access control)
@@ -801,9 +804,19 @@ export const MainContextProvider = ({ children }) => {
             batch.set(docRef, cleanRecordData);
             hasChanges = true;
           } else if (record.action === 'remove') {
+            console.log('🗑️ Deleting record from batch:', record.docId);
             docRef = doc(stateConfig.records.collectionPath(), record.docId);
             batch.delete(docRef);
             hasChanges = true;
+
+            // Track parent object update (if record has linkId)
+            if (record.linkId) {
+              if (!parentObjectUpdates.has(record.linkId)) {
+                parentObjectUpdates.set(record.linkId, new Set());
+              }
+              parentObjectUpdates.get(record.linkId).add(record.docId);
+              console.log('📋 Tracking parent object update:', { parentId: record.linkId, recordId: record.docId });
+            }
           } else if (record.action === 'update') {
             docRef = doc(stateConfig.records.collectionPath(), record.docId);
             const { isModified: _isModified, action: _action, docId: _docId, sheetName: _sheetName, ...recordData } = record;
@@ -818,6 +831,45 @@ export const MainContextProvider = ({ children }) => {
             
             batch.set(docRef, cleanRecordData);
             hasChanges = true;
+          }
+        }
+
+        // Update parent objects' records arrays for deleted records
+        if (parentObjectUpdates.size > 0) {
+          console.log('🔄 Processing parent object updates for deleted records:', parentObjectUpdates.size);
+          for (const [parentObjectId, recordIdsToRemove] of parentObjectUpdates) {
+            try {
+              const parentObjectRef = doc(db, 'businesses', businessId, 'objects', parentObjectId);
+              const parentObjectSnap = await getDoc(parentObjectRef);
+              
+              if (parentObjectSnap.exists()) {
+                const parentObjectData = parentObjectSnap.data();
+                const currentRecords = parentObjectData.records || [];
+                
+                // Filter out the deleted records
+                const updatedRecords = currentRecords.filter(r => !recordIdsToRemove.has(r.docId));
+                
+                if (updatedRecords.length !== currentRecords.length) {
+                  console.log('✏️ Updating parent object records array:', {
+                    parentId: parentObjectId,
+                    before: currentRecords.length,
+                    after: updatedRecords.length,
+                    removedCount: currentRecords.length - updatedRecords.length
+                  });
+                  
+                  // Add parent object update to batch
+                  batch.update(parentObjectRef, { records: updatedRecords });
+                  hasChanges = true;
+                } else {
+                  console.log('⚠️ No records removed from parent object (records array unchanged):', parentObjectId);
+                }
+              } else {
+                console.log('⚠️ Parent object not found in Firestore:', parentObjectId);
+              }
+            } catch (error) {
+              console.error('❌ Failed to process parent object update:', { parentObjectId, error });
+              // Don't throw - let other operations continue
+            }
           }
         }
 
@@ -957,6 +1009,13 @@ export const MainContextProvider = ({ children }) => {
 
           // Update local state after commit
           if (modifiedRecords.length > 0) {
+            // Get list of deleted record IDs
+            const deletedRecordIds = new Set(
+              records
+                .filter((record) => record.isModified && record.action === 'remove')
+                .map((record) => record.docId)
+            );
+
             // Update records state, ensuring isModified and action are cleared
             const updatedRecords = records
               .filter((record) => !(record.isModified && record.action === 'remove'))
@@ -975,6 +1034,25 @@ export const MainContextProvider = ({ children }) => {
             const sheetId = sheetObj?.docId;
             if (sheetId) {
               setRecordsCache((prev) => ({ ...prev, [sheetId]: updatedRecords }));
+            }
+
+            // Update objects state to remove deleted records from their records arrays
+            if (deletedRecordIds.size > 0 && parentObjectUpdates.size > 0) {
+              setObjects((prev) =>
+                prev.map((object) => {
+                  if (parentObjectUpdates.has(object.docId)) {
+                    const recordIdsToRemove = parentObjectUpdates.get(object.docId);
+                    const updatedRecords = (object.records || []).filter(r => !recordIdsToRemove.has(r.docId));
+                    console.log('🔄 Updated object records array in local state:', {
+                      objectId: object.docId,
+                      before: object.records?.length || 0,
+                      after: updatedRecords.length
+                    });
+                    return { ...object, records: updatedRecords };
+                  }
+                  return object;
+                })
+              );
             }
           }
 
