@@ -390,6 +390,7 @@ const Sheets = ({
 
   const scrollContainerRef = useRef(null);
   const sheetTabsRef = useRef(null);
+  const recordsEditorRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
@@ -1278,11 +1279,17 @@ const Sheets = ({
 
   const handleCreateNewObject = useCallback(
     (objectData) => {
-      console.log('🔍 handleCreateNewObject called:', objectData);
       setSelectedRow(objectData);
       setIsEditorOpen(true);
+
+      // Navigate to the object URL with the generated ID
+      if (objectData.docId) {
+        const urlSheetName = activeSheetName.replace(/ /g, "-");
+        const url = `/sheets/${urlSheetName}/object/${objectData.docId}`;
+        navigate(url, { replace: true });
+      }
     },
-    []
+    [activeSheetName, navigate]
   );
 
   // Handle navigation to object URLs
@@ -1629,13 +1636,22 @@ const Sheets = ({
         {TableContent}
         {ActionButtons}
         {SheetTabs}
-        {isMobile && isEditorOpen && (
-          <div
-            className={`${styles.recordDetailsMobile} ${
-              shouldAnimateIn && !isClosing ? styles.recordOpen : isClosing ? styles.recordClosed : ''
-            }`}
-          >
+      </div>
+      {/* Persistent RecordsEditor that maintains state across mobile/desktop transitions */}
+      {isEditorOpen && (
+        <>
+          {!isMobile && (
+            <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={() => {
+              if (recordsEditorRef.current?.handleBackNavigation) {
+                recordsEditorRef.current.handleBackNavigation();
+              } else {
+                handleEditorClose();
+              }
+            }}></div>
+          )}
+          <div className={`${isMobile ? styles.recordDetailsMobile : styles.recordDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? (isMobile ? styles.recordOpen : styles['animate-in']) : isClosing ? (isMobile ? styles.recordClosed : styles['animate-out']) : ''}`}>
             <RecordsEditor
+              ref={recordsEditorRef}
               key={selectedRow?.docId || (isCreatingObject ? 'new-object' : 'no-selection')}
               onClose={handleEditorClose}
               onSave={handleEditorSave}
@@ -1650,8 +1666,8 @@ const Sheets = ({
               isCreatingObject={isCreatingObject}
             />
           </div>
-        )}
-      </div>
+        </>
+      )}
       {/* Floating edit button positioned near the selected row */}
       {selectedRowForEdit && !isSelectMode && (
         <button
@@ -1669,27 +1685,6 @@ const Sheets = ({
           <FiEdit size={16} />
           Edit
         </button>
-      )}
-      {isEditorOpen && !isMobile && (
-        <>
-          <div className={`${styles.backdrop} ${shouldAnimateIn && !isClosing ? styles.visible : isClosing ? styles.visible : ''}`} onClick={handleEditorClose}></div>
-          <div className={`${styles.recordDetailsPopup} ${isDarkTheme ? styles.darkTheme : ''} ${shouldAnimateIn && !isClosing ? styles['animate-in'] : isClosing ? styles['animate-out'] : ''}`}>
-            <RecordsEditor
-              key={selectedRow?.docId || (isCreatingObject ? 'new-object' : 'no-selection')}
-              onClose={handleEditorClose}
-              onSave={handleEditorSave}
-              onOpenNewRecord={handleCreateNewRecord}
-              onNavigateToRelatedRecord={handleNavigateToRelatedRecord}
-              onNavigateToObject={handleNavigateToObject}
-              onCreateObject={handleCreateNewObject}
-              initialRowData={selectedRow}
-              startInEditMode={!!selectedRow}
-              preSelectedSheet={activeSheetName}
-              parentObjectData={parentObject}
-              isCreatingObject={isCreatingObject}
-            />
-          </div>
-        </>
       )}
     </div>
   );

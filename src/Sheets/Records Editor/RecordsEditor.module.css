@@ -7,17 +7,11 @@
   height: 100%;
   overflow: hidden;
   overflow-x: hidden;
-  /* background: rgba(0, 0, 0, 0.4); */
+  background: transparent;
   position: fixed;
-  top: 0;
+  top: 0px;
   left: 0;
   z-index: 1000;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.editorWrapper.darkTheme {
-  background: rgba(0, 0, 0, 0.6); 
 }
 
 /* View Container */
@@ -31,28 +25,22 @@
 /* Main View */
 .view {
   width: 100%;
-  min-height: 100%;
   box-sizing: border-box;
   background: rgba(255, 255, 255);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
   border-radius: 0;
   padding: 16px;
   padding-top: 0;
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 0;
+  top: 0px;
   left: 0;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .view.darkTheme {
   background: rgb(28, 28, 30);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Navigation Bar */
@@ -99,6 +87,26 @@
 
 .headerBreadcrumbs {
   width: 100%;
+}
+
+/* Breadcrumb with Actions Layout */
+.breadcrumbWithActions {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.breadcrumbActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumbContent {
+  flex: 1;
+  min-width: 0; /* Allow text to wrap if needed */
 }
 
 /* Back Button */
@@ -445,7 +453,6 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
   letter-spacing: -0.005em;
 }
 
@@ -480,6 +487,70 @@
 
 .actionButton:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* Continue Button - Full Width */
+.continueButton {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+  letter-spacing: -0.005em;
+  margin-top: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.continueButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.continueButton:hover::before {
+  left: 100%;
+}
+
+.continueButton.darkTheme {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+}
+
+.continueButton:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(0, 122, 255, 0.4);
+}
+
+.continueButton.darkTheme:hover {
+  box-shadow: 0 8px 32px rgba(10, 132, 255, 0.5);
+}
+
+.continueButton:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.continueButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+}
+
+.continueButton.darkTheme:disabled {
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
 }
 
 /* Delete/Remove Buttons */
@@ -588,7 +659,6 @@
   -webkit-backdrop-filter: blur(20px);
   font-size: 13px;
   font-weight: 400;
-  border-radius: 50px;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -625,7 +695,6 @@
   flex-direction: column;
   align-items: center;
   padding: 4px 8px;
-  border-radius: 8px;
   border: none;
   background: transparent;
   color: rgba(0, 0, 0, 0.7);
@@ -673,17 +742,17 @@
 
 .breadcrumbButton:disabled {
   cursor: default;
-  color: rgba(0, 0, 0, 0.5);
+  color: #007aff;
   font-weight: 600;
 }
 
 .breadcrumbButton:disabled .breadcrumbLabel {
-  color: rgba(0, 0, 0, 0.5);
+  color: #007aff;
   font-weight: 600;
 }
 
 .breadcrumbButton:disabled .breadcrumbType {
-  color: rgba(0, 0, 0, 0.3);
+  color: rgba(0, 122, 255, 0.7);
 }
 
 .darkTheme .breadcrumbButton {
@@ -704,19 +773,19 @@
 }
 
 .darkTheme .breadcrumbButton:disabled {
-  color: rgba(255, 255, 255, 0.6);
+  color: #0a84ff;
 }
 
 .darkTheme .breadcrumbButton:disabled .breadcrumbLabel {
-  color: rgba(255, 255, 255, 0.6);
+  color: #0a84ff;
 }
 
 .darkTheme .breadcrumbButton:disabled .breadcrumbType {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(10, 132, 255, 0.7);
 }
 
 /* Responsive design for smaller screens */
-@media (max-width: 480px) {
+@media (max-width: 480px) { 
   .deleteButtonWrapper {
     flex-direction: column;
     gap: 12px;
@@ -1046,12 +1115,6 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 8px;
   width: 100%;
-}
-
-@media (max-width: 768px) {
-  .fieldGrid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Field Item - Modern card-based design */
@@ -2393,9 +2456,26 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+
+  .editorWrapper{
+    padding-top: 64px;
+  }
+
+  .viewContainer{
+    background-color: white;
+    border-top-left-radius: 36px;
+    border-top-right-radius: 36px;
+  }
+
+  .viewContainer.darkTheme{
+    background-color: #1c1c1e;
+  }
+
   .view {
+    top: 0px;
     padding: 12px;
+    padding-top: 0;
   }
 
   .navBar {
@@ -2417,6 +2497,10 @@
 
   .sectionContent {
     padding: 12px 16px;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
   }
 
   .fieldInput,
@@ -3372,8 +3456,8 @@
 
 /* Object Selection Container - Centered, Minimal Design */
 .objectSelectionContainer {
-  max-width: 560px;
-  margin: 60px auto;
+  width: calc(100% - 40px);
+  margin: 0px auto;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -3495,10 +3579,6 @@
 }
 
 @media (max-width: 768px) {
-  .objectSelectionContainer {
-    margin: 40px auto;
-  }
-  
   .objectSelectionIcon {
     width: 64px;
     height: 64px;

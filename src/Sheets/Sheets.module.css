@@ -155,19 +155,17 @@
 }
 
 .recordDetailsMobile {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: transparent;
   overflow-y: auto;
   box-sizing: border-box;
-  z-index: 100;
-  /* Start off-screen like desktop */
+  z-index: 1000;
   transform: translateX(100%);
   opacity: 0;
-  /* Hardware acceleration */
   will-change: transform, opacity;
 }
 
@@ -183,6 +181,10 @@
   transform: translateX(100%);
   opacity: 0;
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease;
+}
+
+.recordDetailsMobile.darkTheme {
+
 }
 
 .placeholder {

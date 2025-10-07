@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { useContext, useState, useCallback, useMemo, useEffect, useRef, memo, forwardRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
@@ -11,7 +11,7 @@ import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete, MdLink } from 'react-icons/md';
 import { FaLayerGroup } from 'react-icons/fa';
 
-const RecordsEditor = memo(({
+const RecordsEditor = memo(forwardRef(({
   onClose,
   onSave,
   onOpenNewRecord, // New prop for opening a new record after pipeline execution
@@ -24,7 +24,7 @@ const RecordsEditor = memo(({
   parentObjectData, // Parent object data for breadcrumbs when viewing records
   isObjectMode: propIsObjectMode,
   isCreatingObject, // Loading state for object creation from parent
-}) => {
+}, ref) => {
   // Clear old debug logs when component mounts
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -45,9 +45,56 @@ const RecordsEditor = memo(({
   const initialTemplate = initialRowData?.typeOfRecord
     ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
     : null;
-  const [selectedRecordType, setSelectedRecordType] = useState(initialTemplate?.name || '');
+  
+  const [selectedRecordType, setSelectedRecordType] = useState('');
+  
+  // Update selectedRecordType when data becomes available
+  useEffect(() => {
+    if (initialTemplate?.name) {
+      setSelectedRecordType(initialTemplate.name);
+      return;
+    }
+    
+    // If we're in object creation mode and have a preselected sheet, find the selected object
+    if (preSelectedSheet && sheets?.allSheets && templateObjects) {
+      const currentSheet = sheets.allSheets.find(s => s.sheetName === preSelectedSheet);
+      
+      // Check if the sheet has selectedObjects and find the one marked as selected
+      if (currentSheet?.selectedObjects) {
+        const selectedObjectEntry = Object.values(currentSheet.selectedObjects).find(obj => obj.selected);
+        if (selectedObjectEntry && selectedObjectEntry.name) {
+          // Verify this object exists in templateObjects
+          const objectExists = templateObjects.some(obj => obj.name === selectedObjectEntry.name && obj.basicFields && obj.basicFields.length > 0);
+          if (objectExists) {
+            setSelectedRecordType(selectedObjectEntry.name);
+            return;
+          }
+        }
+      }
+      
+      // Fallback: find supported objects from headers
+      const sheetSupportedObjectNames = currentSheet?.headers
+        ?.filter(h => h.key === 'typeOfObject')
+        .flatMap(h => h.options || [])
+        .filter(Boolean) || [];
+      
+      const supportedObjects = templateObjects.filter(obj => 
+        obj.basicFields && obj.basicFields.length > 0 && sheetSupportedObjectNames.includes(obj.name)
+      );
+      
+      if (supportedObjects.length > 0) {
+        setSelectedRecordType(supportedObjects[0].name);
+        return;
+      }
+    }
+    
+    // If no selection found, set empty
+    setSelectedRecordType('');
+  }, [preSelectedSheet, sheets?.allSheets, templateObjects, initialTemplate?.name]);
   const [formData, setFormData] = useState(initialRowData ? { ...initialRowData } : {});
   const [isEditing, setIsEditing] = useState(!!initialRowData && !!initialRowData.docId && !initialRowData.isNewRecord);
+  // Track whether this item was originally loaded from database (not created in this session)
+  const [wasOriginallyLoaded, setWasOriginallyLoaded] = useState(!!initialRowData && !!initialRowData.docId && !initialRowData.isNewRecord);
   const [openSections, setOpenSections] = useState([]);
   const [hasUserToggledSections, setHasUserToggledSections] = useState(false);
   const [isViewingHistory, setIsViewingHistory] = useState(false);
@@ -102,18 +149,15 @@ const RecordsEditor = memo(({
         setOriginalIsObjectMode(isObjectMode);
       }
 
-      // Navigate to record
-      if (onNavigateToRelatedRecord && formData?.docId && recordData?.docId) {
-        onNavigateToRelatedRecord(recordData, formData);
-      } else {
-        setViewingRelatedRecord(recordData);
-        setFormData(recordData);
-        setBaseDataForComparison({ ...recordData });
-        setSelectedRecordType(recordData.typeOfRecord);
-        setIsObjectMode(false);
-        setIsEditing(true);
-        setExpandedSections({ relatedRecords: false });
-      }
+      // Navigate to record immediately (no listener needed for cached data)
+      // Prefer local state updates for cached records to avoid navigation delay
+      setViewingRelatedRecord(recordData);
+      setFormData(recordData);
+      setBaseDataForComparison({ ...recordData });
+      setSelectedRecordType(recordData.typeOfRecord);
+      setIsObjectMode(false);
+      setIsEditing(true);
+      setExpandedSections({ relatedRecords: false });
       return;
     }
 
@@ -149,6 +193,7 @@ const RecordsEditor = memo(({
       setExpandedSections({ relatedRecords: false });
     }
 
+    // Only set up listener for non-cached records
     try {
       // Set up real-time listener for this record
       const docRef = collection(db, 'businesses', businessId, 'records');
@@ -283,7 +328,7 @@ const RecordsEditor = memo(({
         breadcrumbs.push({
           label: parentObject.typeOfObject,
           type: 'Object',
-          onClick: handleBackToObject
+          onClick: isObjectMode ? null : handleBackToObject // Disable if currently viewing object
         });
       }
       // If in relatedTemplates view (selecting record type), add that step
@@ -315,7 +360,7 @@ const RecordsEditor = memo(({
         breadcrumbs.push({
           label: parentObject.typeOfObject,
           type: 'Object',
-          onClick: handleBackToObject
+          onClick: isObjectMode ? null : handleBackToObject // Disable if currently viewing object
         });
       }
       breadcrumbs.push({
@@ -324,22 +369,13 @@ const RecordsEditor = memo(({
         onClick: null // Current page, no click
       });
     }
-    // When viewing an object, just show the object name (no navigation needed)
-    else if (isObjectMode && isEditing && formData.typeOfObject) {
+    // When viewing or creating an object, just show the object name (no navigation needed)
+    else if (formData.typeOfObject) {
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
         onClick: null // Current page, no click
       });
-    }
-    // When creating a new object, show the object type
-    else if (isObjectMode && !isEditing && formData.typeOfObject) {
-      breadcrumbs.push({
-        label: formData.typeOfObject,
-        type: 'Object',
-        onClick: null // Current page, no click
-      });
-    } else {
     }
 
     if (breadcrumbs.length === 0) return null;
@@ -810,6 +846,11 @@ const RecordsEditor = memo(({
     handleClose();
   }, [isObjectMode, isEditing, view, formData.linkId, formData.docId, formData.typeOfObject, parentObjectData, originalObjectData, handleBackToObject, handleClose]);
 
+  // Expose handleBackNavigation to parent component via ref
+  useImperativeHandle(ref, () => ({
+    handleBackNavigation,
+  }), [handleBackNavigation]);
+
   const handleInputChange = useCallback(
     (key, value, fieldType, extra) => {
       if (key === 'docId' || key === 'typeOfRecord' || key === 'typeOfObject') {
@@ -1251,6 +1292,11 @@ const RecordsEditor = memo(({
       isSavingRef.current = false;
     }
     
+    // Ensure wasOriginallyLoaded is true after successful save
+    if (!wasOriginallyLoaded) {
+      setWasOriginallyLoaded(true);
+    }
+    
     // If this is a record (not an object), update the parent object's records array in local context only
     // For new records, update immediately for UI feedback. For existing records, Sheets.jsx will handle it.
     if (!isObjectMode && newRow.linkId && !isEditing) {
@@ -1297,6 +1343,9 @@ const RecordsEditor = memo(({
     if (!isEditing) {
       setIsEditing(true);
       setFormData({ ...newRow });
+      // Mark as originally loaded since it now exists in the database
+      addDebugLog(`Setting wasOriginallyLoaded to true for new item`);
+      setWasOriginallyLoaded(true);
     } else {
       setFormData({ ...newRow });
     }
@@ -1817,72 +1866,74 @@ const RecordsEditor = memo(({
       return true;
     }
 
+    // 5. In object type selection (can go back to close the editor)
+    if (view === 'objectTypeSelection') {
+      return true;
+    }
+
     return false;
   }, [isObjectMode, isEditing, view, parentObjectData, originalObjectData, formData.linkId, formData.docId, formData.typeOfObject]);
 
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={styles.viewContainer}>
+      <div className={`${styles.viewContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <div className={styles.headerTop}>
               <div className={styles.headerTopLeft}>
-                {/* Show back button based on navigation context */}
-                {shouldShowBackButton && (
-                  <button
-                    className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={handleBackNavigation}
-                    aria-label="Back"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M10 12L6 8L10 4"
-                        stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                )}
+                {/* Back button and save button moved to breadcrumb section */}
               </div>
               <div className={styles.headerTopRight}>
-                {view === 'objectTypeSelection' && (
-                  <button
-                    type="button"
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={handleSelectionNext}
-                    disabled={!selectedRecordType}
-                  >
-                    Next
-                  </button>
-                )}
-                {view === 'editor' && hasUnsavedChanges && (
-                  <button
-                    type="button"
-                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={handleSave}
-                  >
-                    {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
-                  </button>
-                )}
+                {/* Save button moved to breadcrumb section */}
               </div>
             </div>
             <div className={styles.headerBreadcrumbs}>
-              {renderBreadcrumbs() || (
-                <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
-                  view === 'objectTypeSelection' ? 'Create New Object' : 
-                  view === 'relatedTemplates' ? 'Create Record' : 
-                  'New Object'}
-                </h1>
-              )}
+              <div className={styles.breadcrumbWithActions}>
+                <div className={styles.breadcrumbActions}>
+                  {/* Show back button based on navigation context */}
+                  {shouldShowBackButton && (
+                    <button
+                      className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={handleBackNavigation}
+                      aria-label="Back"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M10 12L6 8L10 4"
+                          stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  {view === 'editor' && hasUnsavedChanges && (
+                    <button
+                      type="button"
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={handleSave}
+                    >
+                      {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
+                    </button>
+                  )}
+                </div>
+                <div className={styles.breadcrumbContent}>
+                  {renderBreadcrumbs() || (
+                    <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
+                      view === 'relatedTemplates' ? 'Create Record' : 
+                      'New Object'}
+                    </h1>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <div className={styles.contentWrapper}>
@@ -1922,13 +1973,30 @@ const RecordsEditor = memo(({
                 .flatMap(h => h.options || [])
                 .filter(Boolean) || [];
               
-              // Separate objects into sheet-supported and others (only include objects with basicFields)
+              // Get the selected object from the sheet's selectedObjects
+              let selectedObjectName = null;
+              if (currentSheet?.selectedObjects) {
+                const selectedObjectEntry = Object.values(currentSheet.selectedObjects).find(obj => obj.selected);
+                if (selectedObjectEntry?.name) {
+                  selectedObjectName = selectedObjectEntry.name;
+                }
+              }
+              
+              // Separate objects into selected, sheet-supported, and others (only include objects with basicFields)
+              const selectedObject = selectedObjectName ? templateObjects?.find(obj => 
+                obj.name === selectedObjectName && obj.basicFields && obj.basicFields.length > 0
+              ) : null;
+              
               const supportedObjects = templateObjects?.filter(obj => 
-                obj.basicFields && obj.basicFields.length > 0 && sheetSupportedObjectNames.includes(obj.name)
+                obj.basicFields && obj.basicFields.length > 0 && 
+                sheetSupportedObjectNames.includes(obj.name) && 
+                obj.name !== selectedObjectName
               ) || [];
               
               const otherObjects = templateObjects?.filter(obj => 
-                obj.basicFields && obj.basicFields.length > 0 && !sheetSupportedObjectNames.includes(obj.name)
+                obj.basicFields && obj.basicFields.length > 0 && 
+                !sheetSupportedObjectNames.includes(obj.name) && 
+                obj.name !== selectedObjectName
               ) || [];
 
               // Combine for dropdown: supported first, then separator, then others
@@ -1959,6 +2027,13 @@ const RecordsEditor = memo(({
                           className={`${styles.objectSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                         >
                           <option value="">Select an object type...</option>
+                          {selectedObject && (
+                            <optgroup label="Selected Object">
+                              <option key={selectedObject.id} value={selectedObject.name}>
+                                {selectedObject.name} ✓
+                              </option>
+                            </optgroup>
+                          )}
                           {supportedObjects.length > 0 && (
                             <optgroup label={`${preSelectedSheet} Objects`}>
                               {supportedObjects.map((object) => (
@@ -1979,6 +2054,16 @@ const RecordsEditor = memo(({
                           )}
                         </select>
                       </div>
+                      
+                      <button
+                        type="button"
+                        className={`${styles.continueButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                        onClick={handleSelectionNext}
+                        disabled={!selectedRecordType}
+                      >
+                        Continue
+                      </button>
+                      
                       {supportedObjects.length === 0 && otherObjects.length === 0 && (
                         <div className={styles.noObjectsMessage}>
                           <div className={styles.noObjectsIcon}>📭</div>
@@ -2247,8 +2332,8 @@ const RecordsEditor = memo(({
                   </p>
                 )}
                 
-                {/* Create Record Section - Show only for objects with linkId */}
-                {view === 'editor' && isEditing && isObjectMode && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
+                {/* Create Record Section - Show only for objects with linkId that were originally loaded from database */}
+                {view === 'editor' && isEditing && isObjectMode && wasOriginallyLoaded && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
                   <div className={`${styles.createRecordSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
                     <div className={styles.createRecordCard} onClick={() => setView('relatedTemplates')}>
                       <div className={styles.createRecordIcon}>
@@ -2312,8 +2397,8 @@ const RecordsEditor = memo(({
                   );
                 })()}
 
-                {/* Related Records Section - Show for objects with records array */}
-                {view === 'editor' && isObjectMode && !viewingRelatedRecord && formData.records && formData.records.length > 0 && (
+                {/* Related Records Section - Show for objects with records array that were originally loaded from database */}
+                {view === 'editor' && isObjectMode && !viewingRelatedRecord && wasOriginallyLoaded && formData.records && formData.records.length > 0 && (
                   <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections.relatedRecords ? styles.active : ''}`}>
                     <button
                       className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
@@ -2398,7 +2483,7 @@ const RecordsEditor = memo(({
                   </div>
                 )}
                 
-                {isEditing && (
+                {wasOriginallyLoaded && (
                   <div className={styles.deleteButtonWrapper}>
                     {isBusinessUser && (
                       <button
@@ -2461,7 +2546,7 @@ const RecordsEditor = memo(({
       {fieldHistoryPopup.isOpen && <FieldHistoryPopup />}
     </div>
   );
-});
+}));
 
 RecordsEditor.propTypes = {
   onClose: PropTypes.func.isRequired,
