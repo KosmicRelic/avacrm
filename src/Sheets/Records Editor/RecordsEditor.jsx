@@ -47,13 +47,7 @@ const RecordsEditor = memo(({
 
   // Log what data we receive
   useEffect(() => {
-    console.log('🎨 [RecordsEditor] Mounted/Updated with initialRowData:', {
-      docId: initialRowData?.docId,
-      typeOfRecord: initialRowData?.typeOfRecord,
-      typeOfObject: initialRowData?.typeOfObject,
-      isObject: initialRowData?.isObject,
-      fullData: initialRowData
-    });
+    addDebugLog(`🎨 [RecordsEditor] Mounted/Updated with initialRowData: docId="${initialRowData?.docId}", typeOfRecord="${initialRowData?.typeOfRecord}", typeOfObject="${initialRowData?.typeOfObject}", isObject=${initialRowData?.isObject}`);
   }, [initialRowData]);
 
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
@@ -103,13 +97,7 @@ const RecordsEditor = memo(({
     if (initialRowData) {
       const shouldBeObjectMode = initialRowData.isObject === true || 
                                  (initialRowData.typeOfObject && !initialRowData.typeOfRecord);
-      console.log('🔄 [RecordsEditor] Updating isObjectMode:', {
-        currentMode: isObjectMode,
-        shouldBe: shouldBeObjectMode,
-        hasIsObject: initialRowData.isObject,
-        hasTypeOfObject: !!initialRowData.typeOfObject,
-        hasTypeOfRecord: !!initialRowData.typeOfRecord
-      });
+      addDebugLog(`🔄 [RecordsEditor] Updating isObjectMode: currentMode=${isObjectMode}, shouldBe=${shouldBeObjectMode}, hasIsObject=${initialRowData.isObject}, hasTypeOfObject=${!!initialRowData.typeOfObject}, hasTypeOfRecord=${!!initialRowData.typeOfRecord}`);
       setIsObjectMode(shouldBeObjectMode);
     }
   }, [initialRowData?.docId]); // Only run when the docId changes (different record/object)
@@ -142,13 +130,7 @@ const RecordsEditor = memo(({
 
   // Handler to navigate to a related record
   const handleViewRelatedRecord = useCallback((record) => {
-    console.log('🔍 handleViewRelatedRecord called:', {
-      record: record,
-      formData: formData,
-      hasCallback: !!onNavigateToRelatedRecord,
-      hasFormDataDocId: !!formData?.docId,
-      hasRecordDocId: !!record?.docId
-    });
+    addDebugLog(`🔍 handleViewRelatedRecord called: record.docId="${record?.docId}", record.typeOfRecord="${record?.typeOfRecord}", formData.docId="${formData?.docId}", formData.typeOfObject="${formData?.typeOfObject}", hasCallback=${!!onNavigateToRelatedRecord}, hasFormDataDocId=${!!formData?.docId}, hasRecordDocId=${!!record?.docId}`);
     
     // Store the original object data before switching
     if (!viewingRelatedRecord) {
@@ -159,10 +141,10 @@ const RecordsEditor = memo(({
     
     // If we have a navigation callback and both object and record have docIds, use URL navigation
     if (onNavigateToRelatedRecord && formData?.docId && record?.docId) {
-      console.log('✅ Calling navigation callback');
+      addDebugLog('✅ Calling navigation callback');
       onNavigateToRelatedRecord(record, formData);
     } else {
-      console.log('⚠️ Using fallback navigation');
+      addDebugLog('⚠️ Using fallback navigation');
       // Fallback to in-component navigation (old behavior)
       // Switch to viewing the related record
       setViewingRelatedRecord(record);
@@ -179,48 +161,71 @@ const RecordsEditor = memo(({
 
   // Handler to go back to the original object
   const handleBackToObject = useCallback(() => {
+    addDebugLog(`🔄 [DEBUG] handleBackToObject called: view="${view}", formData.docId="${formData.docId}", formData.typeOfRecord="${formData.typeOfRecord}", formData.typeOfObject="${formData.typeOfObject}", formData.linkId="${formData.linkId}", parentObjectData=${!!parentObjectData}, originalObjectData=${!!originalObjectData}, objectsCount=${objects.length}, onNavigateToObject=${!!onNavigateToObject}, onNavigateToRelatedRecord=${!!onNavigateToRelatedRecord}, onClose=${!!onClose}`);
+
     // Check if we're in record creation mode
     const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
 
     let targetObject;
 
     if (isCreatingRecord) {
-      // In record creation mode, the "parent object" is the current object data
+      addDebugLog('🔄 [DEBUG] Record creation mode - finding target object');
       targetObject = parentObjectData || originalObjectData || objects.find(obj => obj.linkId === formData.linkId) || formData;
+      addDebugLog(`🔄 [DEBUG] Record creation target sources: fromParentObjectData=${!!parentObjectData}, fromOriginalObjectData=${!!originalObjectData}, fromObjectsFind=${!!objects.find(obj => obj.linkId === formData.linkId)}, fromFormData=${!!formData}, targetObject.docId="${targetObject?.docId}", targetObject.typeOfObject="${targetObject?.typeOfObject}", targetObject.linkId="${targetObject?.linkId}"`);
     } else {
-      // Normal case: go back to parent object
+      addDebugLog('🔄 [DEBUG] Normal mode - finding target object');
       targetObject = originalObjectData || parentObjectData;
+      addDebugLog(`🔄 [DEBUG] Normal mode target sources: fromOriginalObjectData=${!!originalObjectData}, fromParentObjectData=${!!parentObjectData}, targetObject.docId="${targetObject?.docId}", targetObject.typeOfObject="${targetObject?.typeOfObject}", targetObject.linkId="${targetObject?.linkId}"`);
     }
 
-    addDebugLog(`🔄 [handleBackToObject] Called with targetObject: ${targetObject ? `docId=${targetObject.docId}, typeOfObject=${targetObject.typeOfObject}` : 'NOT FOUND'}`);
-
     if (targetObject && targetObject.docId) {
+      addDebugLog(`🔄 [DEBUG] Target object found, navigation strategy: ${onNavigateToObject ? 'direct_object_callback' : onNavigateToRelatedRecord ? 'related_record_fallback' : 'url_navigation_fallback'}`);
+
       // Use the object navigation callback to navigate directly to the object URL
       if (onNavigateToObject) {
-        addDebugLog(`🔄 Navigating directly to object URL with docId: ${targetObject.docId}`);
+        addDebugLog('🔄 [DEBUG] Using onNavigateToObject callback');
         onNavigateToObject(targetObject.docId);
       } else if (onNavigateToRelatedRecord) {
         // Fallback: use the related record navigation (though this creates wrong URLs)
-        addDebugLog('⚠️ No object navigation callback, falling back to related record navigation');
+        addDebugLog('⚠️ [DEBUG] No object navigation callback, falling back to related record navigation');
         onNavigateToRelatedRecord(targetObject, targetObject); // Both params same = navigate to object URL
       } else {
-        // Fallback: restore object data in current editor
-        addDebugLog('⚠️ No navigation callbacks, restoring object data locally');
-        setFormData(targetObject);
-        setBaseDataForComparison({ ...targetObject });
-        setSelectedRecordType(originalRecordType || null);
-        setIsObjectMode(true);
-        setIsEditing(!!targetObject.docId);
-        setViewingRelatedRecord(null);
-        setExpandedSections({ relatedRecords: true });
+        // Fallback: direct URL navigation for mobile compatibility
+        addDebugLog('🔄 [DEBUG] No navigation callbacks available, using direct URL navigation');
+        try {
+          // Use pushState for smooth navigation without reload
+          window.history.pushState(null, '', `/object/${targetObject.docId}`);
+          
+          // If we have an onClose callback, call it to let the router handle the new URL
+          if (onClose) {
+            addDebugLog('🔄 [DEBUG] Calling onClose to let router handle new URL');
+            onClose();
+          } else {
+            addDebugLog('🔄 [DEBUG] No onClose callback, using local state fallback');
+            setFormData(targetObject);
+            setBaseDataForComparison({ ...targetObject });
+            setSelectedRecordType(originalRecordType || null);
+            setIsObjectMode(true);
+            setIsEditing(!!targetObject.docId);
+            setViewingRelatedRecord(null);
+            setExpandedSections({ relatedRecords: true });
+          }
+        } catch (error) {
+          addDebugLog(`🔄 [DEBUG] URL navigation failed: ${error.message}, using local state fallback`);
+          setFormData(targetObject);
+          setBaseDataForComparison({ ...targetObject });
+          setSelectedRecordType(originalRecordType || null);
+          setIsObjectMode(true);
+          setIsEditing(!!targetObject.docId);
+          setViewingRelatedRecord(null);
+          setExpandedSections({ relatedRecords: true });
+        }
       }
     } else {
-      addDebugLog('❌ No object data found for navigation!');
+      addDebugLog(`🔄 [DEBUG] No valid target object found: targetObject=${!!targetObject}, hasDocId=${targetObject?.docId}, availableObjectsCount=${objects.length}`);
     }
   }, [view, formData.linkId, formData.docId, formData.typeOfObject, parentObjectData, originalObjectData, objects, onNavigateToObject, onNavigateToRelatedRecord, originalRecordType]);  // Render breadcrumbs for navigation
   const renderBreadcrumbs = () => {
-    addDebugLog(`🍞 [renderBreadcrumbs] Called with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", formData.typeOfRecord="${formData.typeOfRecord}", formData.typeOfObject="${formData.typeOfObject}", formData.linkId="${formData.linkId}"`);
-
     const breadcrumbs = [];
 
     // Check if we're in record creation mode (relatedTemplates or editor with linkId but no docId)
@@ -240,14 +245,12 @@ const RecordsEditor = memo(({
       }
       // If in relatedTemplates view (selecting record type), add that step
       if (view === 'relatedTemplates') {
-        addDebugLog('🍞 CASE 1a: In relatedTemplates - Object > Create Record');
         breadcrumbs.push({
           label: 'Create Record',
           type: null,
           onClick: null // Current page, no click
         });
       } else if (view === 'editor') {
-        addDebugLog('🍞 CASE 1b: In editor - Object > Create Record > Record Type');
         // In editor view, add clickable "Create Record" step and current record type
         breadcrumbs.push({
           label: 'Create Record',
@@ -263,7 +266,6 @@ const RecordsEditor = memo(({
     }
     // When viewing a record (either via navigation or direct URL), show Object > Record Type
     else if (!isObjectMode && isEditing && formData.typeOfRecord) {
-      addDebugLog('🍞 CASE 2: Viewing existing record - Object > Record Type');
       // Try to get parent object info from parentObjectData prop, originalObjectData, or from context
       const parentObject = parentObjectData || originalObjectData;
       if (parentObject && parentObject.typeOfObject) {
@@ -281,7 +283,6 @@ const RecordsEditor = memo(({
     }
     // When viewing an object, just show the object name (no navigation needed)
     else if (isObjectMode && isEditing && formData.typeOfObject) {
-      addDebugLog('🍞 CASE 3: Viewing object - just Object');
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
@@ -290,17 +291,13 @@ const RecordsEditor = memo(({
     }
     // When creating a new object, show the object type
     else if (isObjectMode && !isEditing && formData.typeOfObject) {
-      addDebugLog('🍞 CASE 4: Creating object - just Object');
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
         onClick: null // Current page, no click
       });
     } else {
-      addDebugLog('🍞 CASE 5: No breadcrumbs match');
     }
-
-    addDebugLog(`🍞 [renderBreadcrumbs] Result: ${breadcrumbs.length} breadcrumbs - ${breadcrumbs.map(b => b.label).join(' > ')}`);
 
     if (breadcrumbs.length === 0) return null;
 
@@ -545,7 +542,6 @@ const RecordsEditor = memo(({
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
     if (initialRowData) {
-      addDebugLog(`📝 [useEffect] Setting up for editing: docId=${initialRowData.docId}, typeOfRecord=${initialRowData.typeOfRecord}, isObject=${initialRowData.isObject}`);
       const newTemplate = initialRowData.typeOfRecord
         ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
         : null;
@@ -746,41 +742,43 @@ const RecordsEditor = memo(({
 
   // Handler for back button - navigates based on breadcrumb trail
   const handleBackNavigation = useCallback(() => {
-    addDebugLog(`🔙 [handleBackNavigation] Called with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", hasLinkId=${!!formData.linkId}, hasParentData=${!!(parentObjectData || originalObjectData)}`);
+    addDebugLog(`🔙 [DEBUG] handleBackNavigation called with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", formData.docId="${formData.docId}", formData.typeOfRecord="${formData.typeOfRecord}", formData.typeOfObject="${formData.typeOfObject}", formData.linkId="${formData.linkId}", hasParentData=${!!(parentObjectData || originalObjectData)}, onNavigateToObject=${!!onNavigateToObject}, onNavigateToRelatedRecord=${!!onNavigateToRelatedRecord}, onClose=${!!onClose}`);
 
     // Check if we're in record creation mode
     const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
 
+    addDebugLog(`🔙 [DEBUG] Navigation analysis: isCreatingRecord=${isCreatingRecord}, view="${view}", hasLinkId=${!!formData.linkId}, hasDocId=${!!formData.docId}, typeOfObject="${formData.typeOfObject}"`);
+
     // CASE 1: In record creation mode and in editor view - go back to record type selection
     if (isCreatingRecord && view === 'editor') {
-      addDebugLog('🔙 CASE 1: Going back to relatedTemplates view from record creation');
+      addDebugLog('🔙 [DEBUG] CASE 1: Record creation editor -> record type selection');
       setView('relatedTemplates');
       return;
     }
 
     // CASE 2: In record creation mode and in relatedTemplates view - go back to parent object
     if (isCreatingRecord && view === 'relatedTemplates') {
-      addDebugLog('🔙 CASE 2: Going back to parent object from relatedTemplates');
+      addDebugLog('🔙 [DEBUG] CASE 2: Record creation templates -> parent object');
       handleBackToObject();
       return;
     }
 
     // CASE 3: Viewing an existing record - go back to parent object
     if (!isObjectMode && isEditing && (parentObjectData || originalObjectData)) {
-      addDebugLog('🔙 CASE 3: Going back to parent object from existing record');
+      addDebugLog('🔙 [DEBUG] CASE 3: Existing record -> parent object');
       handleBackToObject();
       return;
     }
 
     // CASE 4: Viewing an existing object - close the editor
     if (isObjectMode && isEditing) {
-      addDebugLog('🔙 CASE 4: Closing editor from object view');
+      addDebugLog('🔙 [DEBUG] CASE 4: Object view -> close editor');
       handleClose();
       return;
     }
 
     // Default: close the editor
-    addDebugLog('🔙 DEFAULT: Closing editor');
+    addDebugLog('🔙 [DEBUG] DEFAULT: Close editor');
     handleClose();
   }, [isObjectMode, isEditing, view, formData.linkId, formData.docId, formData.typeOfObject, parentObjectData, originalObjectData, handleBackToObject, handleClose]);
 
@@ -2341,14 +2339,7 @@ const RecordsEditor = memo(({
                               className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log('🔘 View button clicked for record:', {
-                                  recordType: record.typeOfRecord,
-                                  recordId: record.docId,
-                                  parentObject: formData.typeOfObject,
-                                  parentObjectId: formData.docId,
-                                  hasNavigationCallback: !!onNavigateToRelatedRecord,
-                                  willNavigateToURL: !!onNavigateToRelatedRecord && !!formData.docId && !!record.docId
-                                });
+                                addDebugLog(`🔘 View button clicked for record: recordType="${record.typeOfRecord}", recordId="${record.docId}", parentObject="${formData.typeOfObject}", parentObjectId="${formData.docId}", hasNavigationCallback=${!!onNavigateToRelatedRecord}, willNavigateToURL=${!!onNavigateToRelatedRecord && !!formData.docId && !!record.docId}`);
                                 handleViewRelatedRecord(record);
                               }}
                             >
