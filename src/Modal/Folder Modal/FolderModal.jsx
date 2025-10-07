@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import styles from "./FolderModal.module.css";
 import { MainContext } from "../../Contexts/MainContext";
 import { ModalNavigatorContext } from "../../Contexts/ModalNavigator";
+import { FaFileAlt, FaPlus, FaTrash } from "react-icons/fa";
 
 const FolderModal = ({ folderName, onSheetSelect, tempData, setTempData, handleClose }) => {
   const { sheets, isDarkTheme, setActiveSheetName: setActiveSheetNameWithRef } = useContext(MainContext);
