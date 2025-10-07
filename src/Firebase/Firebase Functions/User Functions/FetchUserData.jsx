@@ -8,14 +8,6 @@ let currentBusinessId = null;
 // Global debug logs array
 window.debugLogs = window.debugLogs || [];
 
-// Helper function to add debug logs
-const addDebugLog = (message) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const logEntry = `[${timestamp}] ${message}`;
-  window.debugLogs.push(logEntry);
-  console.log(logEntry); // Keep console logging for development
-};
-
 // Helper: Derive structure from sheets
 const deriveStructureFromSheets = (sheets) => sheets.map((sheet) => ({ sheetName: sheet.sheetName }));
 
@@ -297,7 +289,6 @@ const fetchUserData = async ({
                   }))
                 }));
                 setTemplateObjects(objects);
-                // addDebugLog(`🏗️ Loaded ${objects.length} template objects: ${objects.map(obj => `${obj.name} (${obj.id})`).join(', ')}`);
                 templateObjectNames = objects.map(obj => obj.name);
               }
             },
@@ -581,8 +572,6 @@ const fetchUserData = async ({
                 const objectsForType = objectsByType.get(objectId) || [];
                 allRealTimeObjects.push(...objectsForType);
               }
-              
-              addDebugLog(`📊 Sheet "${sheetNameToUse}" objects updated: ${allRealTimeObjects.length} total objects (${selectedObjectIds.length} types selected)`);
               
               setObjects(allRealTimeObjects);
             }

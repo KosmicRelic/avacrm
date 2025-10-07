@@ -13,16 +13,6 @@ import { ImSpinner2 } from 'react-icons/im';
 import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// Debug logging utility
-const addDebugLog = (message) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const logEntry = `[${timestamp}] ${message}`;
-  if (window.debugLogs) {
-    window.debugLogs.push(logEntry);
-  }
-  console.log(logEntry);
-};
-
 // Local components
 import RowComponent from './Row Template/RowComponent';
 import RecordsEditor from './Records Editor/RecordsEditor';
@@ -416,11 +406,6 @@ const Sheets = ({
   const loadedFromUrlRef = useRef(null); // Track what we've loaded from URL to prevent re-loading
 
   const isMobile = windowWidth <= 1024;
-
-  // Log select mode changes
-  useEffect(() => {
-    addDebugLog('🔄 Select mode changed to: ' + isSelectMode);
-  }, [isSelectMode]);
 
   // Animation trigger for opening and closing (both mobile and desktop)
   useEffect(() => {

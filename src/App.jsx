@@ -32,16 +32,6 @@ import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
 import ErrorBoundary from './Utils/ErrorBoundary';
 import DebugPanel from './Utils/DebugPanel';
 
-// Debug logging utility
-const addDebugLog = (message) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const logEntry = `[${timestamp}] ${message}`;
-  if (window.debugLogs) {
-    window.debugLogs.push(logEntry);
-  }
-  console.log(logEntry);
-};
-
 // Memoized ProtectedRoute to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
   const { user, userAuthChecked } = useContext(MainContext);
