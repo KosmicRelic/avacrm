@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
 import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 import { syncLinkedRecordBasicFieldsFunction } from '../Firebase/Firebase Functions/User Functions/syncLinkedRecordBasicFieldsFunction';
+import { addDebugLog } from '../Utils/DebugPanel';
 
 export const MainContext = createContext();
 
@@ -1017,6 +1018,7 @@ export const MainContextProvider = ({ children }) => {
             );
 
             // Update records state, ensuring isModified and action are cleared
+            // Filter out deleted records for consistency (real-time listeners will handle removal on other clients)
             const updatedRecords = records
               .filter((record) => !(record.isModified && record.action === 'remove'))
               .map((record) => {
@@ -1037,6 +1039,7 @@ export const MainContextProvider = ({ children }) => {
             }
 
             // Update objects state to remove deleted records from their records arrays
+            // This is necessary to keep the parent object's records array in sync
             if (deletedRecordIds.size > 0 && parentObjectUpdates.size > 0) {
               setObjects((prev) =>
                 prev.map((object) => {
@@ -1278,9 +1281,26 @@ export const MainContextProvider = ({ children }) => {
   // Debounce for sheet record fetches
   const debounceRef = useRef();
   useEffect(() => {
+    addDebugLog('MainContext.jsx', 'Sheet fetch effect triggered', {
+      hasUser: !!user,
+      haBusinessId: !!businessId,
+      pathname: location.pathname,
+      activeSheetName,
+      allSheetsCount: sheets.allSheets.length
+    });
+
     if (!user || !businessId || location.pathname !== '/sheets' || !activeSheetName) return;
     const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const sheetId = sheetObj?.docId;
+
+    addDebugLog('MainContext.jsx', 'Sheet lookup result', {
+      activeSheetName,
+      sheetId,
+      sheetObj: sheetObj ? { docId: sheetObj.docId, sheetName: sheetObj.sheetName } : null,
+      alreadyFetching: fetchingSheetIdsRef.current.has(sheetId),
+      alreadyFetched: sheetRecordsFetched[sheetId]
+    });
+
     if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetRecordsFetched[sheetId]) {
       return;
     }
@@ -1288,6 +1308,12 @@ export const MainContextProvider = ({ children }) => {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
+      addDebugLog('MainContext.jsx', 'Starting fetchUserData for objects', {
+        businessId,
+        activeSheetName,
+        sheetId
+      });
+
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
@@ -1300,13 +1326,19 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then((unsubscribe) => {
+        addDebugLog('MainContext.jsx', 'fetchUserData completed', {
+          sheetId,
+          hasUnsubscribe: typeof unsubscribe === 'function'
+        });
+
         setSheetRecordsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
         // Store the unsubscribe function
         if (typeof unsubscribe === 'function') {
           setUnsubscribeFunctions(prev => [...prev, unsubscribe]);
         }
-      }).catch(() => {
+      }).catch((error) => {
+        addDebugLog('MainContext.jsx', 'fetchUserData error', { sheetId, error: error.message });
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }, 200); // 200ms debounce

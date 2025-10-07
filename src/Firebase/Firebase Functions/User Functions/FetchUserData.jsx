@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, getDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
+import { addDebugLog } from '../../../Utils/DebugPanel';
 
 // Module-level cache to track fetched sheets and current businessId
 const fetchedSheets = new Map(); // Maps sheetId to Map of typeOfRecord to { filters }
@@ -405,6 +406,7 @@ const fetchUserData = async ({
 
     const activeSheet = allSheets.find((s) => s.sheetName === sheetNameToUse);
     if (!activeSheet) {
+      addDebugLog('FetchUserData.jsx', 'No active sheet found', { sheetNameToUse, allSheets: allSheets.map(s => s.sheetName) });
       setRecords && setRecords([]);
       return () => {}; // For React Suspense compatibility
     }
@@ -417,6 +419,14 @@ const fetchUserData = async ({
     // Get the IDs of selected objects
     const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
 
+    addDebugLog('FetchUserData.jsx', 'Active sheet info', {
+      sheetName: sheetNameToUse,
+      sheetId,
+      selectedObjects,
+      selectedObjectIds,
+      objectTypeFilters
+    });
+
     // Initialize cache for this sheetId if not present
     if (!fetchedSheets.has(sheetId)) {
       fetchedSheets.set(sheetId, new Map());
@@ -425,6 +435,7 @@ const fetchUserData = async ({
     // Fetch objects based on selectedObjects and objectTypeFilters with real-time updates
     try {
       if (!Array.isArray(selectedObjectIds) || selectedObjectIds.length === 0) {
+        addDebugLog('FetchUserData.jsx', 'No selected objects, skipping fetch', { selectedObjectIds });
         setRecords && setRecords([]);
         return () => {}; // Return empty unsubscribe function
       }
@@ -433,6 +444,13 @@ const fetchUserData = async ({
       const objectsByType = new Map(); // Store objects by type locally
 
       for (const objectId of selectedObjectIds) {
+        // Get the object name from selectedObjects
+        const objectName = selectedObjects[objectId]?.name;
+        if (!objectName) {
+          addDebugLog('FetchUserData.jsx', 'Skipping object - no name found', { objectId });
+          continue;
+        }
+
         // Invalidate cache if objectTypeFilters have changed
         const cachedFilters = fetchedSheets.get(sheetId)?.get(objectId)?.filters;
         const currentFilters = objectTypeFilters[objectId] || {};
@@ -446,9 +464,18 @@ const fetchUserData = async ({
         }
         fetchedSheets.get(sheetId).set(objectId, { filters: currentFilters });
 
+        addDebugLog('FetchUserData.jsx', 'Setting up query for object', {
+          objectId,
+          objectName,
+          businessId,
+          path: `businesses/${businessId}/objects`,
+          queryFilter: `typeOfObject == ${objectName}`
+        });
+
+        // Query by typeOfObject (the name) instead of objectId
         let objectQuery = query(
           collection(db, 'businesses', businessId, 'objects'),
-          where('objectId', '==', objectId)
+          where('typeOfObject', '==', objectName)
         );
 
         // Apply objectTypeFilters for this object type
@@ -497,15 +524,48 @@ const fetchUserData = async ({
         // Set up real-time listener with BATCHED updates for massive scale
         let updateBatch = [];
         let batchTimeout = null;
+        let isInitialLoad = true;
         
         const unsubscribe = onSnapshot(objectQuery, (snapshot) => {
+          addDebugLog('FetchUserData.jsx', 'Objects snapshot received', {
+            objectId,
+            size: snapshot.size,
+            empty: snapshot.empty,
+            changeCount: snapshot.docChanges().length,
+            isInitialLoad
+          });
+
           // Collect all changes in a batch instead of processing immediately
           snapshot.docChanges().forEach((change) => {
+            addDebugLog('FetchUserData.jsx', `Object ${change.type}`, {
+              objectId,
+              docId: change.doc.id,
+              type: change.type
+            });
             updateBatch.push({ change, objectId, clientSideFilters });
           });
 
+          // If initial load and snapshot is empty, immediately set empty array
+          if (isInitialLoad && snapshot.empty && setObjects) {
+            addDebugLog('FetchUserData.jsx', 'Initial load with empty snapshot, setting empty objects array');
+            objectsByType.set(objectId, []);
+            const allRealTimeObjects = [];
+            for (const objId of selectedObjectIds) {
+              const objectsForType = objectsByType.get(objId) || [];
+              allRealTimeObjects.push(...objectsForType);
+            }
+            setObjects(allRealTimeObjects);
+            isInitialLoad = false;
+            return;
+          }
+
+          const wasInitialLoad = isInitialLoad;
+          isInitialLoad = false;
+
           // Debounce updates to handle rapid changes efficiently
           clearTimeout(batchTimeout);
+          // Use shorter timeout for initial load to display data faster
+          const timeout = wasInitialLoad ? 0 : 16;
           batchTimeout = setTimeout(() => {
             if (updateBatch.length === 0) return;
 
@@ -573,12 +633,24 @@ const fetchUserData = async ({
                 allRealTimeObjects.push(...objectsForType);
               }
               
+              addDebugLog('FetchUserData.jsx', 'Calling setObjects with batch', {
+                totalObjects: allRealTimeObjects.length,
+                objectsByType: Array.from(objectsByType.entries()).map(([id, objs]) => ({
+                  id,
+                  count: objs.length
+                }))
+              });
               setObjects(allRealTimeObjects);
+            } else {
+              addDebugLog('FetchUserData.jsx', 'Skipping setObjects', {
+                hasAnyChanges,
+                hasSetObjects: !!setObjects
+              });
             }
 
             // Clear batch for next round
             updateBatch = [];
-          }, 16); // 60fps batching - smooth but not overwhelming
+          }, timeout); // Immediate on initial load, 60fps batching for updates
         });
 
         unsubscribeFunctions.push(unsubscribe);

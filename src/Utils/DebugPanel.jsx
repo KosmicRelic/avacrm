@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react';
 
+// Initialize debug logs array
+if (typeof window !== 'undefined') {
+  window.debugLogs = window.debugLogs || [];
+}
+
+// Export debug logging function
+export const addDebugLog = (source, message, data = null) => {
+  if (typeof window === 'undefined') return;
+  
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  const logEntry = data 
+    ? `[${timestamp}] [${source}] ${message}: ${JSON.stringify(data, null, 2)}`
+    : `[${timestamp}] [${source}] ${message}`;
+  
+  window.debugLogs = window.debugLogs || [];
+  window.debugLogs.push(logEntry);
+  
+  // Keep only last 100 logs to prevent memory issues
+  if (window.debugLogs.length > 100) {
+    window.debugLogs = window.debugLogs.slice(-100);
+  }
+  
+  // Also log to console in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log(logEntry);
+  }
+};
+
 const DebugPanel = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [logs, setLogs] = useState([]);

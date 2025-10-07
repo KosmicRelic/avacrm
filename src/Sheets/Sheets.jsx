@@ -12,6 +12,7 @@ import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
+import { addDebugLog } from '../Utils/DebugPanel';
 
 // Local components
 import RowComponent from './Row Template/RowComponent';
@@ -99,30 +100,33 @@ const Sheets = ({
     [selectedObjects]
   );
 
-  // Set up objects listener based on selected objects
+  // Objects are already being listened to in FetchUserData.jsx via MainContext
+  // Track loading state based on when sheet is fetched
   useEffect(() => {
+    addDebugLog('Sheets.jsx', 'Loading state check', { 
+      selectedObjectNamesCount: selectedObjectNames.length,
+      sheetId,
+      sheetFetched: sheetRecordsFetched[sheetId],
+      objectsCount: objects.length 
+    });
+
     if (selectedObjectNames.length === 0) {
-      setObjects([]);
+      addDebugLog('Sheets.jsx', 'No objects selected, stopping loading');
       setObjectsLoading(false);
       return;
     }
 
+    // If sheet is already fetched, stop loading
+    if (sheetRecordsFetched[sheetId]) {
+      addDebugLog('Sheets.jsx', 'Sheet already fetched, stopping loading');
+      setObjectsLoading(false);
+      return;
+    }
+
+    // Otherwise, we're loading
+    addDebugLog('Sheets.jsx', 'Sheet not yet fetched, starting loading');
     setObjectsLoading(true);
-
-    const unsubscribe = onSnapshot(
-      query(collection(db, 'businesses', businessId, 'objects'), where('typeOfObject', 'in', selectedObjectNames)),
-      (snapshot) => {
-        const fetchedObjects = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
-        setObjects(fetchedObjects);
-        setObjectsLoading(false);
-      },
-      (error) => {
-        console.error('Error in objects listener:', error);
-      }
-    );
-
-    return unsubscribe;
-  }, [selectedObjectNames, businessId]);
+  }, [selectedObjectNames, sheetId, sheetRecordsFetched]);
 
   // Process object deletions
   useEffect(() => {
@@ -153,22 +157,8 @@ const Sheets = ({
           await batch.commit();
           console.log(`✅ Successfully deleted ${objectsToDelete.length} objects and their associated records`);
           
-          // Remove deleted objects from local state
-          setObjects(prev => {
-            const filtered = prev.filter(obj => !objectsToDelete.some(delObj => delObj.docId === obj.docId));
-            return filtered;
-          });
-          
-          // Also remove associated records from local state
-          setRecords(prev => {
-            const deletedRecordIds = new Set();
-            objectsToDelete.forEach(obj => {
-              if (obj.records) {
-                obj.records.forEach(recordInfo => deletedRecordIds.add(recordInfo.docId));
-              }
-            });
-            return prev.filter(record => !deletedRecordIds.has(record.docId));
-          });
+          // Don't manually update state here - let the real-time listeners handle it
+          // This ensures all connected clients see the deletion through the same mechanism
           
         } catch (error) {
           console.error('Failed to delete objects and records:', error);
