@@ -179,17 +179,33 @@ const RecordsEditor = memo(({
 
   // Handler to go back to the original object
   const handleBackToObject = useCallback(() => {
-    const targetObject = originalObjectData || parentObjectData;
-    
+    // Check if we're in record creation mode
+    const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
+
+    let targetObject;
+
+    if (isCreatingRecord) {
+      // In record creation mode, the "parent object" is the current object data
+      targetObject = parentObjectData || originalObjectData || objects.find(obj => obj.linkId === formData.linkId) || formData;
+    } else {
+      // Normal case: go back to parent object
+      targetObject = originalObjectData || parentObjectData;
+    }
+
+    addDebugLog(`🔄 [handleBackToObject] Called with targetObject: ${targetObject ? `docId=${targetObject.docId}, typeOfObject=${targetObject.typeOfObject}` : 'NOT FOUND'}`);
+
     if (targetObject && targetObject.docId) {
-      // Use the navigation callback to navigate to the object URL
-      // Pass the object as both parameters to trigger object-only navigation
-      if (onNavigateToRelatedRecord) {
-        console.log('🔄 Navigating back to object via URL:', targetObject);
+      // Use the object navigation callback to navigate directly to the object URL
+      if (onNavigateToObject) {
+        addDebugLog(`🔄 Navigating directly to object URL with docId: ${targetObject.docId}`);
+        onNavigateToObject(targetObject.docId);
+      } else if (onNavigateToRelatedRecord) {
+        // Fallback: use the related record navigation (though this creates wrong URLs)
+        addDebugLog('⚠️ No object navigation callback, falling back to related record navigation');
         onNavigateToRelatedRecord(targetObject, targetObject); // Both params same = navigate to object URL
       } else {
         // Fallback: restore object data in current editor
-        console.log('⚠️ No navigation callback, restoring object data locally');
+        addDebugLog('⚠️ No navigation callbacks, restoring object data locally');
         setFormData(targetObject);
         setBaseDataForComparison({ ...targetObject });
         setSelectedRecordType(originalRecordType || null);
@@ -199,16 +215,55 @@ const RecordsEditor = memo(({
         setExpandedSections({ relatedRecords: true });
       }
     } else {
-      console.log('❌ No object data found for navigation!');
+      addDebugLog('❌ No object data found for navigation!');
     }
-  }, [originalObjectData, parentObjectData, originalRecordType, onNavigateToRelatedRecord]);
-
-  // Render breadcrumbs for navigation
+  }, [view, formData.linkId, formData.docId, formData.typeOfObject, parentObjectData, originalObjectData, objects, onNavigateToObject, onNavigateToRelatedRecord, originalRecordType]);  // Render breadcrumbs for navigation
   const renderBreadcrumbs = () => {
+    addDebugLog(`🍞 [renderBreadcrumbs] Called with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", formData.typeOfRecord="${formData.typeOfRecord}", formData.typeOfObject="${formData.typeOfObject}", formData.linkId="${formData.linkId}"`);
+
     const breadcrumbs = [];
 
+    // Check if we're in record creation mode (relatedTemplates or editor with linkId but no docId)
+    const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
+
+    // When creating a new record (show parent object breadcrumb and editor step)
+    if (isCreatingRecord) {
+      addDebugLog('🍞 CASE 1: Creating new record');
+      // Find the parent object from the linkId or use the current object data
+      const parentObject = parentObjectData || originalObjectData || objects.find(obj => obj.linkId === formData.linkId);
+      if (parentObject && parentObject.typeOfObject) {
+        breadcrumbs.push({
+          label: parentObject.typeOfObject,
+          type: 'Object',
+          onClick: handleBackToObject
+        });
+      }
+      // If in relatedTemplates view (selecting record type), add that step
+      if (view === 'relatedTemplates') {
+        addDebugLog('🍞 CASE 1a: In relatedTemplates - Object > Create Record');
+        breadcrumbs.push({
+          label: 'Create Record',
+          type: null,
+          onClick: null // Current page, no click
+        });
+      } else if (view === 'editor') {
+        addDebugLog('🍞 CASE 1b: In editor - Object > Create Record > Record Type');
+        // In editor view, add clickable "Create Record" step and current record type
+        breadcrumbs.push({
+          label: 'Create Record',
+          type: null,
+          onClick: () => setView('relatedTemplates')
+        });
+        breadcrumbs.push({
+          label: formData.typeOfRecord || 'New Record',
+          type: 'Record',
+          onClick: null // Current page, no click
+        });
+      }
+    }
     // When viewing a record (either via navigation or direct URL), show Object > Record Type
-    if (!isObjectMode && isEditing && formData.typeOfRecord) {
+    else if (!isObjectMode && isEditing && formData.typeOfRecord) {
+      addDebugLog('🍞 CASE 2: Viewing existing record - Object > Record Type');
       // Try to get parent object info from parentObjectData prop, originalObjectData, or from context
       const parentObject = parentObjectData || originalObjectData;
       if (parentObject && parentObject.typeOfObject) {
@@ -224,25 +279,9 @@ const RecordsEditor = memo(({
         onClick: null // Current page, no click
       });
     }
-    // When creating a new record (show parent object breadcrumb)
-    else if (!isObjectMode && !isEditing && formData.typeOfObject && formData.linkId) {
-      // Find the parent object from the linkId
-      const parentObject = parentObjectData || objects.find(obj => obj.linkId === formData.linkId);
-      if (parentObject && parentObject.typeOfObject) {
-        breadcrumbs.push({
-          label: parentObject.typeOfObject,
-          type: 'Object',
-          onClick: handleBackToObject
-        });
-      }
-      breadcrumbs.push({
-        label: formData.typeOfRecord || 'New Record',
-        type: 'Record',
-        onClick: null // Current page, no click
-      });
-    }
     // When viewing an object, just show the object name (no navigation needed)
     else if (isObjectMode && isEditing && formData.typeOfObject) {
+      addDebugLog('🍞 CASE 3: Viewing object - just Object');
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
@@ -251,12 +290,17 @@ const RecordsEditor = memo(({
     }
     // When creating a new object, show the object type
     else if (isObjectMode && !isEditing && formData.typeOfObject) {
+      addDebugLog('🍞 CASE 4: Creating object - just Object');
       breadcrumbs.push({
         label: formData.typeOfObject,
         type: 'Object',
         onClick: null // Current page, no click
       });
+    } else {
+      addDebugLog('🍞 CASE 5: No breadcrumbs match');
     }
+
+    addDebugLog(`🍞 [renderBreadcrumbs] Result: ${breadcrumbs.length} breadcrumbs - ${breadcrumbs.map(b => b.label).join(' > ')}`);
 
     if (breadcrumbs.length === 0) return null;
 
@@ -501,7 +545,7 @@ const RecordsEditor = memo(({
   // Update component state when initialRowData changes (for pipeline conversions)
   useEffect(() => {
     if (initialRowData) {
-      console.log('📝 Setting up for editing existing record/object:', initialRowData);
+      addDebugLog(`📝 [useEffect] Setting up for editing: docId=${initialRowData.docId}, typeOfRecord=${initialRowData.typeOfRecord}, isObject=${initialRowData.isObject}`);
       const newTemplate = initialRowData.typeOfRecord
         ? recordTemplates?.find((t) => t.name === initialRowData.typeOfRecord)
         : null;
@@ -699,6 +743,46 @@ const RecordsEditor = memo(({
     setIsHistoryModalOpen(false);
     onClose();
   }, [onClose]);
+
+  // Handler for back button - navigates based on breadcrumb trail
+  const handleBackNavigation = useCallback(() => {
+    addDebugLog(`🔙 [handleBackNavigation] Called with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", hasLinkId=${!!formData.linkId}, hasParentData=${!!(parentObjectData || originalObjectData)}`);
+
+    // Check if we're in record creation mode
+    const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
+
+    // CASE 1: In record creation mode and in editor view - go back to record type selection
+    if (isCreatingRecord && view === 'editor') {
+      addDebugLog('🔙 CASE 1: Going back to relatedTemplates view from record creation');
+      setView('relatedTemplates');
+      return;
+    }
+
+    // CASE 2: In record creation mode and in relatedTemplates view - go back to parent object
+    if (isCreatingRecord && view === 'relatedTemplates') {
+      addDebugLog('🔙 CASE 2: Going back to parent object from relatedTemplates');
+      handleBackToObject();
+      return;
+    }
+
+    // CASE 3: Viewing an existing record - go back to parent object
+    if (!isObjectMode && isEditing && (parentObjectData || originalObjectData)) {
+      addDebugLog('🔙 CASE 3: Going back to parent object from existing record');
+      handleBackToObject();
+      return;
+    }
+
+    // CASE 4: Viewing an existing object - close the editor
+    if (isObjectMode && isEditing) {
+      addDebugLog('🔙 CASE 4: Closing editor from object view');
+      handleClose();
+      return;
+    }
+
+    // Default: close the editor
+    addDebugLog('🔙 DEFAULT: Closing editor');
+    handleClose();
+  }, [isObjectMode, isEditing, view, formData.linkId, formData.docId, formData.typeOfObject, parentObjectData, originalObjectData, handleBackToObject, handleClose]);
 
   const handleInputChange = useCallback(
     (key, value, fieldType, extra) => {
@@ -1696,36 +1780,97 @@ const RecordsEditor = memo(({
     );
   };
 
+  // Determine if back button should be shown
+  const shouldShowBackButton = useMemo(() => {
+    addDebugLog(`🔍 [shouldShowBackButton] Checking with state: isObjectMode=${isObjectMode}, isEditing=${isEditing}, view="${view}", hasParentData=${!!(parentObjectData || originalObjectData)}`);
+
+    // Check if we're in record creation mode
+    const isCreatingRecord = (view === 'relatedTemplates' || (view === 'editor' && formData.linkId && !formData.docId)) && formData.typeOfObject;
+
+    // Show back button when:
+    // 1. Viewing/editing an existing object (can close)
+    if (isObjectMode && isEditing) {
+      addDebugLog('✅ Showing back button: Case 1 - Object view');
+      return true;
+    }
+
+    // 2. Creating a record and in editor view (can go back to record type selection)
+    if (!isObjectMode && !isEditing && view === 'editor') {
+      addDebugLog('✅ Showing back button: Case 2 - Creating record in editor');
+      return true;
+    }
+
+    // 3. In record creation mode (relatedTemplates or editor) - can go back to object
+    if (isCreatingRecord) {
+      addDebugLog('✅ Showing back button: Case 3 - In record creation mode');
+      return true;
+    }
+
+    // 4. Viewing a record with parent object (can go back to object)
+    if (!isObjectMode && isEditing && (parentObjectData || originalObjectData)) {
+      addDebugLog('✅ Showing back button: Case 4 - Viewing existing record');
+      return true;
+    }
+
+    addDebugLog('❌ Not showing back button');
+    return false;
+  }, [isObjectMode, isEditing, view, parentObjectData, originalObjectData, formData.linkId, formData.docId, formData.typeOfObject]);
+
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
       <div className={styles.viewContainer}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            {/* Only show back button when viewing objects (not creating or viewing records) */}
-            {isObjectMode && !viewingRelatedRecord && isEditing && (
-              <button
-                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleClose}
-                aria-label="Back"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 12L6 8L10 4"
-                    stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            )}
-            <div className={styles.navContent}>
+            <div className={styles.headerTop}>
+              <div className={styles.headerTopLeft}>
+                {/* Show back button based on navigation context */}
+                {shouldShowBackButton && (
+                  <button
+                    className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={handleBackNavigation}
+                    aria-label="Back"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M10 12L6 8L10 4"
+                        stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <div className={styles.headerTopRight}>
+                {view === 'objectTypeSelection' && (
+                  <button
+                    type="button"
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={handleSelectionNext}
+                    disabled={!selectedRecordType}
+                  >
+                    Next
+                  </button>
+                )}
+                {view === 'editor' && hasUnsavedChanges && (
+                  <button
+                    type="button"
+                    className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={handleSave}
+                  >
+                    {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className={styles.headerBreadcrumbs}>
               {renderBreadcrumbs() || (
                 <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
                   {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
@@ -1735,25 +1880,6 @@ const RecordsEditor = memo(({
                 </h1>
               )}
             </div>
-            {view === 'objectTypeSelection' && (
-              <button
-                type="button"
-                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleSelectionNext}
-                disabled={!selectedRecordType}
-              >
-                Next
-              </button>
-            )}
-            {view === 'editor' && hasUnsavedChanges && (
-              <button
-                type="button"
-                className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={handleSave}
-              >
-                {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
-              </button>
-            )}
           </div>
           <div className={styles.contentWrapper}>
             {isCreatingObject && isEditing && !isObjectMode && (
@@ -1874,7 +2000,7 @@ const RecordsEditor = memo(({
                       <div
                         id={`section-content-${index}`}
                         className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${
-                          openSections.includes(section.name) ? styles.expanded : ''
+                          openSections.includes(section.name) ? `${styles.expanded} ${!hasUserToggledSections ? styles.noAnimation : ''}` : ''
                         }`}
                       >
                         <div className={styles.fieldGrid}>
@@ -2116,7 +2242,7 @@ const RecordsEditor = memo(({
                       <div className={styles.createRecordContent}>
                         <h3 className={styles.createRecordTitle}>Create Record</h3>
                         <p className={styles.createRecordDescription}>
-                          Create a new record linked to this {formData.typeOfObject}
+                          Cre linked to this {formData.typeOfObject}
                         </p>
                       </div>
                       <div className={styles.createRecordArrow}>
@@ -2273,9 +2399,6 @@ const RecordsEditor = memo(({
                           </div>
                           <h3 className={styles.templateCardTitle}>{template.name}</h3>
                         </div>
-                        <p className={styles.templateCardDescription}>
-                          Create a new {template.name} record that will be automatically linked to this {formData.typeOfObject}.
-                        </p>
                         <div className={styles.templateCardFooter}>
                           <button className={`${styles.templateCreateButton} ${isDarkTheme ? styles.darkTheme : ''}`}>
                             Create →

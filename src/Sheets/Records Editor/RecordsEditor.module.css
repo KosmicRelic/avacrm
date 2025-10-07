@@ -57,9 +57,6 @@
 
 /* Navigation Bar */
 .navBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(24px);
@@ -78,6 +75,30 @@
   background: rgba(28, 28, 30, 0.9);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0px;
+}
+
+.headerTopLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerTopRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerBreadcrumbs {
+  width: 100%;
 }
 
 /* Back Button */
@@ -414,7 +435,7 @@
 .actionButton {
   position: relative;
   overflow: hidden;
-  padding: 12px 24px;
+  padding: 10px 22px;
   background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
   color: white;
   border: none;
@@ -1013,6 +1034,10 @@
 .sectionContent.expanded {
   display: block;
   animation: slideDownSmooth 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sectionContent.noAnimation {
+  animation: none !important;
 }
 
 /* Field Grid Container */
