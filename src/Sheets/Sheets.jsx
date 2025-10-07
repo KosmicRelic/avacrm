@@ -103,28 +103,18 @@ const Sheets = ({
   // Objects are already being listened to in FetchUserData.jsx via MainContext
   // Track loading state based on when sheet is fetched
   useEffect(() => {
-    addDebugLog('Sheets.jsx', 'Loading state check', { 
-      selectedObjectNamesCount: selectedObjectNames.length,
-      sheetId,
-      sheetFetched: sheetRecordsFetched[sheetId],
-      objectsCount: objects.length 
-    });
-
     if (selectedObjectNames.length === 0) {
-      addDebugLog('Sheets.jsx', 'No objects selected, stopping loading');
       setObjectsLoading(false);
       return;
     }
 
     // If sheet is already fetched, stop loading
     if (sheetRecordsFetched[sheetId]) {
-      addDebugLog('Sheets.jsx', 'Sheet already fetched, stopping loading');
       setObjectsLoading(false);
       return;
     }
 
     // Otherwise, we're loading
-    addDebugLog('Sheets.jsx', 'Sheet not yet fetched, starting loading');
     setObjectsLoading(true);
   }, [selectedObjectNames, sheetId, sheetRecordsFetched]);
 
@@ -178,6 +168,13 @@ const Sheets = ({
     // Choose data source - always objects
     const dataSource = objects;
     const _typeField = 'typeOfObject';
+    
+    addDebugLog('Sheets.jsx', '🎨 Filtering objects for sheet', {
+      sheetName: activeSheet.sheetName,
+      totalObjects: dataSource.length,
+      deletedObjects: dataSource.filter(o => o.isDeleted).length,
+      activeObjects: dataSource.filter(o => !o.isDeleted).length
+    });
     
     // First filter out deleted objects and by selected object types
     const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
