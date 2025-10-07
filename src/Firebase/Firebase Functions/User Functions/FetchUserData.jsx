@@ -617,7 +617,8 @@ const fetchUserData = async ({
               } else if (change.type === 'removed') {
                 const index = currentObjects.findIndex(object => object.docId === objectData.docId);
                 if (index >= 0) {
-                  currentObjects.splice(index, 1);
+                  // Mark as deleted instead of removing from state
+                  currentObjects[index] = { ...currentObjects[index], isDeleted: true };
                   hasAnyChanges = true;
                 }
               }

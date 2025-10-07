@@ -2,7 +2,7 @@ import { useContext, useState, useCallback, useMemo, useEffect, useRef, memo, fo
 import PropTypes from 'prop-types';
 import styles from './RecordsEditor.module.css';
 import { MainContext } from '../../Contexts/MainContext';
-import { Timestamp, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { formatFirestoreTimestamp } from '../../Utils/firestoreUtils';
 import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName, formatDateForInput, formatTimeForInput, parseLocalDate } from '../../Utils/assignedToUtils';
@@ -47,6 +47,7 @@ const RecordsEditor = memo(forwardRef(({
     : null;
   
   const [selectedRecordType, setSelectedRecordType] = useState('');
+  const [isItemDeleted, setIsItemDeleted] = useState(false);
   
   // Update selectedRecordType when data becomes available
   useEffect(() => {
@@ -851,6 +852,86 @@ const RecordsEditor = memo(forwardRef(({
     handleBackNavigation,
   }), [handleBackNavigation]);
 
+  // Real-time deletion detection for objects
+  useEffect(() => {
+    if (!isObjectMode || !isEditing || !initialRowData?.docId || !businessId) return;
+
+    // Check if object is already marked as deleted in local state
+    const existingObject = objects.find(obj => obj.docId === initialRowData.docId);
+    if (existingObject && existingObject.isDeleted) {
+      console.warn('⚠️ Object being edited is marked as deleted:', initialRowData.docId);
+      setIsItemDeleted(true);
+      return;
+    }
+
+    const checkAndSetupListener = async () => {
+      try {
+        const objectRef = doc(db, `businesses/${businessId}/objects/${initialRowData.docId}`);
+        const docSnapshot = await getDoc(objectRef);
+        
+        // Only set up deletion listener if the document actually exists
+        if (docSnapshot.exists()) {
+          const unsubscribe = onSnapshot(objectRef, (snapshot) => {
+            if (!snapshot.exists()) {
+              console.warn('⚠️ Object being edited was deleted by another user:', initialRowData.docId);
+              setIsItemDeleted(true);
+            }
+          });
+          return unsubscribe;
+        } else {
+          console.log('📝 Object does not exist in Firestore yet, skipping deletion detection:', initialRowData.docId);
+        }
+      } catch (error) {
+        console.error('❌ Error checking if object exists:', error);
+      }
+    };
+
+    const cleanup = checkAndSetupListener();
+    return () => {
+      cleanup?.then?.(unsubscribe => unsubscribe?.());
+    };
+  }, [isObjectMode, isEditing, initialRowData?.docId, businessId, objects]);
+
+  // Real-time deletion detection for records
+  useEffect(() => {
+    if (isObjectMode || !isEditing || !initialRowData?.docId || !businessId) return;
+
+    // Check if record is already marked as deleted in local state
+    const existingRecord = records.find(rec => rec.docId === initialRowData.docId);
+    if (existingRecord && existingRecord.isDeleted) {
+      console.warn('⚠️ Record being edited is marked as deleted:', initialRowData.docId);
+      setIsItemDeleted(true);
+      return;
+    }
+
+    const checkAndSetupListener = async () => {
+      try {
+        const recordRef = doc(db, `businesses/${businessId}/records/${initialRowData.docId}`);
+        const docSnapshot = await getDoc(recordRef);
+        
+        // Only set up deletion listener if the document actually exists
+        if (docSnapshot.exists()) {
+          const unsubscribe = onSnapshot(recordRef, (snapshot) => {
+            if (!snapshot.exists()) {
+              console.warn('⚠️ Record being edited was deleted by another user:', initialRowData.docId);
+              setIsItemDeleted(true);
+            }
+          });
+          return unsubscribe;
+        } else {
+          console.log('📝 Record does not exist in Firestore yet, skipping deletion detection:', initialRowData.docId);
+        }
+      } catch (error) {
+        console.error('❌ Error checking if record exists:', error);
+      }
+    };
+
+    const cleanup = checkAndSetupListener();
+    return () => {
+      cleanup?.then?.(unsubscribe => unsubscribe?.());
+    };
+  }, [isObjectMode, isEditing, initialRowData?.docId, businessId, records]);
+
   const handleInputChange = useCallback(
     (key, value, fieldType, extra) => {
       if (key === 'docId' || key === 'typeOfRecord' || key === 'typeOfObject') {
@@ -1121,6 +1202,12 @@ const RecordsEditor = memo(forwardRef(({
   }, [formData, recordTemplates, templateObjects, onSave, onClose, onOpenNewRecord, user]);
 
   const handleSave = useCallback(async () => {
+    // Prevent saving if item has been deleted
+    if (isItemDeleted) {
+      alert('This item has been deleted and cannot be saved.');
+      return;
+    }
+
     // Prevent double-saves
     if (isSavingRef.current) {
       return;
@@ -1876,6 +1963,21 @@ const RecordsEditor = memo(forwardRef(({
 
   return (
     <div className={`${styles.editorWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      {isItemDeleted && (
+        <div className={`${styles.deletedOverlay} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <div className={styles.deletedMessage}>
+            <div className={styles.deletedIcon}>🗑️</div>
+            <h3>This {isObjectMode ? 'object' : 'record'} has been deleted</h3>
+            <p>It was deleted by another user. You can no longer edit or save this item.</p>
+            <button 
+              className={`${styles.closeButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleClose}
+            >
+              Close Editor
+            </button>
+          </div>
+        </div>
+      )}
       <div className={`${styles.viewContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
         <div className={`${styles.view} ${isDarkTheme ? styles.darkTheme : ''}`}>
           <div className={`${styles.navBar} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1917,8 +2019,9 @@ const RecordsEditor = memo(forwardRef(({
                   {view === 'editor' && hasUnsavedChanges && (
                     <button
                       type="button"
-                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''} ${isItemDeleted ? styles.disabled : ''}`}
                       onClick={handleSave}
+                      disabled={isItemDeleted}
                     >
                       {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
                     </button>
@@ -2146,7 +2249,7 @@ const RecordsEditor = memo(forwardRef(({
                                   onChange={e => handleInputChange('assignedTo', e.target.value, 'dropdown')}
                                   className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                                   aria-label="Select team member"
-                                  disabled={isViewingHistory}
+                                  disabled={isViewingHistory || isItemDeleted}
                                 >
                                   <option value="">Unassigned</option>
                                   {isBusinessUser
@@ -2168,7 +2271,7 @@ const RecordsEditor = memo(forwardRef(({
                                   onChange={e => handleInputChange(field.key, e.target.value, field.type)}
                                   className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
                                   aria-label={`Select ${field.name}`}
-                                  disabled={isViewingHistory}
+                                  disabled={isViewingHistory || isItemDeleted}
                                 >
                                   <option value="">Select {field.name}</option>
                                   {field.options.map((option) => (
@@ -2183,7 +2286,7 @@ const RecordsEditor = memo(forwardRef(({
                                   value={Array.isArray(historicalFormData[field.key]) ? historicalFormData[field.key] : []}
                                   onChange={selected => handleInputChange(field.key, selected, field.type)}
                                   label={field.name}
-                                  disabled={isViewingHistory}
+                                  disabled={isViewingHistory || isItemDeleted}
                                   isDarkTheme={isDarkTheme}
                                 />
                               ) : field.type === 'date' ? (
@@ -2238,7 +2341,7 @@ const RecordsEditor = memo(forwardRef(({
                                           className={`${styles.fieldInput} ${styles.timeInput} ${isDarkTheme ? styles.darkTheme : ''}`}
                                           aria-label={`Enter ${field.name} time`}
                                           readOnly={isViewingHistory}
-                                          disabled={isViewingHistory || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                          disabled={isViewingHistory || isItemDeleted || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         />
                                       </div>
                                     </div>
@@ -2261,7 +2364,7 @@ const RecordsEditor = memo(forwardRef(({
                                         value={getCountryCode(historicalFormData[field.key] || '')}
                                         onChange={e => handleCountryCodeChange(field.key, e.target.value, historicalFormData[field.key] || '')}
                                         className={`${styles.countryCodeSelect} ${isDarkTheme ? styles.darkTheme : ''} ${isViewingHistory ? styles.readOnly : ''}`}
-                                        disabled={isViewingHistory || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
+                                        disabled={isViewingHistory || isItemDeleted || field.key === 'typeOfRecord' || field.key === 'typeOfObject' || field.key === 'docId' || field.key === 'linkId' || field.key === 'id'}
                                         aria-label={`Country code for ${field.name}`}
                                       >
                                         {getAllCountryCodes().map((country, index) => (

@@ -179,9 +179,9 @@ const Sheets = ({
     const dataSource = objects;
     const _typeField = 'typeOfObject';
     
-    // First filter by selected object types
+    // First filter out deleted objects and by selected object types
     const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
-    let filteredObjects = dataSource;
+    let filteredObjects = dataSource.filter(object => !object.isDeleted);
     
     if (selectedObjectIds.length > 0) {
       // Get the names of selected template objects
@@ -190,7 +190,7 @@ const Sheets = ({
         return templateObj?.name;
       }).filter(name => name);
       
-      filteredObjects = dataSource.filter(object => 
+      filteredObjects = filteredObjects.filter(object => 
         selectedObjectNames.includes(object.typeOfObject)
       );
     }
@@ -930,11 +930,23 @@ const Sheets = ({
       const isObject = updatedRow.isObject === true;
 
       if (isObject) {
+        // Check if object has been marked as deleted in local state
+        const existingObject = objects.find(obj => obj.docId === updatedRow.docId);
+        if (existingObject && existingObject.isDeleted) {
+          console.warn('⚠️ Object has been deleted, preventing save:', updatedRow.docId);
+          alert('This object has been deleted by another user and cannot be saved. The editor will close.');
+          
+          // Close the editor
+          setIsEditorOpen(false);
+          setSelectedRow(null);
+          return;
+        }
+
         // Save object to Firebase first
         try {
           // Remove client-side tracking fields before saving to Firestore
           const { action, isModified, ...cleanObject } = updatedRow;
-          console.log('� Saving object to Firebase:', cleanObject);
+          console.log('💾 Saving object to Firebase:', cleanObject);
           await setDoc(doc(db, `businesses/${businessId}/objects/${updatedRow.docId}`), cleanObject);
           
           // Update local state AFTER successful save
@@ -979,11 +991,23 @@ const Sheets = ({
           setIsCreatingObject(false);
         }
       } else {
+        // Check if record has been marked as deleted in local state
+        const existingRecord = records.find(rec => rec.docId === updatedRow.docId);
+        if (existingRecord && existingRecord.isDeleted) {
+          console.warn('⚠️ Record has been deleted, preventing save:', updatedRow.docId);
+          alert('This record has been deleted by another user and cannot be saved. The editor will close.');
+          
+          // Close the editor
+          setIsEditorOpen(false);
+          setSelectedRow(null);
+          return;
+        }
+
         // Save record to Firebase first
         try {
           // Remove client-side tracking fields before saving to Firestore
           const { action, isModified, ...cleanRecord } = updatedRow;
-          console.log('� Saving record to Firebase:', cleanRecord);
+          console.log('💾 Saving record to Firebase:', cleanRecord);
           await setDoc(doc(db, `businesses/${businessId}/records/${updatedRow.docId}`), cleanRecord);
           
           // Update local state AFTER successful save
