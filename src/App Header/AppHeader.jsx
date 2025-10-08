@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
 import { CgProfile } from 'react-icons/cg';
-import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaProjectDiagram } from 'react-icons/fa';
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaChevronLeft, FaProjectDiagram } from 'react-icons/fa';
 import { SiGoogleadsense } from 'react-icons/si';
 import { RiDashboard2Fill } from 'react-icons/ri';
 import { MdFilterAlt } from 'react-icons/md';
@@ -10,7 +10,7 @@ import { IoSearch } from 'react-icons/io5';
 import { MainContext } from '../Contexts/MainContext';
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption, onEditSheet, onFilter }) {
-  const { isDarkTheme, user } = useContext(MainContext);
+  const { isDarkTheme, user, activeSheetName, setActiveSheetName } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -29,7 +29,7 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
     else if (path === '/financials') setActiveOption('financials');
     else if (path === '/actions') setActiveOption('actions');
     else setActiveOption('dashboard');
-  }, [location.pathname, setActiveOption]);
+  }, [location.pathname, setActiveOption, activeSheetName]);
 
   // Handle window resize
   useEffect(() => {
@@ -103,95 +103,116 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
 
   return (
     <header className={`${styles.headerContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={styles.headerTop}>
-        <div className={styles.logoContainer}>
-          <h1 className={`${styles.avaTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>AVA</h1>
-          {isMobile && (
-            <>
+      <div className={`${styles.headerTop} ${activeSheetName ? styles.sheetView : ''}`}>
+        {activeSheetName ? (
+          <>
+            <button
+              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={() => {
+                setActiveSheetName(null);
+                navigate('/sheets');
+              }}
+              aria-label="Back to Sheets"
+            >
+              <FaChevronLeft size={20} />
+              <span>Sheets</span>
+            </button>
+            <h1 className={`${styles.avaTitle} ${styles.centeredTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>AVA</h1>
+            {activeOption === 'sheets' && (
+              <div className={`${styles.sheetActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <button
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => {/* TODO: Implement search functionality */}}
+                  aria-label="Search"
+                >
+                  <IoSearch size={26} />
+                </button>
+                <button
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={onFilter}
+                  aria-label="Filter"
+                >
+                  <MdFilterAlt size={26} />
+                </button>
+                <button
+                  className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={onEditSheet}
+                  aria-label="Edit Sheet"
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className={styles.logoContainer}>
+              <h1 className={`${styles.avaTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>AVA</h1>
+              {isMobile && (
+                <>
+                  <button
+                    className={`${styles.menuButton} ${styles.navButton} ${
+                      activeOption === 'dashboard'
+                        ? styles.activeDashboard
+                        : activeOption === 'workflows'
+                        ? styles.activeWorkflows
+                        : activeOption === 'sheets'
+                        ? styles.activeSheets
+                        : activeOption === 'financials'
+                        ? styles.activeFinancials
+                        : activeOption === 'actions'
+                        ? styles.activeActions
+                        : styles.activeMetrics
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={toggleMenu}
+                    aria-label={`Toggle Menu, Current: ${activeNav.label}`}
+                  >
+                    {activeOption === 'sheets' ? (
+                      <span className={styles.iconWrapper}>{activeNav.icon}</span>
+                    ) : (
+                      activeNav.icon
+                    )}
+                    <span>{activeNav.label}</span>
+                    <span className={`${styles.chevronWrapper} ${isMenuOpen ? styles.chevronUp : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <FaChevronDown size={14} />
+                    </span>
+                  </button>
+                </>
+              )}
+            </div>
+            {!isMobile && (
+              <nav className={styles.desktopNav}>
+                {visibleNavOptions.map((option) => (
+                  <button
+                    key={option}
+                    className={`${styles.navButton} ${
+                      activeOption === option
+                        ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
+                        : ''
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => handleOptionClick(option)}
+                  >
+                    {option === 'sheets' ? (
+                      <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
+                    ) : (
+                      navOptions[option].icon
+                    )}
+                    <span>{navOptions[option].label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
+            {!activeSheetName && (
               <button
-                className={`${styles.menuButton} ${styles.navButton} ${
-                  activeOption === 'dashboard'
-                    ? styles.activeDashboard
-                    : activeOption === 'workflows'
-                    ? styles.activeWorkflows
-                    : activeOption === 'sheets'
-                    ? styles.activeSheets
-                    : activeOption === 'financials'
-                    ? styles.activeFinancials
-                    : activeOption === 'actions'
-                    ? styles.activeActions
-                    : styles.activeMetrics
-                } ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={toggleMenu}
-                aria-label={`Toggle Menu, Current: ${activeNav.label}`}
+                className={`${styles.objectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => setIsProfileModalOpen(true)}
+                aria-label="Profile"
               >
-                {activeOption === 'sheets' ? (
-                  <span className={styles.iconWrapper}>{activeNav.icon}</span>
-                ) : (
-                  activeNav.icon
-                )}
-                <span>{activeNav.label}</span>
-                <span className={`${styles.chevronWrapper} ${isMenuOpen ? styles.chevronUp : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                  <FaChevronDown size={14} />
-                </span>
+                <CgProfile size={26} />
               </button>
-            </>
-          )}
-        </div>
-        {!isMobile && (
-          <nav className={styles.desktopNav}>
-            {visibleNavOptions.map((option) => (
-              <button
-                key={option}
-                className={`${styles.navButton} ${
-                  activeOption === option
-                    ? styles[`active${option.charAt(0).toUpperCase() + option.slice(1)}`]
-                    : ''
-                } ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={() => handleOptionClick(option)}
-              >
-                {option === 'sheets' ? (
-                  <span className={styles.iconWrapper}>{navOptions[option].icon}</span>
-                ) : (
-                  navOptions[option].icon
-                )}
-                <span>{navOptions[option].label}</span>
-              </button>
-            ))}
-          </nav>
+            )}
+          </>
         )}
-        {activeOption === 'sheets' && (
-          <div className={`${styles.sheetActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <button
-              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={() => {/* TODO: Implement search functionality */}}
-              aria-label="Search"
-            >
-              <IoSearch size={26} />
-            </button>
-            <button
-              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={onFilter}
-              aria-label="Filter"
-            >
-              <MdFilterAlt size={26} />
-            </button>
-            <button
-              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={onEditSheet}
-              aria-label="Edit Sheet"
-            >
-              Edit
-            </button>
-          </div>
-        )}
-        <button
-          className={`${styles.objectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={() => setIsProfileModalOpen(true)}
-          aria-label="Profile"
-        >
-          <CgProfile size={24} />
-        </button>
       </div>
       {isMobile && isMenuOpen && (
         <div

@@ -6,7 +6,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, doc, writeBatch, getDoc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
 import fetchUserData from '../Firebase/Firebase Functions/User Functions/FetchUserData';
 import { syncLinkedRecordBasicFieldsFunction } from '../Firebase/Firebase Functions/User Functions/syncLinkedRecordBasicFieldsFunction';
-import { addDebugLog } from '../Utils/DebugPanel';
 
 export const MainContext = createContext();
 
@@ -1281,46 +1280,18 @@ export const MainContextProvider = ({ children }) => {
   // Debounce for sheet record fetches
   const debounceRef = useRef();
   useEffect(() => {
-    addDebugLog('MainContext.jsx', '🔍 Effect triggered', {
-      hasUser: !!user,
-      hasBusinessId: !!businessId,
-      pathname: location.pathname,
-      activeSheetName,
-      shouldProceed: !!(user && businessId && location.pathname.startsWith('/sheets') && activeSheetName)
-    });
 
     if (!user || !businessId || !location.pathname.startsWith('/sheets') || !activeSheetName) return;
     const sheetObj = sheets.allSheets.find((s) => s.sheetName === activeSheetName);
     const sheetId = sheetObj?.docId;
 
-    addDebugLog('MainContext.jsx', '🔍 Sheet Switch Detected', {
-      activeSheetName,
-      sheetId,
-      alreadyFetching: fetchingSheetIdsRef.current.has(sheetId),
-      alreadyFetched: sheetRecordsFetched[sheetId],
-      currentObjectsCount: objects.length
-    });
-
     if (!sheetId || fetchingSheetIdsRef.current.has(sheetId) || sheetRecordsFetched[sheetId]) {
-      addDebugLog('MainContext.jsx', '⏭️ Skipping fetch (already loaded)', {
-        sheetId,
-        activeSheetName,
-        reason: !sheetId ? 'no sheetId' : 
-                fetchingSheetIdsRef.current.has(sheetId) ? 'already fetching' : 
-                'already fetched'
-      });
       return;
     }
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
-      addDebugLog('MainContext.jsx', '🚀 Starting fetchUserData for sheet', {
-        businessId,
-        activeSheetName,
-        sheetId
-      });
-
       fetchingSheetIdsRef.current.add(sheetId);
       fetchUserData({
         businessId,
@@ -1333,11 +1304,6 @@ export const MainContextProvider = ({ children }) => {
         activeSheetName,
         updateSheets: false,
       }).then((unsubscribe) => {
-        addDebugLog('MainContext.jsx', '✅ fetchUserData completed', {
-          sheetId,
-          hasUnsubscribe: typeof unsubscribe === 'function'
-        });
-
         setSheetRecordsFetched((prev) => ({ ...prev, [sheetId]: true }));
         fetchingSheetIdsRef.current.delete(sheetId);
         // Store the unsubscribe function
@@ -1345,7 +1311,6 @@ export const MainContextProvider = ({ children }) => {
           setUnsubscribeFunctions(prev => [...prev, unsubscribe]);
         }
       }).catch((error) => {
-        addDebugLog('MainContext.jsx', '❌ fetchUserData error', { sheetId, error: error.message });
         fetchingSheetIdsRef.current.delete(sheetId);
       });
     }, 200); // 200ms debounce

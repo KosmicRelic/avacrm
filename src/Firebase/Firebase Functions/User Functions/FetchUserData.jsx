@@ -1,6 +1,5 @@
 import { collection, doc, getDocs, getDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
-import { addDebugLog } from '../../../Utils/DebugPanel';
 
 // Module-level cache to track fetched sheets and current businessId
 // NOTE: Cache tracks which object types have been fetched per sheet to prevent duplicate listeners
@@ -452,20 +451,9 @@ const fetchUserData = async ({
 
         // Check if this object type has already been fetched for this sheet
         if (fetchedSheets.get(sheetId).has(objectId)) {
-          addDebugLog('FetchUserData.jsx', '⚡ Using cached data (skipping fetch)', {
-            objectName,
-            sheetId,
-            objectId
-          });
           continue;
         }
         fetchedSheets.get(sheetId).set(objectId, { filters: currentFilters });
-        
-        addDebugLog('FetchUserData.jsx', '🆕 Setting up NEW listener', {
-          objectName,
-          sheetId,
-          objectId
-        });
 
         // Query by typeOfObject (the name) instead of objectId
         let objectQuery = query(
@@ -522,21 +510,9 @@ const fetchUserData = async ({
         let isInitialLoad = true;
         
         const unsubscribe = onSnapshot(objectQuery, (snapshot) => {
-          addDebugLog('FetchUserData.jsx', '📦 Snapshot received', {
-            objectName,
-            sheetId,
-            snapshotSize: snapshot.size,
-            changeCount: snapshot.docChanges().length,
-            isInitialLoad
-          });
 
           // Collect all changes in a batch instead of processing immediately
           snapshot.docChanges().forEach((change) => {
-            addDebugLog('FetchUserData.jsx', `🔄 Change detected: ${change.type}`, {
-              objectName,
-              docId: change.doc.id,
-              changeType: change.type
-            });
             updateBatch.push({ change, objectId, clientSideFilters });
           });
 
@@ -640,18 +616,6 @@ const fetchUserData = async ({
                 const objectsForType = objectsByType.get(objectId) || [];
                 allRealTimeObjects.push(...objectsForType);
               }
-              
-              addDebugLog('FetchUserData.jsx', '💾 Updating objects state', {
-                sheetId,
-                totalObjects: allRealTimeObjects.length,
-                deletedCount: allRealTimeObjects.filter(o => o.isDeleted).length,
-                activeCount: allRealTimeObjects.filter(o => !o.isDeleted).length,
-                objectsByType: Array.from(objectsByType.entries()).map(([id, objs]) => ({
-                  id,
-                  total: objs.length,
-                  deleted: objs.filter(o => o.isDeleted).length
-                }))
-              });
 
               // Merge with existing objects instead of replacing
               setObjects(prevObjects => {
@@ -660,12 +624,6 @@ const fetchUserData = async ({
                   return selectedObjects[objId]?.name;
                 }).filter(Boolean);
 
-                addDebugLog('FetchUserData.jsx', '🔄 Merging with existing objects', {
-                  prevObjectsCount: prevObjects.length,
-                  newObjectsCount: allRealTimeObjects.length,
-                  updatedObjectNames
-                });
-
                 // Keep objects that are NOT from the types being updated
                 const objectsFromOtherTypes = prevObjects.filter(obj => 
                   !updatedObjectNames.includes(obj.typeOfObject)
@@ -673,12 +631,6 @@ const fetchUserData = async ({
 
                 // Combine with new objects for the types being updated
                 const merged = [...objectsFromOtherTypes, ...allRealTimeObjects];
-
-                addDebugLog('FetchUserData.jsx', '✅ Merge complete', {
-                  objectsFromOtherTypes: objectsFromOtherTypes.length,
-                  newObjects: allRealTimeObjects.length,
-                  totalMerged: merged.length
-                });
 
                 return merged;
               });
@@ -694,11 +646,6 @@ const fetchUserData = async ({
 
       // Return combined unsubscribe function
       return () => {
-        addDebugLog('FetchUserData.jsx', '🔌 Unsubscribing listeners', {
-          sheetId,
-          listenerCount: unsubscribeFunctions.length,
-          selectedObjectIds
-        });
         unsubscribeFunctions.forEach(unsub => unsub());
         // Clean up the temporary real-time objects storage
         if (window.realTimeObjects) {

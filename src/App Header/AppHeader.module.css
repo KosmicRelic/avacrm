@@ -25,6 +25,11 @@
   margin: 0 auto;
 }
 
+.headerTop.sheetView {
+  position: relative;
+  justify-content: space-between;
+}
+
 .logoContainer {
   display: flex;
   align-items: center;
@@ -44,6 +49,63 @@
 
 .avaTitle.darkTheme {
   color: #ffffff;
+}
+
+.centeredTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+.centeredTitle.darkTheme {
+  color: #ffffff;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.backButton:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.backButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.backButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.backButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .themeContainer {
@@ -276,13 +338,16 @@
 }
 
 .menuButton {
-  color: #000000;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50px;
+  padding: 4px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -297,7 +362,13 @@
 }
 
 .menuButton.darkTheme {
-  color: #ffffff;
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .menuButton.darkTheme:hover {
@@ -497,14 +568,19 @@
 }
 
 .objectButton {
-  color: #007aff;
-  background: transparent;
-  border: none;
-  padding: 8px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50%;
+  padding: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .objectButton:hover {
@@ -516,7 +592,13 @@
 }
 
 .objectButton.darkTheme {
-  color: #0a84ff;
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .objectButton.darkTheme:hover {
@@ -532,6 +614,7 @@
   align-items: center;
   gap: 8px;
   margin-right: 8px;
+  margin-left: auto;
   padding: 4px;
   background: white;
   backdrop-filter: blur(8px);
@@ -729,8 +812,12 @@
   
   .sheetActions {
     position: absolute;
-    right: 60px; /* Position next to profile button */
+    right: 8px; /* Position where profile button was */
     top: 50%;
     transform: translateY(-50%);
+  }
+
+  .centeredTitle {
+    font-size: 16px;
   }
 }

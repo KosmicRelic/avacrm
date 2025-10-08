@@ -1431,7 +1431,6 @@ const RecordsEditor = memo(forwardRef(({
       setIsEditing(true);
       setFormData({ ...newRow });
       // Mark as originally loaded since it now exists in the database
-      addDebugLog(`Setting wasOriginallyLoaded to true for new item`);
       setWasOriginallyLoaded(true);
     } else {
       setFormData({ ...newRow });

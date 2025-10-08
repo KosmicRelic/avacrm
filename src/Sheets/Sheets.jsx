@@ -12,7 +12,6 @@ import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 import { doc, setDoc, deleteDoc, query, where, onSnapshot, collection, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
-import { addDebugLog } from '../Utils/DebugPanel';
 
 // Local components
 import RowComponent from './Row Template/RowComponent';
@@ -168,13 +167,6 @@ const Sheets = ({
     // Choose data source - always objects
     const dataSource = objects;
     const _typeField = 'typeOfObject';
-    
-    addDebugLog('Sheets.jsx', '🎨 Filtering objects for sheet', {
-      sheetName: activeSheet.sheetName,
-      totalObjects: dataSource.length,
-      deletedObjects: dataSource.filter(o => o.isDeleted).length,
-      activeObjects: dataSource.filter(o => !o.isDeleted).length
-    });
     
     // First filter out deleted objects and by selected object types
     const selectedObjectIds = Object.keys(selectedObjects).filter(id => selectedObjects[id]?.selected);
@@ -625,6 +617,10 @@ const Sheets = ({
         setActiveSheetNameWithRef(sheetName);
         onSheetChange(sheetName);
       }
+    } else if (activeSheetName) {
+      // Clear activeSheetName when navigating to /sheets without a sheet name
+      setActiveSheetNameWithRef(null);
+      onSheetChange(null);
     }
   }, [params.sheetName, activeSheetName, setActiveSheetNameWithRef, onSheetChange]);
 
@@ -1396,7 +1392,7 @@ const Sheets = ({
 
   // Ensure URL always matches the current active sheet
   useEffect(() => {
-    if (activeSheetName) {
+    if (activeSheetName && window.location.pathname !== '/sheets') {
       const urlSheetName = activeSheetName.replace(/ /g, "-");
       const expectedUrl = `/sheets/${urlSheetName}`;
       if (!window.location.pathname.startsWith(expectedUrl)) {
@@ -1553,69 +1549,117 @@ const Sheets = ({
 
   // Define SheetTabs component separately
   const SheetTabs = (
-    <div className={`${styles.sheetTabs} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
-      {isBusinessUser && (
-        <button
-          className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={onOpenSheetsModal}
-        >
-          <div className={styles.iconContainer}>
-            <CgArrowsExchangeAlt />
-          </div>
-          <div className={styles.labelContainer}>
-            Re-order
-          </div>
-        </button>
-      )}
-      {isBusinessUser && (
-        <button
-          className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-          onClick={onOpenSheetFolderModal}
-        >
-          <div className={styles.iconContainer}>
-            +
-          </div>
-          <div className={styles.labelContainer}>
-            Create
-          </div>
-        </button>
-      )}
-      {sheets.structure.map((item, index) =>
-        item.folderName ? (
-          <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
-            <button
-              className={`${styles.tabButton} ${
-                item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
-              } ${isDarkTheme ? styles.darkTheme : ''}`}
-              data-folder-name={item.folderName}
-              onClick={() => handleFolderClick(item.folderName)}
-            >
-              <div className={styles.iconContainer}>
-                <FaFolder className={styles.folderIcon} />
-              </div>
-              <div className={styles.labelContainer}>
-                {item.folderName}
-              </div>
-            </button>
-          </div>
-        ) : (
-          !folderSheets.includes(item.sheetName) && (
-            <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
+    <div className={`${styles.sheetTabs} ${!activeSheetName ? styles.sheetTabsFullWidth : ''} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
+      {!activeSheetName ? (
+        <>
+          <div className={styles.sheetTabsHeader}>
+            {isBusinessUser && (
               <button
-                className={`${styles.tabButton} ${
-                  item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                } ${isDarkTheme ? styles.darkTheme : ''}`}
-                data-sheet-name={item.sheetName}
-                onClick={() => handleSheetClick(item.sheetName)}
+                className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={onOpenSheetsModal}
               >
                 <div className={styles.iconContainer}>
-                  <BiSolidSpreadsheet className={styles.folderIcon} />
+                  <CgArrowsExchangeAlt />
                 </div>
                 <div className={styles.labelContainer}>
-                  {item.sheetName}
+                  Re-order
+                </div>
+              </button>
+            )}
+            {isBusinessUser && (
+              <button
+                className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={onOpenSheetFolderModal}
+              >
+                <div className={styles.iconContainer}>
+                  +
+                </div>
+                <div className={styles.labelContainer}>
+                  Create
+                </div>
+              </button>
+            )}
+          </div>
+          <div className={styles.sheetTabsGrid}>
+            {sheets.structure.map((item, index) =>
+              item.folderName ? (
+                <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+                  <button
+                    className={`${styles.tabButton} ${
+                      item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
+                    data-folder-name={item.folderName}
+                    onClick={() => handleFolderClick(item.folderName)}
+                  >
+                    <div className={styles.iconContainer}>
+                      <FaFolder className={styles.folderIcon} />
+                    </div>
+                    <div className={styles.labelContainer}>
+                      {item.folderName}
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                !folderSheets.includes(item.sheetName) && (
+                  <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
+                    <button
+                      className={`${styles.tabButton} ${
+                        item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
+                      } ${isDarkTheme ? styles.darkTheme : ''}`}
+                      data-sheet-name={item.sheetName}
+                      onClick={() => handleSheetClick(item.sheetName)}
+                    >
+                      <div className={styles.iconContainer}>
+                        <BiSolidSpreadsheet className={styles.folderIcon} />
+                      </div>
+                      <div className={styles.labelContainer}>
+                        {item.sheetName}
+                      </div>
+                    </button>
+                  </div>
+                )
+              )
+            )}
+          </div>
+        </>
+      ) : (
+        sheets.structure.map((item, index) =>
+          item.folderName ? (
+            <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+              <button
+                className={`${styles.tabButton} ${
+                  item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
+                } ${isDarkTheme ? styles.darkTheme : ''}`}
+                data-folder-name={item.folderName}
+                onClick={() => handleFolderClick(item.folderName)}
+              >
+                <div className={styles.iconContainer}>
+                  <FaFolder className={styles.folderIcon} />
+                </div>
+                <div className={styles.labelContainer}>
+                  {item.folderName}
                 </div>
               </button>
             </div>
+          ) : (
+            !folderSheets.includes(item.sheetName) && (
+              <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
+                <button
+                  className={`${styles.tabButton} ${
+                    item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
+                  } ${isDarkTheme ? styles.darkTheme : ''}`}
+                  data-sheet-name={item.sheetName}
+                  onClick={() => handleSheetClick(item.sheetName)}
+                >
+                  <div className={styles.iconContainer}>
+                    <BiSolidSpreadsheet className={styles.folderIcon} />
+                  </div>
+                  <div className={styles.labelContainer}>
+                    {item.sheetName}
+                  </div>
+                </button>
+              </div>
+            )
           )
         )
       )}
@@ -1624,7 +1668,7 @@ const Sheets = ({
 
   return (
     <div className={`${styles.sheetWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      <div className={`${styles.tableContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+      <div className={`${styles.tableContainer} ${!activeSheetName ? styles.tableContainerFullWidth : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
         {TableContent}
         {ActionButtons}
         {SheetTabs}
