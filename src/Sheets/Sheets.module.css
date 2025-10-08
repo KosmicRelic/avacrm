@@ -1,7 +1,7 @@
 .sheetWrapper {
   position: absolute;
   top: 64px;
-  bottom: 16px;
+  bottom: 0px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -9,8 +9,6 @@
   overflow: visible;
   background: transparent;
   z-index: 50;
-  border-top-left-radius: 36px;
-  border-top-right-radius: 36px;
 }
 
 .sheetWrapper.darkTheme {
@@ -18,8 +16,8 @@
 }
 
 .tableContainer {
-  width: calc(100% - 32px);
-  background: rgb(255, 255, 255);
+  width: 100%;
+  background: rgb(243, 242, 248);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
   height: 100%;
@@ -28,7 +26,6 @@
   overflow: visible;
   position: relative;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border: 1px solid rgba(0, 0, 0, 0.06);
   margin: auto;
   border-radius: 24px;
 }
@@ -208,7 +205,7 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 12px 20px;
+  padding: 0px 20px;
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -238,7 +235,7 @@
 }
 
 .sheetTabs.darkTheme {
-  background: rgba(20, 20, 22, 0.5);
+  background: rgb(26, 26, 26, 0.9);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 2px 16px rgba(0, 0, 0, 0.2),
@@ -253,8 +250,9 @@
 .tabButton {
   font-size: 14px;
   font-weight: 600;
-  padding: 10px 16px;
-  height: 36px;
+  padding: 10px 12px;
+  height: auto;
+  min-height: 60px;
   color: rgba(138, 138, 141);
   background: transparent;
   border: none;
@@ -263,11 +261,13 @@
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   white-space: nowrap;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: -0.01em;
+  gap: 0px;
 }
 
 .tabButton.darkTheme {
@@ -363,7 +363,7 @@
 }
 
 .folderIcon {
-  font-size: 16px;
+  font-size: 24px;
 }
 
 .addModal {
@@ -783,14 +783,13 @@
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
   /* Add bottom padding to ensure content can scroll underneath tabs */
   padding-bottom: 130px;
   /* Subtle gradient for consistency */
 }
 
 .tableWrapper.darkTheme {
-  background: rgba(28, 28, 30);
+  background: black;
 }
 
 .header {
@@ -799,21 +798,18 @@
   min-width: calc(100%);
   padding: 0 16px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(243, 242, 248);
   color: #1d1d1f;
   position: sticky;
   top: 0;
   z-index: 15;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   /* Subtle gradient */
   /* left: 1em; */
 }
 
 .header.darkTheme {
-  background: rgba(28, 28, 30);
+  background: black;
   color: rgb(235, 235, 245);
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
@@ -850,53 +846,42 @@
 }
 
 .filterButton {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 16px;
   height: 36px;
-  color: #6e6e73;
-  background: rgba(245, 245, 247, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: rgb(0, 0, 0);
+  background: transparent;
+  border: none;
   border-radius: 18px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  gap: 8px;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
 }
 
 .filterButton.darkTheme {
-  color: rgb(235, 235, 245);
-  background: rgba(44, 44, 46);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: rgb(255, 255, 255);
+  background: transparent;
+  background: linear-gradient(
+    135deg,
+    rgba(44, 44, 46, 0.8) 0%,
+    rgba(58, 58, 60, 0.7) 100%
+  );
 }
 
 .filterButton:hover {
-  background: rgba(229, 229, 234, 0.9);
+  background: transparent;
   transform: translateY(-1px);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .filterButton.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.9);
-  color: #0a84ff;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgb(255, 255, 255);
 }
 
 .filterButton.active {
@@ -907,6 +892,11 @@
     0 2px 12px rgba(0, 122, 255, 0.15),
     0 1px 4px rgba(0, 122, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.1) 0%,
+    rgba(10, 132, 255, 0.08) 100%
+  );
 }
 
 .filterButton.active.darkTheme {
@@ -917,15 +907,11 @@
     0 2px 12px rgba(10, 132, 255, 0.2),
     0 1px 4px rgba(10, 132, 255, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.filterButton:hover {
-  background: rgba(229, 229, 234, 0.9);
-}
-
-.filterButton.darkTheme:hover {
-  background: rgba(72, 72, 74, 0.9);
-  color: #0a84ff;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 132, 255, 0.15) 0%,
+    rgba(20, 142, 255, 0.12) 100%
+  );
 }
 
 .toggleButton {
@@ -1010,19 +996,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: 
-    linear-gradient(145deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.04) 50%, rgba(0, 122, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(240, 248, 255, 0.12) 100%);
+  background: transparent;
   border-radius: 18px;
   margin: auto;
   padding: 10px 18px;
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
-  box-shadow:
-    0 6px 24px rgba(0, 122, 255, 0.15),
-    0 2px 6px rgba(0, 122, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 122, 255, 0.08);
   position: relative;
   overflow: hidden;
   letter-spacing: -0.01em;
@@ -1030,41 +1007,18 @@
 
 .selectButton.darkTheme {
   color: rgba(10, 132, 255, 0.8);
-  background: 
-    linear-gradient(145deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.04) 50%, rgba(10, 132, 255, 0.08) 100%),
-    linear-gradient(145deg, rgba(28, 28, 30, 0.5) 0%, rgba(20, 30, 40, 0.3) 100%);
+  background: transparent;
   border-color: rgba(10, 132, 255, 0.25);
-  box-shadow:
-    0 6px 24px rgba(10, 132, 255, 0.2),
-    0 2px 6px rgba(10, 132, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(10, 132, 255, 0.1);
 }
 
 .selectButton:hover {
-  background: 
-    linear-gradient(145deg, rgba(0, 122, 255, 0.22) 0%, rgba(0, 122, 255, 0.1) 50%, rgba(0, 122, 255, 0.16) 100%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-  backdrop-filter: blur(35px) saturate(160%);
+  background: transparent;
   transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(0, 122, 255, 0.25),
-    0 3px 8px rgba(0, 122, 255, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 122, 255, 0.12);
 }
 
 .selectButton.darkTheme:hover {
-  background: 
-    linear-gradient(145deg, rgba(10, 132, 255, 0.25) 0%, rgba(10, 132, 255, 0.12) 50%, rgba(10, 132, 255, 0.18) 100%),
-    linear-gradient(145deg, rgba(28, 28, 30, 0.6) 0%, rgba(20, 30, 40, 0.4) 100%);
-  backdrop-filter: blur(35px) saturate(160%);
+  background: transparent;
   transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 8px 28px rgba(10, 132, 255, 0.3),
-    0 3px 8px rgba(10, 132, 255, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(10, 132, 255, 0.15);
 }
 
 .cancelButton {
@@ -1131,27 +1085,37 @@
 }
 
 .editHeaderButton {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 16px;
+  height: 36px;
+  color: rgb(0, 0, 0);
+  background: transparent;
   border: none;
-  padding: 10px 12px;
+  border-radius: 18px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  color: #007aff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 500;
+  white-space: nowrap;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: transparent;
-  border-radius: 12px;
+  gap: 8px;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .editHeaderButton.darkTheme {
-  color: #0a84ff;
+  color: rgb(255, 255, 255);
+  background: transparent;
 }
 
 .editHeaderButton:hover {
   transform: translateY(-1px) scale(1.02);
+  background: transparent;
+}
+
+.editHeaderButton.darkTheme:hover {
+  background: transparent;
 }
 
 .noResults {
@@ -1213,8 +1177,9 @@
   font-size: 16px;
   font-weight: 600;
   padding: 8px 10px;
-  height: 36px;
-  width: 36px;
+  height: auto;
+  min-height: 60px;
+  min-width: 60px;
   color: black;
   background: transparent;
   border: none;
@@ -1222,10 +1187,12 @@
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  gap: 4px;
 }
 
 .orderButton.darkTheme {
@@ -1236,8 +1203,9 @@
   padding: 8px 12px;
   font-size: 16px;
   font-weight: 600;
-  height: 36px;
-  min-width: 36px;
+  height: auto;
+  min-height: 60px;
+  min-width: 60px;
   color: black;
   background:  transparent;
   border: none;
@@ -1245,25 +1213,77 @@
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   position: relative;
   overflow: hidden;
+  gap: 4px;
 }
 
 .addTabButton.darkTheme {
   color: white;
   border-color: rgba(10, 132, 255, 0.25);
 }
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 2px;
+  width: 24px;
+  height: 24px;
+}
+
+.labelContainer {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: visible;
+  max-width: 100%;
+}
+.primaryActionsContainer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 32;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.primaryActionsContainer.darkTheme {
+  background: rgba(25, 25, 27, 0.6);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
 .actionTabsContainer {
   display: flex;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 4px 8px;
   position: absolute;
   bottom: 80px;
   left: 16px;
   z-index: 31;
+  border-radius: 50px;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .actionTabButton {
@@ -1271,8 +1291,8 @@
   font-weight: 600;
   padding: 10px 16px;
   height: 36px;
-  color: rgb(138, 138, 141);
-  background: rgba(242, 242, 246);
+  color: rgb(0, 0, 0);
+  background: transparent;
   border: none;
   border-radius: 18px;
   cursor: pointer;
@@ -1282,57 +1302,23 @@
   align-items: center;
   gap: 8px;
   position: relative;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  background: linear-gradient(
-    135deg,
-    rgba(245, 245, 247, 0.8) 0%,
-    rgba(240, 240, 242, 0.7) 100%
-  );
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: -0.01em;
 }
 
 .actionTabButton.darkTheme {
-  color: rgb(235, 235, 245);
-  background: linear-gradient(
-    135deg,
-    rgba(58, 58, 60, 0.8) 0%,
-    rgba(48, 48, 50, 0.7) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: rgb(255, 255, 255);
+  background: transparent;
 }
 
 .actionTabButton:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(229, 229, 234, 0.9) 0%,
-    rgba(220, 220, 225, 0.8) 100%
-  );
+  background: transparent;
   transform: translateY(-1px);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .actionTabButton.darkTheme:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(72, 72, 74, 0.9) 0%,
-    rgba(62, 62, 64, 0.8) 100%
-  );
-  color: #0a84ff;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgb(255, 255, 255);
 }
 
 .actionTabButton.active {
@@ -1344,10 +1330,6 @@
   color: #007aff;
   font-weight: 600;
   border-color: rgba(0, 122, 255, 0.25);
-  box-shadow:
-    0 2px 12px rgba(0, 122, 255, 0.15),
-    0 1px 4px rgba(0, 122, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .actionTabButton.darkTheme.active {
@@ -1358,10 +1340,6 @@
   );
   color: #0a84ff;
   border-color: rgba(10, 132, 255, 0.3);
-  box-shadow:
-    0 2px 12px rgba(10, 132, 255, 0.2),
-    0 1px 4px rgba(10, 132, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .actionTabButton.cancelTab {
@@ -1373,10 +1351,6 @@
   color: #007aff;
   font-weight: 600;
   border-color: rgba(0, 122, 255, 0.25);
-  box-shadow:
-    0 2px 12px rgba(0, 122, 255, 0.15),
-    0 1px 4px rgba(0, 122, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   margin-right: 12px;
 }
 
@@ -1388,10 +1362,50 @@
   );
   color: #0a84ff;
   border-color: rgba(10, 132, 255, 0.3);
+}
+
+.selectButton {
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: #000000;
+  font-size: 16px;
+}
+
+.selectButton.darkTheme {
+  background: rgb(26, 26, 26);
   box-shadow:
-    0 2px 12px rgba(10, 132, 255, 0.2),
-    0 1px 4px rgba(10, 132, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.addButton {
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: #000000;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.addButton.darkTheme {
+  background: rgb(26, 26, 26);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .actionTabButton.cancelTab:hover {
@@ -1606,8 +1620,6 @@
 
   .tableWrapper {
     border-radius: 0;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
   }
 
   .recordDetailsContainer {

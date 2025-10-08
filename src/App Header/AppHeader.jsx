@@ -5,9 +5,11 @@ import { CgProfile } from 'react-icons/cg';
 import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaProjectDiagram } from 'react-icons/fa';
 import { SiGoogleadsense } from 'react-icons/si';
 import { RiDashboard2Fill } from 'react-icons/ri';
+import { MdFilterAlt } from 'react-icons/md';
+import { IoSearch } from 'react-icons/io5';
 import { MainContext } from '../Contexts/MainContext';
 
-export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption }) {
+export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption, onEditSheet, onFilter }) {
   const { isDarkTheme, user } = useContext(MainContext);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -157,6 +159,31 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
               </button>
             ))}
           </nav>
+        )}
+        {activeOption === 'sheets' && (
+          <div className={`${styles.sheetActions} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            <button
+              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={() => {/* TODO: Implement search functionality */}}
+              aria-label="Search"
+            >
+              <IoSearch size={26} />
+            </button>
+            <button
+              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={onFilter}
+              aria-label="Filter"
+            >
+              <MdFilterAlt size={26} />
+            </button>
+            <button
+              className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={onEditSheet}
+              aria-label="Edit Sheet"
+            >
+              Edit
+            </button>
+          </div>
         )}
         <button
           className={`${styles.objectButton} ${isDarkTheme ? styles.darkTheme : ''}`}

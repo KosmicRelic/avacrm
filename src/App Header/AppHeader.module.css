@@ -527,6 +527,65 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.sheetActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+  padding: 4px;
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.sheetActions.darkTheme {
+  background: rgb(26, 26, 26);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.actionButton {
+  color: rgb(0, 0, 0);
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.actionButton:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.actionButton.darkTheme {
+  color: rgb(255, 255, 255);
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.actionButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -656,5 +715,22 @@
 @media (max-width: 1024px) {
   .menudropDown .navButton {
     padding: 8px 12px;
+  }
+  
+  .sheetActions {
+    margin-right: 0;
+    margin-left: 8px;
+    order: 3; /* Place after profile button */
+  }
+  
+  .headerTop {
+    position: relative;
+  }
+  
+  .sheetActions {
+    position: absolute;
+    right: 60px; /* Position next to profile button */
+    top: 50%;
+    transform: translateY(-50%);
   }
 }

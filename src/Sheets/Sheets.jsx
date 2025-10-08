@@ -1427,41 +1427,6 @@ const Sheets = ({
   // Define TableContent (same as before)
   const TableContent = (
     <div className={styles.tableContent}>
-      {activeSheet && (
-        <div className={`${styles.controls} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <div className={styles.buttonGroup}>
-            {!isSelectMode && (
-              <button
-                className={`${styles.filterButton} ${
-                  isDarkTheme ? styles.darkTheme : ''
-                } ${Object.keys(recordTypeFilters).length > 0 ? styles.active : ''}`}
-                onClick={onFilter}
-              >
-                <MdFilterAlt size={20} />
-              </button>
-            )}
-          </div>
-          <div className={styles.searchContainer}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search"
-              className={`${styles.searchBar} ${isDarkTheme ? styles.darkTheme : ''}`}
-            />
-            {searchQuery && (
-              <button className={styles.clearButton} onClick={clearSearch}>
-                <IoCloseCircle size={18} />
-              </button>
-            )}
-          </div>
-          {isBusinessUser && !isSelectMode && (
-            <button className={styles.editHeaderButton} onClick={onEditSheet}>
-              Edit
-            </button>
-          )}
-        </div>
-      )}
       <div
         className={`${styles.tableWrapper} ${isDarkTheme ? styles.darkTheme : ''}`}
         ref={scrollContainerRef}
@@ -1520,43 +1485,43 @@ const Sheets = ({
     </div>
   );
 
-  // Define ActionButtons component
+  // Define ActionButtons component (select and add - bottom actions)
   const ActionButtons = (
-    <div className={styles.actionTabsContainer}>
+    <>
       {isBusinessUser && !isSelectMode && activeSheet && (
-        <>
+        <div className={styles.actionTabsContainer}>
           <button
-            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.actionTabButton} ${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={handleSelectToggle}
           >
             Select
           </button>
           <button
-            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.actionTabButton} ${styles.addButton} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={() => handleRowClick({ isAddNew: true })}
           >
-            + Add
+            Add Object
           </button>
-        </>
+        </div>
       )}
       {isSelectMode && isBusinessUser && (
         <>
-          <button
-            className={`${styles.actionTabButton} ${styles.cancelTab} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleSelectToggle}
-          >
-            Cancel
-          </button>
-          <button
-            className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleSelectAll}
-          >
-            {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
-              ? 'Deselect All'
-              : 'Select All'}
-          </button>
-          {selectedRowIds.length > 0 && (
-            <>
+          <div className={styles.actionTabsContainer}>
+            <button
+              className={`${styles.actionTabButton} ${styles.cancelTab} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleSelectToggle}
+            >
+              Cancel
+            </button>
+            <button
+              className={`${styles.actionTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={handleSelectAll}
+            >
+              {selectedRowIds.length === finalRows.filter((row) => !row.isAddNew).length
+                ? 'Deselect All'
+                : 'Select All'}
+            </button>
+            {selectedRowIds.length > 0 && (
               <button
                 className={`${styles.actionTabButton} ${styles.deleteTab} ${isDarkTheme ? styles.darkTheme : ''}`}
                 onClick={() => {
@@ -1579,11 +1544,11 @@ const Sheets = ({
               >
                 Delete
               </button>
-            </>
-          )}
+            )}
+          </div>
         </>
       )}
-    </div>
+    </>
   );
 
   // Define SheetTabs component separately
@@ -1594,7 +1559,12 @@ const Sheets = ({
           className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={onOpenSheetsModal}
         >
-          <CgArrowsExchangeAlt />
+          <div className={styles.iconContainer}>
+            <CgArrowsExchangeAlt />
+          </div>
+          <div className={styles.labelContainer}>
+            Re-order
+          </div>
         </button>
       )}
       {isBusinessUser && (
@@ -1602,7 +1572,12 @@ const Sheets = ({
           className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
           onClick={onOpenSheetFolderModal}
         >
-          +
+          <div className={styles.iconContainer}>
+            +
+          </div>
+          <div className={styles.labelContainer}>
+            Create
+          </div>
         </button>
       )}
       {sheets.structure.map((item, index) =>
@@ -1615,10 +1590,12 @@ const Sheets = ({
               data-folder-name={item.folderName}
               onClick={() => handleFolderClick(item.folderName)}
             >
-              <FaFolder className={styles.folderIcon} />
-              {item.sheets.includes(decodedActiveSheetName)
-                ? `${item.folderName} > ${decodedActiveSheetName}`
-                : item.folderName}
+              <div className={styles.iconContainer}>
+                <FaFolder className={styles.folderIcon} />
+              </div>
+              <div className={styles.labelContainer}>
+                {item.folderName}
+              </div>
             </button>
           </div>
         ) : (
@@ -1631,8 +1608,12 @@ const Sheets = ({
                 data-sheet-name={item.sheetName}
                 onClick={() => handleSheetClick(item.sheetName)}
               >
-                <BiSolidSpreadsheet className={styles.folderIcon} />
-                {item.sheetName}
+                <div className={styles.iconContainer}>
+                  <BiSolidSpreadsheet className={styles.folderIcon} />
+                </div>
+                <div className={styles.labelContainer}>
+                  {item.sheetName}
+                </div>
               </button>
             </div>
           )

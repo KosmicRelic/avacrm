@@ -665,6 +665,8 @@ function App() {
             setIsProfileModalOpen={handleOpenProfileModal}
             activeOption={activeOption}
             setActiveOption={setActiveOption}
+            onEditSheet={() => onEditSheet(modalUtilsProps)}
+            onFilter={() => onFilter(modalUtilsProps)}
             onOpenFolderModal={(folderName) =>
               onOpenFolderModal({ folderName, ...modalUtilsProps })
             }
