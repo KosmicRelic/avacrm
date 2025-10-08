@@ -245,21 +245,18 @@
   left: 50% !important; /* Center horizontally */
   transform: translateX(-50%) !important; /* Center horizontally */
   right: auto !important; /* Don't set right to avoid conflicts */
-  top: 240px !important; /* Start below the selectSheetMessage */
+  top: 120px !important; /* Start higher up for more vertical space */
   bottom: 16px !important; /* Add bottom margin like the normal state */
-  height: calc(100% - 256px) !important; /* Fill the height minus top/bottom margins and selectSheetMessage space */
+  min-height: calc(100% - 152px) !important; /* Allow it to grow beyond this minimum height */
   padding: 24px !important; /* Increase padding for better spacing */
   display: flex !important;
   flex-direction: column !important;
   position: fixed !important;
+  transition: none !important; /* Remove animation for getting big and small */
   /* Keep the background styling like normal sheet tabs */
   background: rgba(255, 255, 255, 0.5) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 16px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(0, 0, 0, 0.06) !important;
   border-radius: 24px !important; /* Slightly less rounded than 50px for better fit */
   /* Ensure content stays within bounds */
@@ -275,6 +272,10 @@
   justify-content: flex-start !important;
 }
 
+.sheetTabsHeader.darkTheme {
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 .sheetTabsGrid {
   display: flex !important;
   flex-direction: column !important;
@@ -282,6 +283,98 @@
   overflow-x: hidden !important;
   overflow-y: auto !important;
   flex: 1 !important;
+}
+
+.foldersSection {
+  display: flex !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+  padding-bottom: 16px !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
+}
+
+.foldersSection.darkTheme {
+  background: transparent !important;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+}
+
+.sectionTitle {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: rgba(0, 0, 0, 0.8) !important;
+  margin-bottom: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding-left: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.sectionTitle.darkTheme {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.selectedFolder {
+  color: #007AFF !important;
+}
+
+.selectedFolder.darkTheme {
+  color: #007AFF !important;
+}
+
+.selectedFolder .iconContainer,
+.selectedFolder .labelContainer {
+  color: #007AFF !important;
+}
+
+.selectedFolder.darkTheme .iconContainer,
+.selectedFolder.darkTheme .labelContainer {
+  color: #007AFF !important;
+}
+
+.sheetTabsFullWidth .tabButton.selectedFolder {
+  color: #007AFF !important;
+}
+
+.sheetTabsFullWidth .tabButton.selectedFolder.darkTheme {
+  color: #007AFF !important;
+}
+
+.sheetTabsFullWidth .tabButton.selectedFolder .iconContainer,
+.sheetTabsFullWidth .tabButton.selectedFolder .labelContainer {
+  color: #007AFF !important;
+}
+
+.sheetTabsFullWidth .tabButton.selectedFolder.darkTheme .iconContainer,
+.sheetTabsFullWidth .tabButton.selectedFolder.darkTheme .labelContainer {
+  color: #007AFF !important;
+}
+
+.allSheetsButton {
+  opacity: 0.7;
+}
+
+.allSheetsButton:hover {
+  opacity: 1;
+}
+
+.allSheetsButton.selectedFolder {
+  opacity: 1;
+}
+
+.foldersGrid,
+.sheetsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  gap: 8px !important;
+  overflow-y: auto !important;
+  max-height: 200px !important; /* Limit height to create scrollable sections */
 }
 
 .sheetTabsFullWidth .tabButton {
@@ -292,43 +385,33 @@
   align-items: center !important;
   text-align: left !important;
   gap: 20px !important;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent !important;
+  border: none !important;
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: none !important;
   width: 100%;
 }
 
 .sheetTabsFullWidth .tabButton:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: transparent !important;
   transform: translateY(-2px);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: none !important;
 }
 
 .sheetTabsFullWidth .tabButton:active {
   transform: translateY(0);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: none !important;
 }
 
 .sheetTabsFullWidth.darkTheme .tabButton {
-  background: rgba(28, 28, 30, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 1px 3px rgba(0, 0, 0, 0.2);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .sheetTabsFullWidth.darkTheme .tabButton:hover {
-  background: rgba(28, 28, 30, 0.8);
+  background: transparent !important;
 }
 
 .sheetTabsFullWidth .tabButton .iconContainer {
