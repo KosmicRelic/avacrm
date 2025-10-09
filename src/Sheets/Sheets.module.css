@@ -344,6 +344,7 @@
   font-weight: 600 !important;
   color: rgba(0, 0, 0, 0.8) !important;
   margin-bottom: 12px !important;
+  margin-top: 20px !important;
   letter-spacing: 0.5px !important;
   padding-left: 4px !important;
   display: flex !important;
@@ -546,12 +547,41 @@
   flex: 1 !important;
   min-width: 0 !important;
   white-space: normal !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
 }
 
 .sheetTabsFullWidth.darkTheme .tabButton .labelContainer {
   color: rgb(255, 255, 255) !important;
+}
+
+/* Prevent folder text from wrapping in minimized version - higher specificity */
+.sheetTabsFullWidth .folderContainer .tabButton .labelContainer {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-wrap: normal !important;
+  overflow-wrap: normal !important;
+}
+
+/* Make folder icons smaller in minimized version */
+.sheetTabsFullWidth .folderContainer .tabButton .iconContainer {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 24px !important;
+}
+
+.sheetTabsFullWidth .folderContainer .tabButton .folderIcon {
+  font-size: 20px !important;
+}
+
+/* Make sheet icons bigger in expanded version */
+.sheetTabsFullWidth .sheetContainer .tabButton .iconContainer {
+  width: 72px !important;
+  height: 72px !important;
+  font-size: 72px !important;
+}
+
+.sheetTabsFullWidth .sheetContainer .tabButton .folderIcon {
+  font-size: 68px !important;
 }
 
 .sheetTabsFullWidth .orderButton,
@@ -592,9 +622,11 @@
 .sheetTabs .orderButton .iconContainer,
 .sheetTabs .addTabButton .iconContainer {
   margin-bottom: 2px !important;
-  width: 32px !important;
-  height: 32px !important;
-  font-size: 32px !important;
+  width: fit-content !important;
+  height: fit-content !important;
+  font-size: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
 }
 
 .sheetTabs .tabButton .labelContainer,
@@ -602,8 +634,13 @@
 .sheetTabs .addTabButton .labelContainer {
   font-size: 12px !important;
   white-space: normal !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
+}
+
+/* Prevent folder names from breaking in normal sheet tabs */
+.sheetTabs .folderContainer .labelContainer {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .tabButton {
@@ -846,7 +883,14 @@
 }
 
 .folderIcon {
-  font-size: 24px;
+  font-size: 20px;
+}
+
+/* Prevent folder names from wrapping in normal sheet tabs */
+.sheetTabs .folderContainer .labelContainer {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .addModal {
@@ -1724,8 +1768,6 @@
   text-align: center;
   line-height: 1.2;
   white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
   max-width: 100%;
 }
 .primaryActionsContainer {

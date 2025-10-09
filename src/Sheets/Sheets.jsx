@@ -1645,7 +1645,7 @@ const Sheets = ({
                     }}
                   >
                     <div className={styles.iconContainer}>
-                      <FaFolder />
+                      <FaFolder size={10}/>
                     </div>
                     <div className={styles.labelContainer}>
                       Create Folder
@@ -1746,11 +1746,9 @@ const Sheets = ({
                             <div className={styles.iconContainer}>
                               <BiSolidSpreadsheet className={styles.folderIcon} />
                             </div>
-                            {item.source === 'folder' && (
-                              <div className={styles.folderNameBetween}>
-                                {item.folderName}
-                              </div>
-                            )}
+                            <div className={styles.folderNameBetween}>
+                              {item.source === 'folder' ? item.folderName : 'Unorganized'}
+                            </div>
                             <div className={styles.labelContainer}>
                               {item.sheetName}
                             </div>
@@ -1839,46 +1837,27 @@ const Sheets = ({
               ))
             ];
           } else {
-            // Active sheet is not in a folder, show all folders and sheets as normal
-            return sheets.structure.map((item, index) =>
-              item.folderName ? (
-                <div key={`folder-${item.folderName}-${index}`} className={styles.folderContainer}>
+            // Active sheet is not in a folder, show only individual sheets (hide folders)
+            return sheets.structure
+              .filter(item => !item.folderName && !folderSheets.includes(item.sheetName))
+              .map((item, index) => (
+                <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
                   <button
                     className={`${styles.tabButton} ${
-                      item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
+                      item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
                     } ${isDarkTheme ? styles.darkTheme : ''}`}
-                    data-folder-name={item.folderName}
-                    onClick={() => handleFolderClick(item.folderName)}
+                    data-sheet-name={item.sheetName}
+                    onClick={() => handleSheetClick(item.sheetName)}
                   >
                     <div className={styles.iconContainer}>
-                      <FaFolder className={styles.folderIcon} />
+                      <BiSolidSpreadsheet className={styles.folderIcon} />
                     </div>
                     <div className={styles.labelContainer}>
-                      {item.folderName}
+                      {item.sheetName}
                     </div>
                   </button>
                 </div>
-              ) : (
-                !folderSheets.includes(item.sheetName) && (
-                  <div key={`sheet-${item.sheetName}-${index}`} className={styles.sheetContainer}>
-                    <button
-                      className={`${styles.tabButton} ${
-                        item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                      } ${isDarkTheme ? styles.darkTheme : ''}`}
-                      data-sheet-name={item.sheetName}
-                      onClick={() => handleSheetClick(item.sheetName)}
-                    >
-                      <div className={styles.iconContainer}>
-                        <BiSolidSpreadsheet className={styles.folderIcon} />
-                      </div>
-                      <div className={styles.labelContainer}>
-                        {item.sheetName}
-                      </div>
-                    </button>
-                  </div>
-                )
-              )
-            );
+              ));
           }
         })()
       )}
