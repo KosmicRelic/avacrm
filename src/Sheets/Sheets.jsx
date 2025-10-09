@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 // Third-party libraries
 import { IoCloseCircle } from 'react-icons/io5';
 import { FaFolder, FaFileAlt, FaChevronRight } from 'react-icons/fa';
-import { FiEdit } from 'react-icons/fi';
+import { FiEdit, FiPlus } from 'react-icons/fi';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
@@ -1608,10 +1608,11 @@ const Sheets = ({
             Select
           </button>
           <button
-            className={`${styles.actionTabButton} ${styles.addButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            className={`${styles.actionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={() => handleRowClick({ isAddNew: true })}
+            aria-label="Add Object"
           >
-            Add Object
+            <FiPlus size={26} />
           </button>
         </div>
       )}

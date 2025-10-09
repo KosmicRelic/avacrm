@@ -301,6 +301,7 @@
   display: flex !important;
   gap: 12px !important;
   margin-bottom: 16px !important;
+  padding: 0px 20px !important;
   justify-content: flex-start !important;
   align-items: center !important;
   background: transparent !important;
@@ -1548,10 +1549,9 @@
 }
 
 .actionTabButton {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
-  padding: 10px 16px;
-  height: 36px;
+  padding: 12px;
   color: rgb(0, 0, 0);
   background: transparent;
   border: none;
@@ -2113,4 +2113,51 @@
 
 .folderChevron.darkTheme {
   color: #0a84ff;
+}
+
+/* Action button styling matching AppHeader actionButton */
+.actionButton {
+  color: rgb(0, 0, 0);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.actionButton:active {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(0.98);
+}
+
+.actionButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: rgba(28, 28, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.actionButton.darkTheme:hover {
+  background: rgba(44, 44, 46, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.actionButton.darkTheme:active {
+  background: rgba(28, 28, 30, 0.7);
 }
