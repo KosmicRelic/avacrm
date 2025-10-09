@@ -315,13 +315,22 @@
 
 /* In full width mode, make folders stick to the bottom */
 .sheetTabsFullWidth .foldersSection {
-  margin-top: auto !important;
   margin-bottom: 0 !important;
 }
 
 .foldersSection.darkTheme {
-  background: transparent !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+}
+
+.sheetsSection {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important; /* Allow flex shrinking */
+  overflow: hidden !important; /* Prevent overflow */
 }
 
 .sectionTitle {
@@ -329,7 +338,6 @@
   font-weight: 600 !important;
   color: rgba(0, 0, 0, 0.8) !important;
   margin-bottom: 12px !important;
-  text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
   padding-left: 4px !important;
   display: flex !important;
@@ -392,10 +400,38 @@
 .foldersGrid,
 .sheetsGrid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  grid-template-columns: repeat(4, 1fr) !important;
   gap: 8px !important;
   overflow-y: auto !important;
   max-height: 200px !important; /* Limit height to create scrollable sections */
+}
+
+/* In full width mode, allow sheets grid to expand */
+.sheetTabsFullWidth .sheetsGrid {
+  max-height: none !important;
+  flex: 1 !important;
+}
+
+/* Responsive grid layouts - reduce columns as screen gets smaller */
+@media (max-width: 1199px) {
+  .foldersGrid,
+  .sheetsGrid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .foldersGrid,
+  .sheetsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .foldersGrid,
+  .sheetsGrid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .sheetTabsFullWidth .tabButton {
@@ -571,6 +607,72 @@
 .activeFolder.darkTheme {
   color: rgba(10, 132, 255, 0.9);
   border-color: rgba(10, 132, 255, 0.35);
+}
+
+.editFolderContainer {
+  grid-column: 1 / -1; /* Span full width */
+  margin-bottom: 8px;
+}
+
+.editFolderButton {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  height: auto;
+  min-height: 40px;
+  color: rgba(138, 138, 141);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
+  gap: 8px;
+  width: 100%;
+  max-width: 160px;
+  margin: 0 auto;
+}
+
+.editFolderButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  border-color: rgba(0, 122, 255, 0.3);
+  color: #007aff;
+}
+
+.editFolderButton.darkTheme {
+  background: rgba(44, 44, 46, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(141, 141, 146);
+}
+
+.editFolderButton.darkTheme:hover {
+  background: rgba(58, 58, 60, 0.9);
+  border-color: rgba(10, 132, 255, 0.4);
+  color: #0a84ff;
+}
+
+.editFolderButton .iconContainer {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editFolderButton .labelContainer {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .folderSheets {
@@ -2160,4 +2262,137 @@
 
 .actionButton.darkTheme:active {
   background: rgba(28, 28, 30, 0.7);
+}
+
+/* Edit button and dropdown styles */
+.editButtonContainer {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.editButton {
+  color: rgb(0, 0, 0);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.editButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editButton:active {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(0.98);
+}
+
+.editButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: rgba(28, 28, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.editButton.darkTheme:hover {
+  background: rgba(44, 44, 46, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.editButton.darkTheme:active {
+  background: rgba(28, 28, 30, 0.7);
+}
+
+.editDropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.editDropdown.darkTheme {
+  background: rgba(28, 28, 30, 0.95);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgb(0, 0, 0);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dropdownItem.darkTheme {
+  color: rgb(255, 255, 255);
+}
+
+.dropdownItem.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdownItem .iconContainer {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dropdownItem .labelContainer {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.doneItem {
+  justify-content: center;
+  font-weight: 600;
+  color: rgb(0, 122, 255);
+}
+
+.doneItem.darkTheme {
+  color: rgb(10, 132, 255);
 }

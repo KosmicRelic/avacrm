@@ -56,12 +56,18 @@ const Sheets = ({
   const [_spinnerFading, _setSpinnerFading] = useState(false);
   const [objectsLoading, setObjectsLoading] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState(null);
-  const [isReorderMode, setIsReorderMode] = useState(false);
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [dragPreview, setDragPreview] = useState(null);
-  const [dragPreviewPosition, setDragPreviewPosition] = useState({ x: 0, y: 0 });
-  const [dropTargetIndex, setDropTargetIndex] = useState(null);
+  const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
+
+  // Handle click outside to close edit dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isEditDropdownOpen && !event.target.closest(`.${styles.editButtonContainer}`)) {
+        setIsEditDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isEditDropdownOpen]);
 
   useEffect(() => {
     if (isLoading || objectsLoading) {
@@ -652,105 +658,6 @@ const Sheets = ({
   );
 
   const clearSearch = useCallback(() => setSearchQuery(''), []);
-
-  // Drag and drop handlers for reorder mode
-  const handleDragStart = useCallback((e, item, index) => {
-    if (!isReorderMode) return;
-    
-    setDraggedItem(item);
-    setDraggedIndex(index);
-    
-    // Create drag preview
-    const previewElement = e.target.cloneNode(true);
-    previewElement.style.position = 'fixed';
-    previewElement.style.pointerEvents = 'none';
-    previewElement.style.zIndex = '1000';
-    previewElement.style.opacity = '0.8';
-    previewElement.style.transform = 'rotate(5deg) scale(1.05)';
-    previewElement.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
-    document.body.appendChild(previewElement);
-    setDragPreview(previewElement);
-    
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', '');
-    
-    // Hide the original element during drag
-    e.target.style.opacity = '0.3';
-  }, [isReorderMode]);
-
-  const handleDragEnd = useCallback((e) => {
-    // Remove drag preview
-    if (dragPreview) {
-      document.body.removeChild(dragPreview);
-      setDragPreview(null);
-    }
-    
-    // Restore original element opacity
-    if (e.target) {
-      e.target.style.opacity = '';
-    }
-    
-    setDraggedItem(null);
-    setDraggedIndex(null);
-    setDropTargetIndex(null);
-    setDragPreviewPosition({ x: 0, y: 0 });
-  }, [dragPreview]);
-
-  const handleDragOver = useCallback((e, index) => {
-    if (!isReorderMode) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    // Set drop target
-    setDropTargetIndex(index);
-    
-    // Update drag preview position
-    if (dragPreview) {
-      setDragPreviewPosition({
-        x: e.clientX,
-        y: e.clientY
-      });
-      dragPreview.style.left = `${e.clientX - dragPreview.offsetWidth / 2}px`;
-      dragPreview.style.top = `${e.clientY - dragPreview.offsetHeight / 2}px`;
-    }
-  }, [isReorderMode, dragPreview]);
-
-  const handleDragLeave = useCallback(() => {
-    setDropTargetIndex(null);
-  }, []);
-
-  const handleDrop = useCallback((e, dropIndex) => {
-    if (!isReorderMode || draggedIndex === null || draggedIndex === dropIndex) return;
-    e.preventDefault();
-
-    // Reorder the structure array
-    const newStructure = [...sheets.structure];
-    const [draggedElement] = newStructure.splice(draggedIndex, 1);
-    newStructure.splice(dropIndex, 0, draggedElement);
-
-    // Update the sheets structure
-    setSheets(prev => ({
-      ...prev,
-      structure: newStructure
-    }));
-
-    setDraggedItem(null);
-    setDraggedIndex(null);
-  }, [isReorderMode, draggedIndex, sheets.structure, setSheets]);
-
-  const toggleReorderMode = useCallback(() => {
-    setIsReorderMode(prev => !prev);
-    setDraggedItem(null);
-    setDraggedIndex(null);
-    setDropTargetIndex(null);
-    
-    // Clean up drag preview
-    if (dragPreview) {
-      document.body.removeChild(dragPreview);
-      setDragPreview(null);
-    }
-    setDragPreviewPosition({ x: 0, y: 0 });
-  }, [dragPreview]);
 
   const recordIdFromUrl = params.recordId;
   const objectIdFromUrl = params.objectId;
@@ -1668,56 +1575,65 @@ const Sheets = ({
     <div className={`${styles.sheetTabs} ${!activeSheetName ? styles.sheetTabsFullWidth : ''} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
       {!activeSheetName ? (
         <>
-          <div className={`${styles.sheetTabsHeader} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <div className={styles.leftButtons}>
-              {isBusinessUser && !isReorderMode && (
-                <button
-                  className={`${styles.orderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={toggleReorderMode}
-                >
-                  <div className={styles.iconContainer}>
-                    <CgArrowsExchangeAlt />
-                  </div>
-                  <div className={styles.labelContainer}>
-                    Re-order
-                  </div>
-                </button>
-              )}
-              {isBusinessUser && !isReorderMode && (
-                <button
-                  className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={onOpenCreateSheetModal}
-                >
-                  <div className={styles.iconContainer}>
-                    <FaFileAlt />
-                  </div>
-                  <div className={styles.labelContainer}>
-                    Create Sheet
-                  </div>
-                </button>
-              )}
-              {isBusinessUser && !isReorderMode && (
-                <button
-                  className={`${styles.addTabButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={onOpenCreateFolderModal}
-                >
-                  <div className={styles.iconContainer}>
-                    <FaFolder />
-                  </div>
-                  <div className={styles.labelContainer}>
-                    Create Folder
-                  </div>
-                </button>
-              )}
-            </div>
-            {isReorderMode && (
-              <div className={styles.rightButtons}>
-                <button
-                  className={`${styles.doneButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                  onClick={toggleReorderMode}
-                >
-                  Done
-                </button>
+          {/* Edit button in top right */}
+          <div className={styles.editButtonContainer}>
+            <button
+              className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+              onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
+              aria-label="Edit sheets"
+            >
+              <FiEdit size={20} />
+            </button>
+            {isEditDropdownOpen && (
+              <div className={`${styles.editDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                {isBusinessUser && (
+                  <button
+                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => {
+                      onOpenSheetsModal();
+                      setIsEditDropdownOpen(false);
+                    }}
+                  >
+                    <div className={styles.iconContainer}>
+                      <CgArrowsExchangeAlt />
+                    </div>
+                    <div className={styles.labelContainer}>
+                      Re-order
+                    </div>
+                  </button>
+                )}
+                {isBusinessUser && (
+                  <button
+                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => {
+                      onOpenCreateSheetModal();
+                      setIsEditDropdownOpen(false);
+                    }}
+                  >
+                    <div className={styles.iconContainer}>
+                      <FaFileAlt />
+                    </div>
+                    <div className={styles.labelContainer}>
+                      Create Sheet
+                    </div>
+                  </button>
+                )}
+                {isBusinessUser && (
+                  <button
+                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    onClick={() => {
+                      onOpenCreateFolderModal();
+                      setIsEditDropdownOpen(false);
+                    }}
+                  >
+                    <div className={styles.iconContainer}>
+                      <FaFolder />
+                    </div>
+                    <div className={styles.labelContainer}>
+                      Create Folder
+                    </div>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1726,33 +1642,54 @@ const Sheets = ({
           <div className={`${styles.sheetsSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
             <div className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
               <span>
-                {selectedFolder ? `${selectedFolder} Sheets` : 'Sheets'}
+                {selectedFolder ? `${selectedFolder} Sheets` : 'All Sheets'}
               </span>
             </div>
             <div className={styles.sheetsGrid}>
               {(() => {
                 if (selectedFolder) {
-                  // When a folder is selected, show only sheets in that folder
+                  // When a folder is selected, show Edit Folder button first, then sheets in that folder
                   const folderItem = sheets.structure.find(f => f.folderName === selectedFolder);
                   if (folderItem) {
-                    return folderItem.sheets.map((sheetName, index) => (
-                      <div key={`sheet-${sheetName}-${index}`} className={styles.sheetContainer}>
+                    return [
+                      // Edit Folder button
+                      <div key={`edit-folder-${selectedFolder}`} className={styles.editFolderContainer}>
                         <button
-                          className={`${styles.tabButton} ${
-                            sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                          } ${isDarkTheme ? styles.darkTheme : ''}`}
-                          data-sheet-name={sheetName}
-                          onClick={() => handleSheetClick(sheetName)}
+                          className={`${styles.editFolderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                          onClick={() => onOpenFolderModal(selectedFolder, (sheetName) => {
+                            const urlSheetName = sheetName.replace(/ /g, "-");
+                            const newUrl = `/sheets/${urlSheetName}`;
+                            navigate(newUrl);
+                          })}
                         >
                           <div className={styles.iconContainer}>
-                            <BiSolidSpreadsheet className={styles.folderIcon} />
+                            <FiEdit size={16} />
                           </div>
                           <div className={styles.labelContainer}>
-                            {sheetName}
+                            Edit Folder
                           </div>
                         </button>
-                      </div>
-                    ));
+                      </div>,
+                      // Sheets in the folder
+                      ...folderItem.sheets.map((sheetName, index) => (
+                        <div key={`sheet-${sheetName}-${index}`} className={styles.sheetContainer}>
+                          <button
+                            className={`${styles.tabButton} ${
+                              sheetName === decodedActiveSheetName ? styles.activeTab : ''
+                            } ${isDarkTheme ? styles.darkTheme : ''}`}
+                            data-sheet-name={sheetName}
+                            onClick={() => handleSheetClick(sheetName)}
+                          >
+                            <div className={styles.iconContainer}>
+                              <BiSolidSpreadsheet className={styles.folderIcon} />
+                            </div>
+                            <div className={styles.labelContainer}>
+                              {sheetName}
+                            </div>
+                          </button>
+                        </div>
+                      ))
+                    ];
                   }
                   return [];
                 } else {
@@ -1796,14 +1733,9 @@ const Sheets = ({
                           <button
                             className={`${styles.tabButton} ${
                               item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                            } ${isDarkTheme ? styles.darkTheme : ''} ${isReorderMode ? styles.reorderMode : ''}`}
+                            } ${isDarkTheme ? styles.darkTheme : ''}`}
                             data-sheet-name={item.sheetName}
-                            onClick={() => !isReorderMode && handleSheetClick(item.sheetName)}
-                            draggable={isReorderMode && item.source === 'individual'}
-                            onDragStart={(e) => item.source === 'individual' && handleDragStart(e, sheets.structure[structureIndex], structureIndex)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => item.source === 'individual' && handleDrop(e, structureIndex)}
+                            onClick={() => handleSheetClick(item.sheetName)}
                           >
                             <div className={styles.iconContainer}>
                               <BiSolidSpreadsheet className={styles.folderIcon} />
@@ -1835,17 +1767,9 @@ const Sheets = ({
                       item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
                     } ${selectedFolder === item.folderName ? styles.selectedFolder : ''} ${
                       isDarkTheme ? styles.darkTheme : ''
-                    } ${isReorderMode ? styles.reorderMode : ''} ${
-                      dropTargetIndex === index ? `${styles.dropTarget} ${isDarkTheme ? styles.darkTheme : ''}` : ''
                     }`}
                     data-folder-name={item.folderName}
-                    onClick={() => !isReorderMode && handleFolderClick(item.folderName)}
-                    draggable={isReorderMode}
-                    onDragStart={(e) => handleDragStart(e, item, index)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
+                    onClick={() => handleFolderClick(item.folderName)}
                   >
                     <div className={styles.iconContainer}>
                       <FaFolder className={styles.folderIcon} />
@@ -1873,15 +1797,9 @@ const Sheets = ({
                 <button
                   className={`${styles.tabButton} ${
                     activeSheetFolder.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
-                  } ${isDarkTheme ? styles.darkTheme : ''} ${isReorderMode ? styles.reorderMode : ''}`}
+                  } ${isDarkTheme ? styles.darkTheme : ''}`}
                   data-folder-name={activeSheetFolder.folderName}
-                  onClick={() => !isReorderMode && handleFolderClick(activeSheetFolder.folderName)}
-                  draggable={isReorderMode}
-                  onDragStart={(e) => handleDragStart(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName), sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => handleDragOver(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
+                  onClick={() => handleFolderClick(activeSheetFolder.folderName)}
                 >
                   <div className={styles.iconContainer}>
                     <FaFolder className={styles.folderIcon} />
@@ -1898,15 +1816,9 @@ const Sheets = ({
                   <button
                     className={`${styles.tabButton} ${
                       sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                    } ${isDarkTheme ? styles.darkTheme : ''} ${isReorderMode ? styles.reorderMode : ''}`}
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
                     data-sheet-name={sheetName}
-                    onClick={() => !isReorderMode && handleSheetClick(sheetName)}
-                    draggable={isReorderMode}
-                    onDragStart={(e) => handleDragStart(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName), sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, sheets.structure.findIndex(item => item.folderName === activeSheetFolder.folderName))}
+                    onClick={() => handleSheetClick(sheetName)}
                   >
                     <div className={styles.iconContainer}>
                       <BiSolidSpreadsheet className={styles.folderIcon} />
@@ -1926,17 +1838,9 @@ const Sheets = ({
                   <button
                     className={`${styles.tabButton} ${
                       item.sheets.includes(decodedActiveSheetName) ? styles.activeTab : ''
-                    } ${isDarkTheme ? styles.darkTheme : ''} ${isReorderMode ? styles.reorderMode : ''} ${
-                      dropTargetIndex === index ? `${styles.dropTarget} ${isDarkTheme ? styles.darkTheme : ''}` : ''
-                    }`}
+                    } ${isDarkTheme ? styles.darkTheme : ''}`}
                     data-folder-name={item.folderName}
-                    onClick={() => !isReorderMode && handleFolderClick(item.folderName)}
-                    draggable={isReorderMode}
-                    onDragStart={(e) => handleDragStart(e, item, index)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
+                    onClick={() => handleFolderClick(item.folderName)}
                   >
                     <div className={styles.iconContainer}>
                       <FaFolder className={styles.folderIcon} />
@@ -1952,17 +1856,9 @@ const Sheets = ({
                     <button
                       className={`${styles.tabButton} ${
                         item.sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                      } ${isDarkTheme ? styles.darkTheme : ''} ${isReorderMode ? styles.reorderMode : ''} ${
-                        dropTargetIndex === index ? `${styles.dropTarget} ${isDarkTheme ? styles.darkTheme : ''}` : ''
-                      }`}
+                      } ${isDarkTheme ? styles.darkTheme : ''}`}
                       data-sheet-name={item.sheetName}
-                      onClick={() => !isReorderMode && handleSheetClick(item.sheetName)}
-                      draggable={isReorderMode}
-                      onDragStart={(e) => handleDragStart(e, item, index)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, index)}
+                      onClick={() => handleSheetClick(item.sheetName)}
                     >
                       <div className={styles.iconContainer}>
                         <BiSolidSpreadsheet className={styles.folderIcon} />
