@@ -14,17 +14,17 @@ const CreateSheetsAndFolders = ({
   handleSheetSave,
   handleFolderSave,
   handleClose,
+  initialAddType = "sheet",
 }) => {
   const { isDarkTheme } = useContext(MainContext);
   const { setModalConfig, registerModalSteps } = useContext(ModalNavigatorContext);
-  const [addType, setAddType] = useState("sheet");
   const [newSheetName, setNewSheetName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const hasInitialized = useRef(false);
-  const handlersRef = useRef({ addType: "sheet", handleSheetSaveClick: () => {}, handleFolderSaveClick: () => {} });
+  const handlersRef = useRef({ handleSheetSaveClick: () => {}, handleFolderSaveClick: () => {} });
 
   // Define callbacks
   const handleSheetSaveClick = useCallback(() => {
@@ -81,23 +81,22 @@ const CreateSheetsAndFolders = ({
   // Update handlers ref
   useEffect(() => {
     handlersRef.current = {
-      addType,
       handleSheetSaveClick,
       handleFolderSaveClick,
     };
-  }, [addType, handleSheetSaveClick, handleFolderSaveClick]);
+  }, [handleSheetSaveClick, handleFolderSaveClick]);
 
   // Initialize modal steps and config
   useEffect(() => {
     if (!hasInitialized.current) {
       registerModalSteps({
-        steps: [{ title: "Create Sheets & Folders", rightButton: null }],
+        steps: [{ title: initialAddType === "sheet" ? "Create Sheet" : "Create Folder", rightButton: null }],
       });
       setModalConfig({
         showTitle: true,
         showDoneButton: true,
         showBackButton: false,
-        title: "Create Sheets & Folders",
+        title: initialAddType === "sheet" ? "Create Sheet" : "Create Folder",
         backButtonTitle: "",
         onBackdropClick: handleClose,
       });
@@ -114,15 +113,6 @@ const CreateSheetsAndFolders = ({
       rightButton: null,
     }));
   }, [setModalConfig]);
-
-  const _handleToggleType = useCallback(() => {
-    setAddType((prev) => (prev === "sheet" ? "folder" : "sheet"));
-    setNewSheetName("");
-    setNewFolderName("");
-    setSelectedSheets([]);
-    setSearchQuery("");
-    setError("");
-  }, []);
 
   const toggleSheetSelection = useCallback((sheetName) => {
     setSelectedSheets((prev) =>
@@ -146,30 +136,8 @@ const CreateSheetsAndFolders = ({
       <div className={`${styles.scrollContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
         {error && <div className={`${styles.error} ${isDarkTheme ? styles.darkTheme : ""}`}>{error}</div>}
 
-        {/* Toggle Container */}
-        <div className={`${styles.toggleContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          <div
-            className={`${styles.tabButton} ${addType === "sheet" ? styles.activeTab : ""} ${
-              isDarkTheme ? styles.darkTheme : ""
-            }`}
-            onClick={() => setAddType("sheet")}
-          >
-            <FaFileAlt size={16} />
-            New Sheet
-          </div>
-          <div
-            className={`${styles.tabButton} ${addType === "folder" ? styles.activeTab : ""} ${
-              isDarkTheme ? styles.darkTheme : ""
-            }`}
-            onClick={() => setAddType("folder")}
-          >
-            <FaFolder size={16} />
-            New Folder
-          </div>
-        </div>
-
         <div className={`${styles.contentContainer} ${isDarkTheme ? styles.darkTheme : ""}`}>
-          {addType === "sheet" && (
+          {initialAddType === "sheet" && (
             <div className={styles.section}>
               <div className={styles.inputWrapper}>
                 <input
@@ -198,7 +166,7 @@ const CreateSheetsAndFolders = ({
             </div>
           )}
 
-          {addType === "folder" && (
+          {initialAddType === "folder" && (
             <>
               <div className={styles.section}>
                 <div className={styles.inputWrapper}>
@@ -278,6 +246,7 @@ CreateSheetsAndFolders.propTypes = {
   handleSheetSave: PropTypes.func.isRequired,
   handleFolderSave: PropTypes.func.isRequired,
   handleClose: PropTypes.func.isRequired,
+  initialAddType: PropTypes.oneOf(["sheet", "folder"]),
 };
 
 export default CreateSheetsAndFolders;

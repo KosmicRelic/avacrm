@@ -214,10 +214,10 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
           </>
         )}
       </div>
-      {isMobile && isMenuOpen && (
+      {isMobile && (
         <div
           ref={menuRef}
-          className={`${styles.menuDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}
+          className={`${styles.menuDropdown} ${isMenuOpen ? styles.open : styles.closed} ${isDarkTheme ? styles.darkTheme : ''}`}
         >
           {visibleNavOptions.map((option) => (
             <button

@@ -637,6 +637,7 @@ export const renderModalContent = ({
           handleSheetSave={handleSheetSave}
           handleFolderSave={handleFolderSave}
           handleClose={handleModalClose}
+          initialAddType={activeModal.data?.initialAddType || "sheet"}
         />
       );
     case 'folderModal':
@@ -785,13 +786,48 @@ export const onOpenSheetFolderModal = ({
   sheetFolderModal,
   handleSheetSave,
   handleFolderSave,
+  initialAddType = "sheet",
 }) => {
   if (!sheets) return;
   setActiveModal({
     type: 'sheetFolder',
-    data: { sheets, handleSheetSave, handleFolderSave },
+    data: { sheets, handleSheetSave, handleFolderSave, initialAddType },
   });
   sheetFolderModal?.open();
+};
+
+export const onOpenCreateSheetModal = ({
+  sheets,
+  setActiveModal,
+  sheetFolderModal,
+  handleSheetSave,
+  handleFolderSave,
+}) => {
+  onOpenSheetFolderModal({
+    sheets,
+    setActiveModal,
+    sheetFolderModal,
+    handleSheetSave,
+    handleFolderSave,
+    initialAddType: "sheet",
+  });
+};
+
+export const onOpenCreateFolderModal = ({
+  sheets,
+  setActiveModal,
+  sheetFolderModal,
+  handleSheetSave,
+  handleFolderSave,
+}) => {
+  onOpenSheetFolderModal({
+    sheets,
+    setActiveModal,
+    sheetFolderModal,
+    handleSheetSave,
+    handleFolderSave,
+    initialAddType: "folder",
+  });
 };
 
 export const onOpenFolderModal = ({

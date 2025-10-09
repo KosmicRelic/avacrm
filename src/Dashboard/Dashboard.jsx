@@ -3,6 +3,7 @@ import styles from './Dashboard.module.css';
 import { MainContext } from '../Contexts/MainContext';
 import useModal from '../Modal/Hooks/UseModal';
 import DashboardPlane from './Dashboard Plane/DashboardPlane';
+import { FaPlus } from 'react-icons/fa';
 
 const Dashboard = ({ onWidgetClick, activeDashboardId, onDashboardChange }) => {
   const { isDarkTheme, dashboards, setDashboards } = useContext(MainContext);

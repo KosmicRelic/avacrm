@@ -26,6 +26,8 @@ import {
   onOpenSheetsModal,
   onOpenTransportModal,
   onOpenSheetFolderModal,
+  onOpenCreateSheetModal,
+  onOpenCreateFolderModal,
   onOpenFolderModal,
 } from './Utils/ModalUtils.jsx';
 import { deleteSheetFromFirestore } from './Utils/firestoreSheetUtils';
@@ -686,7 +688,6 @@ function App() {
                     headers={resolvedHeaders}
                     rows={resolvedRows}
                     sheets={sheets}
-                    setSheets={setSheets}
                     activeSheetName={activeSheetName}
                     onSheetChange={handleSheetChange}
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
@@ -699,6 +700,8 @@ function App() {
                       onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                     }
                     onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenCreateSheetModal={() => onOpenCreateSheetModal(modalUtilsProps)}
+                    onOpenCreateFolderModal={() => onOpenCreateFolderModal(modalUtilsProps)}
                     onOpenFolderModal={handleOpenFolderModal}
                   />
                 </ProtectedRoute>
@@ -712,7 +715,6 @@ function App() {
                     headers={resolvedHeaders}
                     rows={resolvedRows}
                     sheets={sheets}
-                    setSheets={setSheets}
                     activeSheetName={activeSheetName}
                     onSheetChange={handleSheetChange}
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
@@ -725,6 +727,8 @@ function App() {
                       onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                     }
                     onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenCreateSheetModal={() => onOpenCreateSheetModal(modalUtilsProps)}
+                    onOpenCreateFolderModal={() => onOpenCreateFolderModal(modalUtilsProps)}
                     onOpenFolderModal={handleOpenFolderModal}
                   />
                 </ProtectedRoute>
@@ -738,7 +742,6 @@ function App() {
                     headers={resolvedHeaders}
                     rows={resolvedRows}
                     sheets={sheets}
-                    setSheets={setSheets}
                     activeSheetName={activeSheetName}
                     onSheetChange={handleSheetChange}
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
@@ -751,6 +754,8 @@ function App() {
                       onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                     }
                     onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenCreateSheetModal={() => onOpenCreateSheetModal(modalUtilsProps)}
+                    onOpenCreateFolderModal={() => onOpenCreateFolderModal(modalUtilsProps)}
                     onOpenFolderModal={handleOpenFolderModal}
                   />
                 </ProtectedRoute>
@@ -764,7 +769,6 @@ function App() {
                     headers={resolvedHeaders}
                     rows={resolvedRows}
                     sheets={sheets}
-                    setSheets={setSheets}
                     activeSheetName={activeSheetName}
                     onSheetChange={handleSheetChange}
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
@@ -777,6 +781,8 @@ function App() {
                       onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                     }
                     onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenCreateSheetModal={() => onOpenCreateSheetModal(modalUtilsProps)}
+                    onOpenCreateFolderModal={() => onOpenCreateFolderModal(modalUtilsProps)}
                     onOpenFolderModal={handleOpenFolderModal}
                   />
                 </ProtectedRoute>
@@ -790,7 +796,6 @@ function App() {
                     headers={resolvedHeaders}
                     rows={resolvedRows}
                     sheets={sheets}
-                    setSheets={setSheets}
                     activeSheetName={activeSheetName}
                     onSheetChange={handleSheetChange}
                     onEditSheet={() => onEditSheet(modalUtilsProps)}
@@ -803,6 +808,8 @@ function App() {
                       onOpenTransportModal({ action, selectedRowIds, onComplete, ...modalUtilsProps })
                     }
                     onOpenSheetFolderModal={() => onOpenSheetFolderModal(modalUtilsProps)}
+                    onOpenCreateSheetModal={() => onOpenCreateSheetModal(modalUtilsProps)}
+                    onOpenCreateFolderModal={() => onOpenCreateFolderModal(modalUtilsProps)}
                     onOpenFolderModal={handleOpenFolderModal}
                   />
                 </ProtectedRoute>
