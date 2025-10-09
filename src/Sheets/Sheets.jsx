@@ -4,8 +4,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 // Third-party libraries
 import { IoCloseCircle } from 'react-icons/io5';
-import { FaFolder, FaFileAlt, FaChevronRight } from 'react-icons/fa';
+import { FaFolder, FaFileAlt, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import { FiEdit, FiPlus } from 'react-icons/fi';
+import { BsThreeDots } from 'react-icons/bs';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
 import { BiSolidSpreadsheet } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
@@ -1577,12 +1578,29 @@ const Sheets = ({
         <>
           {/* Edit button in top right */}
           <div className={styles.editButtonContainer}>
+            {selectedFolder && (
+              <button
+                className={`${styles.editFolderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => onOpenFolderModal(selectedFolder, (sheetName) => {
+                  const urlSheetName = sheetName.replace(/ /g, "-");
+                  const newUrl = `/sheets/${urlSheetName}`;
+                  navigate(newUrl);
+                })}
+              >
+                <div className={styles.iconContainer}>
+                  <FiEdit size={20} />
+                </div>
+                <div className={styles.labelContainer}>
+                  Edit Folder
+                </div>
+              </button>
+            )}
             <button
               className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
               aria-label="Edit sheets"
             >
-              <FiEdit size={20} />
+              <BsThreeDots size={26} />
             </button>
             {isEditDropdownOpen && (
               <div className={`${styles.editDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}>
@@ -1640,7 +1658,16 @@ const Sheets = ({
 
           {/* Sheets Section */}
           <div className={`${styles.sheetsSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-            <div className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {selectedFolder && (
+              <button
+                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => setSelectedFolder(null)}
+                aria-label="Back to all sheets"
+              >
+                <FaChevronLeft size={20} /> Back
+              </button>
+            )}
+            <div className={`${styles.sectionTitle} ${selectedFolder ? styles.sectionTitleCentered : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
               <span>
                 {selectedFolder ? `${selectedFolder} Sheets` : 'All Sheets'}
               </span>
@@ -1648,48 +1675,27 @@ const Sheets = ({
             <div className={styles.sheetsGrid}>
               {(() => {
                 if (selectedFolder) {
-                  // When a folder is selected, show Edit Folder button first, then sheets in that folder
+                  // When a folder is selected, show sheets in that folder
                   const folderItem = sheets.structure.find(f => f.folderName === selectedFolder);
                   if (folderItem) {
-                    return [
-                      // Edit Folder button
-                      <div key={`edit-folder-${selectedFolder}`} className={styles.editFolderContainer}>
+                    return folderItem.sheets.map((sheetName, index) => (
+                      <div key={`sheet-${sheetName}-${index}`} className={styles.sheetContainer}>
                         <button
-                          className={`${styles.editFolderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                          onClick={() => onOpenFolderModal(selectedFolder, (sheetName) => {
-                            const urlSheetName = sheetName.replace(/ /g, "-");
-                            const newUrl = `/sheets/${urlSheetName}`;
-                            navigate(newUrl);
-                          })}
+                          className={`${styles.tabButton} ${
+                            sheetName === decodedActiveSheetName ? styles.activeTab : ''
+                          } ${isDarkTheme ? styles.darkTheme : ''}`}
+                          data-sheet-name={sheetName}
+                          onClick={() => handleSheetClick(sheetName)}
                         >
                           <div className={styles.iconContainer}>
-                            <FiEdit size={16} />
+                            <BiSolidSpreadsheet className={styles.folderIcon} />
                           </div>
                           <div className={styles.labelContainer}>
-                            Edit Folder
+                            {sheetName}
                           </div>
                         </button>
-                      </div>,
-                      // Sheets in the folder
-                      ...folderItem.sheets.map((sheetName, index) => (
-                        <div key={`sheet-${sheetName}-${index}`} className={styles.sheetContainer}>
-                          <button
-                            className={`${styles.tabButton} ${
-                              sheetName === decodedActiveSheetName ? styles.activeTab : ''
-                            } ${isDarkTheme ? styles.darkTheme : ''}`}
-                            data-sheet-name={sheetName}
-                            onClick={() => handleSheetClick(sheetName)}
-                          >
-                            <div className={styles.iconContainer}>
-                              <BiSolidSpreadsheet className={styles.folderIcon} />
-                            </div>
-                            <div className={styles.labelContainer}>
-                              {sheetName}
-                            </div>
-                          </button>
-                        </div>
-                      ))
-                    ];
+                      </div>
+                    ));
                   }
                   return [];
                 } else {
@@ -1740,11 +1746,13 @@ const Sheets = ({
                             <div className={styles.iconContainer}>
                               <BiSolidSpreadsheet className={styles.folderIcon} />
                             </div>
+                            {item.source === 'folder' && (
+                              <div className={styles.folderNameBetween}>
+                                {item.folderName}
+                              </div>
+                            )}
                             <div className={styles.labelContainer}>
                               {item.sheetName}
-                              {item.source === 'folder' && (
-                                <span className={styles.folderIndicator}>({item.folderName})</span>
-                              )}
                             </div>
                           </button>
                         </div>

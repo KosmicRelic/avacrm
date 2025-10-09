@@ -245,10 +245,11 @@
   left: 50% !important; /* Center horizontally */
   transform: translateX(-50%) !important; /* Center horizontally */
   right: auto !important; /* Don't set right to avoid conflicts */
-  top: 120px !important; /* Start higher up for more vertical space */
+  top: 150px !important; /* Start higher up for more vertical space */
   bottom: 16px !important; /* Add bottom margin like the normal state */
-  min-height: calc(100% - 152px) !important; /* Allow it to grow beyond this minimum height */
+  max-height: calc(100% - 200px) !important; /* Allow it to grow beyond this minimum height */
   padding: 24px !important; /* Increase padding for better spacing */
+  margin-top: auto;
   display: flex !important;
   flex-direction: column !important;
   position: fixed !important;
@@ -258,7 +259,8 @@
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  border-radius: 24px !important; /* Slightly less rounded than 50px for better fit */
+  border-radius: 36px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 20px rgba(0, 0, 0, 0.1) !important;
   /* Ensure content stays within bounds */
   box-sizing: border-box !important;
 }
@@ -308,9 +310,11 @@
   overflow-x: auto !important;
   overflow-y: hidden !important;
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
-  background-color: rgb(243, 242, 248) !important;
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* In full width mode, make folders stick to the bottom */
@@ -319,10 +323,12 @@
 }
 
 .foldersSection.darkTheme {
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+  background: rgb(26, 26, 26)!important;
+  box-shadow:
+  0 4px 16px rgba(0, 0, 0, 0.25),
+  0 1px 8px rgba(0, 0, 0, 0.15),
+  inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .sheetsSection {
@@ -334,7 +340,7 @@
 }
 
 .sectionTitle {
-  font-size: 14px !important;
+  font-size: 24px !important;
   font-weight: 600 !important;
   color: rgba(0, 0, 0, 0.8) !important;
   margin-bottom: 12px !important;
@@ -347,6 +353,56 @@
 
 .sectionTitle.darkTheme {
   color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.sectionTitleCentered {
+  justify-content: center !important;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  flex-shrink: 0;
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.backButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.backButton:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.backButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  border-color: rgba(255, 255, 255, 0.06);
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.backButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.backButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .selectedFolder {
@@ -400,48 +456,52 @@
 .foldersGrid,
 .sheetsGrid {
   display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 8px !important;
+  grid-template-columns: 1fr !important; /* Start with 1 column */
+  gap: 6px !important;
   overflow-y: auto !important;
   max-height: 200px !important; /* Limit height to create scrollable sections */
+  place-items: center !important; /* Center items both horizontally and vertically */
 }
 
-/* In full width mode, allow sheets grid to expand */
-.sheetTabsFullWidth .sheetsGrid {
-  max-height: none !important;
-  flex: 1 !important;
-}
-
-/* Responsive grid layouts - reduce columns as screen gets smaller */
-@media (max-width: 1199px) {
-  .foldersGrid,
-  .sheetsGrid {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
-}
-
-@media (max-width: 899px) {
+/* Scale to 2 columns when there's enough space */
+@media (min-width: 400px) {
   .foldersGrid,
   .sheetsGrid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
-@media (max-width: 480px) {
+/* Scale to 3 columns when there's more space */
+@media (min-width: 600px) {
   .foldersGrid,
   .sheetsGrid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }
 
+/* Scale to 4 columns when there's plenty of space */
+@media (min-width: 800px) {
+  .foldersGrid,
+  .sheetsGrid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* In full width mode, allow sheets grid to expand */
+.sheetTabsFullWidth .foldersGrid,
+.sheetTabsFullWidth .sheetsGrid {
+  max-height: 200px !important; /* Keep compact height for browsing */
+  flex: none !important;
+}
+
 .sheetTabsFullWidth .tabButton {
-  min-height: 60px !important;
-  padding: 16px 24px !important;
+  min-height: 44px !important;
+  padding: 12px 16px !important;
   flex-direction: row !important;
   justify-content: flex-start !important;
   align-items: center !important;
   text-align: left !important;
-  gap: 20px !important;
+  gap: 12px !important;
   background: transparent !important;
   border: none !important;
   border-radius: 16px;
@@ -472,19 +532,22 @@
 }
 
 .sheetTabsFullWidth .tabButton .iconContainer {
-  width: 32px !important;
-  height: 32px !important;
-  font-size: 32px !important;
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 36px !important;
   flex-shrink: 0 !important;
 }
 
 .sheetTabsFullWidth .tabButton .labelContainer {
-  font-size: 18px !important;
+  font-size: 16px !important;
   font-weight: 500 !important;
   letter-spacing: -0.01em !important;
   color: rgb(0, 0, 0) !important;
   flex: 1 !important;
   min-width: 0 !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .sheetTabsFullWidth.darkTheme .tabButton .labelContainer {
@@ -507,10 +570,11 @@
 .sheetTabsFullWidth.darkTheme {
   background: rgb(26, 26, 26, 0.9) !important;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 2px 16px rgba(0, 0, 0, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 36px !important;
 }
 
 .sheetTabs .tabButton,
@@ -528,23 +592,26 @@
 .sheetTabs .orderButton .iconContainer,
 .sheetTabs .addTabButton .iconContainer {
   margin-bottom: 2px !important;
-  width: 24px !important;
-  height: 24px !important;
-  font-size: 24px !important;
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 32px !important;
 }
 
 .sheetTabs .tabButton .labelContainer,
 .sheetTabs .orderButton .labelContainer,
 .sheetTabs .addTabButton .labelContainer {
   font-size: 12px !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .tabButton {
   font-size: 14px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 4px 8px;
   height: auto;
-  min-height: 36px;
+  min-height: 24px;
   color: rgba(138, 138, 141);
   background: transparent;
   border: none;
@@ -559,7 +626,7 @@
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: -0.01em;
-  gap: 2px;
+  gap: 1px;
 }
 
 .tabButton.darkTheme {
@@ -615,62 +682,61 @@
 }
 
 .editFolderButton {
-  font-size: 14px;
-  font-weight: 600;
-  padding: 8px 16px;
-  height: auto;
-  min-height: 40px;
-  color: rgba(138, 138, 141);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  white-space: nowrap;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  gap: 4px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  gap: 8px;
-  width: 100%;
-  max-width: 160px;
-  margin: 0 auto;
-}
-
-.editFolderButton:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-1px);
-  border-color: rgba(0, 122, 255, 0.3);
-  color: #007aff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  flex-shrink: 0;
+  width: fit-content;
+  align-self: flex-start;
 }
 
 .editFolderButton.darkTheme {
-  background: rgba(44, 44, 46, 0.8);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(141, 141, 146);
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  border-color: rgba(255, 255, 255, 0.06);
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.editFolderButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.editFolderButton:active {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .editFolderButton.darkTheme:hover {
-  background: rgba(58, 58, 60, 0.9);
-  border-color: rgba(10, 132, 255, 0.4);
-  color: #0a84ff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.editFolderButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .editFolderButton .iconContainer {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .editFolderButton .labelContainer {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -699,6 +765,57 @@
   color: #007aff;
   margin-left: 4px;
   transition: color 0.3s ease;
+}
+
+.folderNameAbove {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(138, 138, 141, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folderNameAbove.darkTheme {
+  color: rgba(141, 141, 146, 0.7);
+}
+
+.activeTab .folderNameAbove {
+  color: #007aff;
+}
+
+.activeTab.darkTheme .folderNameAbove {
+  color: #0a84ff;
+}
+
+.folderNameBetween {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(138, 138, 141, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 1px 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+
+.folderNameBetween.darkTheme {
+  color: rgba(141, 141, 146, 0.6);
+}
+
+.activeTab .folderNameBetween {
+  color: #007aff;
+}
+
+.activeTab.darkTheme .folderNameBetween {
+  color: #0a84ff;
 }
 
 .folderPath.darkTheme {
@@ -1595,10 +1712,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 32px;
   margin-bottom: 2px;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .labelContainer {
@@ -1606,8 +1723,9 @@
   font-weight: 500;
   text-align: center;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   max-width: 100%;
 }
 .primaryActionsContainer {
@@ -1854,7 +1972,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   max-width: 340px;
   min-height: 100px;
   /* Remove background, box-shadow, margin, and padding for inline style override */
@@ -1876,7 +1994,7 @@
 }
 
 .selectSheetTitle {
-  font-size: 22px;
+  font-size: 36px;
   font-weight: 700;
   color: #1d1d1f;
   margin-bottom: 6px;
@@ -2267,59 +2385,54 @@
 /* Edit button and dropdown styles */
 .editButtonContainer {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 24px;
+  right: 24px;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .editButton {
-  color: rgb(0, 0, 0);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 50%;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  flex-shrink: 0;
 }
 
 .editButton:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .editButton:active {
-  background: rgba(255, 255, 255, 0.7);
-  transform: scale(0.98);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .editButton.darkTheme {
   color: rgb(255, 255, 255);
-  background: rgba(28, 28, 30, 0.8);
+  background: rgb(26, 26, 26);
   border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .editButton.darkTheme:hover {
-  background: rgba(44, 44, 46, 0.9);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .editButton.darkTheme:active {
-  background: rgba(28, 28, 30, 0.7);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .editDropdown {
