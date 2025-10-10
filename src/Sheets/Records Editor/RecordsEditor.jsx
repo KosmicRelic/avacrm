@@ -9,7 +9,7 @@ import { getFormattedHistory, getRecordCreator, getLastModifier, formatFieldName
 import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete, MdLink } from 'react-icons/md';
-import { FaLayerGroup } from 'react-icons/fa';
+import { FaLayerGroup, FaFileAlt } from 'react-icons/fa';
 import BackButton from '../../Components/Reusable Buttons/BackButton';
 import MenuButton from '../../Components/Reusable Buttons/MenuButton';
 
@@ -1431,11 +1431,15 @@ const RecordsEditor = memo(forwardRef(({
     // Keep the editor open after save and switch to editing mode if it was a new object
     if (!isEditing) {
       setIsEditing(true);
-      setFormData({ ...newRow });
+      // Remove isNewRecord flag after save
+      const { isNewRecord, ...savedRow } = newRow;
+      setFormData({ ...savedRow });
       // Mark as originally loaded since it now exists in the database
       setWasOriginallyLoaded(true);
     } else {
-      setFormData({ ...newRow });
+      // Remove isNewRecord flag if it exists
+      const { isNewRecord, ...savedRow } = newRow;
+      setFormData({ ...savedRow });
     }
     // Editor stays open - user must manually close it
   }, [
@@ -1790,143 +1794,6 @@ const RecordsEditor = memo(forwardRef(({
     );
   };
 
-  const MultiSelectDropdown = ({ options, value, onChange, label, disabled, isDarkTheme }) => {
-    const [open, setOpen] = useState(false);
-    const [tempValue, setTempValue] = useState(Array.isArray(value) ? value : []);
-    const ref = useRef(null);
-    const dropdownRef = useRef(null);
-
-    // Always sync tempValue with value when opening
-    useEffect(() => {
-      if (open) {
-        setTempValue(Array.isArray(value) ? value : []);
-      }
-    }, [open, value]);
-
-    useEffect(() => {
-      if (!open) return;
-      const handleClickOutside = (event) => {
-        if (
-          ref.current && !ref.current.contains(event.target) &&
-          dropdownRef.current && !dropdownRef.current.contains(event.target)
-        ) {
-          // Save the current tempValue as the new value
-          const ordered = options.filter(option => tempValue.includes(option));
-          onChange(ordered);
-          setOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [open, tempValue, options, onChange]);
-
-    const handleOptionToggle = (option) => {
-      let newValue = Array.isArray(tempValue) ? [...tempValue] : [];
-      if (newValue.includes(option)) {
-        newValue = newValue.filter((v) => v !== option);
-      } else {
-        newValue.push(option);
-      }
-      setTempValue(newValue);
-    };
-
-    const handleSave = (e) => {
-      e.stopPropagation();
-      // Sort tempValue according to the order in options
-      const ordered = options.filter(option => tempValue.includes(option));
-      onChange(ordered);
-      setOpen(false);
-    };
-
-    const handleCancel = (e) => {
-      e.stopPropagation();
-      setTempValue(Array.isArray(value) ? value : []);
-      setOpen(false);
-    };
-
-    const display = (Array.isArray((open ? tempValue : value)) && (open ? tempValue : value).length > 0)
-      ? (open ? tempValue : value).join(', ')
-      : `Select ${label}`;
-
-    // Position dropdown below the field
-    const [dropdownStyle, setDropdownStyle] = useState({});
-    useEffect(() => {
-      if (open && ref.current) {
-        const rect = ref.current.getBoundingClientRect();
-        setDropdownStyle({
-          top: rect.height + 4,
-        });
-      }
-    }, [open]);
-
-    return (
-      <div
-        ref={ref}
-        className={[
-          styles.fieldSelect,
-          styles.multiSelectDropdownWrapper,
-          isDarkTheme ? styles.darkTheme : '',
-          disabled ? styles.disabled : '',
-        ].join(' ')}
-        tabIndex={0}
-        onClick={() => {
-          if (!disabled && !open) setOpen(true);
-        }}
-      >
-        <span
-          className={[
-            styles.multiSelectDropdownDisplay,
-            (!value || value.length === 0) ? styles.multiSelectDropdownPlaceholder : '',
-          ].join(' ')}
-        >
-          {display}
-        </span>
-        <svg className={styles.multiSelectDropdownChevron} width="16" height="16" viewBox="0 0 16 16"></svg>
-        {open && !disabled && (
-          <div
-            ref={dropdownRef}
-            className={styles.multiSelectDropdown}
-            style={dropdownStyle}
-          >
-            <div className={styles.multiSelectDropdownList}>
-              {options.map((option) => (
-                <label
-                  key={option}
-                  className={styles.multiSelectDropdownLabel}
-                >
-                  <input
-                    type="checkbox"
-                    checked={Array.isArray(tempValue) && tempValue.includes(option)}
-                    onChange={() => handleOptionToggle(option)}
-                    disabled={disabled}
-                    className={styles.multiSelectDropdownCheckbox}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-            <div className={styles.multiSelectDropdownButtons}>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className={styles.multiSelectDropdownButton}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className={[styles.multiSelectDropdownButton, styles.save].join(' ')}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // Determine if back button should be shown
   const shouldShowBackButton = useMemo(() => {
 
@@ -2014,21 +1881,24 @@ const RecordsEditor = memo(forwardRef(({
                   )}
                 </div>
                 <div className={styles.breadcrumbActionsRight}>
-                  <MenuButton
-                    isDarkTheme={isDarkTheme}
-                    onCreateRecord={() => {
-                      // Handle create record - could navigate to related templates or open create modal
-                      if (isObjectMode) {
-                        setView('relatedTemplates');
-                      }
-                    }}
-                    onDeleteObject={() => {
-                      // Handle delete object - could show confirmation dialog
-                      if (window.confirm('Are you sure you want to delete this object?')) {
-                        handleDelete();
-                      }
-                    }}
-                  />
+                  {/* Only show menu button after object has been saved (not a new record) */}
+                  {(isObjectMode && formData.docId && !formData.isNewRecord) && (
+                    <MenuButton
+                      isDarkTheme={isDarkTheme}
+                      onCreateRecord={() => {
+                        // Handle create record - could navigate to related templates or open create modal
+                        if (isObjectMode) {
+                          setView('relatedTemplates');
+                        }
+                      }}
+                      onDeleteObject={() => {
+                        // Handle delete object - could show confirmation dialog
+                        if (window.confirm('Are you sure you want to delete this object?')) {
+                          handleDelete();
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -2178,7 +2048,7 @@ const RecordsEditor = memo(forwardRef(({
                 
                 {selectedSections.length > 0 ? (
                   selectedSections.map((section, index) => (
-                    <div key={`${section.name}-${index}`} className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div key={`${section.name}-${index}`} className={`${section.name === 'Basic Information' ? styles.basicInformationContainer : styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       <div className={styles.sectionHeader}>
                         <div className={styles.sectionText}>
                           <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
@@ -2258,14 +2128,22 @@ const RecordsEditor = memo(forwardRef(({
                                   ))}
                                 </select>
                               ) : field.type === 'multi-select' ? (
-                                <MultiSelectDropdown
-                                  options={field.options}
+                                <select
+                                  multiple
                                   value={Array.isArray(historicalFormData[field.key]) ? historicalFormData[field.key] : []}
-                                  onChange={selected => handleInputChange(field.key, selected, field.type)}
-                                  label={field.name}
+                                  onChange={(e) => {
+                                    const values = Array.from(e.target.selectedOptions, option => option.value);
+                                    handleInputChange(field.key, values, field.type);
+                                  }}
                                   disabled={isViewingHistory || isItemDeleted}
-                                  isDarkTheme={isDarkTheme}
-                                />
+                                  className={`${styles.fieldSelect} ${isDarkTheme ? styles.darkTheme : ''}`}
+                                >
+                                  {field.options.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
                               ) : field.type === 'date' ? (
                                 (() => {
                                   const dateValue = formatDateForInput(historicalFormData[field.key]);
@@ -2458,51 +2336,43 @@ const RecordsEditor = memo(forwardRef(({
                 {/* Related Records Section - Show for objects with records array that were originally loaded from database */}
                 {view === 'editor' && isObjectMode && !viewingRelatedRecord && wasOriginallyLoaded && formData.records && formData.records.length > 0 && (
                   <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div className={styles.relatedRecordsList}>
+                    <div className={`${styles.relatedRecordsList} ${isDarkTheme ? styles.darkTheme : ''}`}>
                       {formData.records.map((recordRef) => {
                         const isLoading = loadingRecordId === recordRef.docId;
                         const isCached = !!fetchedRecordsCache[recordRef.docId];
                         const recordData = fetchedRecordsCache[recordRef.docId];
 
                         return (
-                          <div
-                            key={recordRef.docId}
-                            className={`${styles.relatedRecordItem} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
-                            onClick={() => !isLoading && handleViewRelatedRecord(recordRef)}
-                            style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
-                          >
-                            <div className={styles.relatedRecordInfo}>
-                              <span className={`${styles.relatedRecordType} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                {recordRef.typeOfRecord}
-                              </span>
-                              {isCached && recordData?.assignedTo && (
-                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  Assigned to: {getTeamMemberName(recordData.assignedTo)}
-                                </span>
-                              )}
-                              {isCached && recordData?.status && (
-                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  Status: {recordData.status}
-                                </span>
-                              )}
-                              {isLoading && (
-                                <span className={`${styles.relatedRecordDetail} ${styles.loadingText} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  Loading...
-                                </span>
-                              )}
-                            </div>
+                          <div key={recordRef.docId} className={styles.folderContainer}>
                             <button
-                              type="button"
-                              className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!isLoading) {
-                                  handleViewRelatedRecord(recordRef);
-                                }
-                              }}
+                              className={`${styles.tabButton} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
+                              onClick={() => !isLoading && handleViewRelatedRecord(recordRef)}
+                              style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
                               disabled={isLoading}
                             >
-                              {isLoading ? 'Loading...' : 'View'}
+                              <div className={styles.iconContainer}>
+                                <FaFileAlt className={styles.recordIcon} />
+                              </div>
+                              <div className={styles.labelContainer}>
+                                <div className={`${styles.relatedRecordType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  {recordRef.typeOfRecord}
+                                </div>
+                                {isCached && recordData?.assignedTo && (
+                                  <div className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                    Assigned to: {getTeamMemberName(recordData.assignedTo)}
+                                  </div>
+                                )}
+                                {isCached && recordData?.status && (
+                                  <div className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                    Status: {recordData.status}
+                                  </div>
+                                )}
+                                {isLoading && (
+                                  <div className={`${styles.relatedRecordDetail} ${styles.loadingText} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                    Loading...
+                                  </div>
+                                )}
+                              </div>
                             </button>
                           </div>
                         );
