@@ -207,8 +207,6 @@
   gap: 12px;
   overflow-x: auto;
   padding: 0px 20px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   position: fixed;
   bottom: 16px;
   left: 16px;
@@ -224,10 +222,13 @@
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   transition: none; /* Remove animation to prevent sliding effect */
-  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 50px;
   /* iOS-style subtle gradient */
-  background: rgba(255, 255, 255, 0.5);
+  background: rgb(255, 255, 255, 0.9);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .sheetTabs.darkTheme {
@@ -358,6 +359,11 @@
 
 .sectionTitleCentered {
   justify-content: center !important;
+  position: absolute !important;
+  top: 36px;
+  right: 24px;
+  font-size: 16px !important;
+  margin-top: 0!important;
 }
 
 .backButton {
@@ -546,7 +552,9 @@
   color: rgb(0, 0, 0) !important;
   flex: 1 !important;
   min-width: 0 !important;
-  white-space: normal !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .sheetTabsFullWidth.darkTheme .tabButton .labelContainer {
@@ -633,7 +641,9 @@
 .sheetTabs .orderButton .labelContainer,
 .sheetTabs .addTabButton .labelContainer {
   font-size: 12px !important;
-  white-space: normal !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 /* Prevent folder names from breaking in normal sheet tabs */
@@ -649,7 +659,7 @@
   padding: 4px 8px;
   height: auto;
   min-height: 24px;
-  color: rgba(138, 138, 141);
+  color: rgba(0, 0, 0, 0.8); /* Changed from grey to black */
   background: transparent;
   border: none;
   border-radius: 18px;
@@ -667,7 +677,7 @@
 }
 
 .tabButton.darkTheme {
-  color: rgba(141, 141, 146);
+  color: rgba(255, 255, 255, 0.8); /* Changed from grey to white */
 }
 
 .tabButton:hover {
@@ -721,31 +731,28 @@
 .editFolderButton {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   color: rgb(0, 0, 0);
   background: white;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 50px;
-  padding: 10px 12px;
+  border-radius: 50%;
+  padding: 0;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   flex-shrink: 0;
-  width: fit-content;
-  align-self: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .editFolderButton.darkTheme {
   color: rgb(255, 255, 255);
   background: rgb(26, 26, 26);
   border-color: rgba(255, 255, 255, 0.06);
-  width: fit-content;
-  align-self: flex-start;
 }
 
 .editFolderButton:hover {
@@ -754,6 +761,7 @@
 
 .editFolderButton:active {
   background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
 }
 
 .editFolderButton.darkTheme:hover {
@@ -807,7 +815,7 @@
 .folderNameAbove {
   font-size: 10px;
   font-weight: 500;
-  color: rgba(138, 138, 141, 0.7);
+  color: rgba(0, 0, 0, 0.8); /* Changed from grey to black with opacity */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 2px;
@@ -818,7 +826,7 @@
 }
 
 .folderNameAbove.darkTheme {
-  color: rgba(141, 141, 146, 0.7);
+  color: rgba(255, 255, 255, 0.8); /* Changed from grey to white with opacity */
 }
 
 .activeTab .folderNameAbove {
@@ -832,7 +840,7 @@
 .folderNameBetween {
   font-size: 9px;
   font-weight: 500;
-  color: rgba(138, 138, 141, 0.6);
+  color: rgba(0, 0, 0, 0.7); /* Changed from grey to black with opacity */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 1px 0;
@@ -844,7 +852,7 @@
 }
 
 .folderNameBetween.darkTheme {
-  color: rgba(141, 141, 146, 0.6);
+  color: rgba(255, 255, 255, 0.7); /* Changed from grey to white with opacity */
 }
 
 .activeTab .folderNameBetween {
@@ -2550,4 +2558,32 @@
 
 .doneItem.darkTheme {
   color: rgb(10, 132, 255);
+}
+
+/* Folder Header - Transparent header in document flow */
+.folderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 8px;
+  margin-bottom: 12px;
+  background: transparent;
+  position: relative;
+  min-height: 44px;
+}
+
+.folderHeaderTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.folderHeaderTitle.darkTheme {
+  color: rgba(255, 255, 255, 0.8);
 }

@@ -7,11 +7,15 @@
   height: 100%;
   overflow: hidden;
   overflow-x: hidden;
-  background: transparent;
+  background: rgba(243, 242, 248, 1);
   position: fixed;
   top: 0px;
   left: 0;
   z-index: 1000;
+}
+
+.editorWrapper.darkTheme {
+  background: black;
 }
 
 /* View Container */
@@ -20,13 +24,13 @@
   width: 100%;
   min-height: 100%;
   overflow: auto;
+  background: rgba(243, 242, 248, 1);
 }
 
 /* Main View */
 .view {
   width: 100%;
   box-sizing: border-box;
-  background: rgba(255, 255, 255);
   border-radius: 0;
   padding: 16px;
   padding-top: 0;
@@ -40,29 +44,22 @@
 }
 
 .view.darkTheme {
-  background: rgb(28, 28, 30);
+  background: black;
 }
 
 /* Navigation Bar */
 .navBar {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 20;
-  border-radius: 20px 20px 0 0;
   margin: -16px -16px 20px -16px;
   padding: 10px 10px;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .navBar.darkTheme {
-  background: rgba(28, 28, 30, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
 }
 
 .headerTop {
@@ -93,6 +90,7 @@
 .breadcrumbWithActions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   gap: 16px;
 }
@@ -104,36 +102,11 @@
   flex-shrink: 0;
 }
 
-.breadcrumbContent {
-  flex: 1;
-  min-width: 0; /* Allow text to wrap if needed */
-}
-
-/* Back Button */
-.backButton {
-  background: none;
-  border: none;
-  padding: 12px;
-  cursor: pointer;
+.breadcrumbActionsRight {
   display: flex;
   align-items: center;
-  border-radius: 12px;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.backButton:hover {
-  background: rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.backButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.backButton.darkTheme svg path {
-  stroke: #0a84ff;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Navigation Title */
@@ -147,7 +120,6 @@
   text-align: center;
   letter-spacing: -0.022em;
   line-height: 1.2;
-  background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -885,79 +857,14 @@
 
 /* Section Container - FilterModal style */
 .sectionContainer {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 20px;
   margin-bottom: 16px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
 }
 
-.sectionContainer.darkTheme {
-  background: rgba(28, 28, 30, 0.6);
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.sectionContainer:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.sectionContainer.darkTheme:hover {
-  background: rgba(28, 28, 30, 0.7);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.sectionContainer.active {
-  border-color: rgba(0, 122, 255, 0.2);
-  background: rgba(0, 122, 255, 0.02);
-  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.08), 0 1px 3px rgba(0, 122, 255, 0.04);
-}
-
-.sectionContainer.darkTheme.active {
-  border-color: rgba(10, 132, 255, 0.3);
-  background: rgba(10, 132, 255, 0.03);
-  box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.12), 0 1px 3px rgba(10, 132, 255, 0.06);
-}
-
-/* Section Button - Header area within container */
-.sectionButton {
-  width: 100%;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 20px 20px 0 0;
-}
-
-.sectionButton.darkTheme {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.sectionButton:hover {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.sectionButton.darkTheme:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Section Header - Icon and text content */
+/* Section Header - Title area */
 .sectionHeader {
-  display: flex;
-  align-items: flex-start;
-  flex: 1;
+  padding: 20px 24px 12px 24px;
 }
 
 /* Section Text - Title and description */
@@ -1039,47 +946,8 @@
   color: #aeaeb2;
 }
 
-/* Chevron */
-.chevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 21px;
-  height: 21px;
-  border-radius: 6px;
-  color: #86868b;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: rotate(0deg);
-  margin-left: 16px;
-  flex-shrink: 0;
-}
-
-.chevron.darkTheme {
-  color: #98989d;
-}
-
-.chevron.expanded {
-  transform: rotate(180deg);
-  color: #007aff;
-}
-
-.chevron.darkTheme.expanded {
-  color: #0a84ff;
-}
-
-.chevron:hover {
-  background: rgba(0, 122, 255, 0.04);
-  color: #007aff;
-}
-
-.chevron.darkTheme:hover {
-  background: rgba(10, 132, 255, 0.06);
-  color: #0a84ff;
-}
-
 /* Section Content - Contained within the section container */
 .sectionContent {
-  display: none;
   padding: 20px 24px;
   border-top: 0.33px solid rgba(0, 0, 0, 0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1088,15 +956,6 @@
 
 .sectionContent.darkTheme {
   border-color: rgba(255, 255, 255, 0.04);
-}
-
-.sectionContent.expanded {
-  display: block;
-  animation: slideDownSmooth 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sectionContent.noAnimation {
-  animation: none !important;
 }
 
 /* Field Grid Container */
@@ -1125,23 +984,10 @@
   overflow: hidden;
 }
 
-.fieldItem:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 122, 255, 0.2);
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.1);
-}
-
 .fieldItem.darkTheme {
   background: rgba(28, 28, 30, 0.9);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.fieldItem.darkTheme:hover {
-  background: rgba(35, 35, 38, 1);
-  border-color: rgba(10, 132, 255, 0.3);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.15);
 }
 
 /* Field Label - Modern typography */
@@ -2453,7 +2299,7 @@
   }
 
   .viewContainer{
-    background-color: white;
+    background: rgba(243, 242, 248, 1);
     border-top-left-radius: 36px;
     border-top-right-radius: 36px;
   }

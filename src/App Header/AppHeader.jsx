@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
 import { CgProfile } from 'react-icons/cg';
-import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaChevronLeft, FaProjectDiagram } from 'react-icons/fa';
+import { FaBullhorn, FaChartBar, FaMoneyBillWave, FaChevronDown, FaProjectDiagram } from 'react-icons/fa';
 import { SiGoogleadsense } from 'react-icons/si';
 import { RiDashboard2Fill } from 'react-icons/ri';
 import { MdFilterAlt } from 'react-icons/md';
 import { IoSearch } from 'react-icons/io5';
 import { MainContext } from '../Contexts/MainContext';
+import BackButton from '../Components/Reusable Buttons/BackButton';
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption, onEditSheet, onFilter }) {
   const { isDarkTheme, user, activeSheetName, setActiveSheetName } = useContext(MainContext);
@@ -106,17 +107,16 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
       <div className={`${styles.headerTop} ${activeSheetName ? styles.sheetView : ''}`}>
         {activeSheetName ? (
           <>
-            <button
-              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+            <BackButton
               onClick={() => {
                 setActiveSheetName(null);
                 navigate('/sheets');
               }}
-              aria-label="Back to Sheets"
+              isDarkTheme={isDarkTheme}
+              ariaLabel="Back to Sheets"
             >
-              <FaChevronLeft size={20} />
               <span>Sheets</span>
-            </button>
+            </BackButton>
             <h1 className={`${styles.avaTitle} ${styles.centeredTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>AVA</h1>
             {activeOption === 'sheets' && (
               <div className={`${styles.sheetActions} ${isDarkTheme ? styles.darkTheme : ''}`}>

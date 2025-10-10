@@ -10,6 +10,8 @@ import { validateField, getAllCountryCodes } from '../../Utils/fieldValidation';
 import { IoMdArrowDropdown } from 'react-icons/io';
 import { MdHistory, MdDelete, MdLink } from 'react-icons/md';
 import { FaLayerGroup } from 'react-icons/fa';
+import BackButton from '../../Components/Reusable Buttons/BackButton';
+import MenuButton from '../../Components/Reusable Buttons/MenuButton';
 
 const RecordsEditor = memo(forwardRef(({
   onClose,
@@ -1993,27 +1995,12 @@ const RecordsEditor = memo(forwardRef(({
                 <div className={styles.breadcrumbActions}>
                   {/* Show back button based on navigation context */}
                   {shouldShowBackButton && (
-                    <button
-                      className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                    <BackButton
                       onClick={handleBackNavigation}
-                      aria-label="Back"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M10 12L6 8L10 4"
-                          stroke={isDarkTheme ? '#0a84ff' : '#007aff'}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
+                      isDarkTheme={isDarkTheme}
+                      showText={false}
+                      ariaLabel="Back"
+                    />
                   )}
                   {view === 'editor' && hasUnsavedChanges && (
                     <button
@@ -2026,14 +2013,22 @@ const RecordsEditor = memo(forwardRef(({
                     </button>
                   )}
                 </div>
-                <div className={styles.breadcrumbContent}>
-                  {renderBreadcrumbs() || (
-                    <h1 className={`${styles.navTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                      {isEditing ? (isViewingHistory ? 'View Record History' : 'Edit Object') :
-                      view === 'relatedTemplates' ? 'Create Record' : 
-                      'New Object'}
-                    </h1>
-                  )}
+                <div className={styles.breadcrumbActionsRight}>
+                  <MenuButton
+                    isDarkTheme={isDarkTheme}
+                    onCreateRecord={() => {
+                      // Handle create record - could navigate to related templates or open create modal
+                      if (isObjectMode) {
+                        setView('relatedTemplates');
+                      }
+                    }}
+                    onDeleteObject={() => {
+                      // Handle delete object - could show confirmation dialog
+                      if (window.confirm('Are you sure you want to delete this object?')) {
+                        handleDelete();
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -2183,30 +2178,13 @@ const RecordsEditor = memo(forwardRef(({
                 
                 {selectedSections.length > 0 ? (
                   selectedSections.map((section, index) => (
-                    <div key={`${section.name}-${index}`} className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${
-                      openSections.includes(section.name) ? styles.active : ''
-                    }`}>
-                      <button
-                        className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={() => toggleSection(section.name)}
-                        aria-expanded={openSections.includes(section.name)}
-                        aria-controls={`section-content-${index}`}
-                      >
-                        <div className={styles.sectionHeader}>
-                          <div className={styles.sectionText}>
-                            <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
-                          </div>
+                    <div key={`${section.name}-${index}`} className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={styles.sectionHeader}>
+                        <div className={styles.sectionText}>
+                          <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
                         </div>
-                        <div className={`${styles.chevron} ${openSections.includes(section.name) ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                          <IoMdArrowDropdown />
-                        </div>
-                      </button>
-                      <div
-                        id={`section-content-${index}`}
-                        className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${
-                          openSections.includes(section.name) ? `${styles.expanded} ${!hasUserToggledSections ? styles.noAnimation : ''}` : ''
-                        }`}
-                      >
+                      </div>
+                      <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <div className={styles.fieldGrid}>
                           {section.fields.length > 0 ? (
                             section.fields.map((field) => (
@@ -2434,28 +2412,6 @@ const RecordsEditor = memo(forwardRef(({
                   </p>
                 )}
                 
-                {/* Create Record Section - Show only for objects with linkId that were originally loaded from database */}
-                {view === 'editor' && isEditing && isObjectMode && wasOriginallyLoaded && formData.linkId && !viewingRelatedRecord && getAvailableTemplatesInCategory().length > 0 && (
-                  <div className={`${styles.createRecordSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                    <div className={styles.createRecordCard} onClick={() => setView('relatedTemplates')}>
-                      <div className={styles.createRecordIcon}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <path d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                      <div className={styles.createRecordContent}>
-                        <h3 className={styles.createRecordTitle}>Create Record</h3>
-
-                      </div>
-                      <div className={styles.createRecordArrow}>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M6 12l4-4-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 {/* Pipeline Section - Only show for saved records with docId */}
                 {view === 'editor' && formData.docId && isEditing && formData.linkId && (() => {
                   const availablePipelines = getAvailablePipelines();
@@ -2582,21 +2538,6 @@ const RecordsEditor = memo(forwardRef(({
                         })}
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                {wasOriginallyLoaded && (
-                  <div className={styles.deleteButtonWrapper}>
-                    {isBusinessUser && (
-                      <button
-                        className={`${styles.deleteButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                        onClick={handleDelete}
-                        aria-label="Delete record"
-                      >
-                        <MdDelete size={18} />
-                        Delete {isObjectMode ? 'Object' : 'Record'}
-                      </button>
-                    )}
                   </div>
                 )}
               </>

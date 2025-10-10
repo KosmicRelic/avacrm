@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 // Third-party libraries
 import { IoCloseCircle } from 'react-icons/io5';
-import { FaFolder, FaFileAlt, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
+import { FaFolder, FaFileAlt, FaChevronRight } from 'react-icons/fa';
 import { FiEdit, FiPlus } from 'react-icons/fi';
 import { BsThreeDots } from 'react-icons/bs';
 import { CgArrowsExchangeAlt } from 'react-icons/cg';
@@ -16,6 +16,7 @@ import { db } from '../firebase';
 // Local components
 import RowComponent from './Row Template/RowComponent';
 import RecordsEditor from './Records Editor/RecordsEditor';
+import BackButton from '../Components/Reusable Buttons/BackButton';
 
 // Context and utilities
 import { MainContext } from '../Contexts/MainContext';
@@ -1576,102 +1577,102 @@ const Sheets = ({
     <div className={`${styles.sheetTabs} ${!activeSheetName ? styles.sheetTabsFullWidth : ''} ${isDarkTheme ? styles.darkTheme : ''}`} ref={sheetTabsRef}>
       {!activeSheetName ? (
         <>
-          {/* Edit button in top right */}
-          <div className={styles.editButtonContainer}>
-            {selectedFolder && (
+          {/* Edit button in top right - only when not in folder */}
+          {!selectedFolder && (
+            <div className={styles.editButtonContainer}>
               <button
-                className={`${styles.editFolderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={() => onOpenFolderModal(selectedFolder, (sheetName) => {
-                  const urlSheetName = sheetName.replace(/ /g, "-");
-                  const newUrl = `/sheets/${urlSheetName}`;
-                  navigate(newUrl);
-                })}
+                className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
+                aria-label="Edit sheets"
               >
-                <div className={styles.iconContainer}>
-                  <FiEdit size={20} />
-                </div>
-                <div className={styles.labelContainer}>
-                  Edit Folder
-                </div>
+                <BsThreeDots size={26} />
               </button>
-            )}
-            <button
-              className={`${styles.editButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
-              aria-label="Edit sheets"
-            >
-              <BsThreeDots size={26} />
-            </button>
-            {isEditDropdownOpen && (
-              <div className={`${styles.editDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                {isBusinessUser && (
-                  <button
-                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => {
-                      onOpenSheetsModal();
-                      setIsEditDropdownOpen(false);
-                    }}
-                  >
-                    <div className={styles.iconContainer}>
-                      <CgArrowsExchangeAlt />
-                    </div>
-                    <div className={styles.labelContainer}>
-                      Re-order
-                    </div>
-                  </button>
-                )}
-                {isBusinessUser && (
-                  <button
-                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => {
-                      onOpenCreateSheetModal();
-                      setIsEditDropdownOpen(false);
-                    }}
-                  >
-                    <div className={styles.iconContainer}>
-                      <FaFileAlt />
-                    </div>
-                    <div className={styles.labelContainer}>
-                      Create Sheet
-                    </div>
-                  </button>
-                )}
-                {isBusinessUser && (
-                  <button
-                    className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-                    onClick={() => {
-                      onOpenCreateFolderModal();
-                      setIsEditDropdownOpen(false);
-                    }}
-                  >
-                    <div className={styles.iconContainer}>
-                      <FaFolder size={10}/>
-                    </div>
-                    <div className={styles.labelContainer}>
-                      Create Folder
-                    </div>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+              {isEditDropdownOpen && (
+                <div className={`${styles.editDropdown} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {isBusinessUser && (
+                    <button
+                      className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => {
+                        onOpenSheetsModal();
+                        setIsEditDropdownOpen(false);
+                      }}
+                    >
+                      <div className={styles.iconContainer}>
+                        <CgArrowsExchangeAlt />
+                      </div>
+                      <div className={styles.labelContainer}>
+                        Re-order
+                      </div>
+                    </button>
+                  )}
+                  {isBusinessUser && (
+                    <button
+                      className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => {
+                        onOpenCreateSheetModal();
+                        setIsEditDropdownOpen(false);
+                      }}
+                    >
+                      <div className={styles.iconContainer}>
+                        <FaFileAlt />
+                      </div>
+                      <div className={styles.labelContainer}>
+                        Create Sheet
+                      </div>
+                    </button>
+                  )}
+                  {isBusinessUser && (
+                    <button
+                      className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => {
+                        onOpenCreateFolderModal();
+                        setIsEditDropdownOpen(false);
+                      }}
+                    >
+                      <div className={styles.iconContainer}>
+                        <FaFolder size={10}/>
+                      </div>
+                      <div className={styles.labelContainer}>
+                        Create Folder
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sheets Section */}
           <div className={`${styles.sheetsSection} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {/* Transparent header when in folder view */}
             {selectedFolder && (
-              <button
-                className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                onClick={() => setSelectedFolder(null)}
-                aria-label="Back to all sheets"
-              >
-                <FaChevronLeft size={20} /> Back
-              </button>
+              <div className={`${styles.folderHeader} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <BackButton
+                  onClick={() => setSelectedFolder(null)}
+                  isDarkTheme={isDarkTheme}
+                  showText={false}
+                  ariaLabel="Back to all sheets"
+                />
+                <div className={`${styles.folderHeaderTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                  {selectedFolder}
+                </div>
+                <button
+                  className={`${styles.editFolderButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                  onClick={() => onOpenFolderModal(selectedFolder, (sheetName) => {
+                    const urlSheetName = sheetName.replace(/ /g, "-");
+                    const newUrl = `/sheets/${urlSheetName}`;
+                    navigate(newUrl);
+                  })}
+                >
+                  <FiEdit size={18} />
+                </button>
+              </div>
             )}
-            <div className={`${styles.sectionTitle} ${selectedFolder ? styles.sectionTitleCentered : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
-              <span>
-                {selectedFolder ? `${selectedFolder} Sheets` : 'All Sheets'}
-              </span>
-            </div>
+            {!selectedFolder && (
+              <div className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                <span>All Sheets</span>
+              </div>
+            )}
             <div className={styles.sheetsGrid}>
               {(() => {
                 if (selectedFolder) {

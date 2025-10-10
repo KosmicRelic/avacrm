@@ -636,7 +636,7 @@
   margin-right: 8px;
   margin-left: auto;
   padding: 4px;
-  background: white;
+  background: rgb(255, 255, 255, 0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-radius: 50px;
@@ -644,7 +644,7 @@
 }
 
 .sheetActions.darkTheme {
-  background: rgb(26, 26, 26);
+  background: rgb(26, 26, 26, 0.8);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.25),
     0 1px 8px rgba(0, 0, 0, 0.15),

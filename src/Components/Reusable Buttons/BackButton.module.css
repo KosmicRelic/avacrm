@@ -1,0 +1,69 @@
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgb(0, 0, 0);
+  background: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 50px;
+  padding: 8px 12px;
+  max-height: 44px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  flex-shrink: 0;
+  width: fit-content;
+}
+
+.backButton:only-child,
+.backButton:has(svg:only-child) {
+  padding: 9px 12px; /* Keep consistent padding even for icon-only */
+  border-radius: 50px; /* Keep rounded but not fully circular */
+}
+
+.backButton.iconOnly {
+  padding: 9px; /* Adjusted padding for 26px icon in 44px total height */
+  border-radius: 50%; /* Perfect circle */
+  justify-content: center;
+  align-items: center;
+  width: 44px; /* Match height for perfect circle */
+  height: 44px; /* Fixed height to match text version */
+}
+
+.backButton.iconOnly svg {
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.backButton:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.backButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: rgb(26, 26, 26);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.backButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.backButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.backButton.darkTheme.iconOnly {
+  background: rgb(26, 26, 26);
+  border-color: rgba(255, 255, 255, 0.06);
+}
