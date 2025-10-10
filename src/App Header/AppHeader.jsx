@@ -9,6 +9,7 @@ import { MdFilterAlt } from 'react-icons/md';
 import { IoSearch } from 'react-icons/io5';
 import { MainContext } from '../Contexts/MainContext';
 import BackButton from '../Components/Reusable Buttons/BackButton';
+import { addDebugLog } from '../Utils/DebugPanel';
 
 export default function AppHeader({ setIsProfileModalOpen, activeOption, setActiveOption, onEditSheet, onFilter }) {
   const { isDarkTheme, user, activeSheetName, setActiveSheetName } = useContext(MainContext);
@@ -66,10 +67,41 @@ export default function AppHeader({ setIsProfileModalOpen, activeOption, setActi
   };
 
   const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
+    setIsMenuOpen((prev) => {
+      const newState = !prev;
+      addDebugLog('AppHeader', 'Menu toggle', {
+        from: prev,
+        to: newState,
+        isMobile,
+        menuDropdownZIndex: '1100 (above modals)'
+      });
+      return newState;
+    });
   };
 
   const isMobile = windowWidth <= 1024;
+
+  // Debug logging for z-index and stacking context
+  useEffect(() => {
+    addDebugLog('AppHeader', 'Component mounted or window resized', {
+      isMobile,
+      windowWidth,
+      activeOption,
+      headerContainerZIndex: '50 (reduced for mobile UI)'
+    });
+  }, [isMobile, windowWidth, activeOption]);
+
+  // Debug logging for rendering
+  useEffect(() => {
+    addDebugLog('AppHeader', 'Component rendered', {
+      isMobile,
+      windowWidth,
+      activeOption,
+      activeSheetName,
+      headerZIndex: '50 (reduced for mobile UI)',
+      bodyZIndex: getComputedStyle(document.body)?.zIndex || 'not set'
+    });
+  });
 
   // Map of options to their icons, labels, and routes
   const navOptions = {

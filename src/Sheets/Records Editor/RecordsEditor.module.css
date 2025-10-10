@@ -27,6 +27,10 @@
   background: rgba(243, 242, 248, 1);
 }
 
+.viewContainer.darkTheme {
+  background: black;
+}
+
 /* Main View */
 .view {
   width: 100%;
@@ -39,6 +43,7 @@
   position: absolute;
   top: 0px;
   left: 0;
+  bottom: 0;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -820,7 +825,8 @@
 
 /* Content Wrapper - Optimized for more data visibility */
 .contentWrapper {
-  flex: 1;
+  /* flex: 1; */
+  height: 100vh;
   min-height: 0;
   padding: 0;
   padding-top: 8px;
@@ -829,6 +835,7 @@
   gap: 4px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  position: relative;
 }
 
 .contentWrapper::-webkit-scrollbar {
@@ -860,6 +867,7 @@
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 /* Section Header - Title area */
@@ -885,7 +893,7 @@
   text-align: left;
   font-size: 18px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: rgb(133, 133, 138);
   margin: 0;
   letter-spacing: -0.016em;
   line-height: 1.2;
@@ -896,7 +904,7 @@
 }
 
 .sectionTitle.darkTheme {
-  color: #ffffff;
+  color: rgb(133, 133, 138);
 }
 
 /* Section Subtitle */
@@ -948,46 +956,73 @@
 
 /* Section Content - Contained within the section container */
 .sectionContent {
-  padding: 20px 24px;
-  border-top: 0.33px solid rgba(0, 0, 0, 0.04);
+  height: fit-content;
+  padding: 0 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateZ(0); /* Hardware acceleration */
+  border-radius: 24px;
+  background: white;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sectionContent.darkTheme {
-  border-color: rgba(255, 255, 255, 0.04);
+  background: rgba(28, 28, 30, 0.9);
+}
+
+/* Basic Information Section Content - Different styling */
+.basicInformationContent {
+  padding: 0 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0); /* Hardware acceleration */
+  border-radius: 24px;
+  background: white;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.basicInformationContent.darkTheme {
+  background: rgba(28, 28, 30);
 }
 
 /* Field Grid Container */
 .fieldGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 8px;
+  /* gap: 8px; */
   width: 100%;
+}
+
+.fieldGrid:last-child{
+  border-bottom: none;
 }
 
 /* Field Item - Modern card-based design */
 .fieldItem {
   display: flex;
-  flex-direction: column;
-  padding: 20px 24px;
-  margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   transform: translateZ(0); /* Hardware acceleration */
   position: relative;
   overflow: hidden;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.fieldItem:last-child {
+  border-bottom: none;
 }
 
 .fieldItem.darkTheme {
-  background: rgba(28, 28, 30, 0.9);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fieldItem.darkTheme:last-child {
+  border-bottom: none;
 }
 
 /* Field Label - Modern typography */
@@ -996,12 +1031,14 @@
   font-size: 14px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 8px 0;
+  margin: 0;
   letter-spacing: -0.016em;
   line-height: 1.2;
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 120px;
+  flex-shrink: 0;
 }
 
 .fieldLabel.darkTheme {
@@ -1011,29 +1048,27 @@
 /* Field Header - Modern layout */
 .fieldHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 /* Field Input - Modern design */
 .fieldInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(255, 255, 255, 0.9);
+  background: transparent;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   -webkit-appearance: none;
   appearance: none;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
   outline: none;
   letter-spacing: -0.01em;
   transform: translateZ(0); /* Hardware acceleration */
@@ -1041,30 +1076,19 @@
 
 .fieldInput:focus {
   border-color: #007aff;
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.06);
   transform: translateY(-1px);
 }
 
 .fieldInput.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .fieldInput.darkTheme:focus {
   border-color: #0a84ff;
-  background: rgba(44, 44, 46, 1);
-  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.25);
-  transform: translateY(-1px);
 }
 
 .fieldInput.darkTheme {
   color: #ffffff;
-  background: rgba(44, 44, 46, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Date and Time Input Styles */
@@ -1265,15 +1289,15 @@
 
 /* Field Select - Modern design */
 .fieldSelect {
-  width: 100%;
-  padding: 12px 16px;
+  flex: 1;
+  padding: 8px 12px;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
+  border-radius: 8px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: #1d1d1f;
-  background: rgba(255, 255, 255, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: rgba(255, 255, 255, 0.9) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center;
   background-size: 12px;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -2295,7 +2319,7 @@
 @media (max-width: 1024px) {
 
   .editorWrapper{
-    padding-top: 64px;
+    /* padding-top: 64px; */
   }
 
   .viewContainer{
@@ -2305,7 +2329,7 @@
   }
 
   .viewContainer.darkTheme{
-    background-color: #1c1c1e;
+     background: black;
   }
 
   .view {
@@ -2332,7 +2356,6 @@
   }
 
   .sectionContent {
-    padding: 12px 16px;
   }
 
   .fieldGrid {
@@ -2817,9 +2840,11 @@
 /* Related Records Section */
 .relatedRecordsList {
   display: flex;
+  bottom: 0px;
+  right: 0px;
+  left: 0px;
   flex-direction: column;
   gap: 16px;
-  padding: 20px 0;
 }
 
 .relatedRecordItem {

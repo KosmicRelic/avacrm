@@ -2184,7 +2184,7 @@ const RecordsEditor = memo(forwardRef(({
                           <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>{section.name}</span>
                         </div>
                       </div>
-                      <div className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                      <div className={`${section.name === 'Basic Information' ? styles.basicInformationContent : styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''}`}>
                         <div className={styles.fieldGrid}>
                           {section.fields.length > 0 ? (
                             section.fields.map((field) => (
@@ -2457,86 +2457,56 @@ const RecordsEditor = memo(forwardRef(({
 
                 {/* Related Records Section - Show for objects with records array that were originally loaded from database */}
                 {view === 'editor' && isObjectMode && !viewingRelatedRecord && wasOriginallyLoaded && formData.records && formData.records.length > 0 && (
-                  <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''} ${expandedSections.relatedRecords ? styles.active : ''}`}>
-                    <button
-                      className={`${styles.sectionButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-                      onClick={() => setExpandedSections(prev => ({ ...prev, relatedRecords: !prev.relatedRecords }))}
-                      aria-expanded={expandedSections.relatedRecords}
-                      aria-controls="related-records-content"
-                    >
-                      <div className={styles.sectionHeader}>
-                        <div className={styles.sectionTextRecords}>
-                          <div className={styles.sectionTitleWithIcon}>
-                            <MdLink size={18} className={`${styles.sectionIcon} ${isDarkTheme ? styles.darkTheme : ''}`} />
-                            <span className={`${styles.sectionTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                              {formData.typeOfObject} Records ({formData.records.length})
-                            </span>
-                          </div>
-                          <span className={`${styles.sectionSubtitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                            Records associated with this {formData.typeOfObject}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={`${styles.chevron} ${expandedSections.relatedRecords ? styles.expanded : ''} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                        <IoMdArrowDropdown />
-                      </div>
-                    </button>
-                    <div
-                      id="related-records-content"
-                      className={`${styles.sectionContent} ${isDarkTheme ? styles.darkTheme : ''} ${
-                        expandedSections.relatedRecords ? styles.expanded : ''
-                      }`}
-                    >
-                      <div className={styles.relatedRecordsList}>
-                        {formData.records.map((recordRef) => {
-                          const isLoading = loadingRecordId === recordRef.docId;
-                          const isCached = !!fetchedRecordsCache[recordRef.docId];
-                          const recordData = fetchedRecordsCache[recordRef.docId];
+                  <div className={`${styles.sectionContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                    <div className={styles.relatedRecordsList}>
+                      {formData.records.map((recordRef) => {
+                        const isLoading = loadingRecordId === recordRef.docId;
+                        const isCached = !!fetchedRecordsCache[recordRef.docId];
+                        const recordData = fetchedRecordsCache[recordRef.docId];
 
-                          return (
-                            <div
-                              key={recordRef.docId}
-                              className={`${styles.relatedRecordItem} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
-                              onClick={() => !isLoading && handleViewRelatedRecord(recordRef)}
-                              style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
-                            >
-                              <div className={styles.relatedRecordInfo}>
-                                <span className={`${styles.relatedRecordType} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                  {recordRef.typeOfRecord}
+                        return (
+                          <div
+                            key={recordRef.docId}
+                            className={`${styles.relatedRecordItem} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
+                            onClick={() => !isLoading && handleViewRelatedRecord(recordRef)}
+                            style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
+                          >
+                            <div className={styles.relatedRecordInfo}>
+                              <span className={`${styles.relatedRecordType} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                {recordRef.typeOfRecord}
+                              </span>
+                              {isCached && recordData?.assignedTo && (
+                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Assigned to: {getTeamMemberName(recordData.assignedTo)}
                                 </span>
-                                {isCached && recordData?.assignedTo && (
-                                  <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                    Assigned to: {getTeamMemberName(recordData.assignedTo)}
-                                  </span>
-                                )}
-                                {isCached && recordData?.status && (
-                                  <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                    Status: {recordData.status}
-                                  </span>
-                                )}
-                                {isLoading && (
-                                  <span className={`${styles.relatedRecordDetail} ${styles.loadingText} ${isDarkTheme ? styles.darkTheme : ''}`}>
-                                    Loading...
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isLoading) {
-                                    handleViewRelatedRecord(recordRef);
-                                  }
-                                }}
-                                disabled={isLoading}
-                              >
-                                {isLoading ? 'Loading...' : 'View'}
-                              </button>
+                              )}
+                              {isCached && recordData?.status && (
+                                <span className={`${styles.relatedRecordDetail} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Status: {recordData.status}
+                                </span>
+                              )}
+                              {isLoading && (
+                                <span className={`${styles.relatedRecordDetail} ${styles.loadingText} ${isDarkTheme ? styles.darkTheme : ''}`}>
+                                  Loading...
+                                </span>
+                              )}
                             </div>
-                          );
-                        })}
-                      </div>
+                            <button
+                              type="button"
+                              className={`${styles.relatedRecordViewButton} ${isDarkTheme ? styles.darkTheme : ''} ${isLoading ? styles.loading : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isLoading) {
+                                  handleViewRelatedRecord(recordRef);
+                                }
+                              }}
+                              disabled={isLoading}
+                            >
+                              {isLoading ? 'Loading...' : 'View'}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
