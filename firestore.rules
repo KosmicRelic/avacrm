@@ -27,7 +27,7 @@ service cloud.firestore {
     match /invitations/{invitationId} {
       allow read, delete: if isAuthenticated() && resource.data.invitedBy == request.auth.uid;
       allow read: if isAuthenticated() &&
-                    resource.data.email.toLowerCase() == request.auth.token.email.toLowerCase() &&
+                    resource.data.email == request.auth.token.email &&
                     resource.data.status == 'pending';
       allow create: if isAuthenticated();
       allow update: if false;
@@ -57,16 +57,6 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId);
       }
 
-      // Sheets: Allow read for viewers/editors, write for editors
-      match /sheets/{sheetId} {
-        allow read: if isBusinessOwner(businessId) ||
-                      (isTeamMember(businessId) &&
-                       getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
-        allow write: if isBusinessOwner(businessId) ||
-                       (isTeamMember(businessId) &&
-                        getTeamMemberPermissions(businessId).sheets.role == 'editor');
-      }
-
       // SheetsStructure: Allow read for viewers/editors, write for editors
       match /sheetsStructure/{structureId} {
         allow read: if isBusinessOwner(businessId) ||
@@ -77,6 +67,36 @@ service cloud.firestore {
                         getTeamMemberPermissions(businessId).sheets.role == 'editor');
       }
 
+      // Sheets with subcollections: Allow read for viewers/editors, write for editors
+      match /sheets/{sheetId} {
+        allow read: if isBusinessOwner(businessId) ||
+                      (isTeamMember(businessId) &&
+                       getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+        allow write: if isBusinessOwner(businessId) ||
+                       (isTeamMember(businessId) &&
+                        getTeamMemberPermissions(businessId).sheets.role == 'editor');
+
+        // Records subcollection under sheets
+        match /records/{recordId} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).sheets.role == 'editor');
+        }
+
+        // Allow access to any other subcollections under sheets
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).sheets.role == 'editor');
+        }
+      }
+
       // Records: Allow read for viewers/editors, write for editors
       match /records/{recordId} {
         allow read: if isBusinessOwner(businessId) ||
@@ -85,6 +105,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).sheets.role == 'editor');
+
+        // Allow access to any subcollections under records
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).sheets.role == 'editor');
+        }
       }
 
       // Objects: Allow read for viewers/editors, write for editors
@@ -95,6 +125,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).sheets.role == 'editor');
+
+        // Allow access to any subcollections under objects
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).sheets.role == 'editor');
+        }
       }
 
       // RecordTemplates: Allow read for viewers/editors, write for owner only
@@ -103,6 +143,14 @@ service cloud.firestore {
                       (isTeamMember(businessId) &&
                        getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
         allow write: if isBusinessOwner(businessId);
+
+        // Allow access to any subcollections under recordTemplates
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId);
+        }
       }
 
       // TemplateObjects: Allow read for viewers/editors, write for owner only
@@ -111,6 +159,14 @@ service cloud.firestore {
                       (isTeamMember(businessId) &&
                        getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
         allow write: if isBusinessOwner(businessId);
+
+        // Allow access to any subcollections under templateObjects
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).sheets.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId);
+        }
       }
 
       // Dashboards: Allow read for viewers/editors, write for editors
@@ -121,6 +177,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).dashboard.role == 'editor');
+
+        // Allow access to any subcollections under dashboards
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).dashboard.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).dashboard.role == 'editor');
+        }
       }
 
       // Metrics: Allow read for viewers/editors, write for editors
@@ -131,6 +197,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).metrics.role == 'editor');
+
+        // Allow access to any subcollections under metrics
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).metrics.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).metrics.role == 'editor');
+        }
       }
 
       // Actions: Allow read for viewers/editors, write for editors
@@ -141,6 +217,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).actions.role == 'editor');
+
+        // Allow access to any subcollections under actions
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).actions.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).actions.role == 'editor');
+        }
       }
 
       // Workflows: Allow read for viewers/editors, write for editors
@@ -151,6 +237,26 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).workflows.role == 'editor');
+
+        // Workflow config subcollection
+        match /config/{configId} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).workflows.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).workflows.role == 'editor');
+        }
+
+        // Allow access to any other subcollections under workflows
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).workflows.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).workflows.role == 'editor');
+        }
       }
 
       // Financials: Allow read for viewers/editors, write for editors
@@ -161,6 +267,16 @@ service cloud.firestore {
         allow write: if isBusinessOwner(businessId) ||
                        (isTeamMember(businessId) &&
                         getTeamMemberPermissions(businessId).financials.role == 'editor');
+
+        // Allow access to any subcollections under financials
+        match /{document=**} {
+          allow read: if isBusinessOwner(businessId) ||
+                        (isTeamMember(businessId) &&
+                         getTeamMemberPermissions(businessId).financials.role in ['viewer', 'editor']);
+          allow write: if isBusinessOwner(businessId) ||
+                         (isTeamMember(businessId) &&
+                          getTeamMemberPermissions(businessId).financials.role == 'editor');
+        }
       }
     }
   }

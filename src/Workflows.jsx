@@ -3,6 +3,7 @@ import { MainContext } from './Contexts/MainContext';
 import { collection, doc, setDoc, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import BackButton from './Components/Reusable Buttons/BackButton';
+import WorkflowBuilder from './Workflows/WorkflowBuilder/WorkflowBuilder';
 import styles from './Workflows.module.css';
 
 const Workflows = () => {
@@ -48,9 +49,9 @@ const Workflows = () => {
     return () => unsubscribe();
   }, [businessId, user?.uid]);
 
-  // Hide app header when workflow editor is open (mobile)
+  // Hide app header when workflow is selected (mobile)
   useEffect(() => {
-    if (showWorkflowEditor) {
+    if (selectedWorkflow) {
       document.body.classList.add('workflow-editor-open');
     } else {
       document.body.classList.remove('workflow-editor-open');
@@ -59,7 +60,7 @@ const Workflows = () => {
     return () => {
       document.body.classList.remove('workflow-editor-open');
     };
-  }, [showWorkflowEditor]);
+  }, [selectedWorkflow]);
 
   // Handle workflow selection
   const handleWorkflowClick = (workflow) => {
@@ -84,6 +85,7 @@ const Workflows = () => {
         try {
           const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const workflowData = {
+            workflowId: workflowId, // Store the ID for webhook lookups
             name: workflowName.trim(),
             createdBy: user.uid,
             createdAt: Timestamp.now(),
@@ -194,7 +196,7 @@ const Workflows = () => {
     <div className={`${styles.workflowsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
       {/* Back button when workflow is selected */}
       {selectedWorkflow && (
-        <div className={styles.backButtonContainer}>
+        <div className={styles.workflowHeader}>
           <BackButton 
             onClick={handleBackToWorkflows} 
             isDarkTheme={isDarkTheme}
@@ -202,6 +204,9 @@ const Workflows = () => {
           >
             <span>Workflows</span>
           </BackButton>
+          <h2 className={`${styles.workflowTitle} ${isDarkTheme ? styles.darkTheme : ''}`}>
+            {selectedWorkflow.name}
+          </h2>
         </div>
       )}
 
@@ -235,13 +240,10 @@ const Workflows = () => {
 
       {/* Show workflow editor when one is selected */}
       {showWorkflowEditor && selectedWorkflow && (
-        <div className={`${styles.workflowEditor} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <div className={styles.workflowEditorContent}>
-            <h2>{selectedWorkflow.name}</h2>
-            <p>Status: {selectedWorkflow.status}</p>
-            {/* TODO: Add workflow configuration UI here */}
-          </div>
-        </div>
+        <WorkflowBuilder 
+          workflow={selectedWorkflow} 
+          onBack={handleBackToWorkflows}
+        />
       )}
 
       {/* Show the select message and create button only when no workflow is selected */}
@@ -263,6 +265,7 @@ const Workflows = () => {
       )}
 
       <WorkflowNameModal />
+      
     </div>
   );
 };

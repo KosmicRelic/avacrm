@@ -1074,3 +1074,596 @@ exports.createNewRecord = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+exports.submitFormData = functions.https.onRequest((req, res) => {
+  corsAllOrigins(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      return res.status(204).send('');
+    }
+
+    try {
+      // Initialize variables at function scope
+      const createdObjects = [];
+      
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+
+      // Get workflowId from query parameters
+      const workflowId = req.query.workflowId;
+      if (!workflowId) {
+        return res.status(400).json({ error: 'Missing workflowId query parameter' });
+      }
+
+      let body;
+      if (req.get('Content-Type') === 'application/json') {
+        try {
+          body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        } catch (error) {
+          return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+      } else {
+        return res.status(400).json({ error: 'Content-Type must be application/json' });
+      }
+
+      const formData = body || {};
+      functions.logger.info('submitFormData called', {
+        workflowId,
+        formDataKeys: Object.keys(formData),
+        method: req.method,
+        headers: req.headers
+      });
+
+      // Load workflow configuration
+      // First, find the business that contains this workflow
+      const businessesRef = db.collection('businesses');
+      const businessesSnapshot = await businessesRef.get();
+      
+      let workflowDoc = null;
+      let businessId = null;
+      
+      // Search through all businesses to find the workflow
+      for (const businessDoc of businessesSnapshot.docs) {
+        const workflowRef = businessDoc.ref.collection('workflows').doc(workflowId);
+        const doc = await workflowRef.get();
+        if (doc.exists) {
+          workflowDoc = doc;
+          businessId = businessDoc.id;
+          break;
+        }
+      }
+      
+      if (!workflowDoc) {
+        functions.logger.error('Workflow not found in any business', { workflowId });
+        return res.status(404).json({ error: 'Workflow not found' });
+      }
+
+      // Load the config from the subcollection
+      const configRef = workflowDoc.ref.collection('config').doc('main');
+      const configDoc = await configRef.get();
+      
+      let workflowConfig = workflowDoc.data();
+      if (configDoc.exists) {
+        workflowConfig = { ...workflowConfig, ...configDoc.data() };
+      }
+
+      functions.logger.info('Loaded workflow config', {
+        workflowId,
+        businessId,
+        hasMapping: !!workflowConfig.mapping,
+        hasNotifications: !!workflowConfig.notifications,
+        hasAutoActions: !!workflowConfig.autoActions
+      });
+
+      // Process the workflow configuration
+      const createdRecords = [];
+      const batch = db.batch();
+
+      // Check if we have mapping configuration
+      if (!workflowConfig.mapping || !workflowConfig.mapping.objectType || !workflowConfig.mapping.fieldMappings) {
+        functions.logger.error('Invalid workflow configuration: missing mapping', { 
+          workflowId,
+          hasMapping: !!workflowConfig.mapping,
+          hasObjectType: !!(workflowConfig.mapping?.objectType),
+          hasFieldMappings: !!(workflowConfig.mapping?.fieldMappings),
+          fieldMappingsLength: workflowConfig.mapping?.fieldMappings?.length || 0
+        });
+        return res.status(400).json({ 
+          error: 'Workflow configuration is incomplete. Please save your workflow configuration in the Workflow Builder before testing.' 
+        });
+      }
+
+      const { objectType, fieldMappings } = workflowConfig.mapping;
+
+      functions.logger.info('Processing workflow mapping', {
+        objectType,
+        fieldMappingsCount: fieldMappings.length
+      });
+
+      // Separate basicFields (for object) and all fields (for record)
+      const objectFields = {}; // UUID keys for object
+      const recordFields = {}; // UUID keys for record
+      const objectHistory = [];
+      const recordHistory = [];
+      const now = admin.firestore.Timestamp.now();
+
+      // Process field mappings
+      for (const mapping of fieldMappings) {
+        const { formField, crmField, required } = mapping;
+
+        let value = formData[formField];
+
+        // Check required fields
+        if (required && (value === undefined || value === null || value === '')) {
+          functions.logger.error('Missing required field', { formField, crmField });
+          return res.status(400).json({
+            error: `Missing required field: ${formField}`
+          });
+        }
+
+        // Basic type conversion
+        if (value !== undefined && value !== null && value !== '') {
+          // Try to convert numbers
+          if (!isNaN(value) && value !== '') {
+            value = Number(value);
+          }
+          // Convert boolean strings
+          else if (value === 'true') value = true;
+          else if (value === 'false') value = false;
+        }
+
+        // Skip if crmField is empty or invalid
+        if (!crmField || crmField.trim() === '') {
+          functions.logger.warn('Skipping mapping with empty crmField', { formField, crmField });
+          continue;
+        }
+
+        // Extract UUID from crmField (remove basicFields. or templateFields. prefix)
+        let fieldUuid = '';
+        
+        if (crmField.startsWith('basicFields.')) {
+          fieldUuid = crmField.replace('basicFields.', '');
+          
+          // Validate UUID is not empty
+          if (!fieldUuid || fieldUuid.trim() === '') {
+            functions.logger.warn('Skipping basicField with empty UUID', { formField, crmField });
+            continue;
+          }
+          
+          // BasicFields go in BOTH object and record (UUID only)
+          objectFields[fieldUuid] = value;
+          recordFields[fieldUuid] = value;
+          
+          // Add to histories (UUID only, no prefix)
+          objectHistory.push({
+            field: fieldUuid,
+            value: value,
+            timestamp: now,
+            modifiedBy: businessId,
+            isObject: true
+          });
+          
+          recordHistory.push({
+            field: fieldUuid,
+            value: value,
+            timestamp: now,
+            modifiedBy: businessId
+          });
+        } else if (crmField.startsWith('templateFields.')) {
+          fieldUuid = crmField.replace('templateFields.', '');
+          
+          // Validate UUID is not empty
+          if (!fieldUuid || fieldUuid.trim() === '') {
+            functions.logger.warn('Skipping templateField with empty UUID', { formField, crmField });
+            continue;
+          }
+          
+          // Template fields only go in records (UUID only)
+          recordFields[fieldUuid] = value;
+          
+          recordHistory.push({
+            field: fieldUuid,
+            value: value,
+            timestamp: now,
+            modifiedBy: businessId
+          });
+        } else {
+          // Invalid format - skip this field
+          functions.logger.warn('Skipping field with invalid format (missing prefix)', { 
+            formField, 
+            crmField 
+          });
+          continue;
+        }
+      }
+
+      // Determine object name from first basicField value or fallback
+      const firstBasicFieldValue = Object.values(objectFields)[0];
+      const objectName = firstBasicFieldValue || `${objectType} Record`;
+      
+      // Check if an object instance already exists for this entity
+      const objectsRef = db.collection('businesses').doc(businessId).collection('objects');
+      let existingObjectQuery;
+      
+      // Try to find existing object by email (best) or name
+      const emailFieldUuid = Object.keys(objectFields).find(uuid => 
+        formData[fieldMappings.find(m => m.crmField === `basicFields.${uuid}`)?.formField]?.includes('@')
+      );
+      
+      if (emailFieldUuid && objectFields[emailFieldUuid]) {
+        existingObjectQuery = await objectsRef
+          .where('typeOfObject', '==', objectType)
+          .where(emailFieldUuid, '==', objectFields[emailFieldUuid])
+          .get();
+      } else {
+        // Try to match by first field value
+        const firstFieldUuid = Object.keys(objectFields)[0];
+        if (firstFieldUuid) {
+          existingObjectQuery = await objectsRef
+            .where('typeOfObject', '==', objectType)
+            .where(firstFieldUuid, '==', objectFields[firstFieldUuid])
+            .get();
+        }
+      }
+      
+      let objectId;
+      let linkId;
+      
+      if (existingObjectQuery && !existingObjectQuery.empty) {
+        // Use existing object instance
+        const existingObject = existingObjectQuery.docs[0];
+        objectId = existingObject.id;
+        linkId = existingObject.data().linkId;
+        
+        functions.logger.info('Using existing object instance', {
+          objectId,
+          linkId
+        });
+      } else {
+        // Create new object instance with proper structure
+        objectId = `object_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        linkId = objectId; // For objects, linkId is the same as docId
+        
+        const objectData = {
+          docId: objectId,
+          linkId: linkId,
+          typeOfObject: objectType,
+          isObject: true,
+          records: [], // Will be populated with record references
+          history: objectHistory,
+          lastModifiedBy: businessId,
+          assignedTo: formData.assignedTo || '',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          // Add lastModified as ISO string (app uses this)
+          lastModified: new Date().toISOString(),
+          // Spread object fields with UUID keys
+          ...objectFields
+        };
+        
+        await objectsRef.doc(objectId).set(objectData);
+        
+        createdObjects.push({
+          objectId,
+          objectType,
+          linkId
+        });
+        
+        functions.logger.info('Created new object instance', {
+          objectId,
+          linkId,
+          objectType,
+          objectFields: Object.keys(objectFields)
+        });
+      }
+      
+      // Get the selected template to determine typeOfRecord
+      let typeOfRecord = objectType; // Default to objectType
+      
+      if (workflowConfig.mapping.templateId) {
+        // Load the templateObject to get the template
+        const templateObjectsRef = db.collection('businesses').doc(businessId).collection('templateObjects');
+        const templateObjectQuery = await templateObjectsRef.where('name', '==', objectType).get();
+        
+        if (!templateObjectQuery.empty) {
+          const templateObject = templateObjectQuery.docs[0].data();
+          const selectedTemplate = templateObject.templates?.find(t => t.docId === workflowConfig.mapping.templateId);
+          
+          if (selectedTemplate && selectedTemplate.name) {
+            typeOfRecord = selectedTemplate.name;
+            
+            functions.logger.info('Found template', {
+              templateId: workflowConfig.mapping.templateId,
+              templateName: selectedTemplate.name,
+              typeOfRecord: typeOfRecord
+            });
+          } else {
+            functions.logger.warn('Template not found in templateObject', {
+              templateId: workflowConfig.mapping.templateId,
+              availableTemplates: templateObject.templates?.map(t => ({ docId: t.docId, name: t.name }))
+            });
+          }
+        } else {
+          functions.logger.warn('TemplateObject not found', { objectType });
+        }
+      } else {
+        functions.logger.warn('No templateId in workflow config', { 
+          mapping: workflowConfig.mapping 
+        });
+      }
+      
+      // Now create the record linked to this object
+      const recordId = `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const recordData = {
+        docId: recordId,
+        linkId: linkId, // Links record to its parent object
+        typeOfRecord: typeOfRecord,
+        typeOfObject: objectType,
+        assignedTo: formData.assignedTo || '',
+        lastModifiedBy: businessId,
+        isObject: false,
+        history: recordHistory,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        // Spread record fields with UUID keys
+        ...recordFields
+      };
+
+      // Create the record in the appropriate sheet collection
+      const recordRef = db.collection('businesses')
+        .doc(businessId)
+        .collection('records')
+        .doc(recordId);
+
+      batch.set(recordRef, recordData);
+
+      createdRecords.push({
+        recordId: recordId,
+        objectType,
+        typeOfRecord: typeOfRecord,
+        data: recordData,
+        linkId: linkId
+      });
+
+      functions.logger.info('Prepared record for creation', {
+        recordId: recordRef.id,
+        objectType,
+        typeOfRecord: typeOfRecord,
+        fieldCount: Object.keys(recordData).length
+      });
+
+      // Commit all record creations
+      if (createdRecords.length > 0) {
+        await batch.commit();
+        functions.logger.info('Records created successfully', {
+          count: createdRecords.length,
+          recordIds: createdRecords.map(r => r.recordId)
+        });
+
+        // Check if templateObjects exist for each objectType and create them if they don't
+        const uniqueObjectTypes = [...new Set(createdRecords.map(r => r.objectType))];
+        
+        for (const objectType of uniqueObjectTypes) {
+          if (!objectType) continue;
+          
+          try {
+            // Check if templateObject already exists
+            const templateObjectsRef = db.collection('businesses').doc(businessId).collection('templateObjects');
+            const existingObjectQuery = await templateObjectsRef.where('name', '==', objectType).get();
+            
+            if (existingObjectQuery.empty) {
+              // Create new templateObject with comprehensive basic fields
+              const newObjectData = {
+                name: objectType,
+                basicFields: [
+                  {
+                    key: 'name',
+                    name: 'Name',
+                    type: 'text',
+                    required: true,
+                    section: 'Basic Information'
+                  },
+                  {
+                    key: 'description',
+                    name: 'Description',
+                    type: 'textarea',
+                    required: false,
+                    section: 'Basic Information'
+                  },
+                  {
+                    key: 'email',
+                    name: 'Email',
+                    type: 'email',
+                    required: false,
+                    section: 'Contact Information'
+                  },
+                  {
+                    key: 'phone',
+                    name: 'Phone',
+                    type: 'text',
+                    required: false,
+                    section: 'Contact Information'
+                  },
+                  {
+                    key: 'status',
+                    name: 'Status',
+                    type: 'select',
+                    required: false,
+                    section: 'Status & Priority',
+                    options: ['New', 'In Progress', 'Completed', 'On Hold']
+                  },
+                  {
+                    key: 'priority',
+                    name: 'Priority',
+                    type: 'select',
+                    required: false,
+                    section: 'Status & Priority',
+                    options: ['Low', 'Medium', 'High', 'Urgent']
+                  },
+                  {
+                    key: 'assignedTo',
+                    name: 'Assigned To',
+                    type: 'text',
+                    required: false,
+                    section: 'Assignment'
+                  },
+                  {
+                    key: 'createdAt',
+                    name: 'Created Date',
+                    type: 'date',
+                    required: false,
+                    section: 'System Fields'
+                  },
+                  {
+                    key: 'updatedAt',
+                    name: 'Last Updated',
+                    type: 'date',
+                    required: false,
+                    section: 'System Fields'
+                  }
+                ],
+                templates: [],
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+              };
+              
+              const newObjectRef = templateObjectsRef.doc();
+              await newObjectRef.set(newObjectData);
+              
+              functions.logger.info('Created new templateObject', {
+                objectType,
+                objectId: newObjectRef.id,
+                businessId,
+                basicFieldsCount: newObjectData.basicFields.length
+              });
+            } else {
+              functions.logger.info('TemplateObject already exists', {
+                objectType,
+                existingCount: existingObjectQuery.size
+              });
+            }
+          } catch (objectError) {
+            functions.logger.error('Failed to check/create templateObject', {
+              objectType,
+              businessId,
+              error: objectError.message
+            });
+            // Don't fail the entire request for this
+          }
+        }
+
+        // Update the object's records array to include the new record
+        for (const recordInfo of createdRecords) {
+          try {
+            const { recordId, linkId, objectType, typeOfRecord } = recordInfo;
+            
+            // Find the object by linkId
+            const objectRef = db.collection('businesses').doc(businessId).collection('objects').doc(linkId);
+            const objectDoc = await objectRef.get();
+            
+            if (objectDoc.exists) {
+              const currentRecords = objectDoc.data().records || [];
+              const recordExists = currentRecords.some(r => r.docId === recordId);
+              
+              if (!recordExists) {
+                await objectRef.update({
+                  records: [...currentRecords, {
+                    docId: recordId,
+                    typeOfRecord: typeOfRecord
+                  }],
+                  updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+                
+                functions.logger.info('Added record reference to object', {
+                  objectId: linkId,
+                  recordId,
+                  recordType: typeOfRecord
+                });
+              }
+            }
+          } catch (linkError) {
+            functions.logger.error('Failed to link record to object', {
+              recordId: recordInfo.recordId,
+              linkId: recordInfo.linkId,
+              error: linkError.message
+            });
+            // Don't fail the entire request for this
+          }
+        }
+
+        // Log summary of created objects
+        if (createdObjects.length > 0) {
+          functions.logger.info('Objects created successfully', {
+            count: createdObjects.length,
+            objects: createdObjects
+          });
+        }
+      }
+
+      // Handle notifications
+      if (workflowConfig.notifications && workflowConfig.notifications.emailOnSubmission && workflowConfig.notifications.emailsToNotify && workflowConfig.notifications.emailsToNotify.length > 0) {
+        const notificationPromises = workflowConfig.notifications.emailsToNotify.map(async (email) => {
+          try {
+            const subject = 'New Form Submission';
+            const message = `A new form has been submitted with ${createdRecords.length} record(s) created.`;
+
+            await resend.emails.send({
+              from: 'Form Submissions <invitations@apx.gr>',
+              to: email,
+              subject: subject,
+              html: `<h1>${subject}</h1><p>${message}</p><p>Records created: ${createdRecords.length}</p>`
+            });
+
+            functions.logger.info('Notification sent', { email });
+          } catch (emailError) {
+            functions.logger.error('Failed to send notification', {
+              email,
+              error: emailError.message
+            });
+          }
+        });
+
+        await Promise.all(notificationPromises);
+      }
+
+      // Handle auto-actions (basic implementation - can be extended)
+      if (workflowConfig.autoActions && workflowConfig.autoActions.assignToUser) {
+        functions.logger.info('Processing auto-actions', {
+          assignToUser: workflowConfig.autoActions.assignToUser
+        });
+
+        // This is a placeholder for auto-action processing
+        // Could include things like:
+        // - Creating follow-up tasks
+        // - Triggering other workflows
+        // - Updating related records
+        // - Sending automated responses
+
+        functions.logger.info('Auto-action: assign to user', { 
+          userId: workflowConfig.autoActions.assignToUser 
+        });
+        // Implement specific auto-action logic here
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `Form submitted successfully. Created ${createdRecords.length} record(s) and ${createdObjects.length} object(s).`,
+        recordsCreated: createdRecords.length,
+        objectsCreated: createdObjects.length,
+        recordIds: createdRecords.map(r => r.recordId),
+        objectIds: createdObjects.map(o => o.objectId)
+      });
+
+    } catch (error) {
+      functions.logger.error('submitFormData failed', {
+        error: error.message,
+        stack: error.stack,
+        workflowId: req.query.workflowId
+      });
+      return res.status(500).json({
+        error: `Failed to submit form: ${error.message}`
+      });
+    }
+  });
+});
