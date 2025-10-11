@@ -866,3 +866,12 @@
     transition: opacity 0.3s ease;
   }
 }
+
+/* Hide header when Workflow editor is open in mobile */
+@media (max-width: 1024px) {
+  :global(body.workflow-editor-open) .headerContainer {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease;
+  }
+}

@@ -143,6 +143,16 @@ service cloud.firestore {
                         getTeamMemberPermissions(businessId).actions.role == 'editor');
       }
 
+      // Workflows: Allow read for viewers/editors, write for editors
+      match /workflows/{workflowId} {
+        allow read: if isBusinessOwner(businessId) ||
+                      (isTeamMember(businessId) &&
+                       getTeamMemberPermissions(businessId).workflows.role in ['viewer', 'editor']);
+        allow write: if isBusinessOwner(businessId) ||
+                       (isTeamMember(businessId) &&
+                        getTeamMemberPermissions(businessId).workflows.role == 'editor');
+      }
+
       // Financials: Allow read for viewers/editors, write for editors
       match /financials/{financialId} {
         allow read: if isBusinessOwner(businessId) ||
