@@ -240,10 +240,12 @@ const Workflows = () => {
 
       {/* Show workflow editor when one is selected */}
       {showWorkflowEditor && selectedWorkflow && (
-        <WorkflowBuilder 
-          workflow={selectedWorkflow} 
-          onBack={handleBackToWorkflows}
-        />
+        <div className={`${styles.workflowProcessContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+          <WorkflowBuilder 
+            workflow={selectedWorkflow} 
+            onBack={handleBackToWorkflows}
+          />
+        </div>
       )}
 
       {/* Show the select message and create button only when no workflow is selected */}

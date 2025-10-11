@@ -4,6 +4,7 @@ import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { IoAdd, IoTrash, IoCopy, IoCheckmark, IoChevronDown } from 'react-icons/io5';
 import { addDebugLog } from '../../Utils/DebugPanel';
+import BackButton from '../../Components/Reusable Buttons/BackButton';
 import styles from './WorkflowBuilder.module.css';
 import PropTypes from 'prop-types';
 
@@ -174,20 +175,19 @@ const WorkflowBuilder = ({ workflow, onBack }) => {
     loadConfig();
   }, [workflow, businessId]);
 
-  // Debug: Log config changes
+  // Warn user about unsaved changes when navigating away
   useEffect(() => {
-    addDebugLog('WorkflowBuilder', 'Config state changed', {
-      configKeys: Object.keys(config),
-      mapping: {
-        objectId: config.mapping?.objectId,
-        fieldMappingsCount: config.mapping?.fieldMappings?.length || 0
-      },
-      notifications: {
-        emailOnSubmission: config.notifications?.emailOnSubmission,
-        emailsCount: config.notifications?.emailsToNotify?.length || 0
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
       }
-    });
-  }, [config]);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Save workflow configuration
   const saveConfig = async () => {
@@ -591,27 +591,48 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
 
   return (
     <div className={`${styles.container} ${isDarkTheme ? styles.darkTheme : ''}`}>
-      {/* Progress Steps */}
-      <div className={styles.stepsContainer}>
-        <div className={`${styles.step} ${currentStep >= 1 ? styles.active : ''}`}>
-          <div className={styles.stepNumber}>1</div>
-          <div className={styles.stepLabel}>Choose Object</div>
+      {/* Progress Steps with Back Button */}
+      <div className={`${styles.stepsContainer} ${isDarkTheme ? styles.darkTheme : ''}`}>
+        <BackButton
+          isDarkTheme={isDarkTheme}
+          onClick={() => {
+            if (hasUnsavedChanges && !confirm('You have unsaved changes. Are you sure you want to go back? Your changes will be lost.')) {
+              return;
+            }
+            if (currentStep > 1) {
+              setCurrentStep(currentStep - 1);
+            } else {
+              onBack();
+            }
+          }}
+          showText={false}
+          iconSize={20}
+          className={styles.topBackButton}
+        />
+        <div className={styles.stepsWrapper}>
+          <div className={`${styles.step} ${currentStep >= 1 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>1</div>
+            <div className={styles.stepLabel}>Choose Object</div>
+          </div>
+          <div className={`${styles.step} ${currentStep >= 2 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>2</div>
+            <div className={styles.stepLabel}>Choose Template</div>
+          </div>
+          <div className={`${styles.step} ${currentStep >= 3 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>3</div>
+            <div className={styles.stepLabel}>Map Fields</div>
+          </div>
+          <div className={`${styles.step} ${currentStep >= 4 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>4</div>
+            <div className={styles.stepLabel}>Get Webhook</div>
+          </div>
         </div>
-        <div className={styles.stepLine}></div>
-        <div className={`${styles.step} ${currentStep >= 2 ? styles.active : ''}`}>
-          <div className={styles.stepNumber}>2</div>
-          <div className={styles.stepLabel}>Choose Template</div>
-        </div>
-        <div className={styles.stepLine}></div>
-        <div className={`${styles.step} ${currentStep >= 3 ? styles.active : ''}`}>
-          <div className={styles.stepNumber}>3</div>
-          <div className={styles.stepLabel}>Map Fields</div>
-        </div>
-        <div className={styles.stepLine}></div>
-        <div className={`${styles.step} ${currentStep >= 4 ? styles.active : ''}`}>
-          <div className={styles.stepNumber}>4</div>
-          <div className={styles.stepLabel}>Get Webhook</div>
-        </div>
+        {hasUnsavedChanges && (
+          <div className={styles.unsavedIndicator}>
+            <span className={styles.unsavedDot}></span>
+            Unsaved changes
+          </div>
+        )}
       </div>
 
       {/* Step 1: Object Selection */}
@@ -661,12 +682,6 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
               </button>
             ))}
           </div>
-          <button
-            className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={() => setCurrentStep(1)}
-          >
-            ← Back
-          </button>
         </div>
       )}
 
@@ -689,7 +704,7 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
                     onChange={(e) => updateFieldMapping(index, 'formField', e.target.value)}
                     className={`${styles.input} ${isDarkTheme ? styles.darkTheme : ''}`}
                   />
-                  <span className={styles.arrow}>→</span>
+                  <span className={`${styles.arrow} ${isDarkTheme ? styles.darkTheme : ''}`}>→</span>
                   <select
                     value={mapping.crmField}
                     onChange={(e) => updateFieldMapping(index, 'crmField', e.target.value)}
@@ -765,13 +780,7 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
             )}
           </div>
 
-          <div className={styles.buttonRow}>
-            <button
-              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={() => setCurrentStep(2)}
-            >
-              ← Back
-            </button>
+          <div className={styles.centeredButtonRow}>
             <button
               className={`${styles.nextButton} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={() => setCurrentStep(4)}
@@ -816,7 +825,7 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
                   <div key={index} className={styles.formField}>
                     <label className={styles.fieldLabel}>
                       {mapping.formField}
-                      {mapping.required && <span className={styles.required}>*</span>}
+                      {mapping.required && <span className={`${styles.required} ${isDarkTheme ? styles.darkTheme : ''}`}>*</span>}
                     </label>
                     {fieldType === 'textarea' ? (
                       <textarea
@@ -915,13 +924,7 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
             </pre>
           </details>
 
-          <div className={styles.buttonRow}>
-            <button
-              className={`${styles.backButton} ${isDarkTheme ? styles.darkTheme : ''}`}
-              onClick={() => setCurrentStep(3)}
-            >
-              ← Back
-            </button>
+          <div className={styles.centeredButtonRow}>
             <button
               className={`${styles.saveButton} ${isDarkTheme ? styles.darkTheme : ''}`}
               onClick={saveConfig}

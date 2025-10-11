@@ -673,6 +673,10 @@
   margin-left: 4px;
 }
 
+.required.darkTheme {
+  color: #ff6b6b;
+}
+
 .testButton {
   background: #007bff;
   color: white;
@@ -886,4 +890,691 @@
 .codeBlock.darkTheme {
   background: var(--background-secondary-dark);
   border-color: var(--border-color-dark);
+}
+
+/* Apple-style Step Progress Indicator */
+.stepsContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 0 20px;
+  position: relative;
+}
+
+.stepsWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.topBackButton {
+  flex-shrink: 0;
+}
+
+.unsavedIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ff6b35;
+  margin-left: auto;
+  margin-right: 20px;
+}
+
+.unsavedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff6b35;
+  animation: pulse-unsaved 2s infinite;
+}
+
+.unsavedIndicator.darkTheme {
+  color: #ff8c42;
+}
+
+.unsavedIndicator.darkTheme .unsavedDot {
+  background: #ff8c42;
+}
+
+@keyframes pulse-unsaved {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 80px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 2;
+}
+
+.stepNumber {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  background: rgba(142, 142, 147, 0.12);
+  color: rgba(142, 142, 147, 0.8);
+  border: 2px solid rgba(142, 142, 147, 0.2);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+}
+
+.step.active .stepNumber {
+  background: #007aff;
+  color: white;
+  border-color: #007aff;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.step.active .stepNumber::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(0, 122, 255, 0.1);
+  z-index: -1;
+  animation: pulse 2s infinite;
+}
+
+.stepLabel {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: rgba(142, 142, 147, 0.8);
+  text-align: center;
+  line-height: 1.2;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+}
+
+.step.active .stepLabel {
+  color: #007aff;
+  font-weight: 600;
+}
+
+/* Remove individual step lines since we have a container-wide line */
+.stepLine {
+  display: none;
+}
+
+/* Pulse animation for active step */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Dark theme support */
+.stepsContainer.darkTheme .stepNumber {
+  background: rgba(142, 142, 147, 0.08);
+  color: rgba(142, 142, 147, 0.7);
+  border-color: rgba(142, 142, 147, 0.15);
+}
+
+.stepsContainer.darkTheme .step.active .stepNumber {
+  background: #0a84ff;
+  border-color: #0a84ff;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+}
+
+.stepsContainer.darkTheme .step.active .stepNumber::after {
+  background: rgba(10, 132, 255, 0.15);
+}
+
+.stepsContainer.darkTheme .stepLabel {
+  color: rgba(142, 142, 147, 0.7);
+}
+
+.stepsContainer.darkTheme .step.active .stepLabel {
+  color: #0a84ff;
+}
+
+.stepsContainer.darkTheme .stepLine {
+  background: rgba(142, 142, 147, 0.15);
+}
+
+.stepsContainer.darkTheme .step.active + .stepLine {
+  background: #0a84ff;
+}
+
+.stepsContainer.darkTheme .step.active ~ .step .stepNumber {
+  background: rgba(142, 142, 147, 0.08);
+  color: rgba(142, 142, 147, 0.7);
+  border-color: rgba(142, 142, 147, 0.15);
+}
+
+.stepsContainer.darkTheme .step.active ~ .step .stepLabel {
+  color: rgba(142, 142, 147, 0.7);
+}
+
+/* Pulse animation for active step */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .stepsContainer {
+    gap: 4px;
+    padding: 0 16px;
+    margin-bottom: 24px;
+  }
+
+  .step {
+    min-width: 60px;
+    gap: 6px;
+  }
+
+  .stepNumber {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .stepLabel {
+    font-size: 11px;
+  }
+
+  .stepLine {
+    top: 16px;
+  }
+}
+
+/* Step Content Styling - Apple UI */
+.stepContent {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.stepTitle {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  letter-spacing: -0.022em;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.stepTitle.darkTheme {
+  color: #f2f2f7;
+}
+
+.stepDescription {
+  font-size: 17px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: #86868b;
+  text-align: center;
+  margin: 0 0 32px 0;
+  line-height: 1.4;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.stepDescription.darkTheme {
+  color: #aeaeb2;
+}
+
+/* Object and Template Grids - Apple UI Cards */
+.objectGrid, .templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.objectCard, .templateCard {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.objectCard::before, .templateCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(0, 122, 255, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.objectCard:hover, .templateCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.objectCard:hover::before, .templateCard:hover::before {
+  opacity: 1;
+}
+
+.objectCard.selected, .templateCard.selected {
+  background: rgba(0, 122, 255, 0.1);
+  border-color: #007aff;
+  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.2);
+}
+
+.objectCard.selected::before, .templateCard.selected::before {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.05) 100%);
+  opacity: 1;
+}
+
+.objectIcon, .templateIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+.objectName, .templateName {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+}
+
+.objectInfo, .templateInfo {
+  font-size: 13px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  color: #86868b;
+  letter-spacing: -0.01em;
+}
+
+/* Dark theme for cards */
+.objectCard.darkTheme, .templateCard.darkTheme {
+  background: rgba(28, 28, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.objectCard.darkTheme:hover, .templateCard.darkTheme:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: rgba(10, 132, 255, 0.3);
+}
+
+.objectCard.darkTheme.selected, .templateCard.darkTheme.selected {
+  background: rgba(10, 132, 255, 0.15);
+  border-color: #0a84ff;
+  box-shadow: 0 8px 25px rgba(10, 132, 255, 0.3);
+}
+
+.objectName.darkTheme, .templateName.darkTheme {
+  color: #f2f2f7;
+}
+
+.objectInfo.darkTheme, .templateInfo.darkTheme {
+  color: #aeaeb2;
+}
+
+/* Button styling */
+.backButton, .nextButton, .saveButton {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backButton {
+  background: rgba(142, 142, 147, 0.12);
+  color: #007aff;
+}
+
+.backButton:hover {
+  background: rgba(142, 142, 147, 0.2);
+  transform: translateY(-1px);
+}
+
+.nextButton, .saveButton {
+  background: #007aff;
+  color: white;
+}
+
+.nextButton:hover, .saveButton:hover {
+  background: #0056cc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  gap: 16px;
+}
+
+.centeredButtonRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 32px;
+}
+
+/* Dark theme for buttons */
+.backButton.darkTheme {
+  background: rgba(142, 142, 147, 0.08);
+  color: #0a84ff;
+}
+
+.backButton.darkTheme:hover {
+  background: rgba(142, 142, 147, 0.15);
+}
+
+.nextButton.darkTheme, .saveButton.darkTheme {
+  background: #0a84ff;
+}
+
+.nextButton.darkTheme:hover, .saveButton.darkTheme:hover {
+  background: #1a7cff;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+}
+
+/* Field mapping styles */
+.fieldMappingsContainer {
+  margin-top: 24px;
+}
+
+.fieldMappingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden; /* Prevent content from overflowing */
+}
+
+.fieldMappingRow.darkTheme {
+  background: rgba(28, 28, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.fieldMappingInputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0; /* Allow flex items to shrink below their minimum content size */
+}
+
+.arrow {
+  font-size: 16px;
+  color: #86868b;
+  font-weight: 300;
+}
+
+.arrow.darkTheme {
+  color: #98989d;
+}
+
+.input, .select {
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1d1d1f;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
+  max-width: 200px; /* Prevent from getting too wide */
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #007aff;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.input.darkTheme, .select.darkTheme {
+  background: rgba(44, 44, 46, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f2f2f7;
+}
+
+.input.darkTheme:focus, .select.darkTheme:focus {
+  background: rgba(44, 44, 46, 0.8);
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+}
+
+.deleteButton {
+  background: rgba(255, 59, 48, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: #ff3b30;
+  transition: all 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: rgba(255, 59, 48, 0.2);
+  transform: scale(1.05);
+}
+
+.addButton {
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.addButton:hover {
+  background: #0056cc;
+  transform: translateY(-1px);
+}
+
+.addButton.darkTheme {
+  background: #0a84ff;
+}
+
+.addButton.darkTheme:hover {
+  background: #1a7cff;
+}
+
+/* Settings and form sections */
+.settingGroup {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.settingGroup.darkTheme {
+  background: rgba(28, 28, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+
+.label.darkTheme {
+  color: #f2f2f7;
+}
+
+.emailList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emailItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.emailItem.darkTheme {
+  background: rgba(44, 44, 46, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.emailInput {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Webhook URL styling */
+.webhookUrlBox {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 14px;
+  word-break: break-all;
+  position: relative;
+}
+
+.webhookUrlBox.darkTheme {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.webhookUrlBox code {
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+}
+
+.copyButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.copyButton:hover {
+  background: #0056cc;
+}
+
+.copyButton.copied {
+  background: #28a745;
+}
+
+.copyButton.darkTheme {
+  background: #0a84ff;
+}
+
+.copyButton.darkTheme:hover {
+  background: #1a7cff;
+}
+
+.copyButton.darkTheme.copied {
+  background: #28a745;
 }
