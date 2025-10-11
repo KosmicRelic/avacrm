@@ -11,6 +11,19 @@ const Workflows = () => {
   const [workflows, setWorkflows] = useState([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [showWorkflowEditor, setShowWorkflowEditor] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 767);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Set up real-time listener for workflows
   useEffect(() => {
@@ -153,7 +166,7 @@ const Workflows = () => {
                 onChange={(e) => setWorkflowName(e.target.value)}
                 placeholder="e.g., Contact Form Leads"
                 className={`${styles.workflowNameInput} ${isDarkTheme ? styles.darkTheme : ''}`}
-                autoFocus
+                autoFocus={!isMobile}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && workflowName.trim()) {
                     handleCreate();

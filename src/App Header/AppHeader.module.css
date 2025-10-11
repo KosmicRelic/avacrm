@@ -3,7 +3,7 @@
   top: 0;
   width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  z-index: 2000;
+  z-index: 1000;
   padding: 0 16px;
   box-sizing: border-box;
   overflow: visible;
