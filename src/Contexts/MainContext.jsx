@@ -193,6 +193,7 @@ export const MainContextProvider = ({ children }) => {
           sheets: { role: 'editor', allowedSheetIds: [] },
           actions: 'editor',
           financials: 'editor',
+          workflows: 'editor',
         };
         let userType = 'business';
         let fetchedBusinessId = firebaseUser.uid;
@@ -218,6 +219,7 @@ export const MainContextProvider = ({ children }) => {
                 sheets: perms?.sheets || { role: 'none', allowedSheetIds: [] },
                 actions: perms?.actions?.role || 'none',
                 financials: perms?.financials?.role || 'none',
+                workflows: perms?.workflows?.role || 'none',
               };
               userType = 'team_member';
               
@@ -234,6 +236,7 @@ export const MainContextProvider = ({ children }) => {
                       sheets: updatedPerms?.sheets || { role: 'none', allowedSheetIds: [] },
                       actions: updatedPerms?.actions?.role || 'none',
                       financials: updatedPerms?.financials?.role || 'none',
+                      workflows: updatedPerms?.workflows?.role || 'none',
                     };
                     
                     // Update user object with new permissions
