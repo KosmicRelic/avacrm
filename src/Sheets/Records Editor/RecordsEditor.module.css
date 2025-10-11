@@ -11,7 +11,7 @@
   position: fixed;
   top: 0px;
   left: 0;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .editorWrapper.darkTheme {
@@ -2844,10 +2844,10 @@
 
 /* Related Records Section */
 .relatedRecordsList {
-  position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0px !important;
+  position: fixed !important;
+  left: 20px !important;
+  right: 20px !important;
+  bottom: 20px !important;
   display: flex !important;
   gap: 12px !important;
   padding: 0px 20px !important;
@@ -3697,6 +3697,87 @@
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+}
+
+/* Create Record button styling matching MenuButton */
+.selectButton {
+  background: white !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: #000000 !important;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+.selectButton.darkTheme {
+  background: rgb(26, 26, 26) !important;
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #ffffff !important;
+}
+
+.selectButton:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.selectButton:active {
+  background: rgba(0, 0, 0, 0.1) !important;
+  transform: scale(0.95);
+}
+
+.selectButton.darkTheme:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.selectButton.darkTheme:active {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Action tab button styling matching sheets */
+.actionTabButton {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px;
+  color: rgb(0, 0, 0);
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.01em;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.actionTabButton.darkTheme {
+  color: rgb(255, 255, 255);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.actionTabButton:hover {
+  background: transparent;
+  transform: translateY(-1px);
+}
+
+.actionTabButton.darkTheme:hover {
+  background: transparent;
+  color: rgb(255, 255, 255);
 }
 
 .relatedRecordType.darkTheme {

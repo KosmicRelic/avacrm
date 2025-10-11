@@ -34,6 +34,14 @@ const RecordsEditor = memo(forwardRef(({
     }
   }, []);
 
+  // Hide app header when RecordsEditor is open (mobile)
+  useEffect(() => {
+    document.body.classList.add('records-editor-open');
+    return () => {
+      document.body.classList.remove('records-editor-open');
+    };
+  }, []);
+
   const { sheets, recordTemplates, templateObjects, isDarkTheme, records, setRecords, objects, setObjects, teamMembers, user, businessId, setTemplateObjects: _contextSetTemplateObjects } = useContext(MainContext);
   const [view, setView] = useState(startInEditMode ? 'editor' : 'objectTypeSelection'); // 'objectTypeSelection' -> 'editor'
   
@@ -337,14 +345,14 @@ const RecordsEditor = memo(forwardRef(({
       // If in relatedTemplates view (selecting record type), add that step
       if (view === 'relatedTemplates') {
         breadcrumbs.push({
-          label: 'Create Record',
+          label: 'New Record',
           type: null,
           onClick: null // Current page, no click
         });
       } else if (view === 'editor') {
-        // In editor view, add clickable "Create Record" step and current record type
+        // In editor view, add clickable "New Record" step and current record type
         breadcrumbs.push({
-          label: 'Create Record',
+          label: 'New Record',
           type: null,
           onClick: () => setView('relatedTemplates')
         });
@@ -1867,6 +1875,12 @@ const RecordsEditor = memo(forwardRef(({
                       isDarkTheme={isDarkTheme}
                       showText={false}
                       ariaLabel="Back"
+                      icon={
+                        // Use X icon when closing the editor (editing existing object and not in navigation views, or initial selection), chevron when navigating within
+                        (isObjectMode && isEditing && view !== 'relatedTemplates') || view === 'objectTypeSelection'
+                          ? 'x'
+                          : 'chevron'
+                      }
                     />
                   )}
                   {view === 'editor' && hasUnsavedChanges && (
@@ -1876,21 +1890,27 @@ const RecordsEditor = memo(forwardRef(({
                       onClick={handleSave}
                       disabled={isItemDeleted}
                     >
-                      {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'Create Record' : 'Save'))}
+                      {isViewingHistory ? 'Revert Data' : (isObjectMode ? 'Save' : (!isEditing ? 'New Record' : 'Save'))}
                     </button>
                   )}
                 </div>
                 <div className={styles.breadcrumbActionsRight}>
+                  {/* New Record button - only show for saved objects */}
+                  {(isObjectMode && formData.docId && !formData.isNewRecord) && (
+                    <button
+                      className={`${styles.actionTabButton} ${styles.selectButton} ${isDarkTheme ? styles.darkTheme : ''}`}
+                      onClick={() => {
+                        // Navigate to related templates to create a new record
+                        setView('relatedTemplates');
+                      }}
+                    >
+                      New Record
+                    </button>
+                  )}
                   {/* Only show menu button after object has been saved (not a new record) */}
                   {(isObjectMode && formData.docId && !formData.isNewRecord) && (
                     <MenuButton
                       isDarkTheme={isDarkTheme}
-                      onCreateRecord={() => {
-                        // Handle create record - could navigate to related templates or open create modal
-                        if (isObjectMode) {
-                          setView('relatedTemplates');
-                        }
-                      }}
                       onDeleteObject={() => {
                         // Handle delete object - could show confirmation dialog
                         if (window.confirm('Are you sure you want to delete this object?')) {
@@ -2385,7 +2405,7 @@ const RecordsEditor = memo(forwardRef(({
             {!isCreatingObject && view === 'relatedTemplates' && (
               <div className={`${styles.sectionWrapper} ${styles.relatedTemplatesView} ${isDarkTheme ? styles.darkTheme : ''}`}>
                 <div className={styles.selectionHeader}>
-                  <h2 className={styles.selectionTitle}>Create Record</h2>
+                  <h2 className={styles.selectionTitle}>New Record</h2>
                   <p className={styles.selectionSubtitle}>
                     Choose a template to create a new record linked to this {formData.typeOfObject}
                   </p>

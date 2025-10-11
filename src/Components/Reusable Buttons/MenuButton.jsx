@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
-import { FaFileAlt } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
 import styles from './MenuButton.module.css';
 
 const MenuButton = ({
   isDarkTheme = false,
-  onCreateRecord,
   onDeleteObject,
   className = '',
   ariaLabel = 'Menu'
@@ -25,11 +23,6 @@ const MenuButton = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDropdownOpen]);
 
-  const handleCreateRecord = () => {
-    setIsDropdownOpen(false);
-    if (onCreateRecord) onCreateRecord();
-  };
-
   const handleDeleteObject = () => {
     setIsDropdownOpen(false);
     if (onDeleteObject) onDeleteObject();
@@ -46,17 +39,6 @@ const MenuButton = ({
       </button>
       {isDropdownOpen && (
         <div className={`${styles.dropdown} ${isDarkTheme ? styles.darkTheme : ''}`}>
-          <button
-            className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
-            onClick={handleCreateRecord}
-          >
-            <div className={styles.iconContainer}>
-              <FaFileAlt />
-            </div>
-            <div className={styles.labelContainer}>
-              Create Record
-            </div>
-          </button>
           <button
             className={`${styles.dropdownItem} ${isDarkTheme ? styles.darkTheme : ''}`}
             onClick={handleDeleteObject}
